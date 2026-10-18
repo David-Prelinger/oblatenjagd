@@ -245,3 +245,6 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Supersedes the last point of D-030 („the checkpoint's own board text replaces a separate checkpoint sign"): the checkpoint sprite is 16 px wide and draws no text, so `stage.salzburg.sign_checkpoint` was never shown and the stage's running gag (start: „Bus 150 / leider voll" → Hanuschplatz: „auch voll") lost its punchline.
 - Fix without code: the level places `{ entity = "sign", text = "stage.salzburg.sign_checkpoint", style = "bus" }` on the street right of the checkpoint (≈ col 130–134), not hiding the checkpoint pole, the `M`-box at col 132 or the Mozartkugel's path (signs are background; D-038 "signs must not hide play elements"). The checkpoint itself keeps its disc + „Zwischenstopp" popup.
 - Rule for later stages: checkpoint jokes go on an adjacent sign, not on the checkpoint sprite.
+
+## D-040 Goal camera follows the slide down (orchestrator, M1 acceptance)
+- During the goal sequence the camera stays horizontally (as before) but follows Resi vertically down to the goal's ground during the slide, so after a high (Wurstkranz) touch the hop, the walk past the Ortsende sign and the exit are on screen. Found by the M1 acceptance QA pass.
