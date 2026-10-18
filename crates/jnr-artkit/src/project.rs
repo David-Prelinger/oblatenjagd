@@ -187,6 +187,31 @@ mod tests {
     }
 
     #[test]
+    fn compiled_sprites_carry_their_group_variants_too() {
+        let p = Project::load(&workspace_root()).unwrap();
+        let compiled = p.compile().unwrap();
+        let mut variants = 0;
+        for c in &compiled {
+            let src = p
+                .sprites
+                .iter()
+                .find(|s| s.name == c.name || s.variants.iter().any(|v| v.name == c.name))
+                .unwrap_or_else(|| panic!("source of {}", c.name));
+            variants += usize::from(src.name != c.name);
+            assert_eq!(c.group, src.group, "{}", c.name);
+        }
+        assert!(variants > 0, "the art set has variants");
+        assert_eq!(
+            compiled
+                .iter()
+                .find(|c| c.name == "test_box")
+                .unwrap()
+                .group,
+            "test"
+        );
+    }
+
+    #[test]
     fn real_salzburg_backgrounds_load_without_lint_findings() {
         let p = Project::load(&workspace_root()).unwrap();
         for name in [

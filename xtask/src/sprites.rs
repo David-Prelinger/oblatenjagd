@@ -5,7 +5,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use jnr_artkit::compile::compile_sprite;
 use jnr_artkit::{CompiledSprite, Diagnostic, Image, Project};
 
 pub const HELP: &str = "\
@@ -116,8 +115,6 @@ pub fn lint_report(root: &Path) -> (bool, String) {
 /// A compiled sprite with what the previews need to know about it.
 struct Sheet {
     sprite: CompiledSprite,
-    /// Directory group (`ui`, `test`, ...); variants share their base's.
-    group: String,
     /// Background for the preview, if the group needs one.
     background: Option<[u8; 4]>,
 }
@@ -125,24 +122,16 @@ struct Sheet {
 /// Every sprite (base + variants), sorted by name. Fails on any lint error.
 fn compile(root: &Path) -> Result<Vec<Sheet>, String> {
     let p = Project::load(root).map_err(|errs| format_errors(&errs))?;
-    let errors: Vec<Diagnostic> = p.lint().into_iter().filter(Diagnostic::is_error).collect();
-    if !errors.is_empty() {
-        return Err(format_errors(&errors));
-    }
+    // `Project::compile` fails on lint errors and sorts by name.
     let dark = p.palette.colour(DARK_BACKGROUND).flatten();
-    let mut out = Vec::new();
-    for src in &p.sprites {
-        let background = dark.filter(|_| DARK_GROUPS.contains(&src.group.as_str()));
-        for sprite in compile_sprite(src, &p.palette).map_err(|e| format_errors(&e))? {
-            out.push(Sheet {
-                sprite,
-                group: src.group.clone(),
-                background,
-            });
-        }
-    }
-    out.sort_by(|a, b| a.sprite.name.cmp(&b.sprite.name));
-    Ok(out)
+    let sprites = p.compile().map_err(|e| format_errors(&e))?;
+    Ok(sprites
+        .into_iter()
+        .map(|sprite| Sheet {
+            background: dark.filter(|_| DARK_GROUPS.contains(&sprite.group.as_str())),
+            sprite,
+        })
+        .collect())
 }
 
 fn format_errors(errs: &[Diagnostic]) -> String {
@@ -253,7 +242,7 @@ fn preview(
     let mut written = Vec::new();
     for s in sprites
         .iter()
-        .filter(|s| s.sprite.name.contains(filter) && group.is_none_or(|g| s.group == g))
+        .filter(|s| s.sprite.name.contains(filter) && group.is_none_or(|g| s.sprite.group == g))
     {
         let path = dir.join(format!("{}.png", s.sprite.name));
         let img = sprite_preview(&s.sprite, scale, s.background).scaled(scale);
@@ -268,7 +257,8 @@ fn preview(
     if written.is_empty() {
         return Err(match group {
             Some(g) => {
-                let mut groups: Vec<&str> = sprites.iter().map(|s| s.group.as_str()).collect();
+                let mut groups: Vec<&str> =
+                    sprites.iter().map(|s| s.sprite.group.as_str()).collect();
                 groups.sort();
                 groups.dedup();
                 format!("no sprite in group `{g}` (groups: {})", groups.join(", "))
@@ -458,6 +448,7 @@ mod tests {
         frame.fill([255, 255, 255, 255]);
         CompiledSprite {
             name: "s".into(),
+            group: "test".into(),
             width: w,
             height: h,
             origin: Default::default(),

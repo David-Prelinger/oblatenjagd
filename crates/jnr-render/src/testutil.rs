@@ -40,6 +40,7 @@ pub fn sprite(
     let (width, height) = (first.width, first.height);
     CompiledSprite {
         name: name.into(),
+        group: "test".into(),
         width,
         height,
         origin: Point {

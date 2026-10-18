@@ -20,6 +20,9 @@ pub struct CompiledAnim {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CompiledSprite {
     pub name: String,
+    /// Directory group of the source (`ui`, `bg`, `test`, ...); variants
+    /// share their base's.
+    pub group: String,
     pub width: u32,
     pub height: u32,
     pub origin: Point,
@@ -74,6 +77,7 @@ fn render(
         .collect();
     CompiledSprite {
         name: name.to_owned(),
+        group: src.group.clone(),
         width: src.width,
         height: src.height,
         origin: src.origin,
