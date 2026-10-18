@@ -3,7 +3,8 @@
 //!
 //! The replay gets an `expect` line derived from what happened, so it passes
 //! `cargo xtask replay` right away: `complete frames=N..N` if the stage was
-//! completed, else `state=<mode> player_x>=<x>`; always `deaths=<n>`.
+//! completed, else `state=<mode> player_x>=<x>`; always `deaths=<n>`, and
+//! `stage=<station>` when the game has a route (it may change stages).
 
 use std::path::Path;
 
@@ -15,19 +16,22 @@ pub struct Recorder {
     level: String,
     seed: u64,
     start: Start,
+    /// The run's explicit route (`route` header; usually empty).
+    route: Vec<String>,
     /// Run-length encoded: (input, frames held).
     inputs: Vec<(InputFrame, u32)>,
     outcome: Outcome,
 }
 
 impl Recorder {
-    /// Starts recording a game that has not stepped yet; `seed` is the seed
-    /// it was created with.
-    pub fn new(game: &Game, seed: u64) -> Recorder {
+    /// Starts recording a game that has not stepped yet; `seed` and `route`
+    /// are what it was created with.
+    pub fn new(game: &Game, seed: u64, route: &[String]) -> Recorder {
         Recorder {
             level: game.level().meta.id.clone(),
             seed,
             start: game.start(),
+            route: route.to_vec(),
             inputs: Vec::new(),
             outcome: Outcome::new(game),
         }
@@ -49,6 +53,7 @@ impl Recorder {
             seed: self.seed,
             source: Source::Human,
             start: self.start,
+            route: self.route.clone(),
             expects: expects_for(&self.outcome),
             shots: Vec::new(),
             inputs: self.inputs.clone(),
@@ -63,6 +68,9 @@ pub fn expects_for(o: &Outcome) -> Vec<Expect> {
         None => vec![Expect::State(o.state), Expect::PlayerXAtLeast(o.player_x)],
     };
     out.push(Expect::Deaths(o.deaths));
+    if let Some(stage) = o.stage {
+        out.push(Expect::Stage(stage));
+    }
     out
 }
 
@@ -102,7 +110,7 @@ mod tests {
             ..Options::default()
         };
         let mut game = crate::new_game(&opts);
-        let mut rec = Recorder::new(&game, opts.seed);
+        let mut rec = Recorder::new(&game, opts.seed, &opts.route);
         for &input in inputs {
             game.step(input);
             rec.record(input, &game);
@@ -181,6 +189,33 @@ mod tests {
         assert_eq!(replay.start, Start::Title);
         assert!(replay.format().contains("start  = title"));
         assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn recording_a_run_expects_its_stage() {
+        let opts = Options::default();
+        let mut game = crate::new_game(&opts);
+        let mut rec = Recorder::new(&game, opts.seed, &opts.route);
+        for input in [InputFrame::NONE, InputFrame::START, InputFrame::RIGHT] {
+            game.step(input);
+            rec.record(input, &game);
+        }
+        let replay = rec.replay();
+        assert_eq!(replay.level, "salzburg");
+        assert!(
+            replay.expects.contains(&Expect::Stage(0)),
+            "{:?}",
+            replay.expects
+        );
+        assert!(
+            replay.route.is_empty(),
+            "the standard route needs no header"
+        );
+        let parsed = Replay::parse(&replay.format()).expect("parses");
+        let levels = crate::options::embedded_levels();
+        let game = parsed.new_game(&levels, &tuning()).expect("game");
+        let outcome = parsed.run_game(game, |_| {});
+        assert_eq!(parsed.check(&outcome), Vec::<String>::new());
     }
 
     #[test]

@@ -1,5 +1,6 @@
 //! Drawing a whole [`Game`]: the full screens of the flow modes (title,
-//! stage intro, game over, „Fortsetzung folgt …", see [`crate::screens`]),
+//! stage intro, game over, „Fortsetzung folgt …", see [`crate::screens`];
+//! the route map, see [`crate::map`]),
 //! else the level (background, tiles, Maibaum, entities, player), the HUD
 //! ([`crate::hud`]) and the text overlays; plus the opt-in debug overlay.
 //!
@@ -28,7 +29,7 @@ use crate::entities::{self, EntityLooks};
 use crate::font::Font;
 use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
 use crate::tiles::{self, TileLooks};
-use crate::{Framebuffer, HEIGHT, hud, screens};
+use crate::{Framebuffer, HEIGHT, hud, map, screens};
 
 /// Sprite name of the player.
 pub const PLAYER_SPRITE: &str = "player";
@@ -153,11 +154,13 @@ struct PropLook<'a> {
 
 /// Everything the renderer looks up, resolved once: the atlas, the font,
 /// the texts, the tile/player/goal sprites and the background layers.
-/// Build it at startup (and again when the level changes: tile sprites are
-/// indexed by the level's `tile_names`) and pass it to [`render`] and
-/// [`render_debug`].
+/// Build it at startup (and again when the level changes, e.g. at a stage
+/// change: tile sprites are indexed by the level's `tile_names`; see
+/// [`RenderContext::is_for`]) and pass it to [`render`] and [`render_debug`].
 #[derive(Clone, Debug)]
 pub struct RenderContext<'a> {
+    /// `meta.id` of the level it was built for.
+    level_id: String,
     atlas: &'a Atlas,
     texts: &'a Texts,
     font: Font,
@@ -174,6 +177,10 @@ pub struct RenderContext<'a> {
     pub(crate) title_logo: Option<&'a AtlasSprite>,
     /// `hud_oblate` (HUD icon).
     pub(crate) hud_oblate: Option<&'a AtlasSprite>,
+    /// `map_salzkammergut` (route-map backdrop).
+    pub(crate) map_backdrop: Option<&'a AtlasSprite>,
+    /// `map_station` (route-map station marker).
+    pub(crate) map_station: Option<&'a AtlasSprite>,
     /// The stage's text keys, in [`screens::STAGE_SUFFIXES`] order:
     /// `stage.<level id>.<suffix>` if de.toml has the title, else the
     /// [`screens::FALLBACK_STAGE`]'s; `[meta].title_key` overrides the title.
@@ -225,6 +232,7 @@ impl<'a> RenderContext<'a> {
             stage_keys[0] = key.clone();
         }
         RenderContext {
+            level_id: level.meta.id.clone(),
             atlas,
             texts,
             font: Font::from_atlas(atlas),
@@ -237,6 +245,8 @@ impl<'a> RenderContext<'a> {
             props,
             title_logo: with_anims(screens::TITLE_LOGO_SPRITE),
             hud_oblate: with_anims(hud::OBLATE_ICON_SPRITE),
+            map_backdrop: with_anims(map::BACKDROP_SPRITE),
+            map_station: with_anims(map::STATION_SPRITE),
             stage_keys,
             background: Vec::new(),
             background_covers: false,
@@ -271,6 +281,13 @@ impl<'a> RenderContext<'a> {
     /// The resolved background layers, back to front.
     pub fn background(&self) -> &[BackgroundLayer<'a>] {
         &self.background
+    }
+
+    /// Whether this context was built for `level` (by `meta.id`). After a
+    /// stage change it isn't: build a new one with
+    /// [`RenderContext::for_level`] for `game.level()`.
+    pub fn is_for(&self, level: &Level) -> bool {
+        self.level_id == level.meta.id
     }
 
     /// The atlas everything is drawn from.
@@ -309,6 +326,7 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         Mode::StageIntro { .. } => return screens::draw_intro(game, ctx, fb),
         Mode::GameOver { frames } => return screens::draw_game_over(game, ctx, fb, frames),
         Mode::StageClear if to_be_continued => return screens::draw_to_be_continued(ctx, fb),
+        Mode::RouteMap => return map::draw_route_map(game, ctx, fb),
         Mode::Playing | Mode::Paused | Mode::Dying { .. } | Mode::StageClear => {}
     }
     let cam = game.camera();
@@ -357,26 +375,49 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
     let p = game.player();
     let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
     let feet_y = (p.y + p.h).to_px() - cam.y;
-    draw_player_idle(ctx, fb, feet_x, feet_y, tick);
+    let big = p.power == Power::Big;
+    draw_player_pose(
+        ctx,
+        fb,
+        big,
+        PlayerAnim::Idle,
+        (feet_x, feet_y),
+        tick,
+        false,
+    );
 }
 
-/// Resi's `idle` sprite (Normal) with her feet at (`x`, `y`) on screen,
-/// else the grey-box player (12×22 `r` box).
-pub(crate) fn draw_player_idle(
+/// Resi outside play (title, intro, route map): `player` (or `player_big`
+/// when `big`, falling back to `player`) in `state` with her feet at
+/// `feet` on screen, mirrored if `left`; else the grey-box player (a
+/// 12×22 `r` box, 12×30 wine when big).
+pub(crate) fn draw_player_pose(
     ctx: &RenderContext,
     fb: &mut Framebuffer,
-    x: i32,
-    y: i32,
+    big: bool,
+    state: PlayerAnim,
+    (x, y): (i32, i32),
     tick: u32,
+    left: bool,
 ) {
-    match &ctx.player {
+    let look = if big {
+        ctx.player_big.as_ref().or(ctx.player.as_ref())
+    } else {
+        ctx.player.as_ref()
+    };
+    match look {
         Some(look) => {
-            let anim = look.anims[PlayerAnim::Idle.index()];
-            draw_sprite(fb, ctx.atlas, look.sprite, anim, tick, x, y, false);
+            let anim = look.anims[state.index()];
+            draw_sprite(fb, ctx.atlas, look.sprite, anim, tick, x, y, left);
         }
         None => {
-            fb.fill_rect(x - 6, y - 22, 12, 22, DIRNDL_RED);
-            fb.outline_rect(x - 6, y - 22, 12, 22, OUTLINE);
+            let (h, fill) = if big {
+                (30, entities::WINE_DARK)
+            } else {
+                (22, DIRNDL_RED)
+            };
+            fb.fill_rect(x - 6, y - h, 12, h, fill);
+            fb.outline_rect(x - 6, y - h, 12, h, OUTLINE);
         }
     }
 }

@@ -1,13 +1,13 @@
 # Stage 1 golden tour (task E6): the real game from the Salzburg title
 # (start = title, D-025): START at frame 21, stage intro 21..170, then the
 # inputs of salzburg_solver.replay unchanged from frame 171 (re-copy them
-# after `cargo xtask solve salzburg --write`), the Maibaum sequence and back
-# on the title.
+# after `cargo xtask solve salzburg --write`), the Maibaum sequence and, since
+# M2 (D-042/D-047), the route map (Salzburg → St. Gilgen) at the end.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=1772..1772 deaths=0 state=title
+expect = complete frames=1772..1772 deaths=0 state=route_map stage=salzburg
 shots  = 0:title 60:intro 216:busbahnhof 620:mirabellgarten 880:makartsteg 1215:getreidegasse 1400:domplatz 1700:festungsbahn 1772:maibaum 2000:tally
 ---
 - 20
@@ -60,4 +60,4 @@ RBJ 20
 RB 62
 RBJ 20
 RB 40
-- 800     # Maibaum sequence, tally, texts; title again from ~2550
+- 800     # Maibaum sequence, tally, texts; the route map from ~2370

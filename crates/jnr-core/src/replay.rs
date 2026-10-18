@@ -6,6 +6,7 @@
 //! seed   = 1
 //! source = handwritten          # solver | human | handwritten
 //! start  = playing              # optional: playing (default) | title
+//! route  = route_a route_b      # optional: the levels of the run (D-047)
 //! expect = complete frames=731..731 deaths=0
 //! shots  = 0:start 760:clear    # frame:name; frame 0 = before the first step
 //! ---
@@ -21,6 +22,10 @@
 //! `start` picks the flow (D-025): `playing` (the default) starts in play
 //! without title, stage intros or pause, like `Game::new`; `title` runs the
 //! real game from its title screen (`Game::new_at(.., Start::Title)`).
+//! `route` lists the level ids a run plays, stage by stage (station by
+//! station on the route map); without it a replay of a level on the real
+//! journey (`salzburg`, …) follows the standard route and any other level
+//! plays alone ([`crate::route::select`], [`Replay::new_game`]).
 //! A line holds at most [`MAX_FRAMES_PER_LINE`] frames and the whole
 //! replay at most [`MAX_TOTAL_FRAMES`] (1 h at 60 Hz).
 
@@ -30,6 +35,7 @@ use crate::ParseError;
 use crate::game::{Event, Game, Mode, Start};
 use crate::input::InputFrame;
 use crate::level::Level;
+use crate::route::{self, STATIONS};
 use crate::tuning::Tuning;
 
 /// Most frames one input line may hold (1 h at 60 Hz).
@@ -117,6 +123,8 @@ pub enum EndState {
     StageClear,
     /// [`Mode::GameOver`].
     GameOver,
+    /// [`Mode::RouteMap`].
+    RouteMap,
 }
 
 impl EndState {
@@ -130,6 +138,7 @@ impl EndState {
             EndState::Title => "title",
             EndState::StageIntro => "stage_intro",
             EndState::Paused => "paused",
+            EndState::RouteMap => "route_map",
         }
     }
 
@@ -143,6 +152,7 @@ impl EndState {
             Mode::Title { .. } => EndState::Title,
             Mode::StageIntro { .. } => EndState::StageIntro,
             Mode::Paused => EndState::Paused,
+            Mode::RouteMap => EndState::RouteMap,
         }
     }
 
@@ -155,6 +165,7 @@ impl EndState {
             EndState::Title,
             EndState::StageIntro,
             EndState::Paused,
+            EndState::RouteMap,
         ]
         .into_iter()
         .find(|v| v.name() == s)
@@ -180,9 +191,12 @@ pub enum Expect {
     PlayerYAtLeast(i32),
     /// `player_y<=PX`: the player's hitbox top edge is at most PX at the end.
     PlayerYAtMost(i32),
-    /// `state=<playing|dying|stage_clear|game_over|title|stage_intro|paused>`
+    /// `state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>`
     /// at the end.
     State(EndState),
+    /// `stage=<station id>`: the game is at that station of its route at
+    /// the end (index into [`STATIONS`]; a lone level is at no station).
+    Stage(u8),
     /// `no_event=<Event>`: the event never happened.
     NoEvent(Event),
     /// `event=<Event>`: the event happened at least once.
@@ -205,8 +219,8 @@ pub enum Expect {
 /// What the expectation grammar supports (shown in "not supported yet" errors).
 const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at frames=a..b, \
                          player_x>=PX, player_y>=PX, player_y<=PX, \
-                         state=<playing|dying|stage_clear|game_over|title|stage_intro|paused>, \
-                         event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
+                         state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>, \
+                         stage=<station id>, event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
                          lives>=N";
 
 impl Expect {
@@ -241,9 +255,15 @@ impl Expect {
                 Expect::State(EndState::parse(s).ok_or_else(|| {
                     format!(
                         "unknown state `{s}` (expected playing, dying, stage_clear, game_over, \
-                         title, stage_intro or paused)"
+                         title, stage_intro, paused or route_map)"
                     )
                 })?)
+            } else if let Some(id) = w.strip_prefix("stage=") {
+                let i = route::station_index(id).ok_or_else(|| {
+                    let ids: Vec<&str> = STATIONS.iter().map(|s| s.id).collect();
+                    format!("unknown station `{id}` (known: {})", ids.join(", "))
+                })?;
+                Expect::Stage(i as u8)
             } else if let Some(n) = w.strip_prefix("oblaten>=") {
                 Expect::OblatenAtLeast(parse_u32(n, "oblaten")?)
             } else if let Some(n) = w.strip_prefix("oblaten=") {
@@ -286,6 +306,7 @@ impl Expect {
             Expect::PlayerYAtLeast(px) => o.player_y >= px,
             Expect::PlayerYAtMost(px) => o.player_y <= px,
             Expect::State(s) => o.state == s,
+            Expect::Stage(i) => o.stage == Some(i),
             Expect::NoEvent(e) => !o.events.iter().any(|&(seen, _)| seen == e),
             Expect::Event(e) => o.events.iter().any(|&(seen, _)| seen == e),
             Expect::OblatenAtLeast(n) => o.oblaten >= n,
@@ -316,6 +337,13 @@ impl Expect {
                 format!("expected {self} at the end, got player_y={}", o.player_y)
             }
             Expect::State(_) => format!("expected {self} at the end, got {}", o.state.name()),
+            Expect::Stage(_) => match o.stage {
+                Some(i) => format!(
+                    "expected {self} at the end, got stage={}",
+                    STATIONS[usize::from(i)].id
+                ),
+                None => format!("expected {self} at the end, but the game has no route"),
+            },
             Expect::NoEvent(e) => {
                 let first = o.events.iter().find(|(seen, _)| *seen == e).map(|x| x.1);
                 format!("expected {self}, first at frame {}", first.unwrap_or(0))
@@ -346,6 +374,7 @@ impl fmt::Display for Expect {
             Expect::PlayerYAtLeast(px) => write!(f, "player_y>={px}"),
             Expect::PlayerYAtMost(px) => write!(f, "player_y<={px}"),
             Expect::State(s) => write!(f, "state={}", s.name()),
+            Expect::Stage(i) => write!(f, "stage={}", STATIONS[usize::from(*i)].id),
             Expect::NoEvent(e) => write!(f, "no_event={}", e.name()),
             Expect::Event(e) => write!(f, "event={}", e.name()),
             Expect::OblatenAtLeast(n) => write!(f, "oblaten>={n}"),
@@ -378,6 +407,9 @@ pub struct Replay {
     pub source: Source,
     /// How the game starts (`start = title`; default `playing`).
     pub start: Start,
+    /// The level ids of the run (`route = a b`; empty = the default, see
+    /// [`crate::route::select`]).
+    pub route: Vec<String>,
     /// All expectations, in file order.
     pub expects: Vec<Expect>,
     /// Frames to render, in file order.
@@ -393,6 +425,7 @@ impl Replay {
         let mut seed: Option<u64> = None;
         let mut source: Option<Source> = None;
         let mut start: Option<Start> = None;
+        let mut route: Option<Vec<String>> = None;
         let mut expects = Vec::new();
         let mut shots: Vec<Shot> = Vec::new();
         // Line of each shot (parallel to `shots`) for errors found after the body.
@@ -484,6 +517,20 @@ impl Replay {
                         ))
                     })?);
                 }
+                "route" => {
+                    once(route.is_some())?;
+                    let ids: Vec<String> = value.split_whitespace().map(str::to_owned).collect();
+                    if ids.is_empty() {
+                        return Err(err("`route` is empty".into()));
+                    }
+                    if ids.len() > STATIONS.len() {
+                        return Err(err(format!(
+                            "`route` has more than {} levels (one per station)",
+                            STATIONS.len()
+                        )));
+                    }
+                    route = Some(ids);
+                }
                 "expect" => expects.extend(Expect::parse_clauses(value).map_err(err)?),
                 "shots" => {
                     for item in value.split_whitespace() {
@@ -497,7 +544,7 @@ impl Replay {
                 }
                 _ => {
                     return Err(err(format!(
-                        "unknown header key `{key}` (known: level, seed, source, start, expect, shots)"
+                        "unknown header key `{key}` (known: level, seed, source, start, route, expect, shots)"
                     )));
                 }
             }
@@ -515,6 +562,7 @@ impl Replay {
             seed: seed.unwrap_or(1),
             source,
             start: start.unwrap_or(Start::Playing),
+            route: route.unwrap_or_default(),
             expects,
             shots,
             inputs,
@@ -545,6 +593,9 @@ impl Replay {
         );
         if self.start != Start::Playing {
             s.push_str(&format!("start  = {}\n", self.start.name()));
+        }
+        if !self.route.is_empty() {
+            s.push_str(&format!("route  = {}\n", self.route.join(" ")));
         }
         if !self.expects.is_empty() {
             let clauses: Vec<String> = self.expects.iter().map(Expect::to_string).collect();
@@ -583,8 +634,35 @@ impl Replay {
     /// `on_frame` sees the game before the first step (frame 0) and after
     /// every step (for hashes and screenshots). The caller checks that
     /// `level` is the replay's level.
-    pub fn run(&self, level: &Level, tuning: &Tuning, mut on_frame: impl FnMut(&Game)) -> Outcome {
-        let mut game = Game::new_at(level, tuning, self.seed, self.start);
+    pub fn run(&self, level: &Level, tuning: &Tuning, on_frame: impl FnMut(&Game)) -> Outcome {
+        self.run_game(Game::new_at(level, tuning, self.seed, self.start), on_frame)
+    }
+
+    /// The game this replay starts with, given every level there is: the
+    /// replay's level, on its route if it has one ([`route::select`]: the
+    /// `route` header, else the standard route for a level of the journey,
+    /// else the level alone).
+    pub fn new_game(&self, levels: &[Level], tuning: &Tuning) -> Result<Game, ParseError> {
+        match route::select(levels, &self.level, &self.route)? {
+            Some((r, stage)) => Ok(Game::new_run(
+                std::sync::Arc::new(r),
+                stage,
+                tuning,
+                self.seed,
+                self.start,
+            )),
+            None => {
+                let level = levels
+                    .iter()
+                    .find(|l| l.meta.id == self.level)
+                    .ok_or_else(|| ParseError::new(format!("no level `{}`", self.level)))?;
+                Ok(Game::new_at(level, tuning, self.seed, self.start))
+            }
+        }
+    }
+
+    /// Plays the replay on `game` (see [`Replay::run`]).
+    pub fn run_game(&self, mut game: Game, mut on_frame: impl FnMut(&Game)) -> Outcome {
         let mut outcome = Outcome::new(&game);
         on_frame(&game);
         for input in self.frames() {
@@ -629,6 +707,8 @@ pub struct Outcome {
     pub score: u32,
     /// Lives at the end.
     pub lives: u32,
+    /// Station of the game's route at the end (`None`: a lone level).
+    pub stage: Option<u8>,
 }
 
 impl Outcome {
@@ -646,6 +726,7 @@ impl Outcome {
             oblaten: u32::from(game.oblaten()),
             score: game.score(),
             lives: u32::from(game.lives()),
+            stage: game.station().map(|i| i as u8),
         }
     }
 
@@ -672,6 +753,7 @@ impl Outcome {
         self.oblaten = u32::from(game.oblaten());
         self.score = game.score();
         self.lives = u32::from(game.lives());
+        self.stage = game.station().map(|i| i as u8);
     }
 
     /// "deaths at frames 10, 20" or "no deaths".
@@ -937,6 +1019,7 @@ RBJ 2
             oblaten: 12,
             score: 4600,
             lives: 2,
+            stage: Some(1),
         }
     }
 
@@ -1116,5 +1199,66 @@ RBJ 2
         let o = r.run(&level, &tuning, |_| {});
         assert_eq!(o.state, EndState::StageIntro);
         assert_eq!(r.check(&o), Vec::<String>::new());
+    }
+
+    #[test]
+    fn route_header_stage_expectation_and_new_game() {
+        let text = "level = b\nsource = handwritten\nstart = title\nroute = a b\n\
+                    expect = stage=st_gilgen state=route_map\n---\nS 1\n";
+        let r = Replay::parse(text).unwrap();
+        assert_eq!(r.route, ["a", "b"]);
+        assert_eq!(
+            r.expects,
+            [Expect::Stage(1), Expect::State(EndState::RouteMap)]
+        );
+        assert!(r.format().contains("route  = a b\n"));
+        assert_eq!(Replay::parse(&r.format()).unwrap(), r);
+        assert!(!Replay::parse(EXAMPLE).unwrap().format().contains("route"));
+        assert!(err("level = t\nsource = solver\nroute =\n---\n").contains("`route` is empty"));
+        assert!(
+            err("level = t\nsource = solver\nroute = a\nroute = a\n---\n").contains("given twice")
+        );
+        let ten = "a ".repeat(10);
+        assert!(
+            err(&format!("level = t\nsource = solver\nroute = {ten}\n---\n"))
+                .contains("one per station")
+        );
+        assert!(
+            err("level = t\nsource = solver\nexpect = stage=atlantis\n---\n")
+                .contains("unknown station `atlantis`")
+        );
+
+        let mut o = outcome();
+        assert_eq!(check("stage=st_gilgen", &o), Ok(()));
+        assert_eq!(
+            check("stage=salzburg", &o).unwrap_err(),
+            "expected stage=salzburg at the end, got stage=st_gilgen"
+        );
+        o.stage = None;
+        assert!(
+            check("stage=st_gilgen", &o)
+                .unwrap_err()
+                .contains("has no route")
+        );
+
+        let lvl = |id: &str| {
+            let text = "[meta]\nid = \"ID\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\
+                        \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n.P..\n####\n'''\n";
+            Level::parse(&text.replace("ID", id)).unwrap()
+        };
+        let levels = [lvl("a"), lvl("b"), lvl("salzburg")];
+        let tuning = Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap();
+        let g = r.new_game(&levels, &tuning).unwrap();
+        assert_eq!((g.level().meta.id.as_str(), g.station()), ("b", Some(1)));
+        // Without `route`: the standard route for a journey level, else alone.
+        let mut lone = r.clone();
+        lone.route.clear();
+        assert_eq!(lone.new_game(&levels, &tuning).unwrap().station(), None);
+        lone.level = "salzburg".into();
+        assert_eq!(lone.new_game(&levels, &tuning).unwrap().station(), Some(0));
+        lone.level = "zz".into();
+        assert!(lone.new_game(&levels, &tuning).is_err());
+        let o = r.run_game(r.new_game(&levels, &tuning).unwrap(), |_| {});
+        assert_eq!((o.state, o.stage), (EndState::StageIntro, Some(1)));
     }
 }

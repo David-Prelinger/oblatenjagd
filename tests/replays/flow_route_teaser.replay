@@ -1,0 +1,26 @@
+# Multi-stage flow (D-042, D-047), continued from flow_route_carry_over:
+# route_b (St. Gilgen) is the last playable stage of the test route, so its
+# clear plays the route-map teaser (walk to Brunnwinkl, „Fortsetzung folgt …")
+# and ends on the title with the run reset to its first stage.
+level  = route_a
+seed   = 1
+source = handwritten
+start  = title
+route  = route_a route_b
+expect = complete frames=481..481 deaths=0 event=PowerUp
+expect = state=title stage=salzburg score=0 lives=3 oblaten=0
+---
+- 20
+S 1       # frame 21: title → intro
+- 150
+R 36
+RJ 10     # the Mozartkugel box
+- 70
+R 55
+RJ 30     # over the wall
+R 120     # Maibaum at 481
+- 450     # route map
+S 1       # frame 943: START in Wait → route_b
+- 150
+R 280     # route_b's Maibaum
+- 520     # goal sequence, route map with the teaser, title

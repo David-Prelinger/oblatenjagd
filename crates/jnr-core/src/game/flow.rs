@@ -13,8 +13,20 @@
 //!    a high touch ends at the ground framing, D-040),
 //! 5. [`ClearPhase::Tally`]: one second of time per frame, `score.time_bonus` each,
 //! 6. [`ClearPhase::Clear`]: the stage-clear texts for `goal.clear_frames`,
-//! 7. [`ClearPhase::ToBeContinued`] for `goal.to_be_continued_frames`, then the
-//!    title screen (the run is reset to the stage start).
+//! 7. in the real flow of a run with a route (D-042): the route map
+//!    (`Mode::RouteMap`, below); otherwise [`ClearPhase::ToBeContinued`] for
+//!    `goal.to_be_continued_frames`, then the title screen (the run is reset
+//!    to the stage start; M1 behaviour, kept for `Start::Playing` and lone
+//!    levels).
+//!
+//! The route map (D-043) is a phase machine too ([`MapPhase`]): Arrive
+//! (`map.arrive_frames`) → Walk (`map.walk_px` px per frame along the path
+//! to the next station) → Wait (until START, at most `map.wait_frames`) →
+//! the next stage's intro with score, lives, Oblaten and the power state
+//! carried over (timer reset, checkpoint cleared). If the next station has
+//! no level, Teaser (`map.teaser_frames`, START ignored) replaces Wait and
+//! the run ends on the title screen, reset to its first stage. START during
+//! Arrive or Walk skips to Wait (or Teaser) with Resi on the next station.
 
 use super::{Event, Game, Mode};
 use crate::camera::SCREEN_W;
@@ -22,7 +34,8 @@ use crate::entity::{EntityKind, Popup, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::level::{SpawnKind, TILE_PX};
-use crate::player::Facing;
+use crate::player::{Facing, Power};
+use crate::route::{self, MapPhase, RouteMap};
 use crate::tuning::GoalTuning;
 
 /// How a game starts, and with it which flow screens it has (D-025).
@@ -227,11 +240,17 @@ impl Game {
                 }
                 (self.time == 0).then_some(ClearPhase::Clear)
             }
-            ClearPhase::Clear => (c.timer >= g.clear_frames).then_some(ClearPhase::ToBeContinued),
+            ClearPhase::Clear => {
+                if c.timer >= g.clear_frames && self.enter_route_map() {
+                    return;
+                }
+                (c.timer >= g.clear_frames).then_some(ClearPhase::ToBeContinued)
+            }
             ClearPhase::ToBeContinued => {
                 if c.timer >= g.to_be_continued_frames {
-                    self.reset_run();
-                    self.mode = Mode::Title { frames: 0 };
+                    // Title with the run reset to its first stage (a no-op
+                    // switch for lone levels).
+                    self.end_run();
                     return;
                 }
                 None
@@ -283,5 +302,119 @@ impl Game {
         }
         self.entities.extend(spawned);
         self.entities.retain(|e| !e.removed);
+    }
+
+    /// After the stage-clear texts: the route map, if this is the real flow
+    /// of a run with a route and a next station exists. Returns whether
+    /// the map started.
+    fn enter_route_map(&mut self) -> bool {
+        let Some(route) = &self.route else {
+            return false;
+        };
+        let from = usize::from(self.stage);
+        if self.start != Start::Title || from + 1 >= route::STATIONS.len() {
+            return false;
+        }
+        self.route_map = Some(RouteMap {
+            phase: MapPhase::Arrive,
+            timer: 0,
+            from: self.stage,
+            walked: 0,
+            teaser: route.level(from + 1).is_none(),
+        });
+        self.clear = None;
+        self.mode = Mode::RouteMap;
+        true
+    }
+
+    /// One frame of the route map; `start_pressed` is a new START press.
+    pub(super) fn step_route_map(&mut self, start_pressed: bool) {
+        let Some(mut m) = self.route_map else {
+            return;
+        };
+        m.timer = m.timer.saturating_add(1);
+        let t = self.tuning.map;
+        let len = route::path_len(usize::from(m.from)).clamp(0, i32::from(u16::MAX)) as u16;
+        let arrived = if m.teaser {
+            MapPhase::Teaser
+        } else {
+            MapPhase::Wait
+        };
+        let next = match m.phase {
+            MapPhase::Arrive | MapPhase::Walk if start_pressed => {
+                m.walked = len;
+                Some(arrived)
+            }
+            MapPhase::Arrive => (m.timer >= t.arrive_frames).then_some(MapPhase::Walk),
+            MapPhase::Walk => {
+                m.walked = m.walked.saturating_add(t.walk_px).min(len);
+                (m.walked >= len).then_some(arrived)
+            }
+            MapPhase::Wait => {
+                if start_pressed || m.timer >= t.wait_frames {
+                    self.next_stage();
+                    return;
+                }
+                None
+            }
+            MapPhase::Teaser => {
+                if m.timer >= t.teaser_frames {
+                    self.end_run();
+                    return;
+                }
+                None
+            }
+        };
+        if let Some(phase) = next {
+            m.phase = phase;
+            m.timer = 0;
+        }
+        self.route_map = Some(m);
+    }
+
+    /// The next stage's intro: its level from the start, with score,
+    /// lives, Oblaten and the power state carried over; the timer is the
+    /// new level's, the checkpoint is cleared (D-042).
+    fn next_stage(&mut self) {
+        self.route_map = None;
+        let next = usize::from(self.stage) + 1;
+        let Some(level) = self.route.as_ref().and_then(|r| r.level(next)).cloned() else {
+            self.end_run();
+            return;
+        };
+        let power = self.player.power;
+        self.stage = next as u8;
+        self.set_level(level);
+        self.checkpoint = None;
+        self.clear = None;
+        self.death_cause = None;
+        self.reset_level();
+        self.place_player();
+        if power == Power::Big {
+            self.player.set_power(Power::Big, &self.tuning.player);
+            // Carried over, not eaten: no growing freeze.
+            self.player.transform = 0;
+            self.player.fit_head(&self.map);
+        }
+        self.enter_stage();
+    }
+
+    /// After the teaser: the title screen, the run reset to its first
+    /// stage (score 0, full lives, Oblaten 0, Normal).
+    fn end_run(&mut self) {
+        self.route_map = None;
+        if self.stage != self.first_stage {
+            if let Some(level) = self
+                .route
+                .as_ref()
+                .and_then(|r| r.level(usize::from(self.first_stage)))
+                .cloned()
+            {
+                self.stage = self.first_stage;
+                self.set_level(level);
+            }
+        }
+        self.reset_run();
+        self.mode = Mode::Title { frames: 0 };
     }
 }

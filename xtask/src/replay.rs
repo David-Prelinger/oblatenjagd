@@ -91,22 +91,39 @@ impl Played {
 /// and renders the frames in `render_frames`.
 pub fn play(root: &Path, path: &Path, render_frames: &[u32]) -> Result<Played, String> {
     let replay = content::load_replay(path)?;
-    let level =
-        content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
+    // (For the error message with the known ids.)
+    content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
+    // Every level must parse: a broken stage would silently cut the route.
+    let levels: Vec<Level> = content::all_levels(root)?
+        .into_iter()
+        .map(|(p, l)| l.map_err(|e| format!("{}: {e}", p.display())))
+        .collect::<Result<_, _>>()?;
     let tuning = content::tuning(root)?;
     let texts = content::texts(root)?;
-    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, &level);
+    // The replay's level, on its route (D-047): a replay may change stages.
+    let game = replay
+        .new_game(&levels, &tuning)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    let atlas = jnr_assets::atlas();
+    let mut ctx = RenderContext::for_level(atlas, &texts, game.level());
 
     let mut hashes = Vec::new();
     let mut images = Vec::new();
-    let outcome = replay.run(&level, &tuning, |g| {
+    let outcome = replay.run_game(game, |g| {
         hashes.push(g.state_hash());
         if render_frames.contains(&g.frame()) {
+            if !ctx.is_for(g.level()) {
+                ctx = RenderContext::for_level(atlas, &texts, g.level());
+            }
             images.push((g.frame(), render_image(g, &ctx)));
         }
     });
+    // A freshly built game: building it must be deterministic too.
+    let again_game = replay
+        .new_game(&levels, &tuning)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
     let mut again = Vec::new();
-    replay.run(&level, &tuning, |g| again.push(g.state_hash()));
+    replay.run_game(again_game, |g| again.push(g.state_hash()));
 
     let mut failures = replay.check(&outcome);
     if replay.expects.is_empty() {

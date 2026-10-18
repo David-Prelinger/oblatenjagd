@@ -901,6 +901,7 @@ impl Solution {
             seed: 1,
             source: Source::Solver,
             start: jnr_core::Start::Playing,
+            route: Vec::new(),
             expects: vec![
                 Expect::Complete(Some(FrameRange { first: n, last: n })),
                 Expect::Deaths(0),

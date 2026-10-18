@@ -15,9 +15,12 @@ use jnr_artkit::atlas::{Atlas, Rect};
 use crate::Framebuffer;
 use crate::blit::blit_frame_tinted;
 
-/// Every character the font has, in glyph-frame order (89 glyphs).
+/// Every character the font has, in glyph-frame order (90 glyphs). New
+/// glyphs are only ever appended (D-012); a character whose frame the
+/// `font` sprite doesn't have yet draws as `?` (`é`, 90th, for
+/// „Café Zauner", D-043).
 pub const CHARSET: &str =
-    " !\"'(),-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüß„“–…×%+";
+    " !\"'(),-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÄÖÜäöüß„“–…×%+é";
 /// Name of the font sprite in the atlas.
 pub const FONT_SPRITE: &str = "font";
 /// Name of the font sprite's only anim.
@@ -261,25 +264,34 @@ mod tests {
     fn real_font_has_every_glyph() {
         let atlas = jnr_assets::atlas();
         let font = Font::from_atlas(atlas);
-        assert_eq!(font.glyphs.len(), CHARSET.chars().count());
+        // The `é` glyph (90th) may still be missing (M2 art package):
+        // then it draws as `?`.
+        let n = font.glyphs.len();
+        assert!(n == CHARSET.chars().count() || n == 89, "{n} glyphs");
         assert_eq!(font.measure(" "), SPACE_ADVANCE);
         // Every glyph except the space has ink.
-        for ch in CHARSET.chars().filter(|&c| c != ' ') {
+        for ch in CHARSET.chars().take(n).filter(|&c| c != ' ') {
             assert_eq!(font.find(ch).unwrap().gap, 1, "glyph {ch:?} is empty");
+        }
+        if n == 89 {
+            assert_eq!(font.measure("é"), font.measure("?"), "fallback");
         }
     }
 
     #[test]
-    fn charset_has_89_unique_glyphs() {
+    fn charset_has_90_unique_glyphs_appended_only() {
         let chars: Vec<char> = CHARSET.chars().collect();
-        assert_eq!(chars.len(), 89);
+        assert_eq!(chars.len(), 90);
         let mut sorted = chars.clone();
         sorted.sort();
         sorted.dedup();
-        assert_eq!(sorted.len(), 89);
+        assert_eq!(sorted.len(), 90);
         for ch in "ÄÖÜäöüß„“–…×%+".chars() {
             assert!(chars.contains(&ch), "{ch}");
         }
+        // D-012: indices stay stable; `é` is the 90th glyph (frame 89).
+        assert_eq!(chars[88], '+');
+        assert_eq!(chars[89], 'é');
     }
 
     #[test]
@@ -390,6 +402,18 @@ mod tests {
         assert_eq!(a, b);
         assert_ne!(a, testutil::fb());
         assert_eq!(font.measure("€"), font.measure("?"));
+    }
+
+    #[test]
+    fn e_acute_without_its_frame_draws_as_question_mark() {
+        // A font sprite from before `é` was appended: 89 frames.
+        let atlas = font_atlas(89);
+        let font = Font::from_atlas(&atlas);
+        let mut a = testutil::fb();
+        let mut b = testutil::fb();
+        font.draw_text(&mut a, &atlas, "Café", 0, 0, W, None);
+        font.draw_text(&mut b, &atlas, "Caf?", 0, 0, W, None);
+        assert_eq!(a, b);
     }
 
     #[test]

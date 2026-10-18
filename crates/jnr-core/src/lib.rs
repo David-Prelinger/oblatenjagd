@@ -19,6 +19,8 @@
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
 //! - [`replay`]: replay files (parse, format, run, check expectations)
+//! - [`route`]: the stations of the journey, the [`Route`] of levels a run
+//!   plays and the route-map state
 
 use std::fmt;
 
@@ -35,6 +37,7 @@ pub mod platform;
 pub mod player;
 pub mod replay;
 pub mod rng;
+pub mod route;
 pub mod text;
 pub mod tuning;
 
@@ -53,6 +56,7 @@ pub use level::{
 };
 pub use player::{Facing, Player, Power};
 pub use replay::Replay;
+pub use route::{MapPhase, Route, RouteMap, STATIONS, Station};
 pub use text::Texts;
 pub use tuning::Tuning;
 
