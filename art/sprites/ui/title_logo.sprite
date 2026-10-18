@@ -1,0 +1,50 @@
+# Title logo „Oblatenjagd": chunky lowercase letters (3 px units, 6 px
+# strokes) in Oblaten gold - c top highlight, Y fill, o shadow edges - with a
+# 2 px O/l depth extrusion to the bottom right and a k outline, so it reads
+# over the Salzburg sky at 1x. The "O" is a big Zauner Oblate (c wafer, o
+# waffle grid and rim, O shadow side). Origin = centre.
+sprite = title_logo
+size   = 221x39
+origin = 110,19
+anim   = idle frames=1
+---
+frame idle 0
+.............................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................
+...........kkkkkkkkkk............kkkk.................kkkk...........................................................................................................................................................kkkk....
+.........kkooooooooookk.........kcccck...............kcccck.........................................................................................................................................................kcccck...
+.......kkooooooooooooookk......kcYYYYck.............kcYYYYck.......................................................................................................................................................kcYYYYck..
+......koooooccocccccoooook.....kYYYYYoOk............kYYYYYoOk..........................kkkk...........................................................kkkk.........................................................kYYYYYoOk.
+.....kooooccccocccccocooook....kYYYYYoOlk...........kYYYYYoOlk........................kcccck.........................................................kcccck........................................................kYYYYYoOlk
+....koooocccccocccccocccoook...kYYYYYoOlk...........kYYYYYoOlk.......................kcYYYYck.......................................................kcYYYYck.......................................................kYYYYYoOlk
+....koococccccocccccoccccooOk..kYYYYYoOlk...........kYYYYYoOlk.......................kYYYYYoOk.......................................................kooooOOk......................................................kYYYYYoOlk
+...koooooooooooooooooooooooOlk.kYYYYYoOlk...........kYYYYYoOlk.......................kYYYYYoOlk.......................................................klOOOllk.....................................................kYYYYYoOlk
+..koooccocccccocccccocccccOOOk.kYYYYYoOlk...........kYYYYYoOlk.......................kYYYYYoOlk........................................................kllllk......................................................kYYYYYoOlk
+..koocccocccccocccccocccccoOOOkkYYYYYoOlkkkkkk......kYYYYYoOlk....kkkkkkkkkk........kkYYYYYoOlkkk........kkkkkkkkkk........kkkkkkkkkkkkk..............kkkkkk......kkkkkkkkkk...........kkkkkkkkkkkkk........kkkkkkkkYYYYYoOlk
+..koocccocccccocccccocccccoOOOlkYYYYYYcccccccck.....kYYYYYoOlk...kcccccccccck......kccYYYYYYccccck......kcccccccccck......kccccccccccccck............kcccck......kcccccccccck.........kccccccccccccck......kccccccccYYYYYoOlk
+.kooocccocccccocccccocccccoOOOlkYYYYYYYYYYYYYYck....kYYYYYoOlk..kcYYYYYYYYYYck....kcYYYYYYYYYYYYYck....kcYYYYYYYYYYck....kcYYYYYYYYYYYYYck..........kcYYYYck....kcYYYYYYYYYYck.......kcYYYYYYYYYYYYYck....kcYYYYYYYYYYYYYoOlk
+.kooccccocccccocccccocccccocOOOkYYYYYYooooooYYoOk...kYYYYYoOlk...kooooooooYYoOk....kooYYYYYYoooooOOk..kkYYYooooooYYoOk...kYYYYYYooooooYYoOk.........kYYYYYoOk....kooooooooYYoOk.....kkYYYooooooYYYYYoOk..kkYYYooooooYYYYYoOlk
+.kooooooooooooooooooooooooooOOOlYYYYYoOOOOOOYYYcck..kYYYYYoOlk....klOOOOOOYYYcck....klYYYYYoOOOOOOllkkccYYoOOOOOOYYYcck..kYYYYYoOOOOOOYYYcck........kYYYYYoOlk....klOOOOOOYYYcck...kccYYoOOOOOOYYYYYoOlkkccYYoOOOOOOYYYYYoOlk
+.kooccccocccccocccccocccccocOOOlYYYYYoOlllllYYYYYck.kYYYYYoOlk.....kllllllYYYYYck....kYYYYYoOllllllkkcYYYYoOlllllYYYYYck.kYYYYYoOlllllYYYYYck.......kYYYYYoOlk.....kllllllYYYYYck.kcYYYYoOlllllYYYYYoOlkcYYYYoOlllllYYYYYoOlk
+.kooccccocccccocccccocccccocOOOlYYYYYoOlkkkkYYYYYoOkkYYYYYoOlk....kkkkkkkkYYYYYoOk...kYYYYYoOlkkkkk.kYYYYYoOlkkkkYYYYYoOkkYYYYYoOlkkkkYYYYYoOk......kYYYYYoOlk....kkkkkkkkYYYYYoOkkYYYYYoOlkkkkYYYYYoOlkYYYYYoOlkkkkYYYYYoOlk
+.kooccccocccccocccccocccccooOOOlYYYYYoOlk..kYYYYYoOlkYYYYYoOlk...kccccccccYYYYYoOlk..kYYYYYoOlk.....kYYYYYYccccccYYYYYoOlkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlk...kccccccccYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+.kooocccocccccocccccocccccOOOOOlYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kcYYYYYYYYYYYYYoOlk..kYYYYYoOlk.....kYYYYYYYYYYYYYYYYYoOlkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlk..kcYYYYYYYYYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+..koocccocccccocccccoccccoOOOOOlYYYYYoOlk..kYYYYYoOlkYYYYYoOlk.kkYYYooooooYYYYYoOlk..kYYYYYoOlk.....kYYYYYYoooooooooooOOlkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlk.kkYYYooooooYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+..koooooooooooooooooooooOOOOOOllYYYYYoOlk..kYYYYYoOlkYYYYYoOlkkccYYoOOOOOOYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOOOOOOOOOOOOllkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkkccYYoOOOOOOYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+..koooccocccccocccccoccoooOOOOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlkcYYYYoOlllllYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOllllllllllllkkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkcYYYYoOlllllYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+...kooococccccocccccocoooOOOOOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlkYYYYYoOlkkkkYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkkkkkkkkkkk.kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkYYYYYoOlkkkkYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+....koococccccocccccoooooOOOOllkYYYYYoOlk..kYYYYYoOlkYYYYYoOlkYYYYYoOlk..kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlk...........kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlkYYYYYoOlk..kYYYYYoOlk
+....koooocccccocccccOoooOOOOllkkYYYYYoOlk..kYYYYYoOlkYYYYYoOlkoYYYYoOlk..kYYYYYoOlk..koYYYYoOlk.....koYYYYoOlk...........kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkoYYYYoOlk..kYYYYYoOlkoYYYYoOlk..kYYYYYoOlkoYYYYoOlk..kYYYYYoOlk
+.....kooooccccoccccoOoOOOOOOlk.kYYYYYoOlkkkkYYYooOOlkYYYYYoOlkkooYYoOlkkkkYYYYYoOlk...kooYYoOlkkk....kooYYoOlkkkkkkkkk...kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlkkooYYoOlkkkkYYYYYoOlkkooYYoOlkkkkYYYYYoOlkkooYYoOlkkkkYYYYYoOlk
+......kooOOOooooooOOOOOOOOOllk.kYYYYYYccccccYYoOOOllkYYYYYoOlk.klYYYccccccYYYYYoOlk....klYYYccccck....klYYYccccccccccck..kYYYYYoOlk..kYYYYYoOlk.....kYYYYYoOlk.klYYYccccccYYYYYoOlk.klYYYccccccYYYYYoOlk.klYYYccccccYYYYYoOlk
+.......klOOOOOOOOOOOOOOOOOllk..koYYYYYYYYYYYYYoOlllkkoYYYYoOlk..koYYYYYYYYYYYYYoOlk.....koYYYYYYYck....koYYYYYYYYYYYYYck.koYYYYoOlk..koYYYYoOlk.....kYYYYYoOlk..koYYYYYYYYYYYYYoOlk..koYYYYYYYYYYYYYoOlk..koYYYYYYYYYYYYYoOlk
+........kllOOOOOOOOOOOOOlllk....koooooooooooooOOlkk..kooooOOlk...koooooooooooooOOlk......koooooooOOk....koooooooooooooOOk.kooooOOlk...kooooOOlk.....kYYYYYoOlk...koooooooooooooOOlk...kooooooooYYYYYoOlk...koooooooooooooOOlk
+.........kkllOOOOOOOOOlllkk......klOOOOOOOOOOOOllk....klOOOllk....klOOOOOOOOOOOOllk.......klOOOOOOllk....klOOOOOOOOOOOOllk.klOOOllk....klOOOllk.....kYYYYYoOlk....klOOOOOOOOOOOOllk....klOOOOOOYYYYYoOlk....klOOOOOOOOOOOOllk
+...........kkllllllllllkk.........klllllllllllllk......kllllk......klllllllllllllk.........klllllllk......klllllllllllllk...kllllk......kllllk......kYYYYYoOlk.....klllllllllllllk......kllllllYYYYYoOlk.....klllllllllllllk.
+.............kkkkkkkkkk............kkkkkkkkkkkkk........kkkk........kkkkkkkkkkkkk...........kkkkkkk........kkkkkkkkkkkkk.....kkkk........kkkk...kkkkkYYYooOOlk......kkkkkkkkkkkkk...kkkkkkkkkkkYYYooOOlk......kkkkkkkkkkkkk..
+...............................................................................................................................................kcccccYYoOOOllk.....................kcccccccccccYYoOOOllk.....................
+..............................................................................................................................................kcYYYYYYYoOlllk.....................kcYYYYYYYYYYYYYoOlllk......................
+...............................................................................................................................................koooooooOOlkk.......................koooooooooooooOOlkk.......................
+................................................................................................................................................klOOOOOOllk.........................klOOOOOOOOOOOOllk........................
+.................................................................................................................................................klllllllk...........................klllllllllllllk.........................
+..................................................................................................................................................kkkkkkk.............................kkkkkkkkkkkkk..........................
