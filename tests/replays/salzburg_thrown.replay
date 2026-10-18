@@ -1,0 +1,56 @@
+# Thrown Mozartkugel as Zuckerschock: the solver's route to the checkpoint, the
+# M-box at col 132 after it (PowerUp; the house steps turn the Mozartkugel back),
+# up over Z1 and the burger sign, a coyote jump from the sign's edge onto Z4,
+# drop through it to the street and wait 4 tiles left of Verkaeufer #1: his
+# fixed arc lands there (Hurt at frame 1335): she shrinks and survives.
+level  = salzburg
+source = handwritten
+expect = deaths=0 lives=3 oblaten>=28 state=playing
+expect = no_event=Died
+---
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 47
+- 12
+J 12        # bump_M_box
+- 100
+RJ 14
+R 10
+- 6
+RJ 20
+R 6
+- 10
+J 12
+RJ 18
+R 12
+- 6
+RJ 14       # on_burger_sign
+R 10
+- 20
+RB 34
+RBJ 20      # coyote_jump
+RB 4
+L 12
+- 30        # on_Z4
+DJ 6
+- 30
+L 18
+- 120       # hit_by_thrown_kugel

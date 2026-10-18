@@ -1,0 +1,46 @@
+# Fiaker, hide: the solver's route onto the Residenzbrunnen, brake on its top
+# and stand on its right half: that is within 8 tiles of the parked Fiaker
+# (col 200), it telegraphs and charges left through underneath; once it is
+# gone she walks on unharmed.
+level  = salzburg
+source = handwritten
+expect = deaths=0 lives=3 state=playing player_x>=3190
+expect = no_event=Hurt
+---
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 36
+RB 6
+RBJ 20
+RB 72
+RBJ 36
+RB 18
+RBJ 33
+RB 91
+RBJ 36
+RB 17
+L 20        # on_the_fountain
+- 30
+R 10        # fiaker_triggered
+- 150
+R 80        # walk_on
+- 20
