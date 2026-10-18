@@ -55,7 +55,7 @@ R 40
 - Every replay runs twice and compares `state_hash()` → determinism.
 - Implemented (M0): `jnr_core::replay` parses/formats the format and checks expectations; `cargo xtask replay <file|name|--all> [--shots]` runs replays on the real content (level by `meta.id`). Supported expectations: `complete [frames=a..b]`, `deaths=N`, `deaths<=N`, `dies_at frames=a..b`, `player_x>=PX`, `state=<playing|dying|stage_clear>`, `no_event=<Event>`; anything else (e.g. `oblaten>=30` until M1) is a parse error "not supported yet". A replay without any `expect` fails in the runner ("no expectations"), and the `replays` step fails if `tests/replays/` has no replay files. Frame numbers are `Game::frame()` (frame 0 = before the first step), ranges are inclusive, and every replay runs to its last input before end-state expectations are checked (D-013).
 - Later: the headless runner is also built for `wasm32-wasip1` and run with `wasmtime`, and its hash is compared to the native one → native/web determinism.
-- Physics changes may break replays on purpose; then `cargo xtask solve` re-creates the solver replays, and the change must be explained in the commit message. Human-recorded replays (recorded in VNC with `--record`) are kept as "feel" references.
+- Physics changes may break replays on purpose; then `cargo xtask solve` re-creates the solver replays, and the change must be explained in the commit message. Human-recorded replays (recorded in VNC with `jnr-app --record <file>`, which writes `source = human` and a derived `expect` line so the replay passes right away) are kept as "feel" references.
 
 ### L6 Golden screenshots (verify)
 - The `shots` frames of each replay are rendered headlessly and compared **pixel-exactly** to `tests/golden/<replay>_<shot>.png` (`cargo xtask golden`; the `goldens` verify step).
@@ -69,7 +69,11 @@ R 40
 - `cargo xtask filmstrip <replay>` makes a contact sheet of every 30th frame of a replay, so motion problems (jitter, clipping into walls) can be seen in one image.
 
 ### L8 Live smoke test (verify, last step)
-- `cargo xtask vnc-smoke`: starts the real native binary on `DISPLAY=:1` with `--replay tests/replays/salzburg_solver.replay --exit-after N`, takes an X screenshot with ImageMagick `import -window root`, and checks that the process exited 0 and the screenshot isn't blank.
+- `cargo xtask vnc-smoke` (the last `verify` step): needs an X server on `$DISPLAY` (default `:1`; fails with "no X server answers on DISPLAY=…" otherwise). It builds the native app (debug) and runs it with `--replay tests/replays/testbed_route.replay --scale 4 --exit-after <last shot + 1>` and one `--screenshot-at <frame>:<file>` per shot of that replay, with a 60 s timeout (killed on timeout).
+  - The app must exit 0, and every framebuffer screenshot (`$CARGO_TARGET_DIR/preview/vnc_smoke/<shot>.png`) must be **pixel-identical** to the golden `tests/golden/testbed_route_<shot>.png`: the real window path (replay input, fixed-step loop) produces exactly what the goldens show. On a mismatch `$CARGO_TARGET_DIR/reports/vnc-smoke/<name>_{actual,expected,diff}.png`; the app's output is in `preview/vnc_smoke/app.log`.
+  - It refuses to start while a window titled `Oblatenjagd` is already open ("close the running game first"). The 60 s timeout counts from the app's start, not including the build.
+  - While it runs (after `xdotool search` finds the new visible `Oblatenjagd` window by title, since miniquad sets no `_NET_WM_PID`, plus 1.5 s), `import -window root` writes `$CARGO_TARGET_DIR/preview/vnc_smoke_root.png`. The screenshot is cropped to the window's geometry from `xwininfo` (`xdotool getwindowgeometry` counts the title bar twice), and at least 25 % of that area must be the palette sky colour `s` (±8 per channel: the desktop is 16-bit RGB565).
+  - Takes about 13 s (the replay plays in real time).
 - This checks the macroquad path (window, texture upload, scaling) that headless tests can't reach.
 - `cargo xtask wasm-smoke` (part of `verify`, before `vnc-smoke`): builds the release wasm, serves `$CARGO_TARGET_DIR/web/` locally and loads it in headless Chromium with SwiftShader WebGL. It checks the DOM marker `<body data-wasm="loaded">` (module instantiated) and that the 1280x720 screenshot `$CARGO_TARGET_DIR/preview/wasm_smoke.png` is not blank and at least 25 % sky colour (palette `s`).
 

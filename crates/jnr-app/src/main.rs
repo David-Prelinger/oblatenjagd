@@ -9,11 +9,15 @@
 //! Native builds take command line flags (`--help`, see `cli.rs`); wasm
 //! always starts the default level with default options.
 //! Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, F1 debug
-//! overlay, F12 (native debug builds) save the framebuffer as PNG.
+//! overlay, F12 (native debug builds) save the framebuffer as PNG, Escape
+//! (native) quit. `--replay` feeds inputs from a replay file instead of the
+//! keyboard; `--record` writes the played inputs as a replay on exit.
 
 #[cfg(not(target_arch = "wasm32"))]
 mod cli;
 mod options;
+#[cfg(not(target_arch = "wasm32"))]
+mod record;
 
 use jnr_core::{Game, InputFrame, Level, TICKS_PER_SECOND, Texts, Tuning};
 use jnr_render::{Framebuffer, HEIGHT, RenderContext, WIDTH, render, render_debug};
@@ -130,6 +134,63 @@ fn save_screenshot(fb: &Framebuffer, path: &std::path::Path) {
 #[cfg(target_arch = "wasm32")]
 fn save_screenshot(_fb: &Framebuffer, _path: &std::path::Path) {}
 
+/// Native `--record`: the recorder, if recording.
+#[cfg(not(target_arch = "wasm32"))]
+type Recording = Option<record::Recorder>;
+/// Wasm never records.
+#[cfg(target_arch = "wasm32")]
+type Recording = ();
+
+#[cfg(not(target_arch = "wasm32"))]
+fn start_recording(opts: &Options, game: &Game) -> Recording {
+    opts.record
+        .as_ref()
+        .map(|_| record::Recorder::new(game, opts.seed))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn start_recording(_opts: &Options, _game: &Game) -> Recording {}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn record_step(rec: &mut Recording, input: InputFrame, game: &Game) {
+    if let Some(rec) = rec {
+        rec.record(input, game);
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn record_step(_rec: &mut Recording, _input: InputFrame, _game: &Game) {}
+
+/// Writes the recording (if any) and prints its path; a failure ends the
+/// app with exit code 1.
+#[cfg(not(target_arch = "wasm32"))]
+fn finish_recording(opts: &Options, rec: &Recording) {
+    if let (Some(path), Some(rec)) = (&opts.record, rec) {
+        match record::save(&rec.replay(), path) {
+            Ok(()) => println!("recorded: {}", path.display()),
+            Err(e) => {
+                eprintln!("jnr-app: writing the recording failed: {e}");
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn finish_recording(_opts: &Options, _rec: &Recording) {}
+
+/// Native: Escape or closing the window ends the session (so `--record`
+/// can still write its file). Wasm: the page owns the lifetime.
+#[cfg(not(target_arch = "wasm32"))]
+fn quit_requested() -> bool {
+    is_key_pressed(KeyCode::Escape) || is_quit_requested()
+}
+
+#[cfg(target_arch = "wasm32")]
+fn quit_requested() -> bool {
+    false
+}
+
 /// Runs the actions due after the game's current simulation frame: takes the
 /// requested screenshots (of the plain frame, no overlay) and returns whether
 /// the app should quit now.
@@ -158,8 +219,13 @@ async fn run(opts: Options) {
     let mut bytes = Vec::with_capacity(WIDTH * HEIGHT * 4);
     let mut accumulator = 0.0;
     let mut debug_overlay = false;
+    let mut recording = start_recording(&opts, &game);
+    // Closing the window only sets a flag; the loop below ends cleanly.
+    #[cfg(not(target_arch = "wasm32"))]
+    prevent_quit();
 
     if after_frame(&opts, &game, &ctx, &mut fb) {
+        finish_recording(&opts, &recording);
         return;
     }
     render(&game, &ctx, &mut fb);
@@ -167,16 +233,20 @@ async fn run(opts: Options) {
     let texture = Texture2D::from_rgba8(WIDTH as u16, HEIGHT as u16, &bytes);
     texture.set_filter(FilterMode::Nearest);
 
-    loop {
+    'frames: loop {
+        if quit_requested() {
+            break;
+        }
         if is_key_pressed(KeyCode::F1) {
             debug_overlay = !debug_overlay;
         }
-        let input = input_from(is_key_down);
+        let keyboard = input_from(is_key_down);
         for _ in 0..ticks_due(&mut accumulator, f64::from(get_frame_time())) {
+            let input = opts.input.input_for(game.frame(), keyboard);
             game.step(input);
+            record_step(&mut recording, input, &game);
             if after_frame(&opts, &game, &ctx, &mut fb) {
-                // Returning ends the macroquad loop; the process exits with 0.
-                return;
+                break 'frames;
             }
         }
 
@@ -211,6 +281,8 @@ async fn run(opts: Options) {
 
         next_frame().await;
     }
+    // Returning ends the macroquad loop; the process exits with 0.
+    finish_recording(&opts, &recording);
 }
 
 #[cfg(test)]

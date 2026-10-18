@@ -8,7 +8,7 @@ use std::process::Command;
 use std::time::Instant;
 
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
-use crate::{archlint, golden, levels, replay, sprites, wasm};
+use crate::{archlint, golden, levels, replay, sprites, vnc, wasm};
 
 pub type StepFn = fn(&Path) -> Step;
 
@@ -125,8 +125,14 @@ fn goldens(root: &Path) -> Step {
     finish("goldens", "cargo xtask golden", started, ok, &output)
 }
 
-fn vnc_smoke(_root: &Path) -> Step {
-    Step::skipped("vnc-smoke", "cargo xtask vnc-smoke")
+/// L8 (native): the real app window on the X display, see `vnc.rs`.
+fn vnc_smoke(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = match vnc::smoke_check(root) {
+        Ok(summary) => (true, summary),
+        Err(e) => (false, e),
+    };
+    finish("vnc-smoke", "cargo xtask vnc-smoke", started, ok, &output)
 }
 
 /// L8 (web): the wasm build in headless Chromium, see `wasm.rs`.

@@ -4,6 +4,7 @@ FROM mcr.microsoft.com/devcontainers/rust:1-bookworm
 # plus Mesa-Software-Rendering, damit das Spiel ohne GPU im Container läuft.
 # chromium: headless browser for `cargo xtask wasm-smoke` (SwiftShader WebGL).
 # xdotool: send key presses to the game window on DISPLAY=:1 (used by the VNC smoke test, F12 checks).
+# x11-utils: xwininfo (window geometry for `cargo xtask vnc-smoke`), xdpyinfo.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
         pkg-config \
@@ -27,4 +28,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         mesa-utils \
         chromium \
         xdotool \
+        x11-utils \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

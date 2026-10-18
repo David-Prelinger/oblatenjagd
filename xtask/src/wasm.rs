@@ -178,9 +178,9 @@ fn build_and_assemble(root: &Path, release: bool, quiet: bool) -> Result<PathBuf
 /// `group`, the child was started as leader of its own process group
 /// (`process_group(0)`) and the whole group is killed, so Chromium's helper
 /// processes do not outlive a timeout.
-struct KillOnDrop {
-    child: Child,
-    group: bool,
+pub struct KillOnDrop {
+    pub child: Child,
+    pub group: bool,
 }
 
 impl Drop for KillOnDrop {
@@ -286,7 +286,7 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
 }
 
 /// The sky colour from `art/palettes/main.palette`.
-fn sky_colour(root: &Path) -> Result<[u8; 3], String> {
+pub fn sky_colour(root: &Path) -> Result<[u8; 3], String> {
     let path = root.join("art/palettes/main.palette");
     let src = fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let palette = Palette::parse("main.palette", &src).map_err(|d| format!("{d:?}"))?;
@@ -356,7 +356,7 @@ fn run_chromium(
     }
 }
 
-fn wait_timeout(child: &mut Child, timeout: Duration) -> Option<ExitStatus> {
+pub fn wait_timeout(child: &mut Child, timeout: Duration) -> Option<ExitStatus> {
     let started = Instant::now();
     while started.elapsed() < timeout {
         match child.try_wait() {
