@@ -1,0 +1,63 @@
+# QA (M1 Stage 1): a curious player walks (no jump) from the Kapitelplatz
+# street straight into the waiting Festungsbahn car. Its top is 8 px above
+# the street (one-way, solid from above only), so she does not board: she
+# walks through the car body and drops into the 1-deep trench of the lower
+# station (feet y 256) and the car keeps waiting. Not a softlock: she walks
+# back under the car, jumps up through it (one-way) and lands on its top
+# (frame 1756), the car takes her up, she walks onto the rampart and off its
+# edge onto the meadow: the low touch scores 100 (D-035).
+level  = salzburg
+source = handwritten
+expect = complete frames=1988..1988 deaths=0 lives=3 no_event=Hurt
+expect = score=8800
+---
+# solver route (frames 0-1470)
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 2
+RBJ 36
+RB 29
+RBJ 36
+RB 24
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 36
+RB 6
+RBJ 20
+RB 72
+RBJ 36
+RB 18
+RBJ 33
+RB 91
+RBJ 36
+RB 40
+RBJ 36
+RB 68
+RBJ 6
+RB 18
+RBJ 36
+RB 18
+RBJ 34
+RB 8
+RBJ 3
+L 40        # back off a little
+- 40        # land on the Kapitelplatz street
+R 100       # walk into the car: through its body into the trench
+- 30        # the car keeps waiting
+L 24        # back under the car
+- 10
+J 24        # jump up through the one-way car and land on top: it leaves
+- 170       # ride to the top station
+R 90        # walk onto the rampart and off its edge: low touch (100)
