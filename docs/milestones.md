@@ -19,7 +19,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 - [ ] Solver bot finishes the grey-box test level
 - [ ] Golden screenshot test working
 - [ ] `vnc-smoke` working
-- [ ] wasm build compiles and runs in a browser (manual check once, via `web/index.html`)
+- [x] wasm build compiles and runs in a browser (automated: cargo xtask wasm-smoke)
 
 **Acceptance:** see "Milestone acceptance" below; plus the grey box moves on the noVNC desktop (`vnc-smoke`).
 

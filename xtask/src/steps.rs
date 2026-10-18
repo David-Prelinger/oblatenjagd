@@ -10,6 +10,7 @@ use std::time::Instant;
 use crate::archlint;
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
 use crate::sprites;
+use crate::wasm;
 
 pub type StepFn = fn(&Path) -> Step;
 
@@ -21,7 +22,14 @@ pub fn check_steps() -> Vec<StepFn> {
 /// Full validation: `check` plus the slower layers.
 pub fn verify_steps() -> Vec<StepFn> {
     let mut steps = check_steps();
-    steps.extend([levels_lint as StepFn, solver, replays, goldens, vnc_smoke]);
+    steps.extend([
+        levels_lint as StepFn,
+        solver,
+        replays,
+        goldens,
+        wasm_smoke,
+        vnc_smoke,
+    ]);
     steps
 }
 
@@ -105,6 +113,16 @@ fn goldens(_root: &Path) -> Step {
 
 fn vnc_smoke(_root: &Path) -> Step {
     Step::skipped("vnc-smoke", "cargo xtask vnc-smoke")
+}
+
+/// L8 (web): the wasm build in headless Chromium, see `wasm.rs`.
+fn wasm_smoke(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = match wasm::smoke_check(root) {
+        Ok(summary) => (true, summary),
+        Err(e) => (false, e),
+    };
+    finish("wasm-smoke", "cargo xtask wasm-smoke", started, ok, &output)
 }
 
 // ---------------------------------------------------------------------- helpers

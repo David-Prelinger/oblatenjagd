@@ -170,6 +170,7 @@ dependencies = [
  "jnr-core",
  "jnr-render",
  "macroquad",
+ "png",
 ]
 
 [[package]]
@@ -499,6 +500,7 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "jnr-artkit",
+ "png",
  "serde_json",
 ]
 

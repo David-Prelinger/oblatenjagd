@@ -67,7 +67,7 @@ R 40
 ### L8 Live smoke test (verify, last step)
 - `cargo xtask vnc-smoke`: starts the real native binary on `DISPLAY=:1` with `--replay tests/replays/salzburg_solver.replay --exit-after N`, takes an X screenshot with ImageMagick `import -window root`, and checks that the process exited 0 and the screenshot isn't blank.
 - This checks the macroquad path (window, texture upload, scaling) that headless tests can't reach.
-- Later (web milestone): headless Chromium loads the wasm build and takes a screenshot.
+- `cargo xtask wasm-smoke` (part of `verify`, before `vnc-smoke`): builds the release wasm, serves `$CARGO_TARGET_DIR/web/` locally and loads it in headless Chromium with SwiftShader WebGL. It checks the DOM marker `<body data-wasm="loaded">` (module instantiated) and that the 1280x720 screenshot `$CARGO_TARGET_DIR/preview/wasm_smoke.png` is not blank and at least 25 % sky colour (palette `s`).
 
 ## Hooks (configured in `.claude/settings.json` in Milestone 0)
 

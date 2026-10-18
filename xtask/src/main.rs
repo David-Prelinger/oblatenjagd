@@ -9,6 +9,7 @@ mod archlint;
 mod report;
 mod sprites;
 mod steps;
+mod wasm;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -23,10 +24,12 @@ Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
             sprites lint
   verify    full validation: check + levels lint, solver, replays,
-            goldens, vnc-smoke (not implemented yet steps are skipped)
+            goldens, wasm-smoke, vnc-smoke (not implemented yet steps are skipped)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
+  wasm      [--debug] [--serve] [--port N]: build + assemble $CARGO_TARGET_DIR/web
+  wasm-smoke  load the wasm build in headless Chromium, check the screenshot
   help      show this help (also -h, --help)
 
 Reports are written to $CARGO_TARGET_DIR/reports/{check,verify}.{json,md}
@@ -41,6 +44,8 @@ fn main() -> ExitCode {
         Some("verify") if args.len() == 1 => run_suite("verify", steps::verify_steps()),
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
+        Some("wasm") => wasm::run(&workspace_root(), &args[1..]),
+        Some("wasm-smoke") => wasm::smoke(&workspace_root(), &args[1..]),
         Some("help" | "-h" | "--help") | None => {
             print!("{HELP}");
             ExitCode::SUCCESS
