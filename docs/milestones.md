@@ -43,6 +43,44 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 
 **Acceptance:** see "Milestone acceptance" below.
 
+## M2 – Stage 2 St. Gilgen + Stage 3 Brunnwinkl + route map
+
+Scope as in `game-design.md` → "Multi-stage flow", "Route map", "Stage 2: St. Gilgen", "Stage 3: Brunnwinkl"; decisions D-041 … D-046; sprites in `sprite-catalog.md` → "M2 additions". Branch `m2-stgilgen-brunnwinkl`.
+
+Design
+- [x] Stage 2 and 3 specs, multi-stage flow, route map, new entities and mechanics tables (game-designer)
+- [x] German text for both stages, the map and the new popup in `content/text/de.toml`
+
+Engine (parallel worktrees, D-009)
+- [ ] Multi-stage flow: route order data, stage switch after the goal sequence, carry-over (score, lives, Oblaten, power state), continue restarts the current stage, title starts Salzburg, teaser + „Fortsetzung folgt …" after the last playable stage, `--level` starts the run at a stage; intro shows `player_big` when carried over; app embeds the new levels (`options::LEVELS`); replays can follow the flow across a stage change (+ an expectation for the current stage)
+- [ ] Route map mode: phases Arrive/Walk/Wait/Teaser, START skip/continue, auto-continue after 300 frames, route waypoints + station dots + labels + panel; map text keys in `screens::TEXT_KEYS`
+- [ ] Gondel: free-running ping-pong platform (`to`, `phase`), cable drawing, `levels lint` clearance and pit recovery for `gondel`
+- [ ] Nordic-Walker (ledge turning), Blasmusiker + notes, E-Biker (telegraph, gravity, crash → „Hoppala!" popup, no points), Bienenschwarm (`dir`, `len`, `phase`, figure-eight); chain start 200 for 200-point enemies; tuning keys validated in `Tuning::parse`
+- [ ] New tile names and collision kinds (`wall_village_bg`, `balcony`, `facade_village`, `roof_shingle`, `jetty`, `jetty_post`, `wolfgangsee_water`, `wolfgangsee_water_deep`, `forest_path`, `beute`); new `PROP_SPRITES`
+- [ ] Unit tests for every new behaviour listed in the "New mechanics" tables
+
+Art (pixel-artist, art-director APPROVED)
+- [ ] Enemies package: `nordic_walker`, `blasmusiker`, `note`, `e_biker`, `bienenschwarm`, platform `gondel`
+- [ ] St. Gilgen package: tiles (`wall_village_bg`, `balcony`, `roof_shingle`, `jetty`, `jetty_post`, Wolfgangsee water), props (`prellbock`, `talstation`, `seilbahn_stuetze`, `mozartbrunnen`, `mozarthaus`, `musikpavillon`), layers `bg_schafberg`, `bg_wolfgangsee`, `bg_stgilgen`
+- [ ] Brunnwinkl package: tiles (`facade_village`, `forest_path`, `beute`), props (`muehlrad`, `bienenhaus`, `futterschaelchen`), layer `bg_forest`
+- [ ] Route map package: `map_salzkammergut`, `map_station`, the `é` font glyph
+
+Levels (level-designer)
+- [ ] `02_st_gilgen.level` (280 × 17) with the 6 sections; solver finishes it; `min_jump_window = 6` holds
+- [ ] `03_brunnwinkl.level` (240 × 17) with the 5 sections and exactly five houses; every swarm points at its bonus; solver finishes it; `min_jump_window = 6` holds
+- [ ] `time_limit` of both set from the measured relaxed run (D-045); Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
+
+Replays and goldens
+- [ ] Mechanic replays from both "New mechanics" tables (gondolas, trench recovery, walker on the jetty, note hit + bench shelter, swarm hit + wait, bonus 1 + Zaunerstollen, e-biker stomp / crash / side hit, checkpoint respawns)
+- [ ] Flow replays: Salzburg clear → map → St. Gilgen intro with carry-over; game over in St. Gilgen → continue restarts St. Gilgen; Brunnwinkl clear → teaser → title
+- [ ] Tours `st_gilgen_tour`, `brunnwinkl_tour` (`start = title`, solver inputs, shots per section incl. the checkpoint bus joke) and route-map goldens (after Salzburg; the teaser after Brunnwinkl; one shot with all labels) — art-director APPROVED
+- [ ] M1 replays and goldens whose title-flow ending changes (map instead of „Fortsetzung folgt …") updated with an art-director verdict
+
+Platform
+- [ ] wasm build plays the route Salzburg → St. Gilgen → Brunnwinkl; `wasm-smoke` still green
+
+**Acceptance:** see "Milestone acceptance" below; the game-designer review includes both stages' filmstrips, the route map and all new German text.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.
@@ -54,7 +92,6 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 
 ## Later milestones (order can change)
 
-- **M2** St. Gilgen + Brunnwinkl; route map screen between stages
 - **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein
 - **M4** St. Wolfgang
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming
