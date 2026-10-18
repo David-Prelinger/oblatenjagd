@@ -154,7 +154,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 | Resi walk | 4 | 8 |
 | Resi run | 4 | 5 |
 | Resi jump / fall | 1 / 1 | – |
-| Enemy walk | 2 | 12 |
+| Enemy walk | 2 | 10–12 (per `docs/sprite-catalog.md`) |
 | Enemy squished / hit | 1 | held 30 then removed |
 | Oblate spin | 4 | 8 |
 | Water surface | 4 | 12 |

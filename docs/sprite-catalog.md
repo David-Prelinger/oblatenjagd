@@ -23,7 +23,7 @@ Hurt/invulnerability and the 30-frame transformation are drawn by the engine (bl
 
 | Sprite | Size | Origin | Animations |
 |---|---|---|---|
-| `selfie_tourist` | 16×24 | 8,24 | `walk` 2f/10t loop · `selfie` 2f (stick up, held / flash frame) · `squished` held |
+| `selfie_tourist` | 16×24 | 8,24 | `walk` 2f/10t loop · `selfie` 2f (frame 0 = stick up; frame 1 = flash — the engine picks the frame and shows the flash for only 2 game frames) · `squished` held |
 | `taube` | 16×16 | 8,16 | `fly` 2f/8t loop · `sit` 2f/30t loop · `tumble` held |
 | `mozartkugel_verkaeufer` | 16×24 | 8,24 | `idle` 2f/30t loop · `windup` held · `throw` held · `squished` held |
 | `mozartkugel_thrown` | 8×8 | 4,8 | `spin` 2f/6t loop (unwrapped brown chocolate ball) |
