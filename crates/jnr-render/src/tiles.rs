@@ -4,9 +4,11 @@
 //! Autotiling (D-020): a tile sprite with a 16-frame animation `auto` is
 //! drawn with frame = [`autotile_mask`] of its cell (bit 1 = the same tile
 //! name above, 2 = right, 4 = below, 8 = left; cells outside the level count
-//! as the same). Any other tile sprite shows its first animation, animated
-//! by the game frame (e.g. water). Which look a tile name has is resolved
-//! once in [`TileLook::resolve`]; the mask is computed from the live grid
+//! as the same; names of one [`autotile_family`] count as the same, e.g.
+//! `arch` on `arch_under`). Any other tile sprite shows its first animation,
+//! animated by the game frame (e.g. water). The tile name `invisible` is
+//! never drawn (solid, under props such as the Sphaera). Which look a tile
+//! name has is resolved once in [`TileLooks::resolve`]; the mask is computed from the live grid
 //! (`Game::map`, bricks break and boxes empty; bumped blocks are raised)
 //! while drawing (4 lookups per visible tile, no allocation), so tiles that
 //! change during play stay correct.
@@ -57,13 +59,74 @@ impl<'a> TileLook<'a> {
     }
 }
 
+/// Tile name that is drawn as nothing at all (no sprite, no grey box).
+pub const INVISIBLE_TILE: &str = "invisible";
+
+/// The autotile family of a tile name: names of one family count as the
+/// same neighbour for [`autotile_mask`] (in both directions). A small
+/// explicit table; every other name is its own family.
+pub(crate) fn autotile_family(name: &str) -> &str {
+    match name {
+        "arch_under" => "arch",
+        other => other,
+    }
+}
+
+/// How each tile name of a level is drawn, indexed by
+/// [`jnr_core::Tile::name`] (resolved once, see [`crate::RenderContext`]).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct TileLooks<'a> {
+    /// The sprite look (`None`: grey-box by [`TileKind`], unless hidden).
+    pub(crate) looks: Vec<Option<TileLook<'a>>>,
+    /// The name index of the first name of the same [`autotile_family`].
+    pub(crate) family: Vec<u16>,
+    /// Never drawn ([`INVISIBLE_TILE`]).
+    pub(crate) hidden: Vec<bool>,
+}
+
+impl<'a> TileLooks<'a> {
+    /// The looks of `names` (a level's `tile_names`; index 0 = no name):
+    /// sprite `<prefix><name>` each.
+    pub(crate) fn resolve(atlas: &'a Atlas, names: &[String], prefix: &str) -> TileLooks<'a> {
+        let looks = names
+            .iter()
+            .map(|n| {
+                if n.is_empty() || n == INVISIBLE_TILE {
+                    None
+                } else {
+                    TileLook::resolve(atlas, &format!("{prefix}{n}"))
+                }
+            })
+            .collect();
+        let family = names
+            .iter()
+            .map(|n| {
+                let f = autotile_family(n);
+                names
+                    .iter()
+                    .position(|m| autotile_family(m) == f)
+                    .unwrap_or(0) as u16
+            })
+            .collect();
+        let hidden = names.iter().map(|n| n == INVISIBLE_TILE).collect();
+        TileLooks {
+            looks,
+            family,
+            hidden,
+        }
+    }
+}
+
 /// The 4-neighbour mask of cell (col, row): a bit is set when that
-/// neighbour has the same tile name or lies outside the level.
-pub fn autotile_mask(map: &TileMap, col: i32, row: i32) -> u8 {
+/// neighbour has the same tile name (the same `family` entry, see
+/// [`TileLooks::family`]; names past its end are their own family) or
+/// lies outside the level.
+pub fn autotile_mask(map: &TileMap, family: &[u16], col: i32, row: i32) -> u8 {
     let Some(here) = map.tile(col, row) else {
         return 0;
     };
-    let same = |c: i32, r: i32| map.tile(c, r).is_none_or(|t| t.name == here.name);
+    let fam = |name: u16| family.get(usize::from(name)).copied().unwrap_or(name);
+    let same = |c: i32, r: i32| map.tile(c, r).is_none_or(|t| fam(t.name) == fam(here.name));
     let mut mask = 0;
     for (dc, dr, bit) in [
         (0, -1, MASK_N),
@@ -78,12 +141,11 @@ pub fn autotile_mask(map: &TileMap, col: i32, row: i32) -> u8 {
     mask
 }
 
-/// Tiles inside the camera view. `looks` is indexed by
-/// [`jnr_core::Tile::name`] (see [`crate::RenderContext`]).
-pub fn draw_tiles(
+/// Tiles inside the camera view.
+pub(crate) fn draw_tiles(
     fb: &mut Framebuffer,
     atlas: &Atlas,
-    looks: &[Option<TileLook>],
+    looks: &TileLooks,
     game: &Game,
     cam: Camera,
     tick: u32,
@@ -102,13 +164,17 @@ pub fn draw_tiles(
             let Some(tile) = level.tile(col, row) else {
                 continue;
             };
+            let name = usize::from(tile.name);
+            if looks.hidden.get(name).copied().unwrap_or(false) {
+                continue;
+            }
             let x = col * TILE_PX - cam.x;
             // Bumped blocks are drawn raised (E1).
             let y = row * TILE_PX - cam.y - game.tile_bump_px(col, row);
-            match looks.get(tile.name as usize).copied().flatten() {
+            match looks.looks.get(name).copied().flatten() {
                 Some(look) => {
                     let index = if look.auto {
-                        usize::from(autotile_mask(level, col, row))
+                        usize::from(autotile_mask(level, &looks.family, col, row))
                     } else {
                         look.anim.frame_index_at(tick)
                     };
@@ -155,38 +221,38 @@ mod tests {
         );
         // (1,1): N empty, E ground, S ground, W empty.
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&l), 1, 1),
+            autotile_mask(&TileMap::from_level(&l), &[], 1, 1),
             MASK_E | MASK_S
         );
         // (2,1): N empty, E empty, S brick (other name), W ground.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 2, 1), MASK_W);
+        assert_eq!(autotile_mask(&TileMap::from_level(&l), &[], 2, 1), MASK_W);
         // (1,2): N ground, E brick, S level edge (same), W empty.
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&l), 1, 2),
+            autotile_mask(&TileMap::from_level(&l), &[], 1, 2),
             MASK_N | MASK_S
         );
         // (2,2) brick: N ground, E empty, S edge, W ground.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 2, 2), MASK_S);
+        assert_eq!(autotile_mask(&TileMap::from_level(&l), &[], 2, 2), MASK_S);
         // Corner cell (0,0), the player start, is empty (name 0) like its
         // neighbours (1,0) and (0,1); the outside counts as same.
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&l), 0, 0),
+            autotile_mask(&TileMap::from_level(&l), &[], 0, 0),
             MASK_N | MASK_E | MASK_S | MASK_W
         );
         // (3,1) empty: N, S empty, E outside, W ground.
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&l), 3, 1),
+            autotile_mask(&TileMap::from_level(&l), &[], 3, 1),
             MASK_N | MASK_E | MASK_S
         );
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&l), -1, 0),
+            autotile_mask(&TileMap::from_level(&l), &[], -1, 0),
             0,
             "outside the level"
         );
         // The player start above is an empty cell, not ground.
         let full = level("\"#\" = \"ground\"\n", "P\n#\n");
         assert_eq!(
-            autotile_mask(&TileMap::from_level(&full), 0, 1),
+            autotile_mask(&TileMap::from_level(&full), &[], 0, 1),
             MASK_E | MASK_S | MASK_W
         );
     }
@@ -213,7 +279,10 @@ mod tests {
         let look = TileLook::resolve(&atlas, "tile_ground").unwrap();
         assert!(look.auto);
         let l = level("\"#\" = \"ground\"\n", "P...\n.##.\n....\n");
-        let looks = vec![None, Some(look)];
+        let looks = TileLooks {
+            looks: vec![None, Some(look)],
+            ..TileLooks::default()
+        };
         let mut fb = testutil::fb();
         draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, 0);
         // (1,1): only E -> frame 2, marker at x 16 + 2; (2,1): only W -> frame 8.
@@ -221,6 +290,50 @@ mod tests {
         assert_eq!(fb.get(16 + 3, 16), Some(B));
         assert_eq!(fb.get(32 + 8, 16), Some(A));
         assert_eq!(fb.get(32 + 2, 16), Some(B));
+    }
+
+    #[test]
+    fn arch_and_arch_under_are_one_autotile_family() {
+        assert_eq!(autotile_family("arch_under"), "arch");
+        assert_eq!(autotile_family("arch"), "arch");
+        assert_eq!(autotile_family("facade"), "facade");
+        // An arch row on an arch_under row, ground beside them.
+        let l = level(
+            "\"A\" = \"arch\"\n\"U\" = \"arch_under\"\n\"#\" = \"ground\"\n",
+            "P...\n.AA#\n.UU#\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (1,1) arch: E arch, S arch_under (same family), N/W empty.
+        assert_eq!(autotile_mask(&map, &looks.family, 1, 1), MASK_E | MASK_S);
+        // (2,2) arch_under: N arch (same family), W arch_under, E ground, S edge.
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 2, 2),
+            MASK_N | MASK_W | MASK_S
+        );
+        // Without the families the names differ.
+        assert_eq!(autotile_mask(&map, &[], 1, 1), MASK_E);
+    }
+
+    #[test]
+    fn invisible_tiles_are_solid_but_never_drawn() {
+        let l = level("\"i\" = \"invisible\"\n\"#\" = \"solid\"\n", "P..\ni#.\n");
+        assert_eq!(l.tile(0, 1).unwrap().kind, TileKind::Solid);
+        // Even with a `tile_invisible` sprite in the atlas.
+        let atlas = testutil::atlas(&[testutil::sprite(
+            "tile_invisible",
+            (0, 0),
+            false,
+            vec![("tile", 0, vec![marked(0)])],
+        )]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let mut fb = testutil::fb();
+        let before = fb.get(4, 20);
+        draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, 0);
+        assert_eq!(fb.get(4, 20), before, "no sprite, no grey box");
+        assert_eq!(fb.get(0, 16), before);
+        assert_eq!(fb.get(20, 20), Some(STONE_GREY), "the solid next to it");
     }
 
     #[test]
@@ -245,7 +358,10 @@ mod tests {
         assert!(!TileLook::resolve(&atlas, "tile_odd").unwrap().auto);
         assert!(TileLook::resolve(&atlas, "tile_none").is_none());
         let l = level("\"~\" = \"salzach_water\"\n", "P\n~\n");
-        let looks = vec![None, Some(water)];
+        let looks = TileLooks {
+            looks: vec![None, Some(water)],
+            ..TileLooks::default()
+        };
         let draw = |tick| {
             let mut fb = testutil::fb();
             draw_tiles(

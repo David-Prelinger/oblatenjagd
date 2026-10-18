@@ -602,8 +602,10 @@ mod tests {
         let text = "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
              \"F\" = { entity = \"festungsbahn\", to = [3, 0] }\n\
              \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n\
-             ....................\n....F...............\n....................\n\
-             P...................\n####################\n'''\n";
+             ....................\n.....P..............\n....................\n\
+             ....F...............\n####################\n'''\n";
+        // The player starts above the car and falls onto it: it waits for
+        // its rider (D-030), then moves right and back.
         let mut g = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
         let mut checked = 0;
         for _ in 0..420 {

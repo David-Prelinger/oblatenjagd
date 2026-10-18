@@ -4,10 +4,15 @@
 //! - Level syntax: `{ entity = "festungsbahn", to = [dx, dy] }`; the car
 //!   starts left-aligned in its spawn cell with its bottom on the cell's
 //!   bottom edge, and `to` is the other end point in tiles relative to that.
-//! - Cycle (frame counter `count` from activation, wrapping): wait
-//!   `platforms.festungsbahn_wait` frames at the start, travel
-//!   `festungsbahn_travel` frames in a straight line to the other end, wait,
-//!   travel back. Positions are computed from the start point each frame
+//! - It waits for its rider (D-030), a state machine in `Entity::state`
+//!   ([`car`]) with the frame counter `count`: at its lower end it waits,
+//!   for as long as it takes, until the player stands on it; then it
+//!   travels up (`platforms.festungsbahn_travel` frames, a straight line),
+//!   waits `festungsbahn_wait` frames at the upper end, travels back down
+//!   and waits for the next rider. The lower end is the one with the
+//!   larger y (`to`'s dy sign; a level track's lower end is its spawn
+//!   cell). A car spawned at its upper end first travels down. Positions
+//!   are computed from the start point each frame
 //!   (`start + delta · k / travel`), so the car never drifts; `vx`/`vy`
 //!   hold its movement in the last frame.
 //! - Only its top edge collides, from above (like a one-way tile).
@@ -34,23 +39,69 @@ use crate::tuning::{PlayerTuning, Tuning};
 /// Zuckerschock hitbox plus room to jump off).
 pub const TRACK_CLEARANCE_PX: i32 = 48;
 
-/// How far along the track the car is `timer` frames after activation:
-/// `(k, travel)` means `k / travel` of the way from the start point to
-/// the other end.
-pub fn track_fraction(timer: u32, t: &Tuning) -> (i32, i32) {
-    let wait = u32::from(t.platforms.festungsbahn_wait);
-    let travel = u32::from(t.platforms.festungsbahn_travel.max(1));
-    let u = timer % (2 * (wait + travel));
-    let k = if u < wait {
-        0
-    } else if u < wait + travel {
-        u - wait
-    } else if u < 2 * wait + travel {
-        travel
+/// The car's states (`Entity::state`); `count` is the frame in the state.
+pub mod car {
+    /// At the lower end, waiting for a rider (`count` stays 0).
+    pub const WAIT_LOWER: u8 = 0;
+    /// Travelling up: `count` frames (1..=travel) from the lower end.
+    pub const UP: u8 = 1;
+    /// At the upper end: `count` frames (1..=wait) of waiting.
+    pub const WAIT_UPPER: u8 = 2;
+    /// Travelling down: `count` frames (1..=travel) from the upper end.
+    pub const DOWN: u8 = 3;
+}
+
+/// Whether the car's spawn cell is the upper end of its track (`to` goes
+/// down). A level track starts at its lower end.
+pub fn starts_at_upper_end(spawn: &EntitySpawn) -> bool {
+    spawn.to.is_some_and(|[_, dy]| dy > 0)
+}
+
+/// The car's state at spawn: waiting at the lower end, or travelling
+/// down when it was placed at the upper end.
+pub(crate) fn initial_state(spawn: &EntitySpawn) -> u8 {
+    if starts_at_upper_end(spawn) {
+        car::DOWN
     } else {
-        travel - (u - 2 * wait - travel)
+        car::WAIT_LOWER
+    }
+}
+
+/// The state machine's next `(state, count)` after `(state, count)`;
+/// `rider` = the player stands on the car this frame.
+pub fn next_state(state: u8, count: u16, rider: bool, t: &Tuning) -> (u8, u16) {
+    let wait = t.platforms.festungsbahn_wait;
+    let travel = t.platforms.festungsbahn_travel.max(1);
+    match state {
+        car::UP if count >= travel => {
+            if wait == 0 {
+                (car::DOWN, 1)
+            } else {
+                (car::WAIT_UPPER, 1)
+            }
+        }
+        car::UP => (car::UP, count + 1),
+        car::WAIT_UPPER if count >= wait => (car::DOWN, 1),
+        car::WAIT_UPPER => (car::WAIT_UPPER, count + 1),
+        car::DOWN if count >= travel => (car::WAIT_LOWER, 0),
+        car::DOWN => (car::DOWN, count + 1),
+        _ if rider => (car::UP, 1),
+        _ => (car::WAIT_LOWER, 0),
+    }
+}
+
+/// How far up the track the car is in `(state, count)`: `(k, travel)`
+/// means `k / travel` of the way from the lower end to the upper end.
+pub fn height_fraction(state: u8, count: u16, t: &Tuning) -> (i32, i32) {
+    let travel = i32::from(t.platforms.festungsbahn_travel.max(1));
+    let count = i32::from(count).min(travel);
+    let k = match state {
+        car::UP => count,
+        car::WAIT_UPPER => travel,
+        car::DOWN => travel - count,
+        _ => 0,
     };
-    (k as i32, travel as i32)
+    (k, travel)
 }
 
 /// The car's other end point relative to its start, in subpixels.
@@ -59,30 +110,30 @@ pub fn track_delta(spawn: &EntitySpawn) -> (Fx, Fx) {
     (TILE.mul_int(dx), TILE.mul_int(dy))
 }
 
-/// The car's hitbox top-left `timer` frames after activation.
-fn car_position(start: (Fx, Fx), delta: (Fx, Fx), timer: u32, t: &Tuning) -> (Fx, Fx) {
-    let (k, n) = track_fraction(timer, t);
-    (
-        start.0 + delta.0.mul_int(k).div_int(n),
-        start.1 + delta.1.mul_int(k).div_int(n),
-    )
-}
-
 /// One frame of the car (called from `Entity::update`).
 pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
-    let delta = e
-        .spawn
-        .and_then(|i| ctx.level.entities.get(usize::from(i)))
-        .map_or((Fx::ZERO, Fx::ZERO), track_delta);
-    // `count` is the frame in the cycle (`timer` saturates after ~18 min).
-    let p = &ctx.tuning.platforms;
-    let cycle = 2 * (u32::from(p.festungsbahn_wait) + u32::from(p.festungsbahn_travel));
-    e.count = ((u32::from(e.count) + 1) % cycle) as u16;
-    let (x, y) = car_position((e.base_x, e.base_y), delta, u32::from(e.count), ctx.tuning);
+    let spawn = e.spawn.and_then(|i| ctx.level.entities.get(usize::from(i)));
+    let delta = spawn.map_or((Fx::ZERO, Fx::ZERO), track_delta);
+    let from_upper = spawn.is_some_and(starts_at_upper_end);
+    let rider = ctx
+        .player_standing
+        .is_some_and(|p| stands_on(&p, &e.hitbox()));
+    (e.state, e.count) = next_state(e.state, e.count, rider, ctx.tuning);
+    let (k, n) = height_fraction(e.state, e.count, ctx.tuning);
+    // `k` counts from the lower end, the position from the spawn point.
+    let k = if from_upper { n - k } else { k };
+    let x = e.base_x + delta.0.mul_int(k).div_int(n);
+    let y = e.base_y + delta.1.mul_int(k).div_int(n);
     e.vx = x - e.x;
     e.vy = y - e.y;
     e.x = x;
     e.y = y;
+}
+
+/// A grounded player with hitbox `p` stands on the car with hitbox `c`:
+/// feet exactly on its top, overlapping it horizontally.
+fn stands_on(p: &Aabb, c: &Aabb) -> bool {
+    p.bottom() == c.y && overlaps_x(p, c)
 }
 
 fn overlaps_x(p: &Aabb, car: &Aabb) -> bool {
@@ -151,7 +202,7 @@ pub(crate) fn carry(
 ) {
     let mut b = p.hitbox();
     let feet = b.bottom();
-    if p.on_ground && feet == old.y && overlaps_x(&b, &old) {
+    if p.on_ground && stands_on(&b, &old) {
         map.move_x(&mut b, car.x - old.x);
         // Like the player's own movement: never left of the screen.
         b.x = b.x.max(screen_left);
@@ -324,20 +375,98 @@ mod tests {
         Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap()
     }
 
-    #[test]
-    fn track_cycle_waits_travels_waits_and_returns() {
+    /// Runs the state machine `frames` frames from `(state, count)` with a
+    /// rider on every frame where `rider(i)` holds; the height fraction `k`
+    /// after each frame.
+    fn heights(start: (u8, u16), frames: usize, rider: impl Fn(usize) -> bool) -> Vec<i32> {
         let t = tuning();
-        let f = |timer| track_fraction(timer, &t).0;
-        assert_eq!(track_fraction(0, &t), (0, 150));
-        assert_eq!(f(59), 0, "waits 60 frames at the start");
-        assert_eq!(f(60), 0);
-        assert_eq!(f(61), 1, "then moves");
-        assert_eq!(f(210), 150, "arrives after 150 frames of travel");
-        assert_eq!(f(270), 150, "waits 60 frames at the end");
-        assert_eq!(f(271), 149, "comes back");
-        assert_eq!(f(420), 0, "home after 420 frames");
-        assert_eq!(f(421), 0, "the cycle repeats");
-        assert_eq!(f(420 + 211), 150);
+        let (mut s, mut c) = start;
+        (0..frames)
+            .map(|i| {
+                (s, c) = next_state(s, c, rider(i), &t);
+                height_fraction(s, c, &t).0
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_car_waits_for_a_rider_then_travels_up_waits_and_comes_back() {
+        let t = tuning();
+        assert_eq!(height_fraction(car::WAIT_LOWER, 0, &t), (0, 150));
+        // Nobody boards: it waits forever.
+        assert!(
+            heights((car::WAIT_LOWER, 0), 1000, |_| false)
+                .iter()
+                .all(|&k| k == 0)
+        );
+        // A rider from frame 100 (index 99) on.
+        let k = heights((car::WAIT_LOWER, 0), 1000, |i| i >= 99);
+        assert_eq!(k[98], 0, "waits until the rider stands on it");
+        assert_eq!(k[99], 1, "leaves in the frame the rider is on it");
+        assert_eq!(k[99 + 149], 150, "arrives after 150 frames of travel");
+        assert_eq!(k[99 + 149 + 60], 150, "waits 60 frames at the top");
+        assert_eq!(k[99 + 149 + 61], 149, "comes back");
+        assert_eq!(k[99 + 149 + 61 + 149], 0, "down after 150 frames");
+        assert_eq!(k[99 + 149 + 61 + 150], 0, "stops at the bottom");
+        assert_eq!(k[99 + 149 + 61 + 151], 1, "the rider is still on: up again");
+        // Without a rider at the bottom it stays there.
+        let k = heights((car::WAIT_LOWER, 0), 600, |i| i == 0);
+        assert_eq!(k[359], 0, "back at the bottom");
+        assert!(k[359..].iter().all(|&k| k == 0), "waits for the next rider");
+        // Spawned at the upper end: down first, then it waits.
+        let k = heights((car::DOWN, 0), 400, |_| false);
+        assert_eq!((k[0], k[148], k[149]), (149, 1, 0));
+        assert!(k[149..].iter().all(|&k| k == 0));
+    }
+
+    #[test]
+    fn standing_on_needs_feet_on_the_top_and_a_real_overlap() {
+        let px = Fx::from_px;
+        let car = Aabb {
+            x: px(64),
+            y: px(168),
+            w: px(48),
+            h: px(24),
+        };
+        let p = |x: Fx, bottom: Fx| Aabb {
+            x,
+            y: bottom - px(22),
+            w: px(12),
+            h: px(22),
+        };
+        assert!(stands_on(&p(px(70), px(168)), &car));
+        // Edge-only touches on either side: not on it.
+        assert!(!stands_on(&p(px(52), px(168)), &car), "right edge == car.x");
+        assert!(
+            !stands_on(&p(px(112), px(168)), &car),
+            "left edge == car.right()"
+        );
+        // One subpixel of overlap is enough.
+        assert!(stands_on(&p(px(52) + Fx(1), px(168)), &car));
+        assert!(stands_on(&p(px(112) - Fx(1), px(168)), &car));
+        // Feet not exactly on the top.
+        assert!(!stands_on(&p(px(70), px(168) - Fx(1)), &car));
+        assert!(!stands_on(&p(px(70), px(168) + Fx(1)), &car));
+    }
+
+    #[test]
+    fn the_lower_end_comes_from_the_track_direction() {
+        let spawn = |to: [i32; 2]| EntitySpawn {
+            kind: SpawnKind::Festungsbahn,
+            col: 0,
+            row: 0,
+            text: None,
+            style: Default::default(),
+            to: Some(to),
+            still: false,
+            sprite: None,
+            layer: Default::default(),
+            dx: 0,
+        };
+        assert_eq!(initial_state(&spawn([8, -5])), car::WAIT_LOWER);
+        assert_eq!(initial_state(&spawn([8, 0])), car::WAIT_LOWER);
+        assert_eq!(initial_state(&spawn([-3, 4])), car::DOWN);
+        assert!(starts_at_upper_end(&spawn([0, 2])));
     }
 
     /// A 14-row level from `rows` (row 0 at the top), padded with air

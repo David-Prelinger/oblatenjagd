@@ -1,4 +1,5 @@
-# QA (E3): onto the car at the bottom (frame 1029), then while it rises:
+# QA (E3, D-030): onto the waiting car (frame 1029, it leaves with her),
+# then while it rises:
 # a few steps left, a longer walk right towards its front edge, a short
 # walk back; the player stays on the moving car the whole way and stands
 # on it at the top (y 82 = car top 104 - 22), still waiting there.
@@ -27,4 +28,4 @@ L 6       # walking on the rising car
 R 24
 - 20
 L 12
-- 100     # at the top, waiting
+- 59      # at the top (1179), waiting
