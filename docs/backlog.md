@@ -21,3 +21,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **xtask sprites `compile()` duplicates `Project::compile`** to keep groups — expose the group from artkit (e.g. `group` on `CompiledSprite`).
 - **Enemy art polish (optional)**: Fiaker telegraph feather open at the frame top (drop hat 1 px); `k` seam between horse hindquarters and carriage; selfie flash lower ray reads as part of the hat (move to (10–11,0)).
 - **Golden coverage**: add testbed_route shots mid-run and falling so walk/run/fall animations are covered by goldens (art-director note).
+- **Sky generator quirk**: `checker` dither on a transition starting at an odd row produces no dither (row_mix thresholds 12/4 vs a 4/16 mix) in `crates/jnr-artkit/src/generators/sky.rs`; Salzburg sky works around it with `until = 45`.
