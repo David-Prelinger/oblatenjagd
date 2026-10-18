@@ -8,7 +8,9 @@
 //! 1. touch: enemies freeze, the timer stops, height score (+ „Wurstkranz!"),
 //! 2. [`ClearPhase::Slide`] down the pole at `goal.slide_speed`, just left of it,
 //! 3. [`ClearPhase::Hop`] off to the right of the pole (player gravity),
-//! 4. [`ClearPhase::Walk`] right at walk speed until off screen (the camera stays),
+//! 4. [`ClearPhase::Walk`] right at walk speed until off screen (during 2-4
+//!    the camera's x stays and its y follows her with the play dead zone, so
+//!    a high touch ends at the ground framing, D-040),
 //! 5. [`ClearPhase::Tally`]: one second of time per frame, `score.time_bonus` each,
 //! 6. [`ClearPhase::Clear`]: the stage-clear texts for `goal.clear_frames`,
 //! 7. [`ClearPhase::ToBeContinued`] for `goal.to_be_continued_frames`, then the
@@ -235,6 +237,14 @@ impl Game {
                 None
             }
         };
+        if matches!(
+            c.phase,
+            ClearPhase::Slide | ClearPhase::Hop | ClearPhase::Walk
+        ) {
+            let (_, cy) = self.player.center_px();
+            self.camera
+                .follow_y(cy, self.map.height_fx().to_px(), &self.tuning.camera);
+        }
         if let Some(phase) = next {
             c.phase = phase;
             c.timer = 0;
