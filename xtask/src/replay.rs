@@ -408,8 +408,10 @@ pub fn run_scene(root: &Path, args: &[String]) -> ExitCode {
 /// the second value is true when that clamp changed it.
 pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> (Game, bool) {
     let wanted = camera_x.saturating_add(tuning.camera.follow_x);
-    let half_w = tuning.player.hitbox_w / 2;
-    let max = level.width * jnr_core::level::TILE_PX - (tuning.player.hitbox_w - half_w);
+    // The hitbox reaches w/2 (x.5 px for an odd width) to each side of the
+    // centre, so the centre stays (w + 1) / 2 whole pixels from both edges.
+    let half_w = (tuning.player.hitbox_w + 1) / 2;
+    let max = level.width * jnr_core::level::TILE_PX - half_w;
     let player_x = wanted.clamp(half_w, max);
     let mut game = Game::new(level, tuning, 1);
     game.teleport_player(player_x);
@@ -497,7 +499,7 @@ fn exit(result: Result<(), String>) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jnr_core::InputFrame;
+    use jnr_core::{Fx, InputFrame};
 
     fn root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -660,16 +662,23 @@ mod tests {
         let level = content::find_level(&root, "testbed").unwrap();
         let tuning = content::tuning(&root).unwrap();
         let level_px = level.width * jnr_core::level::TILE_PX;
-        for x in [5000, i32::MAX, -500, i32::MIN] {
-            let (g, clamped) = scene_game(&level, &tuning, x);
-            assert!(clamped, "x={x}");
-            let p = g.player();
-            assert!(p.x.to_px() >= 0, "x={x}: player x={}", p.x.to_px());
-            assert!(
-                (p.x + p.w).to_px() <= level_px,
-                "x={x}: player right edge {} > level width {level_px}",
-                (p.x + p.w).to_px()
-            );
+        let mut odd = tuning;
+        odd.player.hitbox_w = 13;
+        // The real (even) hitbox and an odd one, whose edges are half pixels.
+        for t in [&tuning, &odd] {
+            for x in [5000, i32::MAX, -500, i32::MIN] {
+                let (g, clamped) = scene_game(&level, t, x);
+                assert!(clamped, "x={x}");
+                let p = g.player();
+                assert_eq!(p.w.to_px(), t.player.hitbox_w);
+                assert!(p.x >= Fx::ZERO, "x={x}: player x={:?}", p.x);
+                assert!(
+                    p.x + p.w <= Fx::from_px(level_px),
+                    "x={x} (w {}): player right edge {:?} > level width {level_px}",
+                    t.player.hitbox_w,
+                    p.x + p.w
+                );
+            }
         }
     }
 }
