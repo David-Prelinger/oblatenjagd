@@ -177,7 +177,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - The stairs under a Festungsbahn make the car optional: it's the comfortable ride, climbing is a valid alternative (accepted).
 
 ## D-029 Maibaum vs HUD (orchestrator, M1)
-- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 139–182, measured: the OBLATEN shadow ends at 138, LEBEN starts at 184) and must not touch any HUD pixel, never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
+- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 139–183: the OBLATEN shadow ends at 138, LEBEN starts at 184) and must not touch any HUD pixel; Stage 1's crown spans 152–183, never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
 
 ## D-030 Salzburg level follow-ups (orchestrator, M1)
 - **Festungsbahn waits for its rider**: the car waits at its lower end until the player stands on it, then travels up, waits at the top, travels back down and waits again for the next rider. (Replaces the free-running cycle from activation; makes boarding a calm, readable moment and removes the 2-frame boarding window the solver measured.)
@@ -214,3 +214,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
   - **Runtime:** the fast path covers most shifts. Debug-build `solve` wall time: testbed 1.6 s, items 1.4 s, enemies 3.4 s, Salzburg 27 s (its search is 7.5 s).
   - **Routes:** unchanged, because the window metric doesn't steer the search.
 - `solver` verify step: fails when a level's narrowest jump window (route-limited windows excluded, as in the report) is below its `min_jump_window`, naming the jump frame and x (`solver::window_problem`).
+
+## D-035 Stage 1 level rulings (orchestrator, M1)
+- The second flying Taube spawns at col 244 (not 250): from 250 it crossed the rising Festungsbahn rider; 244 keeps D-032's "no enemy reaches the track or rider".
+- Walking off the rampart edge scores 100 (she lands on the meadow before the pole column); any held jump off the rampart or car reaches the Wurstkranz. This corrects the "walking off scores 2000" note in D-032.
+- The Fiaker stands at col 200 so that standing on the Residenzbrunnen triggers it (it charges through underneath).
+- The title prompt crosses the cream Dom façade of `bg_rooftops`: the prompt gets the full `k` outline (art-style §11 allows it) — polish task.
