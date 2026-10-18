@@ -185,6 +185,8 @@ pub enum Expect {
     State(EndState),
     /// `no_event=<Event>`: the event never happened.
     NoEvent(Event),
+    /// `event=<Event>`: the event happened at least once.
+    Event(Event),
     /// `oblaten>=N`: the Oblaten counter (HUD value, 0..100) is at least N
     /// at the end.
     OblatenAtLeast(u32),
@@ -204,7 +206,7 @@ pub enum Expect {
 const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at frames=a..b, \
                          player_x>=PX, player_y>=PX, player_y<=PX, \
                          state=<playing|dying|stage_clear|game_over|title|stage_intro|paused>, \
-                         no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
+                         event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
                          lives>=N";
 
 impl Expect {
@@ -255,10 +257,9 @@ impl Expect {
             } else if let Some(n) = w.strip_prefix("lives=") {
                 Expect::Lives(parse_u32(n, "lives")?)
             } else if let Some(name) = w.strip_prefix("no_event=") {
-                Expect::NoEvent(Event::from_name(name).ok_or_else(|| {
-                    let names: Vec<&str> = Event::ALL.iter().map(|e| e.name()).collect();
-                    format!("unknown event `{name}` (known: {})", names.join(", "))
-                })?)
+                Expect::NoEvent(parse_event(name)?)
+            } else if let Some(name) = w.strip_prefix("event=") {
+                Expect::Event(parse_event(name)?)
             } else {
                 return Err(format!("not supported yet: `{w}` (supported: {SUPPORTED})"));
             };
@@ -286,6 +287,7 @@ impl Expect {
             Expect::PlayerYAtMost(px) => o.player_y <= px,
             Expect::State(s) => o.state == s,
             Expect::NoEvent(e) => !o.events.iter().any(|&(seen, _)| seen == e),
+            Expect::Event(e) => o.events.iter().any(|&(seen, _)| seen == e),
             Expect::OblatenAtLeast(n) => o.oblaten >= n,
             Expect::Oblaten(n) => o.oblaten == n,
             Expect::ScoreAtLeast(n) => o.score >= n,
@@ -318,6 +320,7 @@ impl Expect {
                 let first = o.events.iter().find(|(seen, _)| *seen == e).map(|x| x.1);
                 format!("expected {self}, first at frame {}", first.unwrap_or(0))
             }
+            Expect::Event(_) => format!("expected {self}, it never happened"),
             Expect::OblatenAtLeast(_) | Expect::Oblaten(_) => {
                 format!("expected {self} at the end, got oblaten={}", o.oblaten)
             }
@@ -344,6 +347,7 @@ impl fmt::Display for Expect {
             Expect::PlayerYAtMost(px) => write!(f, "player_y<={px}"),
             Expect::State(s) => write!(f, "state={}", s.name()),
             Expect::NoEvent(e) => write!(f, "no_event={}", e.name()),
+            Expect::Event(e) => write!(f, "event={}", e.name()),
             Expect::OblatenAtLeast(n) => write!(f, "oblaten>={n}"),
             Expect::Oblaten(n) => write!(f, "oblaten={n}"),
             Expect::ScoreAtLeast(n) => write!(f, "score>={n}"),
@@ -680,6 +684,14 @@ impl Outcome {
     }
 }
 
+/// An event by its variant name (`Died`), for `event=` / `no_event=`.
+fn parse_event(name: &str) -> Result<Event, String> {
+    Event::from_name(name).ok_or_else(|| {
+        let names: Vec<&str> = Event::ALL.iter().map(|e| e.name()).collect();
+        format!("unknown event `{name}` (known: {})", names.join(", "))
+    })
+}
+
 fn parse_px(s: &str, what: &str) -> Result<i32, String> {
     s.parse()
         .map_err(|_| format!("bad {what} `{s}` (expected whole pixels)"))
@@ -947,6 +959,8 @@ RBJ 2
             "player_x>=1850",
             "state=stage_clear",
             "no_event=Respawned",
+            "event=Jumped",
+            "event=LevelComplete",
             "oblaten>=12",
             "score>=4600",
             "lives=2",
@@ -992,6 +1006,10 @@ RBJ 2
         assert_eq!(
             f("no_event=Died", &o),
             "expected no_event=Died, first at frame 100"
+        );
+        assert_eq!(
+            f("event=Stomped", &o),
+            "expected event=Stomped, it never happened"
         );
         assert_eq!(
             f("oblaten>=13", &o),

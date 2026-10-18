@@ -12,7 +12,9 @@ Status: approved v1. Format spec in `docs/architecture.md` → "Level".
 - All rows must be the same width. Row 0 is the top. Usually 14 rows tall.
 - Exactly one `P` (player start), at least one goal (`G`), one checkpoint per stage (`C`).
 - Format v2 (D-022, full list in `docs/architecture.md` → "Level"): `"?" = { tile = "oblaten_box", contains = "mozartkugel" }` (contains: `oblate`, `mozartkugel`, `zaunerstollen`, `oblaten_10`; only on `brick`/`oblaten_box`), `"o" = { entity = "oblate" }`, `"C" = { entity = "checkpoint" }`, `"s" = { entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }` (style `street`/`bus`/`ortsende`), enemies by catalog name. `[meta]` needs `time_limit`; `background = [{ sprite = "bg_rooftops", factor = 8, y = 0 }]` (factor in 1/16 camera speed; optional `y` = px above the screen bottom); optional `min_jump_window`.
-- Grey-box test level for items/power states: `content/levels/00_items.level`.
+- Festungsbahn: `"F" = { entity = "festungsbahn", to = [8, -5] }` — `to` is its other end point in tiles relative to its cell (required); the car (3 tiles wide, 24 px high) starts left-aligned in that cell with its bottom on the cell's bottom edge, waits 60 frames, travels 150 frames, waits, comes back. Only its top is solid (from above), so the player boards it from above (keep its top a few px below the boarding ledge) and walks through its sides. `levels lint` requires 3 tiles of free space above the car along the whole track.
+- Enemies patrol on frame counters from activation (one screen + 320 px ahead of the camera), so where they are when the player arrives depends on the player's speed; Selfie-Tourists walk off ledges into pits and turn at walls and other enemies; the Fiaker ignores tiles on its row. `{ entity = "selfie_tourist", still = true }` (never walks) is a fixture for `00_*` test levels only; `levels lint` rejects it in stages.
+- Grey-box test levels: `content/levels/00_items.level` (items/power states), `content/levels/00_enemies.level` (enemies, Festungsbahn).
 
 ## Jump reach (check `content/tuning.toml`; update this table when tuning changes)
 | Situation | Max height | Max gap |

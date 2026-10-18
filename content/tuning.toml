@@ -66,6 +66,7 @@ oblate = 200
 power_up = 1000
 brick = 50
 stomp_chain = [100, 200, 400, 800, 1000, 2000, 4000, 8000]  # then +1 life per stomp
+bump_enemy = 100          # an enemy standing on a block that is bumped from below
 time_bonus = 50           # per second left at the goal, tallied 1 s per frame
 popup_frames = 30         # score popups float up 16 px over 30 frames
 popup_rise = 16
@@ -75,9 +76,37 @@ selfie_tourist_hitbox = [12, 20]          # px [w, h]
 taube_hitbox = [12, 10]
 mozartkugel_verkaeufer_hitbox = [12, 22]
 fiaker_hitbox = [44, 28]
+thrown_hitbox = [6, 6]                    # the thrown (unwrapped) Mozartkugel
+# Distances to the player are measured horizontally, centre to centre, in whole px.
+# All patterns are frame counters from activation (D-017), never the RNG.
+tourist_speed = 128           # 0.5 px/frame; gravity and max fall speed are the player's
+tourist_selfie_period = 240   # every 240 frames (from activation) a selfie ...
+tourist_selfie_frames = 48    # ... standing still for 48 frames
+tourist_flash_at = 24         # the flash shows at frame 24 of the selfie ...
+tourist_flash_frames = 2      # ... for 2 frames (harmless, renderer only)
+taube_speed = 192             # 0.75 px/frame to the left, ignores tiles
+taube_amplitude = 16          # px: sine wave around its start height (rises first)
+taube_period = 120            # frames per sine wave
+taube_sitting_trigger = 96    # px (6 tiles): a sitting Taube takes off when the player is this close ...
+taube_rise = 16               # ... rises 16 px ...
+taube_rise_frames = 16        # ... over 16 frames, then flies like a Taube
+verkaeufer_range = 160        # px (10 tiles): the throw counter runs while the player is this close
+verkaeufer_period = 120       # a throw every 120 frames of that counter ...
+verkaeufer_windup = 20        # ... the last 20 of them winding up (arm raised)
+verkaeufer_throw_pose = 12    # frames the throw pose shows after a throw
+thrown_speed_x = 320          # 1.25 px/frame towards the player's side
+thrown_speed_y = 768          # 3.0 px/frame upwards at the throw ...
+thrown_gravity = 32           # ... 0.125 px/frame²: apex ~36 px, ~4 tiles range at throw height
+fiaker_trigger = 128          # px (8 tiles): the parked Fiaker telegraphs ...
+fiaker_telegraph = 40         # ... for 40 frames ...
+fiaker_speed = 512            # ... then charges left at 2.0 px/frame until it leaves the screen
+squish_frames = 30            # a stomped enemy stays visible (squished) this long
+knock_speed = 768             # 3 px/frame: upward speed of an enemy or item knocked by a bumped block
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
+festungsbahn_travel = 150       # frames from one end point to the other (straight line)
+festungsbahn_wait = 60          # frames standing at each end; it starts at its spawn cell, waiting
 
 [goal]
 zone_heights = [32, 64, 96, 128]          # px of the feet above the Maibaum base at the touch: 2/4/6/8 tiles

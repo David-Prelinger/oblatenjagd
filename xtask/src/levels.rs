@@ -4,12 +4,14 @@
 //! Checks: the file parses (legend, grid, exactly one player start — all
 //! enforced by `Level::parse`), `meta.id` is unique, `meta.title_key` (if
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
-//! least one goal (`time_limit` is required by `Level::parse`).
+//! least one goal (`time_limit` is required by `Level::parse`), and every
+//! Festungsbahn track has 3 tiles of free space above the car
+//! (`jnr_core::platform::track_problems`).
 
 use std::path::Path;
 use std::process::ExitCode;
 
-use jnr_core::{SpawnKind, Texts};
+use jnr_core::{SpawnKind, Texts, Tuning};
 
 use crate::content::{self, LevelFile};
 
@@ -19,7 +21,8 @@ cargo xtask levels <command>
 Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
-              sign text keys exist, a goal
+              sign text keys exist, a goal, 3 free tiles above every
+              Festungsbahn track
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -48,17 +51,27 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
 /// Runs the lint; returns (no problems, printable text). `only` limits the
 /// per-level checks to the level with that id (ids stay unique-checked).
 pub fn lint_report(root: &Path, only: Option<&str>) -> (bool, String) {
-    let problems = match (content::all_levels(root), content::texts(root)) {
-        (Ok(levels), Ok(texts)) => lint(&levels, &texts, only),
-        (Err(e), _) | (_, Err(e)) => vec![e],
+    let loaded = (
+        content::all_levels(root),
+        content::texts(root),
+        content::tuning(root),
+    );
+    let problems = match loaded {
+        (Ok(levels), Ok(texts), Ok(tuning)) => lint(&levels, &texts, &tuning, only),
+        (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => vec![e],
     };
     let mut text: String = problems.iter().map(|p| format!("{p}\n")).collect();
     text.push_str(&format!("levels lint: {} problem(s)\n", problems.len()));
     (problems.is_empty(), text)
 }
 
-/// The lint over already loaded levels (path, parse result) and texts.
-pub fn lint(levels: &[LevelFile], texts: &Texts, only: Option<&str>) -> Vec<String> {
+/// The lint over already loaded levels (path, parse result), texts and tuning.
+pub fn lint(
+    levels: &[LevelFile],
+    texts: &Texts,
+    tuning: &Tuning,
+    only: Option<&str>,
+) -> Vec<String> {
     let mut problems = Vec::new();
     let mut matched = false;
     for (i, (path, level)) in levels.iter().enumerate() {
@@ -106,6 +119,20 @@ pub fn lint(levels: &[LevelFile], texts: &Texts, only: Option<&str>) -> Vec<Stri
         if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
             problems.push(format!("{shown}: no goal (add a `goal` entity)"));
         }
+        for p in jnr_core::platform::track_problems(level, tuning) {
+            problems.push(format!("{shown}: {p}"));
+        }
+        let test_level = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(|n| n.starts_with("00_"));
+        for e in level.entities.iter().filter(|e| e.still && !test_level) {
+            problems.push(format!(
+                "{shown}: still enemy at row {}, column {}: `still = true` is for grey-box test levels (00_*.level) only",
+                e.row + 1,
+                e.col + 1
+            ));
+        }
     }
     if let Some(id) = only
         && !matched
@@ -134,6 +161,11 @@ mod tests {
         Texts::parse("[stage.a]\ntitle = \"A\"\nsign = \"Servus\"\n").unwrap()
     }
 
+    fn tuning() -> Tuning {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        content::tuning(&root).unwrap()
+    }
+
     #[test]
     fn clean_levels_pass() {
         let levels = vec![
@@ -149,7 +181,10 @@ mod tests {
                 level("id = \"b\"\ntime_limit = 1", "PG"),
             ),
         ];
-        assert_eq!(lint(&levels, &texts(), None), Vec::<String>::new());
+        assert_eq!(
+            lint(&levels, &texts(), &tuning(), None),
+            Vec::<String>::new()
+        );
     }
 
     #[test]
@@ -173,7 +208,7 @@ mod tests {
             (PathBuf::from("d.level"), level("id = \"d\"", "PG")),
         ];
         let texts = Texts::parse("[stage.a]\ntitle = \"A\"\n").unwrap();
-        let problems = lint(&levels, &texts, None);
+        let problems = lint(&levels, &texts, &tuning(), None);
         assert_eq!(problems.len(), 6, "{problems:?}");
         assert_eq!(
             problems[..5],
@@ -187,11 +222,55 @@ mod tests {
         );
         assert!(problems[5].starts_with("d.level: level: ") && problems[5].contains("time_limit"));
         // Only one level: the others' problems (except parse errors) are left out.
-        let only_a = lint(&levels, &texts, Some("a"));
+        let only_a = lint(&levels, &texts, &tuning(), Some("a"));
         assert_eq!(only_a.len(), 6, "{only_a:?}");
         assert_eq!(
-            lint(&levels[..1], &texts, Some("zz")),
+            lint(&levels[..1], &texts, &tuning(), Some("zz")),
             vec!["no level with id `zz` in content/levels"]
+        );
+    }
+
+    #[test]
+    fn festungsbahn_needs_free_space_above_its_track() {
+        let grid = |ceiling: &str| {
+            format!(
+                "[meta]\nid = \"f\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"F\" = {{ entity = \"festungsbahn\", to = [3, -2] }}\n[map]\ngrid = '''\n{ceiling}\n........\n........\n........\n........\nPF.....G\n########\n'''\n"
+            )
+        };
+        let open = Level::parse(&grid("........")).map_err(|e| e.to_string());
+        let low = Level::parse(&grid("....#...")).map_err(|e| e.to_string());
+        let levels = vec![
+            (PathBuf::from("open.level"), open),
+            (PathBuf::from("low.level"), low),
+        ];
+        let texts = Texts::parse("").unwrap();
+        let problems: Vec<String> = lint(&levels, &texts, &tuning(), None)
+            .into_iter()
+            .filter(|p| !p.contains("meta.id"))
+            .collect();
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0]
+                .starts_with("low.level: festungsbahn at row 6, column 2: less than 48 px free"),
+            "{}",
+            problems[0]
+        );
+    }
+
+    #[test]
+    fn still_enemies_only_in_test_levels() {
+        let text = "[meta]\nid = \"s\"\ntime_limit = 1\n[legend]\n\"P\" = { entity = \"player_start\" }\n\"G\" = { entity = \"goal\" }\n\"t\" = { entity = \"selfie_tourist\", still = true }\n[map]\ngrid = '''\nPtG\n'''\n";
+        let level = || Level::parse(text).map_err(|e| e.to_string());
+        let texts = Texts::parse("").unwrap();
+        let test = vec![(PathBuf::from("00_s.level"), level())];
+        assert_eq!(lint(&test, &texts, &tuning(), None), Vec::<String>::new());
+        let stage = vec![(PathBuf::from("01_s.level"), level())];
+        let problems = lint(&stage, &texts, &tuning(), None);
+        assert_eq!(
+            problems,
+            [
+                "01_s.level: still enemy at row 1, column 2: `still = true` is for grey-box test levels (00_*.level) only"
+            ]
         );
     }
 

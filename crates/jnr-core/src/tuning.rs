@@ -23,7 +23,7 @@ pub struct Tuning {
     pub items: ItemTuning,
     /// Points.
     pub score: ScoreTuning,
-    /// Enemy hitboxes (behaviour comes with the enemy task).
+    /// Enemy hitboxes and behaviour.
     pub enemies: EnemyTuning,
     /// Moving platforms.
     pub platforms: PlatformTuning,
@@ -55,13 +55,17 @@ pub struct GoalTuning {
     pub to_be_continued_frames: u16,
 }
 
-/// Moving platforms (the Festungsbahn is inert until its own task).
+/// Moving platforms.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PlatformTuning {
     /// Festungsbahn car `[w, h]` in whole pixels (feet at the bottom
     /// centre, left-aligned in its spawn cell).
     pub festungsbahn_size: [i32; 2],
+    /// Frames from one end point to the other.
+    pub festungsbahn_travel: u16,
+    /// Frames standing at each end point.
+    pub festungsbahn_wait: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -202,6 +206,8 @@ pub struct ScoreTuning {
     pub brick: u32,
     /// Stomps without touching the ground; past the end each stomp is +1 life.
     pub stomp_chain: [u32; 8],
+    /// An enemy defeated by bumping the block it stands on.
+    pub bump_enemy: u32,
     /// Time bonus per second left at the goal (tallied one second per frame).
     pub time_bonus: u32,
     /// Frames a score popup is shown.
@@ -210,7 +216,10 @@ pub struct ScoreTuning {
     pub popup_rise: i32,
 }
 
-/// Enemy hitboxes `[w, h]` in whole pixels (feet at the bottom centre).
+/// Enemies (`docs/game-design.md` → "Entities and behaviour"). Hitboxes
+/// `[w, h]` are whole pixels (feet at the bottom centre); distances to the
+/// player are horizontal, centre to centre, in whole pixels; durations are
+/// frames, counted from activation (D-017).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct EnemyTuning {
@@ -222,6 +231,54 @@ pub struct EnemyTuning {
     pub mozartkugel_verkaeufer_hitbox: [i32; 2],
     /// Fiaker.
     pub fiaker_hitbox: [i32; 2],
+    /// The thrown Mozartkugel.
+    pub thrown_hitbox: [i32; 2],
+    /// Selfie-Tourist walking speed.
+    pub tourist_speed: Fx,
+    /// A selfie starts every this many frames after activation ...
+    pub tourist_selfie_period: u16,
+    /// ... and lasts this many frames (standing still).
+    pub tourist_selfie_frames: u16,
+    /// Frame of the selfie at which the flash starts ...
+    pub tourist_flash_at: u16,
+    /// ... and how many frames it shows.
+    pub tourist_flash_frames: u16,
+    /// Taube flying speed (to the left).
+    pub taube_speed: Fx,
+    /// Taube sine wave amplitude, whole pixels.
+    pub taube_amplitude: i32,
+    /// Taube sine wave period.
+    pub taube_period: u16,
+    /// A sitting Taube takes off when the player is this close (px).
+    pub taube_sitting_trigger: i32,
+    /// How far it rises before flying (px) ...
+    pub taube_rise: i32,
+    /// ... over this many frames.
+    pub taube_rise_frames: u16,
+    /// The Verkäufer's throw counter runs while the player is this close (px).
+    pub verkaeufer_range: i32,
+    /// Frames of that counter per throw ...
+    pub verkaeufer_period: u16,
+    /// ... the last this many winding up.
+    pub verkaeufer_windup: u16,
+    /// Frames the throw pose shows after a throw.
+    pub verkaeufer_throw_pose: u16,
+    /// Horizontal speed of a thrown Mozartkugel.
+    pub thrown_speed_x: Fx,
+    /// Upward speed of a thrown Mozartkugel at the throw.
+    pub thrown_speed_y: Fx,
+    /// Gravity of a thrown Mozartkugel.
+    pub thrown_gravity: Fx,
+    /// The parked Fiaker telegraphs when the player is this close (px) ...
+    pub fiaker_trigger: i32,
+    /// ... for this many frames ...
+    pub fiaker_telegraph: u16,
+    /// ... then charges left at this speed.
+    pub fiaker_speed: Fx,
+    /// Frames a stomped enemy stays visible (squished).
+    pub squish_frames: u16,
+    /// Upward speed of an enemy or item knocked by a bumped block.
+    pub knock_speed: Fx,
 }
 
 impl Tuning {
@@ -347,6 +404,7 @@ impl Tuning {
                 e.mozartkugel_verkaeufer_hitbox,
             ),
             ("enemies.fiaker_hitbox", e.fiaker_hitbox),
+            ("enemies.thrown_hitbox", e.thrown_hitbox),
             (
                 "platforms.festungsbahn_size",
                 self.platforms.festungsbahn_size,
@@ -365,6 +423,13 @@ impl Tuning {
             ("items.pop_speed", i.pop_speed),
             ("items.debris_speed_high", i.debris_speed_high),
             ("items.debris_speed_low", i.debris_speed_low),
+            ("enemies.tourist_speed", e.tourist_speed),
+            ("enemies.taube_speed", e.taube_speed),
+            ("enemies.thrown_speed_x", e.thrown_speed_x),
+            ("enemies.thrown_speed_y", e.thrown_speed_y),
+            ("enemies.thrown_gravity", e.thrown_gravity),
+            ("enemies.fiaker_speed", e.fiaker_speed),
+            ("enemies.knock_speed", e.knock_speed),
         ] {
             if v <= Fx::ZERO || v >= max_step {
                 return Err(ParseError::new(format!(
@@ -390,6 +455,16 @@ impl Tuning {
             ("items.pop_frames", i.pop_frames),
             ("items.multi_frames", i.multi_frames),
             ("game.death_frames", g.death_frames),
+            ("enemies.tourist_selfie_period", e.tourist_selfie_period),
+            ("enemies.taube_period", e.taube_period),
+            ("enemies.taube_rise_frames", e.taube_rise_frames),
+            ("enemies.verkaeufer_period", e.verkaeufer_period),
+            ("enemies.fiaker_telegraph", e.fiaker_telegraph),
+            ("enemies.squish_frames", e.squish_frames),
+            (
+                "platforms.festungsbahn_travel",
+                self.platforms.festungsbahn_travel,
+            ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
             (
@@ -399,6 +474,45 @@ impl Tuning {
         ] {
             if v == 0 {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if e.tourist_selfie_frames >= e.tourist_selfie_period
+            || e.tourist_flash_at.saturating_add(e.tourist_flash_frames) > e.tourist_selfie_frames
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.tourist_selfie_frames < tourist_selfie_period and tourist_flash_at + tourist_flash_frames <= tourist_selfie_frames",
+            ));
+        }
+        let pl = &self.platforms;
+        if u32::from(pl.festungsbahn_wait) + u32::from(pl.festungsbahn_travel) > 32_767 {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.festungsbahn_wait + festungsbahn_travel must be <= 32767 frames",
+            ));
+        }
+        if e.verkaeufer_windup.saturating_add(e.verkaeufer_throw_pose) >= e.verkaeufer_period {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.verkaeufer_windup + verkaeufer_throw_pose < verkaeufer_period",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.taube_amplitude", e.taube_amplitude),
+            ("enemies.taube_rise", e.taube_rise),
+        ] {
+            if !(0..=TILE_PX * 8).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=128 px"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.taube_sitting_trigger", e.taube_sitting_trigger),
+            ("enemies.verkaeufer_range", e.verkaeufer_range),
+            ("enemies.fiaker_trigger", e.fiaker_trigger),
+        ] {
+            if !(0..=crate::camera::SCREEN_W * 2).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=640 px"
+                )));
             }
         }
         if !(0..=TILE_PX * 4).contains(&self.score.popup_rise) {
@@ -521,6 +635,18 @@ mod tests {
             ("popup_frames", 0),
             ("lives_start", 0),
             ("festungsbahn_size", -1),
+            ("festungsbahn_travel", 0),
+            ("tourist_selfie_period", 0),
+            ("tourist_selfie_frames", 240),
+            ("tourist_flash_at", 47),
+            ("taube_period", 0),
+            ("taube_amplitude", -1),
+            ("verkaeufer_windup", 120),
+            ("fiaker_trigger", 641),
+            ("fiaker_speed", 0),
+            ("thrown_gravity", 0),
+            ("squish_frames", 0),
+            ("festungsbahn_wait", 32700),
             ("hitbox_w", 3),
             ("hitbox_w", 17),
             ("hitbox_h", 3),

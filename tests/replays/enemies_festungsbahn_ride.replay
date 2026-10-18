@@ -1,0 +1,26 @@
+# The enemies_fiaker_jump_over route, then under the sitting Taube (it
+# takes off at 6 tiles and flies over the walking player), onto the 1-tile
+# step, waits for the Festungsbahn to come down (bottom from frame 1010),
+# steps onto it (frame 1029), rides up 5 tiles standing still (1070-1195),
+# walks along the moving car onto the rampart plateau and to the goal.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1383..1383 deaths=0 no_event=Hurt state=stage_clear
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20
+- 175
+R 220

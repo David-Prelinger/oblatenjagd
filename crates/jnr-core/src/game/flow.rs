@@ -247,6 +247,13 @@ impl Game {
     fn update_cosmetic_entities(&mut self) {
         let mut spawned = Vec::new();
         let bottom = self.map.height_fx();
+        let ctx = crate::entity::UpdateCtx {
+            map: &self.map,
+            tuning: &self.tuning,
+            level: &self.level,
+            player_cx: self.player.x + self.player.w.div_int(2),
+            screen_left: Fx::from_px(self.camera.x),
+        };
         for e in &mut self.entities {
             let cosmetic = matches!(
                 e.kind,
@@ -254,9 +261,10 @@ impl Game {
                     | EntityKind::Debris
                     | EntityKind::Bump
                     | EntityKind::PoppedOblate
+                    | EntityKind::Defeated(_)
             );
             if cosmetic && e.active && !e.removed {
-                spawned.extend(e.update(&self.map, &self.tuning));
+                spawned.extend(e.update(&ctx));
                 if e.y >= bottom {
                     e.removed = true;
                 }

@@ -13,6 +13,8 @@
 //! - [`physics`]: boxes and tile collision
 //! - [`player`]: run/jump physics, power states
 //! - [`entity`]: items, particles, popups, props, enemies (`Vec<Entity>`)
+//! - [`enemies`]: enemy patterns, thrown Mozartkugeln, defeated enemies
+//! - [`platform`]: the Festungsbahn car (moving one-way platform)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
@@ -21,6 +23,7 @@
 use std::fmt;
 
 pub mod camera;
+pub mod enemies;
 pub mod entity;
 pub mod fx;
 pub mod game;
@@ -28,6 +31,7 @@ pub mod hash;
 pub mod input;
 pub mod level;
 pub mod physics;
+pub mod platform;
 pub mod player;
 pub mod replay;
 pub mod rng;
@@ -38,6 +42,7 @@ pub mod tuning;
 mod tests;
 
 pub use camera::{Camera, SCREEN_H, SCREEN_W};
+pub use enemies::Pose;
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
 pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};

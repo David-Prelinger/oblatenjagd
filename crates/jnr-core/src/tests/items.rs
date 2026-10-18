@@ -59,18 +59,6 @@ fn count(g: &Game, kind: EntityKind) -> usize {
     g.entities().iter().filter(|e| e.kind == kind).count()
 }
 
-/// Steps until `pred` holds (at most `max` frames); returns all events.
-fn until(g: &mut Game, token: &str, max: u32, pred: impl Fn(&Game) -> bool) -> Vec<Event> {
-    let mut events = Vec::new();
-    for _ in 0..max {
-        events.extend_from_slice(g.step(input(token)));
-        if pred(g) {
-            return events;
-        }
-    }
-    panic!("condition not reached in {max} frames; events: {events:?}");
-}
-
 fn feet_y(g: &Game) -> Fx {
     g.player().y + g.player().h
 }
@@ -364,7 +352,8 @@ fn enemy_kills_a_normal_player_from_the_side() {
 #[test]
 fn hurt_shrinks_with_120_invulnerable_frames() {
     let t = tuning();
-    let mut g = game(&world(30, &[(11, 6, 't'), (11, 12, 't')]));
+    // Verkäufer stand still (walking tourists would leave the screen).
+    let mut g = game(&world(30, &[(11, 6, 'v'), (11, 12, 'v')]));
     g.player.set_power(Power::Big, &t.player);
     g.player.transform = 0;
     let events = until(&mut g, "R", 120, |g| g.events().contains(&Event::Hurt));
@@ -396,9 +385,10 @@ fn hazards_kill_even_when_invulnerable() {
     assert_eq!(g.death_cause(), Some(DeathCause::Hazard));
 }
 
-/// The player falls from row 3 onto an enemy at column 2.
+/// The player falls from row 9 (a short fall, so a walking enemy is
+/// still below) onto an enemy at column 2.
 fn stomp_world(enemy: char) -> Level {
-    world(20, &[(3, 2, 'P'), (11, 2, enemy)])
+    world(20, &[(9, 2, 'P'), (11, 2, enemy)])
 }
 
 /// Falls onto the enemy holding `token`; returns the game at the stomp.
@@ -412,6 +402,11 @@ fn stomped(enemy: char, token: &str) -> Game {
 fn stomp_defeats_and_scores_100() {
     let g = stomped('t', "-");
     assert_eq!(count(&g, EntityKind::Enemy(EnemyKind::SelfieTourist)), 0);
+    assert_eq!(
+        count(&g, EntityKind::Defeated(EnemyKind::SelfieTourist)),
+        1,
+        "squished for a while"
+    );
     assert_eq!(g.score(), 100);
     assert!(g.player().vy < Fx::ZERO, "bounces");
     assert_eq!(g.player().stomp_chain, 1);
@@ -472,13 +467,14 @@ fn stomp_chain_scores_double_then_lives() {
     assert!(!g.events()[seen..].contains(&Event::ExtraLife));
 }
 
-/// Falls (from row 3) onto two Selfie-Tourists in columns 2 and 3; the
-/// player's hitbox (x 42..54) overlaps both (x 34..46 and 50..62).
+/// Falls (from row 9, 8 frames) onto two Selfie-Tourists starting in
+/// columns 2 and 3; they walk 4 px left meanwhile, so the player's hitbox
+/// (x 38..50) overlaps both (x 30..42 and 46..58).
 #[test]
 fn two_enemies_stomped_in_the_same_frame() {
     let t = tuning();
-    let mut g = game(&world(20, &[(3, 2, 'P'), (11, 2, 't'), (11, 3, 't')]));
-    g.player.x = Fx::from_px(42);
+    let mut g = game(&world(20, &[(9, 2, 'P'), (11, 2, 't'), (11, 3, 't')]));
+    g.player.x = Fx::from_px(38);
     let tourists = |g: &Game| count(g, EntityKind::Enemy(EnemyKind::SelfieTourist));
     assert_eq!(tourists(&g), 2);
     let events = until(&mut g, "-", 120, |g| g.events().contains(&Event::Stomped));
@@ -577,7 +573,7 @@ fn stomps_and_hurts_do_not_depend_on_entity_order() {
 /// position the stomp rule uses (snapshot before the entity moves).
 #[test]
 fn enemies_have_per_kind_state_and_a_previous_position() {
-    let mut g = game(&world(20, &[(3, 2, 'P'), (11, 2, 't')]));
+    let mut g = game(&world(20, &[(9, 2, 'P'), (11, 2, 't')]));
     let e = &mut g.entities[0];
     assert_eq!(e.prev_y, e.y);
     assert_eq!(e.dir, -1, "enemies face the player");
