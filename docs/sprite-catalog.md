@@ -105,7 +105,7 @@ All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); col
 | `prellbock` (old Ischlerbahn buffer stop) | ≤ 32×24 | bottom centre | `idle` held — two rail stubs and a buffer beam, rust `O l` and iron `m d`; front layer |
 | `talstation` (Zwölferhorn valley station) | ≤ 112×96 | bottom centre | `idle` held — `layer = "back"`; concrete-and-timber station hall with the cable wheel housing, yellow cabin colour as an accent |
 | `seilbahn_stuetze` (cable-car pylon) | ≤ 32×128 | bottom centre | `idle` held — `layer = "back"`; lattice steel pylon `m d` behind the pylon platform |
-| `mozartbrunnen` (young Mozart with violin on the fountain) | ≤ 48×64 | bottom centre | `idle` 2f/12t loop (water from the birds) — front layer over the 5-wide basin and the 1-wide plinth tiles; bronze `O l` (+ `t` patina optional) |
+| `mozartbrunnen` (young Mozart with violin on the fountain) | 48×72 | 24,72 (bottom centre) | `idle` 2f/12t loop (water from the birds) — front layer over the 5-wide basin and the 1-wide plinth tiles; bronze `O l` (+ `t` patina optional) |
 | `mozarthaus` (former Pfleggericht, Mozart's mother's birthplace) | ≤ 128×112 | bottom centre | `idle` held — `layer = "back"`; whitewashed façade, hipped roof, a commemorative plaque (no text) |
 | `musikpavillon` (bandstand) | ≤ 128×80 | bottom centre | `idle` held — `layer = "back"`; wooden posts, railing and the roof fringe around the `oneway_wood` floor and the solid `roof_shingle` roof; must not suggest a surface where there is none (D-038) |
 | `muehlrad` (water wheel of the Kornmühle) | 48×48 | bottom centre | `turn` 4f/12t loop — front layer, wood `o O l`, water `t T` + `w` drops |
