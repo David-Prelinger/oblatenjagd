@@ -26,9 +26,10 @@ use crate::tuning::GoalTuning;
 /// How a game starts, and with it which flow screens it has (D-025).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Start {
-    /// Directly in `Playing`, without title, stage intros or pause; a
-    /// death respawns right after `Dying` (tests, tools, the solver and
-    /// replays by default).
+    /// Directly in `Playing`, without stage intros or pause; a death
+    /// respawns right after `Dying` (tests, tools, the solver and replays
+    /// by default). The goal sequence still ends in `Mode::Title`; START
+    /// there restarts the stage directly in play.
     Playing,
     /// The real game: the title screen first; START → stage intro → play;
     /// an intro after every death and continue; START pauses.

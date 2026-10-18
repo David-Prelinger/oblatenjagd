@@ -11,7 +11,7 @@ use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
-use crate::palette::{DIRNDL_RED, MOZART_YELLOW, NAVY, OUTLINE, SILVER_LIGHT, WHITE};
+use crate::palette::{DIRNDL_RED, MOZART_YELLOW, NAVY, OUTLINE, SILVER_LIGHT, SKY_BLUE, WHITE};
 use crate::scene::{self, RenderContext};
 use crate::{WIDTH, hud};
 
@@ -86,7 +86,7 @@ pub const TEXT_KEYS: [&str; 20] = [
 const LOGO_Y: i32 = 24;
 const TITLE_NAME_Y: i32 = 20;
 const SUBTITLE_Y: i32 = 84;
-const PRESS_START_Y: i32 = 140;
+const PRESS_START_Y: i32 = 128;
 const INTRO_TITLE_Y: i32 = 64;
 const INTRO_TAGLINE_Y: i32 = 80;
 const INTRO_LIVES_Y: i32 = 112;
@@ -96,6 +96,8 @@ const CLEAR_Y: i32 = 72;
 const NEXT_Y: i32 = 84;
 const BONUS_Y: i32 = 100;
 const CENTRE_Y: i32 = 86;
+/// Pause panel `(x, y, w, h)`: x 112..=207, y 78..=101.
+pub const PAUSE_PANEL: (i32, i32, i32, i32) = (112, 78, 96, 24);
 /// Gap between the label and the number of the time-bonus line, and
 /// between Resi and „× N" on the intro screen.
 const GAP: i32 = 4;
@@ -123,7 +125,7 @@ pub fn draw_title(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, frames
             ctx.atlas(),
             logo,
             &logo.anims[0],
-            game.frame(),
+            0,
             WIDTH as i32 / 2,
             LOGO_Y,
             false,
@@ -205,11 +207,15 @@ pub fn draw_to_be_continued(ctx: &RenderContext, fb: &mut Framebuffer) {
     centred(ctx, fb, &text, CENTRE_Y, WHITE);
 }
 
-/// Pause: the frame drawn so far dimmed (every channel halved), then `ui.pause`.
+/// Pause: the frozen level stays at full colour; a `B` panel with a `k`
+/// border and an `S` highlight (top and left) carries `ui.pause`.
 pub fn draw_pause(ctx: &RenderContext, fb: &mut Framebuffer) {
-    for p in &mut fb.pixels {
-        *p = ((*p >> 1) & 0x7f7f_7f00) | (*p & 0xff);
-    }
+    let (x, y, w, h) = PAUSE_PANEL;
+    fb.fill_rect(x, y, w, h, NAVY);
+    // 1 px `S` highlight inside the border, top and left (art-style §11).
+    fb.fill_rect(x + 1, y + 1, w - 2, 1, SKY_BLUE);
+    fb.fill_rect(x + 1, y + 1, 1, h - 2, SKY_BLUE);
+    fb.outline_rect(x, y, w, h, OUTLINE);
     centred(ctx, fb, &ctx.texts().get(PAUSE_KEY), CENTRE_Y, WHITE);
 }
 
@@ -377,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn pause_dims_the_level_and_shows_its_text() {
+    fn pause_shows_a_panel_over_the_full_colour_level() {
         let atlas = block_font();
         let mut g = Game::new_at(&level(), &tuning(), 1, Start::Title);
         g.step(InputFrame::START);
@@ -388,11 +394,21 @@ mod tests {
         g.step(InputFrame::START);
         assert_eq!(g.mode(), Mode::Paused);
         let fb = rendered(&g, &atlas);
-        let sky = playing.get(5, 170).unwrap();
-        let dim = ((sky >> 1) & 0x7f7f_7f00) | 0xff;
-        assert_eq!(fb.get(5, 170), Some(dim));
+        // Outside the panel the level is unchanged (no dimming).
+        assert_eq!(fb.get(5, 170), playing.get(5, 170));
+        assert_eq!(fb.get(111, 80), playing.get(111, 80));
+        assert_eq!(fb.get(208, 80), playing.get(208, 80));
+        // Panel: k border, S highlight top and left inside it, B fill.
+        assert_eq!(fb.get(112, 78), Some(OUTLINE));
+        assert_eq!(fb.get(207, 101), Some(OUTLINE));
+        assert_eq!(fb.get(150, 79), Some(SKY_BLUE));
+        assert_eq!(fb.get(113, 95), Some(SKY_BLUE));
+        assert_eq!(fb.get(206, 100), Some(NAVY));
+        assert_eq!(fb.get(150, 82), Some(NAVY));
         let pause = texts().get(PAUSE_KEY).into_owned();
-        assert_eq!(fb.get(centred_x(&pause), CENTRE_Y), Some(WHITE));
+        let x = centred_x(&pause);
+        assert_eq!(fb.get(x, CENTRE_Y), Some(WHITE));
+        assert_eq!(fb.get(x + 1, CENTRE_Y + 8), Some(OUTLINE), "shadow");
     }
 
     #[test]

@@ -284,7 +284,7 @@ impl<'a> RenderContext<'a> {
 ///
 /// Title, stage intro, game over and „Fortsetzung folgt …" are full
 /// screens; otherwise the level is drawn, then the HUD, then the overlay
-/// texts of the mode (pause dims everything drawn before its text).
+/// texts of the mode (pause: a panel over the frozen level).
 pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let to_be_continued = game
         .stage_clear()
@@ -320,10 +320,11 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
 }
 
 /// The title screen's backdrop: the level's start view without entities
-/// (background, tiles, Maibaum) and Resi idle where she stands.
+/// (background, tiles, Maibaum) and Resi idle where she stands. Static:
+/// every animation is drawn at tick 0.
 pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let cam = game.camera();
-    let (atlas, tick) = (ctx.atlas, game.frame());
+    let (atlas, tick) = (ctx.atlas, 0);
     background::draw(
         fb,
         atlas,

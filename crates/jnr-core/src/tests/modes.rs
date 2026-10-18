@@ -33,8 +33,9 @@ fn title_then_start_then_intro_then_playing() {
     hold(&mut g, "R", 30);
     assert_eq!(g.mode(), Mode::Title { frames: 30 });
     assert_eq!(*g.player(), p0);
-    // A START held from before is not a press.
-    hold(&mut g, "S", 1);
+    // A START press starts the stage intro (no `Respawned`: nobody died).
+    let events = hold(&mut g, "S", 1);
+    assert!(!events.contains(&Event::Respawned), "{events:?}");
     assert_eq!(
         g.mode(),
         Mode::StageIntro {
@@ -42,6 +43,7 @@ fn title_then_start_then_intro_then_playing() {
         }
     );
     let time = g.time_left();
+    // Nothing moves during the intro, whatever is held.
     hold(&mut g, "RS", intro_frames() - 1);
     assert_eq!(g.mode(), Mode::StageIntro { timer: 1 });
     assert_eq!(*g.player(), p0, "the intro stands still");
@@ -149,4 +151,76 @@ fn flow_state_is_hashed() {
     let a = Game::new(&flat(30), &tuning(), 1);
     let b = titled(&flat(30));
     assert_ne!(a.state_hash(), b.state_hash());
+}
+
+#[test]
+fn start_held_through_the_intro_does_not_pause() {
+    // From the title: START pressed once and held into play.
+    let mut g = titled(&flat(30));
+    hold(&mut g, "S", intro_frames() + 1);
+    assert_eq!(g.mode(), Mode::Playing);
+    hold(&mut g, "RS", 30);
+    assert_eq!(g.mode(), Mode::Playing, "held START is no new press");
+    // Releasing and pressing again pauses.
+    hold(&mut g, "-", 1);
+    g.step(input("S"));
+    assert_eq!(g.mode(), Mode::Paused);
+}
+
+#[test]
+fn start_held_from_a_continue_through_the_intro_does_not_pause() {
+    let t = tuning();
+    let mut g = titled(&spikes());
+    start_playing(&mut g);
+    for _ in 0..3 {
+        while !g.step(input("R")).contains(&Event::Died) {}
+        hold(&mut g, "-", u32::from(t.game.death_frames));
+        if g.lives() > 0 {
+            hold(&mut g, "-", intro_frames());
+        }
+    }
+    hold(&mut g, "-", u32::from(t.game.game_over_frames));
+    let events = hold(&mut g, "S", 1);
+    assert!(
+        !events.contains(&Event::Respawned),
+        "a continue is no respawn"
+    );
+    hold(&mut g, "S", intro_frames());
+    assert_eq!(g.mode(), Mode::Playing);
+    hold(&mut g, "S", 30);
+    assert_eq!(g.mode(), Mode::Playing);
+}
+
+#[test]
+fn start_during_dying_and_stage_clear_does_nothing() {
+    let t = tuning();
+    let mut g = titled(&spikes());
+    start_playing(&mut g);
+    while !g.step(input("R")).contains(&Event::Died) {}
+    // Tap START during Dying: the death runs its course, no pause.
+    let mut reference = g.clone();
+    hold(&mut g, "S", 1);
+    hold(&mut reference, "-", 1);
+    hold(&mut g, "-", u32::from(t.game.death_frames) - 1);
+    hold(&mut reference, "-", u32::from(t.game.death_frames) - 1);
+    assert!(matches!(g.mode(), Mode::StageIntro { .. }));
+    assert_eq!(g.state_hash(), reference.state_hash());
+
+    let goal = level(&["..........", "..P....G..", "##########"]);
+    let mut g = titled(&goal);
+    start_playing(&mut g);
+    while g.mode() != Mode::StageClear {
+        g.step(input("R"));
+    }
+    let mut reference = g.clone();
+    for i in 0..400 {
+        let tap = if i % 2 == 0 { "S" } else { "-" };
+        g.step(input(tap));
+        reference.step(input("-"));
+        assert!(!matches!(g.mode(), Mode::Paused), "paused at {i}");
+    }
+    // Only the START tracking differs: the sequence itself is identical.
+    hold(&mut g, "-", 1);
+    hold(&mut reference, "-", 1);
+    assert_eq!(g.state_hash(), reference.state_hash());
 }

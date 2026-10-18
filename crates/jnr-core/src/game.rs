@@ -480,6 +480,11 @@ impl Game {
         self.place_player();
         self.death_cause = None;
         self.events.push(Event::Respawned);
+        self.enter_stage();
+    }
+
+    /// Play starts (after the stage intro with [`Start::Title`]).
+    fn enter_stage(&mut self) {
         self.mode = match self.start {
             Start::Title => Mode::StageIntro {
                 timer: self.tuning.game.intro_frames.max(1),
@@ -515,10 +520,10 @@ impl Game {
     }
 
     /// Game over → START, title → START: the stage from its start, full
-    /// lives, no score.
+    /// lives, no score. No `Respawned` event: that is only for a death.
     fn restart(&mut self) {
         self.reset_run();
-        self.respawn();
+        self.enter_stage();
     }
 
     fn place_camera(&mut self) {

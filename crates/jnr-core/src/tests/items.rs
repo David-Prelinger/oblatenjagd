@@ -796,7 +796,10 @@ fn losing_the_last_life_is_game_over_and_start_restarts_the_stage() {
     assert!(matches!(g.mode(), Mode::GameOver { .. }));
     hold(&mut g, "-", 1);
     let events = g.step(input("S")).to_vec();
-    assert!(events.contains(&Event::Respawned));
+    assert!(
+        !events.contains(&Event::Respawned),
+        "a restart is no respawn"
+    );
     assert_eq!(g.mode(), Mode::Playing);
     assert_eq!((g.lives(), g.score(), g.oblaten()), (3, 0, 0));
     assert_eq!(g.checkpoint(), None);

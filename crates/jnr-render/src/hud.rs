@@ -4,7 +4,7 @@
 //! (6 digits, zero-padded), OBLATEN x = 96 (2 digits, after the optional
 //! `hud_oblate` icon), LEBEN x = 184, ZEIT x = 256 (3 digits, `r` at ≤ 60 s).
 //!
-//! Shown in `Playing`, `Paused` (dimmed with the level), `Dying` and
+//! Shown in `Playing`, `Paused` (with the frozen level), `Dying` and
 //! `StageClear` (scene decides). Drawing allocates nothing.
 
 use jnr_artkit::atlas::Atlas;
