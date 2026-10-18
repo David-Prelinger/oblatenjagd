@@ -25,19 +25,26 @@
 //! if a search runs into the limit, which is why the limit (60 s) is
 //! generous: the testbed takes about 0.6 s.
 //!
-//! **Difficulty.** For every jump of the route (a JUMP press followed by a
-//! `Jumped`), the whole held-JUMP segment is shifted by d ∈ [-12, +12]
-//! frames with the rest of the inputs unchanged (padded with the last input
-//! past the end of the route). Its checkpoint is the first landing after
-//! that `Jumped` + 2 s, capped at the route's end. A shift succeeds if the
-//! player survives up to the next jump's checkpoint (or the end of the
-//! route) and, at its own checkpoint, is at most one tile behind the
-//! original (or has completed the level). The jump window is the
-//! contiguous successful range around d = 0. Each side records why it
-//! stopped ([`Bound`]): a failed shift, the route (the shift would start
-//! before frame 0 or touch a neighbouring JUMP hold) or ±12. Windows with
-//! a route-limited side are only lower bounds and never count as the
-//! narrowest.
+//! **Difficulty** (D-033: jump windows measure recoverability). For every
+//! jump of the route (a JUMP press followed by a `Jumped`), the whole
+//! held-JUMP segment is shifted by d ∈ [-12, +12] frames with the rest of
+//! the inputs unchanged (padded with the last input past the end of the
+//! route). Its checkpoint is the first landing after that `Jumped` + 2 s,
+//! capped at the route's end; the progress there is the original x minus
+//! one tile. A shift succeeds if the player survives the shifted jump and
+//! then reaches that progress (or completes the level) without dying:
+//! either the unchanged later inputs do it by the checkpoint (fast path),
+//! or a short re-planning beam search ([`recovers`], beam
+//! [`REPLAN_BEAM`]) from the state right after the shifted jump's landing
+//! (or, if the press made no jump, after its buffer ran out) reaches it
+//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames. So
+//! a later press that a 1-frame shift makes miss its buffer no longer
+//! collapses the window: a player would simply press it a frame later. The
+//! jump window is the contiguous successful range around d = 0. Each side
+//! records why it stopped ([`Bound`]): a failed shift, the route (the
+//! shift would start before frame 0 or touch a neighbouring JUMP hold) or
+//! ±12. Windows with a route-limited side are only lower bounds and never
+//! count as the narrowest.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -138,6 +145,11 @@ pub const MAX_SHIFT: i32 = 12;
 const CHECKPOINT_AFTER_LANDING: u32 = 2 * TICKS_PER_SECOND;
 /// A shifted jump may end up this many pixels behind the original.
 const PROGRESS_TOLERANCE_PX: i32 = 16;
+/// Beam width of the re-planning search after a shifted jump (D-033).
+pub const REPLAN_BEAM: usize = 12;
+/// The re-planning search may reach the progress this many frames after
+/// the jump's checkpoint (a shifted jump lands up to 12 frames later).
+pub const REPLAN_MARGIN: u32 = 30;
 
 // ------------------------------------------------------------------ search
 
@@ -542,26 +554,104 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
 }
 
 /// Runs `inputs` up to frame `until` (or their end): `None` if the player
-/// died on the way, else the x at frame `check` (≤ `until`) and whether the
-/// level was completed by then.
+/// died on the way, else the x at frame `check` and whether the level was
+/// completed by then.
 fn progress(
     level: &Level,
     tuning: &Tuning,
     inputs: &[InputFrame],
     check: u32,
-    until: u32,
 ) -> Option<(i32, bool)> {
     let mut g = Game::new(level, tuning, 1);
-    let mut at_check = (g.player().x.to_px(), false);
-    for &i in inputs.iter().take(until as usize) {
+    for &i in inputs.iter().take(check as usize) {
         if g.step(i).contains(&Event::Died) {
             return None;
         }
-        if g.frame() <= check {
-            at_check = (g.player().x.to_px(), g.mode() == Mode::StageClear);
+        if g.mode() == Mode::StageClear {
+            return Some((g.player().x.to_px(), true));
         }
     }
-    Some(at_check)
+    Some((g.player().x.to_px(), false))
+}
+
+/// Where a shifted jump leaves the player for re-planning: after the step
+/// that lands it (the first `Landed` after its `Jumped`), or, if the press
+/// made no jump, after the jump buffer ran out. `Err(true)`: the level was
+/// completed on the way (success), `Err(false)`: died or never landed
+/// before `deadline` (failure).
+fn after_shifted_jump(
+    level: &Level,
+    tuning: &Tuning,
+    inputs: &[InputFrame],
+    press: u32,
+    deadline: u32,
+) -> Result<Game, bool> {
+    let buffer = tuning.player.jump_buffer_frames as u32;
+    let mut g = Game::new(level, tuning, 1);
+    let mut jumped = false;
+    let pad = inputs
+        .last()
+        .map_or(InputFrame::NONE, |f| f.without(InputFrame::JUMP));
+    while g.frame() < deadline {
+        let input = inputs.get(g.frame() as usize).copied().unwrap_or(pad);
+        let events = g.step(input);
+        if events.contains(&Event::Died) {
+            return Err(false);
+        }
+        if g.mode() == Mode::StageClear {
+            return Err(true);
+        }
+        let f = g.frame();
+        if f >= press && !jumped {
+            jumped = g.events().contains(&Event::Jumped);
+            if !jumped && f >= press + buffer {
+                return Ok(g);
+            }
+        } else if jumped && g.events().contains(&Event::Landed) {
+            return Ok(g);
+        }
+    }
+    Err(false)
+}
+
+/// The re-planning search (D-033): a small beam search with the solver's
+/// macro-actions from `game` that finds a node standing on the ground at
+/// x ≥ `x_goal` px (or completing the level) by frame `deadline`, without
+/// dying. Deterministic like [`search`] (nodes in rank order, results
+/// joined in node order).
+pub fn recovers(game: Game, x_goal: i32, deadline: u32, threads: usize) -> bool {
+    let reached = |g: &Game| {
+        g.mode() == Mode::StageClear || (g.player().on_ground && g.player().x.to_px() >= x_goal)
+    };
+    if reached(&game) {
+        return true;
+    }
+    let mut buckets: BTreeMap<u32, Vec<Node>> = BTreeMap::new();
+    buckets.insert(
+        game.frame(),
+        vec![Node {
+            game,
+            jumps: 0,
+            trail: None,
+        }],
+    );
+    while let Some((_, mut nodes)) = buckets.pop_first() {
+        nodes.sort_by_key(|n| (std::cmp::Reverse(n.x()), n.jumps));
+        let mut seen = BTreeSet::new();
+        nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
+        let nodes = select_beam(nodes, REPLAN_BEAM);
+        for node in expand_all(&nodes, threads).into_iter().flatten().flatten() {
+            let f = node.game.frame();
+            if f > deadline {
+                continue;
+            }
+            if reached(&node.game) {
+                return true;
+            }
+            buckets.entry(f).or_default().push(node);
+        }
+    }
+    false
 }
 
 /// The JUMP-held segments `[start, end)` of `inputs`.
@@ -667,20 +757,29 @@ pub fn jump_windows(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Ve
         })
         .collect();
 
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
     let mut out = Vec::new();
-    for (k, jump) in jumps.iter().enumerate() {
+    for jump in &jumps {
         let (s, e) = jump.hold;
         let check = jump.check;
-        // Survive up to the next jump's checkpoint (or the end of the
-        // route): a shift that ruins a later jump fails too.
-        let until = jumps.get(k + 1).map_or(total, |n| n.check).max(check);
-        let x_ref = orig.x[check as usize];
-        let (lo, lo_bound, hi, hi_bound) = window_range(|d| match shift_hold(inputs, s, e, d) {
-            None => Shifted::Route,
-            Some(shifted) => match progress(level, tuning, &shifted, check, until) {
-                Some((x, done)) if done || x >= x_ref - PROGRESS_TOLERANCE_PX => Shifted::Ok,
-                _ => Shifted::Fail,
-            },
+        let x_goal = orig.x[check as usize] - PROGRESS_TOLERANCE_PX;
+        let deadline = check + REPLAN_MARGIN;
+        let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
+            let Some(shifted) = shift_hold(inputs, s, e, d) else {
+                return Shifted::Route;
+            };
+            // Fast path: the unchanged later inputs already get there.
+            if let Some((x, done)) = progress(level, tuning, &shifted, check)
+                && (done || x >= x_goal)
+            {
+                return Shifted::Ok;
+            }
+            let press = (s as i64 + i64::from(d)) as u32 + 1;
+            let ok = match after_shifted_jump(level, tuning, &shifted, press, deadline) {
+                Ok(game) => recovers(game, x_goal, deadline, threads),
+                Err(done) => done,
+            };
+            if ok { Shifted::Ok } else { Shifted::Fail }
         });
         out.push(JumpWindow {
             index: s,
@@ -1565,20 +1664,21 @@ mod tests {
         assert_eq!(narrowest(&w), Some(&w[0]));
     }
 
+    /// D-033: jump 1 is a hop while still accelerating (air accel < ground
+    /// accel), so its timing moves the player by a few pixels for good.
+    /// Jump 2, before jump 1's checkpoint, is pressed on the last coyote
+    /// frame before a pit. With every later press fixed, a later hop makes
+    /// jump 2 too late and the player dies (the old metric: a narrow
+    /// window). Re-planning after the hop's landing simply jumps a frame
+    /// earlier, so jump 1's window is wide.
     #[test]
-    fn shifted_jump_that_ruins_a_later_jump_fails() {
-        // Jump 1 is a hop while still accelerating (air accel < ground
-        // accel), so its timing moves the player by a few pixels for good.
-        // Jump 2, more than 2 s after jump 1's landing, is pressed on the
-        // last coyote frame before a pit. A shift of jump 1 that is fine at
-        // its own checkpoint can make jump 2 too late; it must count as a
-        // failure of jump 1's window.
-        let w = 70;
+    fn a_fixed_later_press_no_longer_narrows_the_window() {
+        let w = 60;
         let air = ".".repeat(w);
         let mut top = ".".repeat(w);
         top.replace_range(1..2, "P");
         top.replace_range(w - 2..w - 1, "G");
-        let pit_col = 40;
+        let pit_col = 16;
         let ground = format!(
             "{}{}{}",
             "#".repeat(pit_col),
@@ -1590,19 +1690,25 @@ mod tests {
         let hop = 3;
         let mut prefix = vec![RB; hop];
         prefix.push(RBJ);
-        // Find the first airborne step at the pit edge (after the hop).
+        // The hop's landing, then the first airborne step at the pit edge.
         let mut probe = Game::new(&level, &t, 1);
-        let mut left_ground = 0;
+        let (mut landed, mut left_ground) = (0, 0);
         for i in 0..400 {
             let input = prefix.get(i).copied().unwrap_or(RB);
-            probe.step(input);
-            if i > 60 && !probe.player().on_ground {
+            let events = probe.step(input).to_vec();
+            if landed == 0 && events.contains(&Event::Landed) {
+                landed = probe.frame();
+            } else if landed > 0 && !probe.player().on_ground {
                 left_ground = i;
                 break;
             }
         }
-        assert!(left_ground > 0);
+        assert!(landed > 0 && left_ground > 0);
         let press2 = left_ground + t.player.coyote_frames as usize - 1;
+        assert!(
+            (press2 as u32) < landed + CHECKPOINT_AFTER_LANDING,
+            "jump 2 comes before jump 1's checkpoint"
+        );
         let mut inputs = prefix.clone();
         inputs.resize(press2, RB);
         inputs.extend([RBJ; 20]);
@@ -1610,30 +1716,59 @@ mod tests {
         let windows = jump_windows(&level, &t, &inputs);
         assert_eq!(windows.len(), 2, "{windows:?}");
         let w1 = &windows[0];
-        assert!(
-            windows[1].index > (w1.index + 150),
-            "jump 2 is far after jump 1"
-        );
 
-        // Some shift of jump 1 dies only after jump 1's own checkpoint ...
+        // With the later inputs fixed, some later hops die at the pit ...
         let (s, e) = (w1.index, w1.index + 1);
         let dies = |d: i32| {
             let shifted = shift_hold(&inputs, s, e, d).unwrap();
             let mut g = Game::new(&level, &t, 1);
             shifted.iter().any(|&i| g.step(i).contains(&Event::Died))
         };
-        let late_deaths: Vec<i32> = (1..=MAX_SHIFT).filter(|&d| dies(d)).collect();
+        let fixed_deaths: Vec<i32> = (1..=MAX_SHIFT).filter(|&d| dies(d)).collect();
         assert!(
-            !late_deaths.is_empty(),
-            "scenario: a later hop ruins jump 2"
+            !fixed_deaths.is_empty(),
+            "scenario: a later hop ruins the fixed jump 2"
         );
-        // ... and the window stops before it.
-        assert!(
-            w1.hi < late_deaths[0],
-            "{w1:?} vs deaths at {late_deaths:?}"
+        // ... before jump 1's checkpoint, so the fast path fails ...
+        let shifted = shift_hold(&inputs, s, e, fixed_deaths[0]).unwrap();
+        let check = landed + CHECKPOINT_AFTER_LANDING;
+        assert_eq!(
+            progress(&level, &t, &shifted, check),
+            None,
+            "dies by {check}"
         );
-        assert_eq!(w1.hi_bound, Bound::Fail, "{w1:?}");
+        // ... but the window re-plans and reaches +12.
+        assert_eq!(
+            (w1.hi, w1.hi_bound),
+            (MAX_SHIFT, Bound::Max),
+            "{w1:?} vs fixed deaths at {fixed_deaths:?}"
+        );
+        assert_eq!(w1.lo_bound, Bound::Route, "{w1:?}");
+        // Jump 2 itself is a real coyote-limited jump: still narrow on the
+        // late side.
+        let w2 = &windows[1];
+        assert_eq!(w2.hi_bound, Bound::Fail, "{w2:?}");
+        assert!(w2.hi <= 1, "{w2:?}");
     }
+
+    #[test]
+    fn replanning_finds_a_way_or_reports_none() {
+        // From the start of a level with a 3-tile gap the re-planning
+        // search gets past the gap; across an 11-tile gap it can't.
+        let t = tuning();
+        let threads = 2;
+        let ok = gap_level(3);
+        let g = Game::new(&ok, &t, 1);
+        assert!(recovers(g, 20 * 16, 400, threads));
+        let wide = gap_level(11);
+        let g = Game::new(&wide, &t, 1);
+        assert!(!recovers(g, 26 * 16, 400, threads));
+        // Already there: true without searching.
+        let g = Game::new(&ok, &t, 1);
+        let x = g.player().x.to_px();
+        assert!(recovers(g, x, 0, threads));
+    }
+
     #[test]
     fn clean_route_drops_mid_air_presses_and_trims_long_holds() {
         let level = gap_level(0);
