@@ -8,7 +8,7 @@ use std::process::Command;
 use std::time::Instant;
 
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
-use crate::{archlint, golden, levels, replay, sprites, wasm};
+use crate::{archlint, golden, levels, replay, solver, sprites, wasm};
 
 pub type StepFn = fn(&Path) -> Step;
 
@@ -106,8 +106,12 @@ fn levels_lint(root: &Path) -> Step {
 
 // ---------------------------------------------------------------- verify (L4-L8)
 
-fn solver(_root: &Path) -> Step {
-    Step::skipped("solver", "cargo xtask solve <level>")
+fn solver(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output, note) = solver::verify(root);
+    let mut step = finish("solver", "cargo xtask solve --all", started, ok, &output);
+    step.note = note;
+    step
 }
 
 fn replays(root: &Path) -> Step {

@@ -11,6 +11,7 @@ mod golden;
 mod levels;
 mod replay;
 mod report;
+mod solver;
 mod sprites;
 mod steps;
 mod wasm;
@@ -33,6 +34,8 @@ Commands:
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
   levels    lint [id]
+  solve     <level-id|--all> [--write] [--shots]  solver bot + difficulty report
+            (see `cargo xtask solve help`)
   replay    <file|name|--all> [--shots]   run replays (expectations + determinism)
   filmstrip <file|name> [--every N]       contact sheet of every Nth frame
   scene     <level-id> --x <px>           render the level at camera x
@@ -55,6 +58,7 @@ fn main() -> ExitCode {
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("levels") => levels::run(&workspace_root(), &args[1..]),
+        Some("solve") => solver::run(&workspace_root(), &args[1..]),
         Some("replay") => replay::run_replay(&workspace_root(), &args[1..]),
         Some("filmstrip") => replay::run_filmstrip(&workspace_root(), &args[1..]),
         Some("scene") => replay::run_scene(&workspace_root(), &args[1..]),

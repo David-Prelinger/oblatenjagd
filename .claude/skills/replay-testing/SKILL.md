@@ -28,7 +28,7 @@ Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 =
 ## Commands
 - `cargo xtask replay <file|name>` – run it, check expectations, check determinism (runs twice, compares `state_hash` every frame); `--all` runs every `tests/replays/*.replay`
 - `cargo xtask replay <file> --shots` – also render the `shots` frames → `$CARGO_TARGET_DIR/preview/replays/<replay>_<shot>.png` (+ `_x4`)
-- `cargo xtask solve <level>` – solver bot; writes `tests/replays/<level>_solver.replay` + report
+- `cargo xtask solve <level|--all> [--write] [--shots]` – solver bot: report in `$CARGO_TARGET_DIR/reports/solver/<level>.{md,json}`; `--write` writes `tests/replays/<level>_solver.replay` (`source = solver`, `expect = complete frames=N..N deaths=0`, no shots). `--shots` adds shots `route_25 route_50 route_75`; they fail `goldens` until accepted with `cargo xtask golden --accept <level>_solver` after art-director APPROVED, so leave them out unless the route needs golden coverage. Same level + tuning → same route (deterministic).
 - `cargo xtask filmstrip <file> [--every N]` – every 30th (Nth) frame plus the last in one image
 - `cargo xtask golden` – compare all shots with `tests/golden/<replay>_<shot>.png` (the `goldens` verify step)
 - `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` – accept new goldens (**only** after art-director APPROVED)
@@ -41,6 +41,6 @@ Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 =
 
 ## After a physics or tuning change
 1. Run `cargo xtask verify`; expect solver replays to fail.
-2. `cargo xtask solve <level>` for each level; check the difficulty report still meets targets.
+2. `cargo xtask solve --all --write` re-creates the solver replays; check the difficulty reports still meet targets (narrowest jump window).
 3. Golden screenshots of affected scenes change → art-director review → `golden --accept`.
 4. Explain all of this in the commit message.
