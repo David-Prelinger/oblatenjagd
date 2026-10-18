@@ -1,6 +1,6 @@
 # Maibaum height bonus: the solver's route onto the rampart (frame 1583), then
-# a held jump off the edge touches the pole at Wurstkranz height (8+ tiles
-# above its base): 5000 points and the Wurstkranz popup (D-032).
+# a held jump off the edge touches the pole at Wurstkranz height (7+ tiles
+# above its base, D-038): 5000 points and the Wurstkranz popup (D-032).
 level  = salzburg
 source = handwritten
 expect = complete frames=1601..1601 deaths=0 score>=14100

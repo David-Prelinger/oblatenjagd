@@ -592,9 +592,9 @@ mod tests {
         assert_eq!(fb.get(40, 130), Some(DIRNDL_RED));
         assert_eq!(fb.get(33, 130), Some(SKY_LIGHT));
         assert_eq!(fb.get(46, 130), Some(SKY_LIGHT));
-        // Goal pole in column 16: x 263..265, from y 16 down to 144.
+        // Goal pole in column 16: x 263..265, from y 32 (7 tiles, D-038) down to 144.
         assert_eq!(fb.get(263, 140), Some(MOZART_YELLOW));
-        assert_eq!(fb.get(264, 16), Some(MOZART_YELLOW));
+        assert_eq!(fb.get(264, 32), Some(MOZART_YELLOW));
         assert_eq!(fb.get(265, 140), Some(SKY_LIGHT));
     }
 
@@ -866,12 +866,12 @@ mod tests {
 ";
         let mut game = Game::new(&level(grid), &tuning(), 1);
         let fb = rendered(&game, &atlas);
-        // 8 pole tiles from y 16 to 144, 4 px wide (x 102..106); top above.
+        // 7 pole tiles from y 32 to 144 (D-038), 4 px wide (x 102..106); top above.
         assert_eq!(fb.get(102, 143), Some(C));
-        assert_eq!(fb.get(105, 16), Some(C));
+        assert_eq!(fb.get(105, 32), Some(C));
         assert_eq!(fb.get(106, 100), Some(SKY_LIGHT));
-        assert_eq!(fb.get(103, 14), Some(C), "top at y 14..16");
-        assert_eq!(fb.get(103, 12), Some(SKY_LIGHT));
+        assert_eq!(fb.get(103, 30), Some(C), "top at y 30..32");
+        assert_eq!(fb.get(103, 28), Some(SKY_LIGHT));
         // Jump into the pole: `pole` anim while sliding, idle-or-walk after.
         game.step(InputFrame::RIGHT.with(InputFrame::JUMP));
         while game.mode() != Mode::StageClear {
