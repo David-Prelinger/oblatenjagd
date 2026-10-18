@@ -1,0 +1,6 @@
+# All player-visible German text, keyed. Code only references the keys
+# (e.g. "stage.clear"); see docs/architecture.md "Text" and the
+# german-satire-writing skill for tone. Tables flatten to dotted keys.
+
+[stage]
+clear = "Etappe geschafft!"
