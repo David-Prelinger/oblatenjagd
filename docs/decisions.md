@@ -124,3 +124,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - `Game::world_hash` is a coarse progress hash (no timers, no cosmetic entities) used by the solver's de-duplication key; `state_hash` hashes everything exactly.
 - Replay expectations `oblaten>=N` (HUD counter), `score>=N`, `lives=N`, `state=game_over`.
 - Renderer: Zuckerschock uses `player_big` (fallback `player`) with the same anim selection; `PlayerAnim::Skid` (anim `skid`, fallback `walk`) while braking against the motion on the ground, drawn facing the direction of motion (sprite catalog), decided in the renderer so core's `facing` stays the input direction.
+
+## D-023 QA rulings on items and stomping (orchestrator, M1)
+- Stomp boundary stays as specified (D-017): a fall whose previous-frame feet are below the enemy's middle is a side hit, even near the corner. Generous enough for medium difficulty; revisit only if playtests disagree.
+- Reaching 100 Oblaten shows the „+1 Leben" popup like the Zaunerstollen (unless at the lives cap).
+- Goal and time-up in the same frame: the goal wins.
+- Popups freeze during the 30-frame transformation freeze like everything else.
