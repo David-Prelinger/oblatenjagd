@@ -1,0 +1,27 @@
+# Water death: the solver's route up to the Makartsteg, then walk into the
+# first Salzach gap (cols 94-95) without jumping -> death, respawn at the start
+# (no checkpoint yet) with one life less; the Oblaten counter survives.
+level  = salzburg
+source = handwritten
+expect = dies_at frames=600..610 deaths=1 lives=2 oblaten>=16 state=playing
+expect = player_x>=24 no_event=Hurt
+---
+RB 64   # solver route to the bridge (frames 0-589)
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 32
+RBJ 31
+RB 20
+RBJ 12
+RB 38
+RBJ 33
+RB 5
+RBJ 32
+RB 42
+R 60        # walk off the deck into the gap
+- 300       # death, stage intro, respawn at the start

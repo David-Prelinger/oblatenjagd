@@ -1,0 +1,51 @@
+# Written by `cargo xtask solve salzburg --write`; re-create it instead of editing.
+level  = salzburg
+seed   = 1
+source = solver
+expect = complete frames=1608..1608 deaths=0
+---
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 32
+RBJ 31
+RB 20
+RBJ 12
+RB 38
+RBJ 33
+RB 5
+RBJ 32
+RB 44
+RBJ 36
+RB 54
+RBJ 36
+RB 18
+RBJ 36
+RB 78
+RBJ 20
+RB 18
+RBJ 36
+RB 110
+RBJ 36
+RB 104
+RBJ 36
+RB 24
+RBJ 36
+RB 62
+RBJ 1
+RB 2
+RBJ 20
+RB 10
+RBJ 36
+RB 18
+RBJ 35
+RB 33
+RBJ 36
+RB 30
+RBJ 20
+RB 35
