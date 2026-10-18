@@ -24,7 +24,7 @@ Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
             sprites lint
   verify    full validation: check + levels lint, solver, replays,
-            goldens, vnc-smoke (not implemented yet steps are skipped)
+            goldens, wasm-smoke, vnc-smoke (not implemented yet steps are skipped)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)

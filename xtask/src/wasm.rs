@@ -4,6 +4,7 @@
 
 use std::fs;
 use std::net::{TcpListener, TcpStream};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitCode, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
@@ -76,7 +77,7 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let dir = match build_and_assemble(root, opts.release) {
+    let dir = match build_and_assemble(root, opts.release, false) {
         Ok(dir) => dir,
         Err(e) => {
             eprintln!("xtask wasm: {e}");
@@ -126,9 +127,10 @@ pub fn smoke(root: &Path, args: &[String]) -> ExitCode {
     }
 }
 
-/// Builds `jnr-app` for wasm and copies page, loader and module into
-/// `$CARGO_TARGET_DIR/web/`. Returns that directory.
-fn build_and_assemble(root: &Path, release: bool) -> Result<PathBuf, String> {
+/// Builds `jnr-app` for wasm and copies page, loader (+ its licence) and
+/// module into `$CARGO_TARGET_DIR/web/`. Returns that directory.
+/// `quiet` hides cargo's progress output (errors are still shown).
+fn build_and_assemble(root: &Path, release: bool, quiet: bool) -> Result<PathBuf, String> {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     let mut cmd = Command::new(cargo);
     cmd.args([
@@ -141,6 +143,9 @@ fn build_and_assemble(root: &Path, release: bool) -> Result<PathBuf, String> {
     .current_dir(root);
     if release {
         cmd.arg("--release");
+    }
+    if quiet {
+        cmd.arg("--quiet");
     }
     let status = cmd
         .status()
@@ -160,6 +165,7 @@ fn build_and_assemble(root: &Path, release: bool) -> Result<PathBuf, String> {
     let files = [
         (root.join("web/index.html"), "index.html"),
         (root.join("web/gl.js"), "gl.js"),
+        (root.join("web/gl.js.LICENSE-MIT"), "gl.js.LICENSE-MIT"),
         (wasm, WASM_NAME),
     ];
     for (from, name) in files {
@@ -168,19 +174,33 @@ fn build_and_assemble(root: &Path, release: bool) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-/// Kills the child process when dropped (the background HTTP server).
-struct KillOnDrop(Child);
+/// Kills the child process when dropped (HTTP server, Chromium). With
+/// `group`, the child was started as leader of its own process group
+/// (`process_group(0)`) and the whole group is killed, so Chromium's helper
+/// processes do not outlive a timeout.
+struct KillOnDrop {
+    child: Child,
+    group: bool,
+}
 
 impl Drop for KillOnDrop {
     fn drop(&mut self) {
-        let _ = self.0.kill();
-        let _ = self.0.wait();
+        if self.group {
+            let _ = Command::new("kill")
+                .args(["-KILL", "--", &format!("-{}", self.child.id())])
+                .stderr(Stdio::null())
+                .status();
+        }
+        let _ = self.child.kill();
+        let _ = self.child.wait();
     }
 }
 
-fn smoke_check(root: &Path) -> Result<String, String> {
+/// Runs the whole smoke check; `Ok` carries a one-line summary.
+/// Also the `wasm-smoke` step of `cargo xtask verify`.
+pub fn smoke_check(root: &Path) -> Result<String, String> {
     let sky = sky_colour(root)?;
-    let dir = build_and_assemble(root, true)?;
+    let dir = build_and_assemble(root, true, true)?;
     let preview = target_dir(root).join("preview");
     fs::create_dir_all(&preview).map_err(|e| format!("{}: {e}", preview.display()))?;
     let shot = preview.join("wasm_smoke.png");
@@ -205,8 +225,11 @@ fn smoke_check(root: &Path) -> Result<String, String> {
         .stderr(Stdio::null())
         .spawn()
         .map_err(|e| format!("could not start python3 http.server: {e}"))?;
-    let _server = KillOnDrop(server);
-    wait_for_port(port, Duration::from_secs(10))?;
+    let mut server = KillOnDrop {
+        child: server,
+        group: false,
+    };
+    wait_for_port(&mut server.child, port, Duration::from_secs(10))?;
     let url = format!("http://127.0.0.1:{port}/index.html");
 
     // 1) Did the wasm module instantiate? (DOM marker set by index.html.)
@@ -315,10 +338,11 @@ fn run_chromium(
         .stdin(Stdio::null())
         .stdout(out)
         .stderr(err)
+        .process_group(0)
         .spawn()
         .map_err(|e| format!("could not start {}: {e}", chromium.display()))?;
-    let mut child = KillOnDrop(child);
-    match wait_timeout(&mut child.0, CHROMIUM_TIMEOUT) {
+    let mut child = KillOnDrop { child, group: true };
+    match wait_timeout(&mut child.child, CHROMIUM_TIMEOUT) {
         Some(status) if status.success() => Ok(()),
         Some(status) => Err(format!(
             "chromium exited with {status}; see {}",
@@ -352,9 +376,15 @@ fn free_port() -> Result<u16, String> {
         .map_err(|e| format!("no free port: {e}"))
 }
 
-fn wait_for_port(port: u16, timeout: Duration) -> Result<(), String> {
+/// Waits until `server` accepts connections on `port`; fails fast if it died.
+fn wait_for_port(server: &mut Child, port: u16, timeout: Duration) -> Result<(), String> {
     let started = Instant::now();
     while started.elapsed() < timeout {
+        if let Ok(Some(status)) = server.try_wait() {
+            return Err(format!(
+                "python3 http.server exited ({status}) before listening on port {port}"
+            ));
+        }
         if TcpStream::connect(("127.0.0.1", port)).is_ok() {
             return Ok(());
         }
