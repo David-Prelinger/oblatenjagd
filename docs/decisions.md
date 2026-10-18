@@ -98,3 +98,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - While `Dying`, `Game::step` keeps updating `Player::jump_held` from the input, and `respawn` carries it into the new player. A JUMP held across a respawn is therefore not a new press (no auto-jump); presses during `Dying` never reach the jump buffer (it is not updated while dying and is reset on spawn).
 - Replay files hold at most `MAX_FRAMES_PER_LINE` frames per input line and `MAX_TOTAL_FRAMES` in total (both 216 000 = 1 h at 60 Hz); larger files are parse errors with a line number, so a malformed replay cannot exhaust memory or run for ever.
 - `cargo xtask scene` clamps the player's centre so its hitbox stays inside the level and prints a warning when it did; the camera clamps itself as before.
+
+## D-020 Sprite catalog and autotiling (M1)
+- `docs/sprite-catalog.md` is the contract between art and engine: sprite names, sizes, origins, animation names. The engine falls back to grey boxes for missing sprites, so art and code proceed in parallel.
+- Autotiling without a new artkit header: a tile sprite with a 16-frame animation `auto` is drawn with frame = 4-neighbour mask (N=1, E=2, S=4, W=8; level edge counts as same). The `tileset` header stays unsupported.
