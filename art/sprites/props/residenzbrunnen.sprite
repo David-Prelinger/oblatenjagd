@@ -1,0 +1,144 @@
+# Residenzbrunnen (Residenzplatz): the tiered baroque fountain. Basin with
+# a plain curved wall, a rock base with two sea horses bursting out and three
+# Atlantes holding up the big bowl, a small bowl on top with the Triton
+# blowing a jet of water from his conch. Light stone w/i/m (rock m with
+# i/d; figures separated by d lines), water t/T/w spilling over the big bowl
+# all round, k outline.
+# Drawn over the 5x3 solid fountain tiles: the bowl lip at y=16 is the top
+# of the tile block (rows 16-63 = the 80x48 block, fully opaque), Triton +
+# jet above it. idle: 2 frames, the water streaks and the jet move.
+sprite = residenzbrunnen
+size   = 80x64
+origin = 40,64
+anim   = idle frames=2 ticks=12 loop
+---
+frame idle 0
+...........................................wt...................................
+...........................................wt...................................
+.........................................t.tt...................................
+...........................................wt.t.................................
+..................................kkk.....kwtk..................................
+.................................kwiik.kkkiimk..................................
+.................................kiimkkwiiimk...................................
+.................................kimmkwiiimmk...................................
+..................................kkwiiiiimk....................................
+...................................kwiimkiimk...................................
+.............................kkkkkkkkkkkkkkkkkkkkkk.............................
+............................kiiiiiiiiiiiiiiiiiiiiiik............................
+.............................kmiiiiiiiiiiiiiiiiiimk.............................
+..............................kmmmmmmiiiiiimmmmmmk..............................
+...............................kkkkkkiiiiimkkkkkk...............................
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkiiiiimkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kTmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmtk
+kTttmiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiimTttk
+kTttTmmmiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimmmtTttk
+kTttTttmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmTttTttk
+kTttTttTtmmmmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmmmmttTttTttk
+kTwtTwtTwtddmdmiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiimdmddTwtTwtTwtk
+kTwtTwtTwdwmdmdmmmmmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmdmdwmdwtTwtTwtk
+kTttTttTdwiiwmdtTttTmmmmmmmiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmtTttTdiwiimdtTttTttk
+kTttTtddwiiiiimdTtiiiidddddmmmmmimmmmmmmmmimmmmmmmmmidddddiiidttdwiiiiimddttTttk
+kTttddwwidiiiiimddmmmddddmmdddddwmdmmdddddwmdmmdddddwmddddimmmddwiiiiidiwmddTttk
+kTtdwwiiiiiiiiiimddmmdddddmddmddmdddmddmddmdddmddmddmdddddimmddwiiiiiiiiiiwmdttk
+kTdwiiiimmiiiiiiimdimdddddmwwiwwmdddmwwiwwmdddmwwiwwmdddddimddwiiiiiiimmiiiimdtk
+kTdmiiimddmiiiiiimddmddddddiiiimdddddiiiimdddddiiiimddddddimddiiiiiiimddmiiimdtk
+kTtdmmmdttdmiiiiiimdddddddwiiiiimdddwiiiiimdddwiiiiimdddddiddwiiiiiimdTtdmmmdttk
+kTttdddTttTdiiiiiiimddddddmiiiiimdddmiiiiimdddmiiiiimdddddddwiiiiiimdtTttdddTttk
+kTttTttTttTdmiiiiiiimddddddmiiimdddddmiiimdddddmiiimdddddddwiiiiiiimdtTttTttTttk
+kTttTttTtddtdiiiiiiiimddddddiimdddddddiimdddddddiimdddddddwiiiiiiimdtddttTttTttk
+kTwtTwtddwmddiiiiiiiimdddddwimimdddddwimimdddddwimimddddddiiiiiiiimddwmddTwtTwtk
+kTwtTwdwwmiwwiiiiiiiimdddddimdimdddddimdimdddddimdimddddddiiiiiiiiiwwimwmdwtTwtk
+kTttTdwimdmiiiiiiiiiimdddddimdimdddddimdimdddddimdimddddddiiiiiiiiiiimdmimdtTttk
+kTttTdmmdtdmiiiiiiiiiddddddimdimdddddimdimdddddimdimddddddiiiiiiiiiimdTdimdtTttk
+kTttTtdimdddmiiiiiiiimddddmmmdmmmdddmmmdmmmdddmmmdmmmdddddiiiiiiiiimdddwmdttTttk
+kTttTtdmmddddiiiiiiiimddddddddddddddddddddddddddddddddddddiiiiiiiimddddmmdttTttk
+kwtttttddwttdmmmmmmmmmmdwwttttttwwttttttwwttttttwwttttttddmmmmmmmmmdtttddwtttttk
+kttttttttttttddddddddddttttttttttttttttttttttttttttttttttddddddddddttttttttttttk
+kTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTk
+kTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTk
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+frame idle 1
+...........................................wt...................................
+...........................................wt...................................
+...........................................wt...................................
+.........................................t.tt...................................
+..................................kkk.....kwtkt.................................
+.................................kwiik.kkkiimk..................................
+.................................kiimkkwiiimk...................................
+.................................kimmkwiiimmk...................................
+..................................kkwiiiiimk....................................
+...................................kwiimkiimk...................................
+.............................kkkkkkkkkkkkkkkkkkkkkk.............................
+............................kiiiiiiiiiiiiiiiiiiiiiik............................
+.............................kmiiiiiiiiiiiiiiiiiimk.............................
+..............................kmmmmmmiiiiiimmmmmmk..............................
+...............................kkkkkkiiiiimkkkkkk...............................
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkiiiiimkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kTmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmtk
+kTttmiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiimTttk
+kTwtTmmmiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimmmtTwtk
+kTwtTwtmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmTwtTwtk
+kTttTttTtmmmmmiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiimmmmmttTttTttk
+kTttTttTttddmdmiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiiiimiimdmddTttTttTttk
+kTttTttTtdwmdmdmmmmmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmdmdwmdttTttTttk
+kTttTttTdwiiwmdtTttTmmmmmmmiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmtTttTdiwiimdtTttTttk
+kTwtTwddwiiiiimdTwiiiidddddmmmmmimmmmmmmmmimmmmmmmmmidddddiiidwtdwiiiiimddwtTwtk
+kTwtddwwidiiiiimddmmmddddmmdddddwmdmmdddddwmdmmdddddwmddddimmmddwiiiiidiwmddTwtk
+kTtdwwiiiiiiiiiimddmmdddddmddmddmdddmddmddmdddmddmddmdddddimmddwiiiiiiiiiiwmdttk
+kTdwiiiimmiiiiiiimdimdddddmwwiwwmdddmwwiwwmdddmwwiwwmdddddimddwiiiiiiimmiiiimdtk
+kTdmiiimddmiiiiiimddmddddddiiiimdddddiiiimdddddiiiimddddddimddiiiiiiimddmiiimdtk
+kTtdmmmdttdmiiiiiimdddddddwiiiiimdddwiiiiimdddwiiiiimdddddiddwiiiiiimdTtdmmmdttk
+kTwtdddTwtTdiiiiiiimddddddmiiiiimdddmiiiiimdddmiiiiimdddddddwiiiiiimdtTwtdddTwtk
+kTwtTwtTwtTdmiiiiiiimddddddmiiimdddddmiiimdddddmiiimdddddddwiiiiiiimdtTwtTwtTwtk
+kTttTttTtddtdiiiiiiiimddddddiimdddddddiimdddddddiimdddddddwiiiiiiimdtddttTttTttk
+kTttTttddwmddiiiiiiiimdddddwimimdddddwimimdddddwimimddddddiiiiiiiimddwmddTttTttk
+kTttTtdwwmiwwiiiiiiiimdddddimdimdddddimdimdddddimdimddddddiiiiiiiiiwwimwmdttTttk
+kTttTdwimdmiiiiiiiiiimdddddimdimdddddimdimdddddimdimddddddiiiiiiiiiiimdmimdtTttk
+kTwtTdmmdtdmiiiiiiiiiddddddimdimdddddimdimdddddimdimddddddiiiiiiiiiimdTdimdtTwtk
+kTwtTwdimdddmiiiiiiiimddddmmmdmmmdddmmmdmmmdddmmmdmmmdddddiiiiiiiiimdddwmdwtTwtk
+kTttTtdmmddddiiiiiiiimddddddddddddddddddddddddddddddddddddiiiiiiiimddddmmdttTttk
+ktttwwtddtttdmmmmmmmmmmdttttwwttttttwwttttttwwttttttwwttddmmmmmmmmmdwwtddtttwwtk
+kttttttttttttddddddddddttttttttttttttttttttttttttttttttttddddddddddttttttttttttk
+kTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTk
+kTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTk
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.

@@ -1,0 +1,46 @@
+# Decorative fountain basin water (Pegasus fountain, Mirabellgarten):
+# light turquoise t with a teal T bottom band and travelling w sparkles
+# under a flat surface line. Clearly decoration - bright and shallow, not the dark Salzach
+# hazard water (b/B). 4 frames x 3 px shift = one 12 px wave period, so the
+# loop is seamless; ripple dashes travel the other way.
+sprite = fountain_water
+size   = 48x8
+origin = 24,8
+anim   = idle frames=4 ticks=12 loop
+---
+frame idle 0
+tttttttttttttttttttttttttttttttttttttttttttttttt
+ttwwttttttttttwwttttttttttwwttttttttttwwtttttttt
+tttttttttttttttttttttttttttttttttttttttttttttttt
+ttttttttTTTtttttttttTTTtttttttttTTTtttttttttTTTt
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TttTTTTTTTTTTttTTTTTTTTTTttTTTTTTTTTTttTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+frame idle 1
+tttttttttttttttttttttttttttttttttttttttttttttttt
+tttttwwttttttttttwwttttttttttwwttttttttttwwttttt
+tttttttttttttttttttttttttttttttttttttttttttttttt
+tttttTTTtttttttttTTTtttttttttTTTtttttttttTTTtttt
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTttTTTTTTTTTTttTTTTTTTTTTttTTTTTTTTTTtt
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+frame idle 2
+tttttttttttttttttttttttttttttttttttttttttttttttt
+ttttttttwwttttttttttwwttttttttttwwttttttttttwwtt
+tttttttttttttttttttttttttttttttttttttttttttttttt
+ttTTTtttttttttTTTtttttttttTTTtttttttttTTTttttttt
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTttTTTTTTTTTTttTTTTTTTTTTttTTTTTTTTTTttTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+frame idle 3
+tttttttttttttttttttttttttttttttttttttttttttttttt
+wttttttttttwwttttttttttwwttttttttttwwttttttttttw
+tttttttttttttttttttttttttttttttttttttttttttttttt
+TTtttttttttTTTtttttttttTTTtttttttttTTTtttttttttT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTttTTTTTTTTTTttTTTTTTTTTTttTTTTTTTTTTttTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
