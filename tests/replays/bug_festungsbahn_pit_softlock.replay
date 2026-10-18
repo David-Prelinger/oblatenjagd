@@ -1,0 +1,41 @@
+# BUG (QA E3): softlock in the Festungsbahn pit of 00_enemies.
+# enemies_festungsbahn_ride up to the plateau (1237), on to x 1702 (the
+# camera follows to 1564 and never scrolls back), then back left: the
+# plateau edge (x 1584) is on screen, she walks off it and falls into the
+# pit (lands at 1562, x 1564, y 186). From there nothing gets her out:
+# - the pit wall up to the plateau is 6 tiles, higher than any jump;
+# - she can't walk left of the camera (1564) to where the car comes down;
+# - from x >= ~1533 the car's top is out of jump reach along its whole
+#   track (it is only that far right when it is high up);
+# - and the car itself was despawned at ~1400 (left of camera - 64), so it
+#   never comes back anyway.
+# Only time-up ends it. Design (Festungsbahn): "falling off means waiting
+# for the car, never death"; here it is not even death, it's a softlock.
+# Expected (this file): she is not stuck below the plateau - i.e. she
+# can't drop back into the pit once the camera has passed it (then these
+# inputs leave her on the plateau, y 90). If the fix is a different one
+# (e.g. the pit gets a way back up), adapt the escape inputs at the end.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 player_y<=90
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 175     # ride up
+R 104     # onto the plateau and on to x 1702 (camera 1564)
+- 140
+L 100     # back left: off the plateau edge into the pit (1562)
+- 600     # wait for the car: it never comes

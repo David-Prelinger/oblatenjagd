@@ -1,0 +1,11 @@
+# QA (E4): holding START during play pauses once (frame 200) and does not
+# toggle back and forth while it stays held; it is still paused at the end.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 state=paused
+---
+S 1       # title → stage intro
+- 198
+S 61      # pause at 200, held

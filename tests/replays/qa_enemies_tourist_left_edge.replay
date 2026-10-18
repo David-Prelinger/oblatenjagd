@@ -1,0 +1,14 @@
+# QA (E3): the player jumps over the walking Selfie-Tourist (frame 401) and
+# waits at x 102. The tourist walks on to the left level edge (x 0, with
+# its selfie stop at 480..527), turns there (~frame 610), walks back and
+# hits the waiting player from behind at frame 842: the level edge counts
+# as a wall, and a tourist is dangerous from either side.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=842..842 deaths=1 lives=2
+---
+- 400
+RJ 20     # over the tourist
+R 20
+- 430     # wait: it comes back from the left edge

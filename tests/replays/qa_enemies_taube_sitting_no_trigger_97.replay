@@ -1,0 +1,20 @@
+# QA (E3): like qa_enemies_taube_sitting_trigger_96, but the player stops
+# one walking frame earlier, at x 1184.5: centre distance 97.5 px (whole
+# pixels 97) is not "within 6 tiles", so the sitting Taube never takes off
+# and the waiting player is never hit.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=1184
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20     # over the Fiaker
+R 192     # stops at x 1184.5
+- 400

@@ -1,0 +1,17 @@
+# QA (E3): like qa_enemies_fiaker_trigger_128, one walking frame shorter:
+# the player stops at x 800.5, centre distance 129.5 px (whole pixels 129),
+# so the Fiaker stays parked and the waiting player is never hit.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=800
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 117     # stops at x 800.5
+- 500

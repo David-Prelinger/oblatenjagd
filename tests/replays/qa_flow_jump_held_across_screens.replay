@@ -1,0 +1,22 @@
+# QA (E4): JUMP is tracked on every non-play screen (D-025): held through
+# the end of the stage intro (pressed at 100, play from 151) it is not a new
+# press in play, and pressed during a pause and held across the resume it
+# isn't either. Also a JUMP tapped and released during the pause is not
+# buffered into play. No jump at all in this replay.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = no_event=Jumped deaths=0 state=playing
+---
+S 1       # title → stage intro
+- 98
+J 120     # 100..219: held into play
+- 20
+S 1       # 240: pause
+J 5       # tapped during the pause
+- 20
+J 10      # pressed again ...
+SJ 1      # 276: resume while held
+J 30      # still held in play: no jump
+- 30
