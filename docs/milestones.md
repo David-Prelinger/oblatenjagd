@@ -27,7 +27,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 
 Scope as in `game-design.md` → "Stage 1: Salzburg".
 
-- [ ] Player: walk, run, variable jump, coyote time, jump buffer, stomp; game-feel tests green
+- [x] Player: walk, run, variable jump, coyote time, jump buffer, stomp; game-feel tests green
 - [x] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
 - [x] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
 - [x] Enemies: Selfie-Tourist, Taube, Mozartkugel-Verkäufer, Fiaker
@@ -39,7 +39,7 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - [x] Replays + goldens for the key scenes (salzburg_tour: 10 shots, art-director APPROVED)
 - [x] wasm build runs the stage in the browser (E6: the app embeds every level and starts on the Salzburg title; `wasm-smoke` checks the Salzburg parallax sky)
 - [x] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left; `Skipped` status removed in M0)
-- [ ] Stretch: Sound-of-Music tour group enemy
+- [ ] Stretch: Sound-of-Music tour group enemy — deferred to backlog (not required for M1)
 
 **Acceptance:** see "Milestone acceptance" below.
 

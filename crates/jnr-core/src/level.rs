@@ -307,6 +307,7 @@ pub const PROP_SPRITES: &[&str] = &[
     "zwerg",
     "residenzbrunnen",
     "geburtshaus",
+    "dombogen",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.

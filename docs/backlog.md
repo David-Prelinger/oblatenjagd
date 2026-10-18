@@ -34,3 +34,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Tour ↔ solver replay coupling test**: assert `salzburg_tour.replay` body = intro prefix + `salzburg_solver.replay` body + `- 800`, so a re-solve says "re-copy the tour" (E6 code review).
 - **Title subtitle outline**: give „Salzburg – Bad Ischl" the full `k` outline next time the title goldens change (art-director note).
 - **Stage 1 polish (art-director)**: back-layer façade continuation under the floating Getreidegasse house blocks (cols 125–128, 166–169, 175–178); a back-layer rail line under the Festungsbahn track; move the Do-Re-Mi sign one column left off the fountain plinth.
+- **Sound-of-Music tour group** (M1 stretch, deferred): guide with umbrella + 3 followers on her path 20 frames apart; stomping the guide turns followers into Selfie-Tourists (game-design.md).

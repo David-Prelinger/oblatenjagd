@@ -60,6 +60,7 @@ Hurt/invulnerability and the 30-frame transformation are drawn by the engine (bl
 | `zwerg` (Zwergerlgarten dwarf statue) | 16×16 | bottom centre | `idle` held — stands on a 1×1 stone |
 | `residenzbrunnen` (Residenzbrunnen tiers) | ≤ 80×64 | bottom centre | `idle` 2f/12t loop (water) — over the 5-wide fountain tiles |
 | `geburtshaus` (Mozart's birthplace façade, yellow) | ≤ 80×112 | bottom centre | `idle` held — `layer = "back"` prop behind the street (only playfield set piece with a `Y` façade, art-style §7) |
+| `dombogen` (Dombögen passage) | 112×80 | bottom centre | `idle` held — `layer = "back"` prop under the Dombögen (7 tiles wide; the top 16 px fill the `arch_under` soffit cut-out with dark vault, the lower 64 px are the passage with a limestone pier at each end); placed on the centre column of the passage, bottom row |
 
 ## UI (group `ui`)
 
