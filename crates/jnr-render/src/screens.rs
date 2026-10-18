@@ -4,7 +4,8 @@
 //! `content/text/de.toml` by key; [`TEXT_KEYS`] lists every key the engine
 //! itself uses (a test checks them against de.toml).
 //!
-//! Text is drawn in `w` with the `k` shadow unless noted; lines are centred
+//! Text is drawn in `w` with the `k` shadow unless noted (the title prompt
+//! has the full `k` outline); lines are centred
 //! horizontally. Blinking texts are on for [`BLINK_FRAMES`], then off as long.
 
 use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
@@ -140,8 +141,12 @@ pub fn draw_title(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, frames
     }
     centred(ctx, fb, &ctx.texts().get(SUBTITLE_KEY), SUBTITLE_Y, WHITE);
     if blink_on(u32::from(frames)) {
+        // Full `k` outline, not the drop shadow: the prompt crosses the
+        // cream Dom façade of the Salzburg rooftops (D-035).
         let prompt = ctx.texts().get(PRESS_START_KEY);
-        centred(ctx, fb, &prompt, PRESS_START_Y, WHITE);
+        let x = (WIDTH as i32 - ctx.font().measure(&prompt)) / 2;
+        ctx.font()
+            .draw_text_outlined(fb, ctx.atlas(), &prompt, x, PRESS_START_Y, WHITE, OUTLINE);
     }
 }
 
@@ -349,6 +354,13 @@ mod tests {
         let prompt = t.get(PRESS_START_KEY);
         let px = centred_x(&prompt);
         assert_eq!(fb.get(px, PRESS_START_Y), Some(WHITE));
+        // Full outline (D-035), not the +1/+1 shadow: also left of and
+        // above the first glyph.
+        assert_eq!(fb.get(px - 1, PRESS_START_Y), Some(OUTLINE));
+        assert_eq!(fb.get(px - 1, PRESS_START_Y - 1), Some(OUTLINE));
+        assert_eq!(fb.get(px, PRESS_START_Y - 1), Some(OUTLINE));
+        // The subtitle keeps the drop shadow.
+        assert_ne!(fb.get(centred_x(&sub) - 1, SUBTITLE_Y), Some(OUTLINE));
         for _ in 0..30 {
             g.step(InputFrame::NONE);
         }

@@ -122,6 +122,35 @@ impl Font {
         self.draw_pass(fb, atlas, text, x, y, colour);
     }
 
+    /// Draws `text` like [`Font::draw_text`], but with a full 1 px
+    /// `outline` around every glyph (all 8 neighbours, art-style §11) instead
+    /// of the drop shadow: for text over busy or light backgrounds (the
+    /// title prompt over the cream Dom façade, D-035).
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_text_outlined(
+        &self,
+        fb: &mut Framebuffer,
+        atlas: &Atlas,
+        text: &str,
+        x: i32,
+        y: i32,
+        colour: u32,
+        outline: u32,
+    ) {
+        if self.is_empty() {
+            return;
+        }
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if (dx, dy) != (0, 0) {
+                    let (ox, oy) = (x.saturating_add(dx), y.saturating_add(dy));
+                    self.draw_pass(fb, atlas, text, ox, oy, outline);
+                }
+            }
+        }
+        self.draw_pass(fb, atlas, text, x, y, colour);
+    }
+
     fn draw_pass(&self, fb: &mut Framebuffer, atlas: &Atlas, text: &str, x: i32, y: i32, c: u32) {
         let (mut pen_x, mut pen_y) = (x, y);
         for ch in text.chars() {
@@ -316,6 +345,29 @@ mod tests {
         assert_eq!(fb.get(1, 7), Some(K));
         assert_eq!(fb.get(0, 7), Some(BG));
         assert_eq!(fb.get(1, 1), Some(BG));
+    }
+
+    #[test]
+    fn outline_surrounds_every_glyph_pixel_on_all_8_sides() {
+        let (atlas, font) = full_font();
+        let mut fb = testutil::fb();
+        font.draw_text_outlined(&mut fb, &atlas, "I", 5, 5, W, K);
+        // Text column 5 rows 6-11; outline columns 4 and 6 rows 5-12, plus
+        // the pixels straight above and below; nothing further out.
+        for y in 6..=11 {
+            assert_eq!(fb.get(5, y), Some(W), "text at y {y}");
+        }
+        for y in 5..=12 {
+            assert_eq!(fb.get(4, y), Some(K), "left outline at y {y}");
+            assert_eq!(fb.get(6, y), Some(K), "right outline at y {y}");
+        }
+        assert_eq!(fb.get(5, 5), Some(K), "above");
+        assert_eq!(fb.get(5, 12), Some(K), "below");
+        assert_eq!(fb.get(3, 8), Some(BG));
+        assert_eq!(fb.get(7, 8), Some(BG));
+        assert_eq!(fb.get(5, 4), Some(BG));
+        assert_eq!(fb.get(5, 13), Some(BG));
+        assert_eq!(fb.get(4, 4), Some(BG));
     }
 
     #[test]
