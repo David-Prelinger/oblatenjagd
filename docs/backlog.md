@@ -29,3 +29,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Popup overlap**: „+1 Leben" and the popped Oblate's score popup can overlap at the same x when the 100th Oblate comes from a box — check in a shot.
 - **Getreidegasse block sizes**: keep façade blocks ~4–5 storeys × 3–4 windows, or break tall ones with an Erker/guild sign (art-director note for the level).
 - **Geburtshaus vs Resi**: include a Stage 1 shot of Resi in front of the plain `Y` wall (her blond hair vs the yellow façade) in the level art review.
+- **Jump-window metric polish (D-033 review)**: fast path should also require `on_ground` at the checkpoint; state in D-034 that a recovery may take a small detour/skip a jump's item; call `recovers` with threads = 1 (small beams) and add a 1-vs-N thread test for `jump_windows`; a direct test for `after_shifted_jump`; reuse a `Game` snapshot per jump instead of simulating from frame 0; fix the stale `until` doc at solver.rs:556.
