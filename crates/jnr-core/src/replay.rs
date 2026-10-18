@@ -17,6 +17,8 @@
 //! numbers are [`Game::frame`] values: the state after that many steps.
 //! Ranges `a..b` are inclusive. All expectations are checked after the last
 //! input (the replay always runs to its end).
+//! A line holds at most [`MAX_FRAMES_PER_LINE`] frames and the whole
+//! replay at most [`MAX_TOTAL_FRAMES`] (1 h at 60 Hz).
 
 use std::fmt;
 
@@ -25,6 +27,12 @@ use crate::game::{Event, Game, Mode};
 use crate::input::InputFrame;
 use crate::level::Level;
 use crate::tuning::Tuning;
+
+/// Most frames one input line may hold (1 h at 60 Hz).
+pub const MAX_FRAMES_PER_LINE: u32 = 216_000;
+/// Most frames a whole replay may hold (1 h at 60 Hz); keeps a bad file
+/// from making the runner allocate or loop for ever.
+pub const MAX_TOTAL_FRAMES: u32 = 216_000;
 
 /// Where a replay came from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -289,6 +297,7 @@ impl Replay {
         // Line of each shot (parallel to `shots`) for errors found after the body.
         let mut shot_lines: Vec<usize> = Vec::new();
         let mut inputs = Vec::new();
+        let mut total_frames: u32 = 0;
         let mut in_body = false;
 
         for (i, raw) in text.lines().enumerate() {
@@ -310,6 +319,17 @@ impl Replay {
                 let n = parse_u32(n, "frame count").map_err(err)?;
                 if n == 0 {
                     return Err(err("frame count must be at least 1".into()));
+                }
+                if n > MAX_FRAMES_PER_LINE {
+                    return Err(err(format!(
+                        "frame count {n} is above the per-line limit of {MAX_FRAMES_PER_LINE}"
+                    )));
+                }
+                total_frames += n;
+                if total_frames > MAX_TOTAL_FRAMES {
+                    return Err(err(format!(
+                        "replay is longer than {MAX_TOTAL_FRAMES} frames in total (1 h at 60 Hz)"
+                    )));
                 }
                 inputs.push((input, n));
                 continue;
@@ -642,6 +662,27 @@ RBJ 2
         let r = Replay::parse("level = a\nsource = human\n---\n").unwrap();
         assert_eq!((r.seed, r.frame_count()), (1, 0));
         assert!(r.expects.is_empty() && r.shots.is_empty());
+    }
+
+    #[test]
+    fn frame_counts_are_bounded() {
+        let base = "level = a\nsource = solver\n---\n";
+        // Exactly at the limits is fine.
+        let ok = Replay::parse(&format!("{base}R {MAX_FRAMES_PER_LINE}\n")).unwrap();
+        assert_eq!(ok.frame_count(), MAX_TOTAL_FRAMES);
+        assert_eq!(
+            err(&format!("{base}R 4000000000\nR 4000000000\n")),
+            format!(
+                "line 4: frame count 4000000000 is above the per-line limit of {MAX_FRAMES_PER_LINE}"
+            )
+        );
+        let half = MAX_TOTAL_FRAMES / 2;
+        assert_eq!(
+            err(&format!("{base}R {half}\n- {half}\nB 1\n")),
+            format!(
+                "line 6: replay is longer than {MAX_TOTAL_FRAMES} frames in total (1 h at 60 Hz)"
+            )
+        );
     }
 
     #[test]
