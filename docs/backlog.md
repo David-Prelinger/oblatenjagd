@@ -30,3 +30,7 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Getreidegasse block sizes**: keep façade blocks ~4–5 storeys × 3–4 windows, or break tall ones with an Erker/guild sign (art-director note for the level).
 - **Geburtshaus vs Resi**: include a Stage 1 shot of Resi in front of the plain `Y` wall (her blond hair vs the yellow façade) in the level art review.
 - **Jump-window metric polish (D-033 review)**: fast path should also require `on_ground` at the checkpoint; state in D-034 that a recovery may take a small detour/skip a jump's item; call `recovers` with threads = 1 (small beams) and add a 1-vs-N thread test for `jump_windows`; a direct test for `after_shifted_jump`; reuse a `Game` snapshot per jump instead of simulating from frame 0; fix the stale `until` doc at solver.rs:556.
+- **wasm-smoke frozen-frame check**: compare two screenshots at different virtual times (prompt blink) so a frozen frame can't pass (E6 code review).
+- **Tour ↔ solver replay coupling test**: assert `salzburg_tour.replay` body = intro prefix + `salzburg_solver.replay` body + `- 800`, so a re-solve says "re-copy the tour" (E6 code review).
+- **Title subtitle outline**: give „Salzburg – Bad Ischl" the full `k` outline next time the title goldens change (art-director note).
+- **Stage 1 polish (art-director)**: back-layer façade continuation under the floating Getreidegasse house blocks (cols 125–128, 166–169, 175–178); a back-layer rail line under the Festungsbahn track; move the Do-Re-Mi sign one column left off the fountain plinth.
