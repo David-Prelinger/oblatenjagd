@@ -1,7 +1,7 @@
 # Zwergerlgarten dwarf statue (Mirabellgarten): a grotesque baroque stone
 # dwarf in light limestone i/m with d shading and a k outline. Pointy cap,
 # big nose, pot belly, one fist on the hip - and a tiny selfie stick with a
-# phone (d + w glint) held up high: even the statues do it now.
+# stone phone held up high: even the statues do it now.
 # Stands on a 1x1 stone tile (the tile is the platform; the prop is decor).
 sprite = zwerg
 size   = 16x16
@@ -10,14 +10,14 @@ anim   = idle frames=1
 ---
 frame idle 0
 ............kkkk
-....kk......kdwk
-...kmmk.....kddk
+....kk......kimk
+...kmmk.....kmmk
 ..kmmmdk....kkkk
-..kmmmmdk...k...
-.kmmmmmmdk..k...
+..kmmmmdk.....k.
+.kmmmmmmdk...k..
 kddddddddk..k...
 kiiiiiiiik.kik..
-kiikiiikiikkik..
+kiimiiimiikkik..
 kidiiidmmmkik...
 kiidddiiiik.....
 kiiiiiiiimmk....
