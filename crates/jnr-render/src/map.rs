@@ -371,12 +371,12 @@ mod tests {
         assert_eq!(label_pos((300, 76), LabelSide::Above, 60), (256, 62));
         assert_eq!(label_pos((2, 2), LabelSide::Left, 10), (4, 4));
         // Route-data overrides (art review): fixed rows, right limits.
-        assert_eq!(station_label_pos(&STATIONS[2], 48).1, 17, "Brunnwinkl");
+        assert_eq!(station_label_pos(&STATIONS[2], 48), (66, 43), "Brunnwinkl");
         let (x, _) = station_label_pos(&STATIONS[3], 60);
         assert_eq!(x + 60, 172, "Falkenstein ends at x 172");
         assert_eq!(
             station_label_pos(&STATIONS[8], 58),
-            (254, 34),
+            (232, 69),
             "Café Zauner"
         );
     }

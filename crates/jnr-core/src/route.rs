@@ -79,9 +79,10 @@ pub const STATIONS: [Station; 9] = [
         id: "brunnwinkl",
         dot: (124, 58),
         // Above, raised clear of Resi's head (art-director, M2).
-        label: LabelSide::Above,
-        label_top: Some(17),
-        label_right: None,
+        // Above-left, close to the dot and clear of Resi (art-director, M2).
+        label: LabelSide::Left,
+        label_top: Some(43),
+        label_right: Some(114),
         path_in: &[(108, 64), (116, 58)],
     },
     Station {
@@ -130,10 +131,10 @@ pub const STATIONS: [Station; 9] = [
     Station {
         id: "cafe_zauner",
         dot: (300, 76),
-        // Clear of Resi and the map frame (art-director, M2).
-        label: LabelSide::Above,
-        label_top: Some(34),
-        label_right: Some(312),
+        // Left of the dot and the cake, clear of Resi (art-director, M2).
+        label: LabelSide::Left,
+        label_top: Some(69),
+        label_right: Some(290),
         path_in: &[(288, 88)],
     },
 ];
