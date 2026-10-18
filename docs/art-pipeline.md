@@ -87,8 +87,8 @@ Note: the grey-box fixtures in `art/sprites/test/` (group `test`) are currently 
 | Command | What it does |
 |---|---|
 | `cargo build` | `jnr-assets/build.rs` compiles all art into atlases; any error fails the build with `file:line` |
-| `cargo xtask sprites preview [filter] [--scale N]` | writes PNGs per sprite (all frames side by side, mirrored copies in a second row), scaled ×4, to `target/preview/sprites/` |
-| `cargo xtask sprites sheet` | one contact sheet of all sprites with names (`target/preview/contact_sheet.png`, ImageMagick `montage`) |
+| `cargo xtask sprites preview [filter] [--scale N]` | writes PNGs per sprite (frames side by side, wrapped at 16 frames or ~1600 px per row, mirrored copies below), scaled ×4, to `target/preview/sprites/`; the `ui` group is shown on palette `B` (navy) so white glyphs are visible |
+| `cargo xtask sprites sheet [--group <name>]` | one contact sheet of all sprites (or one group) with names, rows wrapped at ~2000 px (`target/preview/contact_sheet.png` or `contact_sheet_<group>.png`, ImageMagick `montage` + `convert`) |
 | `cargo xtask sprites anim <name>` | filmstrip `target/preview/anim/<name>.png` (one row per animation) + one GIF per animation `target/preview/anim/<name>_<anim>.gif` (timing approximate: GIF delays are in 1/100 s) |
 | `cargo xtask scene <level> --x <px>` | renders a real game scene at a position (`target/preview/scenes/`) |
 | `cargo xtask sprites lint` | runs the automatic art checks |
