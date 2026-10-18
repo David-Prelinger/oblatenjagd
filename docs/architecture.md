@@ -70,14 +70,16 @@ xtask ──► everything (never the other way round)
 pub struct Game { /* all state: mode, level, player, entities, camera, rng, score, timer */ }
 
 impl Game {
-    pub fn new(content: &Content, seed: u64) -> Game;
+    pub fn new(level: &Level, tuning: &Tuning, seed: u64) -> Game;  // Level::parse(&str), Tuning::parse(&str)
     pub fn step(&mut self, input: InputFrame) -> &[Event];  // exactly one 1/60 s tick
-    pub fn state_hash(&self) -> u64;                         // for determinism checks
+    pub fn state_hash(&self) -> u64;                         // FNV-1a, for determinism checks
 }
 
 #[derive(Clone, Copy)] pub struct InputFrame(u8);  // bitflags: LEFT RIGHT UP DOWN JUMP RUN START
-pub enum Event { Jumped, Stomped, OblateCollected, PowerUp, Hurt, Died, LevelComplete, ... }
+pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
 ```
+
+Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, plus `hash` (FNV-1a) and `rng` (xorshift64*).
 
 - **Game modes** as a state machine inside core: `Title → StageIntro → Playing → (Dying | StageClear) → ...`. Menus are part of core so they are testable too.
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
@@ -155,6 +157,8 @@ grid = '''
 ################################~~~~############
 '''
 ```
+
+`.` is always empty air and needs no legend entry; any other grid character missing from `[legend]` is a parse error with row and column. `jnr-core` maps tile names to a collision kind (empty, solid, one-way, hazard) in `TileKind::from_tile_name`; the grey-box names `solid`, `oneway`, `hazard` work in any level (see `content/levels/00_testbed.level`).
 
 Height: typically 14 rows (224 px, camera scrolls vertically a little). Width: ~200–320 columns for a full stage.
 

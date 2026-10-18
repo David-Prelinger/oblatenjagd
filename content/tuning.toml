@@ -1,0 +1,30 @@
+# Gameplay constants for jnr-core (parsed by `Tuning::parse`).
+#
+# Units: speeds in subpixels per frame, accelerations in subpixels per frame²
+# (1 px = 256 subpixels, 60 frames per second), durations in frames.
+# Integers only. The px equivalents in the comments are for humans.
+# Targets: docs/game-design.md "Movement feel"; they are asserted by the
+# game-feel tests in crates/jnr-core/src/tests/feel.rs.
+
+[player]
+walk_speed = 384          # 1.5 px/frame
+run_speed = 640           # 2.5 px/frame
+ground_accel = 24         # ~0.094 px/frame²: 0 -> walk in 16 frames, -> run in 27
+friction = 16             # 0.0625 px/frame²: walk -> stop in 24 frames
+skid_decel = 40           # ~0.156 px/frame²: run -> 0 in 16 frames when turning
+air_accel = 16            # 0.0625 px/frame²
+jump_speed_walk = 1048    # ~4.09 px/frame upwards
+jump_speed_run = 1168     # ~4.56 px/frame upwards at full run speed
+gravity_hold = 32         # 0.125 px/frame² while rising with JUMP held
+gravity = 88              # ~0.344 px/frame² otherwise
+max_fall_speed = 1024     # 4.0 px/frame
+coyote_frames = 6         # 0.1 s
+jump_buffer_frames = 6    # 0.1 s
+
+[camera]
+follow_x = 144            # px: camera scrolls right once the player's centre passes this screen x
+deadzone_top = 64         # px: vertical dead zone for the player's centre (screen y)
+deadzone_bottom = 120
+
+[game]
+death_frames = 60         # 1 s from death to respawn

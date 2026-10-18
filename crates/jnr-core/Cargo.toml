@@ -8,3 +8,5 @@ publish.workspace = true
 
 [dependencies]
 # Keep this list tiny and pure. Never macroquad, rand, or anything doing I/O.
+serde = { workspace = true }
+toml = { workspace = true }
