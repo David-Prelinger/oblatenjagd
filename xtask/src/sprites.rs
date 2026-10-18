@@ -222,11 +222,10 @@ fn sprite_preview(s: &CompiledSprite, scale: u32, background: Option<[u8; 4]>) -
     }
 }
 
-/// A written preview: sprite name, file and its (scaled) width.
+/// A written preview: sprite name and file.
 struct Preview {
     name: String,
     path: PathBuf,
-    width: u32,
 }
 
 /// Writes previews of the sprites whose name contains `filter` (and that
@@ -251,7 +250,6 @@ fn preview(
         written.push(Preview {
             name: s.sprite.name.clone(),
             path,
-            width: img.width,
         });
     }
     if written.is_empty() {
