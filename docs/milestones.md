@@ -31,9 +31,9 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - [x] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
 - [x] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
 - [ ] Enemies: Selfie-Tourist, Taube, Mozartkugel-Verkäufer, Fiaker
-- [ ] Checkpoint, Maibaum goal with height-based score
+- [x] Checkpoint, Maibaum goal with height-based score
 - [ ] Camera (no scrolling back), enemy activation by distance
-- [ ] HUD, title screen, stage intro, game over, stage clear (German text from `de.toml`)
+- [x] HUD, title screen, stage intro, game over, stage clear (German text from `de.toml`)
 - [x] Salzburg tileset, parallax (sky, Untersberg, Festung, rooftops), all M1 sprites — art-director APPROVED
 - [ ] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
 - [ ] Replays + goldens for the key scenes
