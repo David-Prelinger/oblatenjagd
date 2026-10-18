@@ -1,0 +1,14 @@
+# QA (E1): Normal Resi under the brick at column 6 (hitbox also under the
+# Oblate box at column 5): two head bumps hit only the brick nearest the
+# centre (frames 74, 114); it bumps but doesn't break, and the box isn't hit.
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=BrickBroken no_event=OblateCollected
+---
+R 36
+- 30
+J 10
+- 30
+J 10
+- 30

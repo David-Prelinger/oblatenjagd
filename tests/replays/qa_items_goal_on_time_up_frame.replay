@@ -1,0 +1,16 @@
+# QA (E1): idle 5621 frames, then the items solver route (goal in its
+# step 379): the goal is touched in step 6000, the same step in which the
+# 100 s timer would reach 0. The goal wins (checked before the timer).
+level  = items
+seed   = 1
+source = handwritten
+expect = complete frames=6000..6000 deaths=0 state=stage_clear no_event=Died
+---
+- 5621
+RB 88
+RBJ 36
+RB 71
+RBJ 36
+RB 40
+RBJ 36
+RB 72
