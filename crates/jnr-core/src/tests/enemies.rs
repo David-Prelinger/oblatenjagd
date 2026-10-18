@@ -591,6 +591,129 @@ fn fiaker_hurts_from_the_side() {
     assert_eq!(g.death_cause(), Some(DeathCause::Hit));
 }
 
+fn fiaker_index(g: &Game) -> usize {
+    g.entities()
+        .iter()
+        .position(|e| e.kind == EntityKind::Enemy(EnemyKind::Fiaker))
+        .unwrap()
+}
+
+/// Puts the player in the air, falling at `vy`, with the hitbox's left
+/// edge at `x` and the feet at `feet`.
+fn airborne(g: &mut Game, x: Fx, feet: Fx, vy: Fx) {
+    g.player.x = x;
+    g.player.y = feet - g.player.h;
+    g.player.vx = Fx::ZERO;
+    g.player.vy = vy;
+    g.player.on_ground = false;
+}
+
+#[test]
+fn a_charging_fiaker_reaching_a_falling_player_bounces_her_onto_its_top() {
+    // The Fiaker (top 164, middle 178) is already charging; the player
+    // hangs 1 px left of its front, falling slowly with her feet 10 px
+    // below its top (the QA bug replay: feet 174). Its front drives into
+    // her: the stomp rule holds (falling, feet above its middle on the
+    // previous frame), so she bounces - feet exactly on its top - and is
+    // never hurt afterwards (D-027).
+    let mut g = game(&world(40, &[(11, 14, 'f')]));
+    let i = fiaker_index(&g);
+    g.entities[i].active = true;
+    g.entities[i].state = state::CHARGE;
+    let f = g.entities()[i];
+    assert_eq!(f.y, Fx::from_px(164));
+    let x = f.x - g.player.w - Fx::from_px(1);
+    airborne(&mut g, x, f.y + Fx::from_px(10), Fx::from_raw(64));
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert_eq!(g.player().feet().1, f.y, "feet put on its top");
+    assert!(g.player().vy < Fx::ZERO, "bouncing up");
+    assert_eq!(g.player().bounce_grace, 0, "no fallback needed");
+    let events = hold(&mut g, "-", 120);
+    assert!(!events.contains(&Event::Hurt), "{events:?}");
+    assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+}
+
+#[test]
+fn landing_straight_down_on_the_fiaker_with_up_to_4_px_penetration_bounces() {
+    // Parked Fiaker; the player falls at max fall speed (4 px/frame)
+    // straight down onto its middle and ends the frame 1..=4 px inside it.
+    let max_fall = tuning().player.max_fall_speed;
+    for pen in 1..=4 {
+        let mut g = game(&world(40, &[(11, 14, 'f')]));
+        let f = g.entities()[fiaker_index(&g)];
+        let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
+        airborne(&mut g, x, f.y + Fx::from_px(pen) - max_fall, max_fall);
+        let events = g.step(input("-")).to_vec();
+        assert!(events.contains(&Event::Stomped), "pen {pen}: {events:?}");
+        assert_eq!(g.player().feet().1, f.y, "pen {pen}: feet on its top");
+        let events = hold(&mut g, "-", 30);
+        assert!(!events.contains(&Event::Hurt), "pen {pen}: {events:?}");
+        assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0), "pen {pen}");
+        assert_eq!(g.score(), 0, "pen {pen}: no points for the Fiaker");
+    }
+}
+
+#[test]
+fn a_fiaker_bounce_under_a_ceiling_falls_back_to_grace_frames() {
+    // A solid tile at row 8 (y 128..144) over the parked Fiaker (top 164):
+    // feet on its top (hitbox y 142) would overlap it, so the player stays
+    // where she is, bounces, and non-stompable enemies do no harm for
+    // `bounce_grace_frames` (every further bounce re-arms it).
+    let t = tuning();
+    let mut g = game(&world(40, &[(11, 14, 'f'), (8, 14, '#'), (8, 15, '#')]));
+    let f = g.entities()[fiaker_index(&g)];
+    let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
+    airborne(&mut g, x, f.y + Fx::from_px(6), Fx::from_px(2));
+    let y0 = g.player().y;
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(g.player().y > y0, "not pushed up into the ceiling");
+    // Counted down from this frame on (like `invulnerable`).
+    assert_eq!(g.player().bounce_grace, t.enemies.bounce_grace_frames - 1);
+    let hb = g.player().hitbox();
+    assert!(!g.map().touches(&hb, crate::level::TileKind::Solid));
+    let events = hold(&mut g, "-", 60);
+    assert!(!events.contains(&Event::Hurt), "{events:?}");
+    assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+}
+
+#[test]
+fn an_enemy_hit_in_the_frame_of_the_goal_touch_is_ignored() {
+    // Goal column 10 (x 160..176); a still tourist moved to x 160 overlaps
+    // it. The running player's right edge goes from 159 to 161.5 in one
+    // step: she touches the tourist and the goal in the same frame, and
+    // the goal wins (D-027). Without the goal the same step kills her.
+    for with_goal in [true, false] {
+        let mut marks = vec![(11, 20, 'T')];
+        if with_goal {
+            marks.push((11, 10, 'G'));
+        }
+        let mut g = game(&world(30, &marks));
+        let i = g
+            .entities()
+            .iter()
+            .position(|e| e.kind == EntityKind::Enemy(EnemyKind::SelfieTourist))
+            .unwrap();
+        g.entities[i].x = Fx::from_px(160);
+        g.entities[i].active = true;
+        g.player.x = Fx::from_px(159) - g.player.w;
+        g.player.vx = tuning().player.run_speed;
+        let events = g.step(input("RB")).to_vec();
+        if with_goal {
+            assert!(events.contains(&Event::LevelComplete), "{events:?}");
+            assert_eq!((g.mode(), g.deaths()), (Mode::StageClear, 0));
+            assert_eq!(g.death_cause(), None);
+        } else {
+            assert!(
+                matches!(g.mode(), Mode::Dying { .. }),
+                "control: {events:?}"
+            );
+            assert_eq!(g.death_cause(), Some(DeathCause::Hit));
+        }
+    }
+}
+
 // --------------------------------------------------- bumped blocks
 
 #[test]

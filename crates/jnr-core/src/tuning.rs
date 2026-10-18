@@ -279,6 +279,10 @@ pub struct EnemyTuning {
     pub squish_frames: u16,
     /// Upward speed of an enemy or item knocked by a bumped block.
     pub knock_speed: Fx,
+    /// Frames in which non-stompable enemies do no harm after a bounce off
+    /// one, when the player's feet could not be put on its top (a solid
+    /// tile was in the way, D-027 fallback).
+    pub bounce_grace_frames: u16,
 }
 
 impl Tuning {
@@ -461,6 +465,7 @@ impl Tuning {
             ("enemies.verkaeufer_period", e.verkaeufer_period),
             ("enemies.fiaker_telegraph", e.fiaker_telegraph),
             ("enemies.squish_frames", e.squish_frames),
+            ("enemies.bounce_grace_frames", e.bounce_grace_frames),
             (
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
@@ -646,6 +651,7 @@ mod tests {
             ("fiaker_speed", 0),
             ("thrown_gravity", 0),
             ("squish_frames", 0),
+            ("bounce_grace_frames", 0),
             ("festungsbahn_wait", 32700),
             ("hitbox_w", 3),
             ("hitbox_w", 17),
