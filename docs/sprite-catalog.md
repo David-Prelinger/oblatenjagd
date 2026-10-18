@@ -15,6 +15,8 @@ Conventions:
 | `player` (Resi, Normal) | 16×24 exact | 8,24 | `idle` 2f/30t loop · `walk` 4f/8t loop · `run` 4f/5t loop · `skid` held · `jump` held · `fall` held · `die` held (facing the camera, arms up) · `pole` 2f/8t loop (sliding down the Maibaum) |
 | `player_big` (Resi, Zuckerschock) | 16×32 exact | 8,32 | same names as `player` |
 
+`skid` faces the direction of motion (Resi brakes while still sliding forward), not the new input direction. The `pole` frames have no pole drawn: the engine places her with the pole just right of her body.
+
 Hurt/invulnerability and the 30-frame transformation are drawn by the engine (blinking / alternating `player` and `player_big`); no extra frames.
 
 ## Enemies (group `enemies`)
