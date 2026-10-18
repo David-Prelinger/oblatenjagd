@@ -1,0 +1,19 @@
+# QA (E3): walks towards the parked Fiaker (hitbox x 914..958, centre 936)
+# and stops at x 802: at frame 526 the centre distance is 128.94 px (whole
+# pixels 128 = "within 8 tiles"), it telegraphs for 40 frames (526..565),
+# charges from 566 at 2 px/frame and runs over the standing player at 616.
+# Partner: qa_enemies_fiaker_no_trigger_129 (1.5 px further away).
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=616..616 deaths=1
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 118     # stops at x 802
+- 120

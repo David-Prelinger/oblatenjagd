@@ -1,0 +1,17 @@
+# QA (E4): real flow on 00_enemies. START at 1 → stage intro (1..150) →
+# play from 151; standing still, the walking Selfie-Tourist would reach the
+# player at 151 + 473 = 624. A pause from 300 to 400 (START, 99 frames,
+# START: 101 frames without a play step) freezes it, so the hit comes
+# exactly 101 frames later, at 725.
+level  = enemies
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=725..725 deaths=1 lives=2
+---
+S 1       # title → stage intro
+- 298
+S 1       # pause (frame 300)
+- 99
+S 1       # resume (frame 400)
+- 340

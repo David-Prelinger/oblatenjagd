@@ -1,0 +1,27 @@
+# BUG (QA E3): a Fiaker bounce is followed by a hit on the very next frame.
+# qa_enemies_fiaker_trigger_128 (player waits at x 802, the Fiaker charges
+# from 566), plus a straight jump at 569 so that she is falling when its
+# front reaches her (616): feet at 174, below its top (164) but above its
+# middle (178) on the previous frame → the stomp rule holds, `Stomped`, the
+# bounce (no damage, no points: design "Fiaker", D-017). The bounce lifts
+# her only 3.17 px in the next frame, so at 617 she still overlaps the
+# Fiaker, now moving up (vy < 0), which counts as "any other contact":
+# Hurt → Normal Resi dies (617).
+# Expected (this file): the contact that gave the bounce does no damage -
+# no death; she bounces off it (maybe more than once) and it drives on.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped deaths=0 no_event=Hurt no_event=Died state=playing
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 118     # stops at x 802; the Fiaker telegraphs at 526, charges from 566
+- 60
+J 30      # 569: straight up, falling again when it arrives (616)
+- 150

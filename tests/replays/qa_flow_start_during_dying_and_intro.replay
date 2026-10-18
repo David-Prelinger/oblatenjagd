@@ -1,0 +1,18 @@
+# QA (E4): real flow on 00_enemies, standing still: the tourist kills at
+# 624. START pressed during Dying (630) does nothing (no pause, no skip);
+# START pressed again during Dying (651) and held through the respawn (684)
+# and the whole stage intro into play (834..) is not a new press there:
+# no pause. Then it is released and play goes on (the respawned tourist
+# kills again at 834 + 473 = 1307; nothing was delayed).
+level  = enemies
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=624..624 dies_at frames=1307..1307 deaths=2 state=dying
+---
+S 1       # title → stage intro
+- 628
+S 1       # 630: during Dying
+- 20
+S 200     # 651..850: held through Dying, the intro and into play
+- 460
