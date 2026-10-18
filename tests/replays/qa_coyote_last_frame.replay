@@ -1,0 +1,14 @@
+# QA (M0): coyote time is 6 frames. Run off the left edge of the 3-wide gap
+# (column 34, x=544) and press JUMP on the 6th step that starts in the air.
+# Step 217 is the first airborne step; steps 218..223 may still jump.
+# Pair: qa_coyote_one_frame_late (step 224 must not jump).
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=700
+---
+RB 110    # run up to the steps
+RBJ 35    # running jump over the steps
+RB 77     # steps 146-222: lands at 201, leaves the ground at step 217
+RBJ 25    # step 223: last coyote frame -> jump clears the gap
+RB 40

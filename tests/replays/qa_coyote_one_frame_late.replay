@@ -1,0 +1,13 @@
+# QA (M0): one frame after coyote time (7th airborne step, 224) JUMP does
+# nothing, so the player falls out of the level below the 3-wide gap and
+# dies when the hitbox top passes the level bottom (step 235).
+# Pair: qa_coyote_last_frame.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = dies_at frames=235..235 deaths=1 state=dying
+---
+RB 110
+RBJ 35
+RB 78     # steps 146-223
+RBJ 12    # step 224: too late, no jump

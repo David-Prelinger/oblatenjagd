@@ -1,0 +1,27 @@
+# QA (M0): touching the goal pole in mid-air completes the stage (step 731,
+# hitbox ~80 px above the ground); in StageClear the simulation stands still,
+# so running/jumping left afterwards must not move the player.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = complete frames=731..731 deaths=0 state=stage_clear player_x>=1829
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35
+RBJ 14
+RB 38
+RBJ 30
+RB 140
+RBJ 40    # jump at 699 into the goal pole, LevelComplete at 731 in mid-air
+LB 60     # inputs after StageClear: ignored
+LBJ 30
+- 30

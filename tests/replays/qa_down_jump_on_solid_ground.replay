@@ -1,0 +1,12 @@
+# QA (M0): DOWN + JUMP on solid ground is a normal jump (D-011: only one-way
+# tiles are dropped through). Walk against the first 1-tile step (blocked at
+# x=308), then DOWN+JUMP with RIGHT held: the jump lifts the player onto the
+# steps, which only works if a real jump happened.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=360
+---
+R 200     # walk into the step wall (x=308)
+RDJ 30    # DOWN + JUMP on solid ground -> normal jump onto the step
+R 30

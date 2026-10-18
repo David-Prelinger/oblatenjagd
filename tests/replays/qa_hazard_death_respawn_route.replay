@@ -1,0 +1,44 @@
+# QA (M0): walking into the hazard pit kills (step 742); every input during
+# the 60-frame Dying timer is ignored; the respawn (step 802) puts the player
+# back at the player start with a reset camera, so the full testbed route
+# played afterwards finishes exactly like testbed_route (731 steps after the
+# route starts at step 845 -> 1575). A stale camera would clamp the respawned
+# player to its left edge and break the route.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = dies_at frames=742..742 deaths=1 complete frames=1575..1575 state=stage_clear
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35
+D 90
+RJ 30
+R 78
+- 60      # standing at the pit edge (x~1404.9)
+R 40      # walk into the hazard: Died at 742
+LRUDBJS 20  # every button during Dying (released before the respawn)
+- 50      # respawn at 802, stand still until 844
+RB 110    # testbed_route from here (starts at step 845)
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35
+RBJ 14
+RB 38
+RBJ 30
+RB 200
