@@ -2,6 +2,8 @@ FROM mcr.microsoft.com/devcontainers/rust:1-bookworm
 
 # Systemabhängigkeiten für grafische Rust-Spiele (Bevy / winit / wgpu / Audio)
 # plus Mesa-Software-Rendering, damit das Spiel ohne GPU im Container läuft.
+# chromium: headless browser for `cargo xtask wasm-smoke` (SwiftShader WebGL).
+# xdotool: send key presses to the game window on DISPLAY=:1 (e.g. F12 tests).
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
         pkg-config \
@@ -23,4 +25,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         libegl1 \
         vulkan-tools \
         mesa-utils \
+        chromium \
+        xdotool \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
