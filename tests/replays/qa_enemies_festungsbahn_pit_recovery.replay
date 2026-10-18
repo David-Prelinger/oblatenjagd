@@ -3,7 +3,8 @@
 # enemies_festungsbahn_ride up to the plateau, a few steps onto it (camera
 # 1467), then back left: off the plateau edge (1284) and down the
 # stair-stepped rock to the pit floor (y 186 at 1356, x 1467 = the camera's
-# left edge). The car comes down over her and goes on (no carry, no hurt).
+# left edge). The car comes down past her (no carry, no hurt) and waits at
+# its lower end behind the camera's left edge (D-030): climbing is the way.
 # She climbs back out on the rock: jumps at 1565, 1617 and 1669 land on
 # column 95 (y 154), column 98 (y 122) and the plateau (y 90, 1708), then
 # she walks off the rampart to the Maibaum on the meadow (1850).

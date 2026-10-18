@@ -64,7 +64,8 @@ pub struct PlatformTuning {
     pub festungsbahn_size: [i32; 2],
     /// Frames from one end point to the other.
     pub festungsbahn_travel: u16,
-    /// Frames standing at each end point.
+    /// Frames standing at the upper end point (at the lower end the car
+    /// waits for its rider, D-030).
     pub festungsbahn_wait: u16,
 }
 

@@ -42,7 +42,7 @@ pub use background::{BackgroundLayer, parallax_offset};
 pub use blit::{blit_frame, blit_frame_tinted, draw_sprite, draw_sprite_tinted};
 pub use font::{CHARSET, Font};
 pub use scene::{PlayerAnim, RenderContext, render, render_debug};
-pub use tiles::{TileLook, autotile_mask};
+pub use tiles::{TileLook, TileLooks, autotile_family, autotile_mask};
 
 /// Framebuffer width in pixels.
 pub const WIDTH: usize = 320;

@@ -1,4 +1,5 @@
-# QA (E3): onto the car (frame 1029) and riding it up and down until the
+# QA (E3): onto the car (frame 1029) and riding it up and down (she stays
+# on, so it leaves again each time it is back at the bottom, D-030) until the
 # timer runs out (300 s = 18000 playing frames): the player dies on the
 # moving car at exactly frame 18000, the level (car included) is reset and
 # she respawns at the start on the ground (y 170), Normal, with 2 lives.

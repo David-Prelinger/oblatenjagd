@@ -39,9 +39,8 @@ impl TileKind {
         match name {
             "empty" | "railing_bg" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
-            | "railing" | "arch" | "brick" | "oblaten_box" | "oblaten_box_empty" => {
-                Some(TileKind::Solid)
-            }
+            | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
+            | "oblaten_box" | "oblaten_box_empty" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" => Some(TileKind::OneWay),
             "hazard" | "salzach_water" | "salzach_water_deep" => Some(TileKind::Hazard),
             _ => None,
@@ -162,11 +161,13 @@ pub enum SpawnKind {
     Fiaker,
     /// The Festungsbahn funicular car (moving platform).
     Festungsbahn,
+    /// A decorative catalog sprite (`sprite`), no collision (D-030).
+    Prop,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 11] = [
+    pub const ALL: [SpawnKind; 12] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -178,6 +179,7 @@ impl SpawnKind {
         SpawnKind::MozartkugelVerkaeufer,
         SpawnKind::Fiaker,
         SpawnKind::Festungsbahn,
+        SpawnKind::Prop,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -195,6 +197,7 @@ impl SpawnKind {
             SpawnKind::MozartkugelVerkaeufer => "mozartkugel_verkaeufer",
             SpawnKind::Fiaker => "fiaker",
             SpawnKind::Festungsbahn => "festungsbahn",
+            SpawnKind::Prop => "prop",
         }
     }
 
@@ -260,7 +263,51 @@ pub struct EntitySpawn {
     /// target for grey-box test levels, `00_*.level` only, checked by
     /// `levels lint`; D-026).
     pub still: bool,
+    /// The sprite name (`sprite = "..."`, required for `prop`, `None`
+    /// otherwise; must be one of [`PROP_SPRITES`], checked by `levels lint`).
+    pub sprite: Option<String>,
+    /// Where a `prop` is drawn (`layer = "back"`; front by default, D-031).
+    pub layer: PropLayer,
+    /// Horizontal offset of a `prop` in px (`dx = N`, 0 by default, within
+    /// ±[`MAX_PROP_DX_PX`]), e.g. 8 to centre it between two columns.
+    pub dx: i32,
 }
+
+/// Largest `|dx|` of a `prop`, in px.
+pub const MAX_PROP_DX_PX: i32 = 64;
+
+/// Draw layer of a `prop` (D-031).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PropLayer {
+    /// After the tiles, behind the player (the default).
+    #[default]
+    Front,
+    /// After the parallax background, before the tiles (façades behind
+    /// the street).
+    Back,
+}
+
+impl PropLayer {
+    /// The layer for a `layer` value; `None` if unknown.
+    pub fn from_name(name: &str) -> Option<PropLayer> {
+        match name {
+            "front" => Some(PropLayer::Front),
+            "back" => Some(PropLayer::Back),
+            _ => None,
+        }
+    }
+}
+
+/// Catalog sprites a `prop` may draw (`docs/sprite-catalog.md`, group
+/// `props`). Add a name here when the catalog gets a new prop sprite.
+pub const PROP_SPRITES: &[&str] = &[
+    "sphaera",
+    "pegasus",
+    "fountain_water",
+    "zwerg",
+    "residenzbrunnen",
+    "geburtshaus",
+];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
 pub const MAX_TRACK_TILES: i32 = 64;
@@ -352,6 +399,9 @@ enum LegendEntry {
         style: SignStyle,
         to: Option<[i32; 2]>,
         still: bool,
+        sprite: Option<String>,
+        layer: PropLayer,
+        dx: i32,
     },
 }
 
@@ -434,6 +484,9 @@ impl Level {
                         style,
                         to,
                         still,
+                        sprite,
+                        layer,
+                        dx,
                     } => {
                         tiles.push(Tile::default());
                         entities.push(EntitySpawn {
@@ -444,6 +497,9 @@ impl Level {
                             style: *style,
                             to: *to,
                             still: *still,
+                            sprite: sprite.clone(),
+                            layer: *layer,
+                            dx: *dx,
                         });
                     }
                 }
@@ -582,6 +638,7 @@ fn parse_legend_value(
                 (None, Some("sign")) => &["entity", "text", "style"],
                 (None, Some("festungsbahn")) => &["entity", "to"],
                 (None, Some("selfie_tourist")) => &["entity", "still"],
+                (None, Some("prop")) => &["entity", "sprite", "layer", "dx"],
                 (None, Some(_)) => &["entity"],
                 _ => {
                     return Err(ParseError::new(format!(
@@ -707,12 +764,44 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
             )));
         }
     };
+    let mut sprite = None;
+    let mut layer = PropLayer::default();
+    let mut dx = 0;
+    if kind == SpawnKind::Prop {
+        match t.get("dx") {
+            None => {}
+            Some(toml::Value::Integer(n)) if n.abs() <= i64::from(MAX_PROP_DX_PX) => dx = *n as i32,
+            Some(_) => {
+                return Err(ParseError::new(format!(
+                    "legend \"{key}\": a prop's dx must be a whole number of px within ±{MAX_PROP_DX_PX}"
+                )));
+            }
+        }
+        if let Some(l) = string_field(key, t, "layer")? {
+            layer = PropLayer::from_name(l).ok_or_else(|| {
+                ParseError::new(format!(
+                    "legend \"{key}\": unknown prop layer \"{l}\" (expected front or back)"
+                ))
+            })?;
+        }
+        match string_field(key, t, "sprite")? {
+            Some(s) if !s.is_empty() => sprite = Some(s.to_owned()),
+            _ => {
+                return Err(ParseError::new(format!(
+                    "legend \"{key}\": a prop needs sprite = \"<sprite name>\""
+                )));
+            }
+        }
+    }
     Ok(LegendEntry::Entity {
         kind,
         text,
         style,
         to,
         still,
+        sprite,
+        layer,
+        dx,
     })
 }
 
@@ -761,6 +850,9 @@ grid = '''
             style: SignStyle::Street,
             to: None,
             still: false,
+            sprite: None,
+            layer: PropLayer::Front,
+            dx: 0,
         }
     }
 
@@ -1081,6 +1173,76 @@ P.sSC.tfG
             "{ entity = \"goal\", to = [1, 1] }",
         );
         assert!(err(&on_sign).contains("field \"to\""));
+    }
+
+    #[test]
+    fn props_need_a_sprite_and_take_an_optional_layer() {
+        let with = |fields: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!(
+                        "\"G\" = {{ entity = \"goal\" }}\n\"S\" = {{ entity = \"prop\"{fields} }}"
+                    ),
+                )
+                .replace(".P.--..", ".PS--..")
+        };
+        let prop = |fields: &str| {
+            let l = Level::parse(&with(fields)).unwrap();
+            let p = l
+                .entities
+                .iter()
+                .find(|e| e.kind == SpawnKind::Prop)
+                .cloned();
+            (p.unwrap(), l)
+        };
+        let (p, l) = prop(", sprite = \"sphaera\"");
+        assert_eq!((p.col, p.row), (2, 1));
+        assert_eq!(
+            (p.sprite.as_deref(), p.layer),
+            (Some("sphaera"), PropLayer::Front)
+        );
+        assert_eq!(l.tile(2, 1).unwrap().kind, TileKind::Empty, "no collision");
+        assert_eq!(p.dx, 0);
+        let (p, _) = prop(", sprite = \"geburtshaus\", layer = \"back\"");
+        assert_eq!(p.layer, PropLayer::Back);
+        assert_eq!(prop(", sprite = \"sphaera\", dx = 8").0.dx, 8);
+        assert_eq!(prop(", sprite = \"sphaera\", dx = -64").0.dx, -64);
+        for bad in [
+            ", sprite = \"a\", dx = 65",
+            ", sprite = \"a\", dx = true",
+            ", sprite = \"a\", dx = \"8\"",
+        ] {
+            let e = err(&with(bad));
+            assert!(e.contains("dx must be"), "{bad}: {e}");
+        }
+        assert_eq!(
+            prop(", sprite = \"x\", layer = \"front\"").0.layer,
+            PropLayer::Front
+        );
+        for bad in ["", ", sprite = \"\"", ", sprite = 3"] {
+            let e = err(&with(bad));
+            assert!(e.contains("sprite"), "{bad}: {e}");
+        }
+        let e = err(&with(", sprite = \"zwerg\", layer = \"middle\""));
+        assert!(e.contains("unknown prop layer \"middle\""), "{e}");
+        let on_goal = SMALL.replace(
+            "{ entity = \"goal\" }",
+            "{ entity = \"goal\", sprite = \"a\" }",
+        );
+        assert!(err(&on_goal).contains("field \"sprite\""));
+        assert!(PROP_SPRITES.contains(&"sphaera"));
+    }
+
+    #[test]
+    fn facade_arch_under_and_invisible_are_solid() {
+        for name in ["facade", "arch_under", "invisible"] {
+            assert_eq!(
+                TileKind::from_tile_name(name),
+                Some(TileKind::Solid),
+                "{name}"
+            );
+        }
     }
 
     #[test]

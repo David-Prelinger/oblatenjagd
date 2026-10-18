@@ -19,7 +19,7 @@ use jnr_core::level::TILE_PX;
 use jnr_core::physics::Aabb;
 use jnr_core::tuning::PlayerTuning;
 use jnr_core::{
-    Camera, ClearPhase, Facing, Fx, Game, Level, Mode, Player, Power, SpawnKind, Texts,
+    Camera, ClearPhase, Facing, Fx, Game, Level, Mode, Player, Power, PropLayer, SpawnKind, Texts,
 };
 
 use crate::background::{self, BackgroundLayer};
@@ -27,7 +27,7 @@ use crate::blit::draw_sprite;
 use crate::entities::{self, EntityLooks};
 use crate::font::Font;
 use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
-use crate::tiles::{self, TileLook};
+use crate::tiles::{self, TileLooks};
 use crate::{Framebuffer, HEIGHT, hud, screens};
 
 /// Sprite name of the player.
@@ -140,6 +140,17 @@ struct PlayerLook<'a> {
     anims: [&'a AtlasAnim; 7],
 }
 
+/// A level `prop` (D-030/D-031): its sprite (`None` = grey-box outline of
+/// its cell), the bottom centre of its cell (moved by its `dx`) in level
+/// pixels, and its layer.
+#[derive(Clone, Copy, Debug)]
+struct PropLook<'a> {
+    sprite: Option<&'a AtlasSprite>,
+    foot_x: i32,
+    foot_y: i32,
+    layer: PropLayer,
+}
+
 /// Everything the renderer looks up, resolved once: the atlas, the font,
 /// the texts, the tile/player/goal sprites and the background layers.
 /// Build it at startup (and again when the level changes: tile sprites are
@@ -151,12 +162,14 @@ pub struct RenderContext<'a> {
     texts: &'a Texts,
     font: Font,
     /// `tile_<name>` look per [`Level::tile_names`] index (index 0 = no name).
-    tiles: Vec<Option<TileLook<'a>>>,
+    tiles: TileLooks<'a>,
     player: Option<PlayerLook<'a>>,
     player_big: Option<PlayerLook<'a>>,
     maibaum_pole: Option<&'a AtlasSprite>,
     maibaum_top: Option<&'a AtlasSprite>,
     entities: EntityLooks<'a>,
+    /// The level's props, in spawn order.
+    props: Vec<PropLook<'a>>,
     /// `title_logo` (title screen).
     pub(crate) title_logo: Option<&'a AtlasSprite>,
     /// `hud_oblate` (HUD icon).
@@ -176,17 +189,7 @@ impl<'a> RenderContext<'a> {
     /// count as missing (grey-box).
     pub fn new(atlas: &'a Atlas, texts: &'a Texts, level: &Level) -> RenderContext<'a> {
         let with_anims = |name: &str| atlas.sprite(name).filter(|s| !s.anims.is_empty());
-        let tiles = level
-            .tile_names
-            .iter()
-            .map(|n| {
-                if n.is_empty() {
-                    None
-                } else {
-                    TileLook::resolve(atlas, &format!("{TILE_SPRITE_PREFIX}{n}"))
-                }
-            })
-            .collect();
+        let tiles = TileLooks::resolve(atlas, &level.tile_names, TILE_SPRITE_PREFIX);
         let look = |name: &str| {
             with_anims(name).map(|sprite| PlayerLook {
                 sprite,
@@ -200,6 +203,17 @@ impl<'a> RenderContext<'a> {
                 }),
             })
         };
+        let props = level
+            .entities
+            .iter()
+            .filter(|e| e.kind == SpawnKind::Prop)
+            .map(|e| PropLook {
+                sprite: e.sprite.as_deref().and_then(with_anims),
+                foot_x: e.col * TILE_PX + TILE_PX / 2 + e.dx,
+                foot_y: (e.row + 1) * TILE_PX,
+                layer: e.layer,
+            })
+            .collect();
         let id = &level.meta.id;
         let stage = if texts.contains(&format!("stage.{id}.title")) {
             id.as_str()
@@ -220,6 +234,7 @@ impl<'a> RenderContext<'a> {
             maibaum_pole: with_anims(MAIBAUM_POLE_SPRITE),
             maibaum_top: with_anims(MAIBAUM_TOP_SPRITE),
             entities: EntityLooks::new(atlas),
+            props,
             title_logo: with_anims(screens::TITLE_LOGO_SPRITE),
             hud_oblate: with_anims(hud::OBLATE_ICON_SPRITE),
             stage_keys,
@@ -306,8 +321,10 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         cam.x,
         tick,
     );
+    draw_props(ctx, fb, cam, tick, PropLayer::Back);
     entities::draw_behind_tiles(game, &ctx.entities, ctx.atlas, fb);
     tiles::draw_tiles(fb, atlas, &ctx.tiles, game, cam, tick);
+    draw_props(ctx, fb, cam, tick, PropLayer::Front);
     draw_goals(game, ctx, fb, cam);
     entities::draw_entities(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     draw_player(game, ctx, fb, cam);
@@ -333,7 +350,9 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
         cam.x,
         tick,
     );
+    draw_props(ctx, fb, cam, tick, PropLayer::Back);
     tiles::draw_tiles(fb, atlas, &ctx.tiles, game, cam, tick);
+    draw_props(ctx, fb, cam, tick, PropLayer::Front);
     draw_goals(game, ctx, fb, cam);
     let p = game.player();
     let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
@@ -375,6 +394,19 @@ pub fn render_debug(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let text = format!("F:{} X:{} Y:{}", game.frame(), p.x.to_px(), p.y.to_px());
     ctx.font
         .draw_text(fb, ctx.atlas, &text, 2, 2, WHITE, Some(OUTLINE));
+}
+
+/// The props of `layer`: their sprite (first anim) with its origin on the
+/// bottom centre of the prop's cell; no collision. Missing sprite: the
+/// outline of the cell (grey-box).
+fn draw_props(ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera, tick: u32, layer: PropLayer) {
+    for p in ctx.props.iter().filter(|p| p.layer == layer) {
+        let (x, y) = (p.foot_x - cam.x, p.foot_y - cam.y);
+        match p.sprite {
+            Some(s) => draw_sprite(fb, ctx.atlas, s, &s.anims[0], tick, x, y, false),
+            None => fb.outline_rect(x - TILE_PX / 2, y - TILE_PX, TILE_PX, TILE_PX, OUTLINE),
+        }
+    }
 }
 
 /// Maibaum: `maibaum_pole` repeated up from the bottom of the goal cell as
@@ -692,7 +724,7 @@ mod tests {
         assert_eq!(ctx.player_anim(PlayerAnim::Jump).unwrap().name, "stand");
 
         let ctx = RenderContext::new(&atlas, &texts, game.level());
-        assert!(ctx.tiles.iter().all(Option::is_none));
+        assert!(ctx.tiles.looks.iter().all(Option::is_none));
         assert!(ctx.font().is_empty());
         let none = empty_atlas();
         assert!(
@@ -855,6 +887,57 @@ mod tests {
             rendered(&game, &atlas).get(fx, fy - 1),
             Some(B),
             "pole anim"
+        );
+    }
+
+    /// Props (D-030/D-031): front props after the tiles, back props before
+    /// them, `dx` moves them, a missing sprite is a grey-box cell outline.
+    #[test]
+    fn props_draw_on_their_layer_with_their_offset() {
+        let text = "[meta]\nid = \"tiny\"\ntime_limit = 300\n\n[legend]\n\"#\" = \"solid\"\n\
+             \"P\" = { entity = \"player_start\" }\n\
+             \"s\" = { entity = \"prop\", sprite = \"sphaera\", dx = 8 }\n\
+             \"h\" = { entity = \"prop\", sprite = \"geburtshaus\", layer = \"back\" }\n\
+             \"z\" = { entity = \"prop\", sprite = \"zwerg\" }\n\n[map]\ngrid = '''\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n\
+             ..P.s...h...z.......\n####################\n'''\n";
+        let game = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
+        // 4x8 sprites with the origin 4 px above their bottom: the lower
+        // half reaches into the ground row (y 144..160).
+        let prop = |name: &str, c: &str| {
+            testutil::sprite(name, (2, 4), false, vec![("idle", 0, vec![image(&[c; 8])])])
+        };
+        let atlas = testutil::atlas(&[
+            prop("sphaera", "aaaa"),
+            prop("geburtshaus", "bbbb"),
+            testutil::sprite(
+                "tile_solid",
+                (0, 0),
+                false,
+                vec![("tile", 0, vec![image(&["cccccccccccccccc"; 16])])],
+            ),
+        ]);
+        let fb = rendered(&game, &atlas);
+        // Front: column 4 (foot x 72) + dx 8 = 80 -> x 78..82, y 140..148,
+        // over the ground tile.
+        assert_eq!(fb.get(78, 140), Some(A));
+        assert_eq!(fb.get(81, 147), Some(A), "in front of the tile");
+        assert_eq!(fb.get(77, 140), Some(SKY_LIGHT));
+        assert_eq!(fb.get(82, 140), Some(SKY_LIGHT), "moved by dx");
+        // Back: column 8 (foot x 136) -> x 134..138; the tile covers its
+        // lower half.
+        assert_eq!(fb.get(134, 140), Some(B));
+        assert_eq!(fb.get(134, 145), Some(C), "behind the tile");
+        // No `zwerg` sprite: the outline of its cell (column 12, row 8).
+        assert_eq!(fb.get(192, 128), Some(OUTLINE));
+        assert_eq!(fb.get(207, 143), Some(OUTLINE));
+        assert_eq!(fb.get(200, 136), Some(SKY_LIGHT));
+        // No collision: the cells stay empty.
+        assert_eq!(
+            game.level().tile(4, 8).unwrap().kind,
+            jnr_core::TileKind::Empty
         );
     }
 

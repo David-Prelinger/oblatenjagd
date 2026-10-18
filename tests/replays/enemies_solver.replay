@@ -2,24 +2,24 @@
 level  = enemies
 seed   = 1
 source = solver
-expect = complete frames=725..725 deaths=0
+expect = complete frames=717..717 deaths=0
 ---
-RB 44
+RB 76
+RBJ 36
+RB 56
+RBJ 6
+RB 13
+RBJ 36
+RB 24
+RBJ 36
+RB 40
 RBJ 20
-RB 21
-RBJ 33
-RB 43
+RB 16
 RBJ 36
-RB 40
+RB 56
 RBJ 36
-RB 40
+RB 10
 RBJ 36
-RB 18
-RBJ 31
-RB 77
+RB 48
 RBJ 36
-RB 40
-RBJ 36
-RB 18
-RBJ 36
-RB 84
+RB 100
