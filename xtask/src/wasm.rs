@@ -21,21 +21,30 @@ cargo xtask wasm [--release | --debug] [--serve] [--port N]
 cargo xtask wasm-smoke
     assembles the release build, loads it in headless Chromium (SwiftShader
     WebGL) and checks the screenshot $CARGO_TARGET_DIR/preview/wasm_smoke.png
-    is not blank and shows the sky colour (palette `s`)
+    is not blank and shows the Salzburg title's parallax sky (palette `s` +
+    `S` together at least 25 %, the upper `S` band at least 5 %)
 ";
 
 /// The wasm file name the page loads (see `web/index.html`).
 const WASM_NAME: &str = "jnr-app.wasm";
-/// Palette character of the sky the testbed is drawn on.
+/// Palette character of the (lower, light) sky: the testbed's flat sky and
+/// the haze band of the Salzburg parallax.
 const SKY_CHAR: char = 's';
+/// Palette character of the upper sky band of the Salzburg parallax.
+const SKY_BLUE_CHAR: char = 'S';
 /// Screenshot window size (the game fills it exactly at scale 4).
 const WINDOW: (u32, u32) = (1280, 720);
 /// Upper bound for one Chromium run.
 const CHROMIUM_TIMEOUT: Duration = Duration::from_secs(90);
 /// Per-channel tolerance when matching the sky colour.
 const SKY_TOLERANCE: u8 = 2;
-/// Minimum share of sky pixels in the screenshot (the testbed start is ~80 %).
+/// Minimum share of sky pixels (`s` + `S`) in the screenshot. The Salzburg
+/// title screen the game starts on shows 36.4 % (20.4 % `s`, 16.0 % `S`;
+/// the logo, rooftops, Festung and cobbles cover the rest).
 const MIN_SKY_SHARE: f64 = 0.25;
+/// Minimum share of the upper `S` sky band: it is only in the parallax
+/// background, so a flat sky fill (or the testbed) fails.
+const MIN_SKY_BLUE_SHARE: f64 = 0.05;
 
 #[derive(Debug, PartialEq, Eq)]
 struct WasmOpts {
@@ -199,7 +208,7 @@ impl Drop for KillOnDrop {
 /// Runs the whole smoke check; `Ok` carries a one-line summary.
 /// Also the `wasm-smoke` step of `cargo xtask verify`.
 pub fn smoke_check(root: &Path) -> Result<String, String> {
-    let sky = sky_colour(root)?;
+    let sky = [sky_colour(root)?, palette_colour(root, SKY_BLUE_CHAR)?];
     let dir = build_and_assemble(root, true, true)?;
     let preview = target_dir(root).join("preview");
     fs::create_dir_all(&preview).map_err(|e| format!("{}: {e}", preview.display()))?;
@@ -285,14 +294,19 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     ))
 }
 
-/// The sky colour from `art/palettes/main.palette`.
+/// The sky colour (`s`) from `art/palettes/main.palette`.
 pub fn sky_colour(root: &Path) -> Result<[u8; 3], String> {
+    palette_colour(root, SKY_CHAR)
+}
+
+/// The colour of palette character `ch` from `art/palettes/main.palette`.
+fn palette_colour(root: &Path, ch: char) -> Result<[u8; 3], String> {
     let path = root.join("art/palettes/main.palette");
     let src = fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let palette = Palette::parse("main.palette", &src).map_err(|d| format!("{d:?}"))?;
-    match palette.colour(SKY_CHAR) {
+    match palette.colour(ch) {
         Some(Some([r, g, b, _])) => Ok([r, g, b]),
-        _ => Err(format!("palette has no colour `{SKY_CHAR}`")),
+        _ => Err(format!("palette has no colour `{ch}`")),
     }
 }
 
@@ -414,9 +428,10 @@ fn decode_png(bytes: &[u8]) -> Result<(u32, u32, Vec<u8>), String> {
     Ok((info.width, info.height, rgba))
 }
 
-/// Checks the screenshot is not blank (more than one colour) and that at
-/// least [`MIN_SKY_SHARE`] of it is the sky colour. Returns a summary.
-fn analyse(rgba: &[u8], sky: [u8; 3]) -> Result<String, String> {
+/// Checks the screenshot is not blank (more than one colour), that at least
+/// [`MIN_SKY_SHARE`] of it is one of the two sky colours `[s, S]` and at
+/// least [`MIN_SKY_BLUE_SHARE`] the upper band `S`. Returns a summary.
+fn analyse(rgba: &[u8], sky: [[u8; 3]; 2]) -> Result<String, String> {
     let pixels: Vec<&[u8]> = rgba.chunks_exact(4).collect();
     if pixels.is_empty() {
         return Err("screenshot is empty".to_owned());
@@ -429,20 +444,37 @@ fn analyse(rgba: &[u8], sky: [u8; 3]) -> Result<String, String> {
         ));
     }
     let close = |a: u8, b: u8| a.abs_diff(b) <= SKY_TOLERANCE;
-    let sky_pixels = pixels
-        .iter()
-        .filter(|p| close(p[0], sky[0]) && close(p[1], sky[1]) && close(p[2], sky[2]))
-        .count();
-    let share = sky_pixels as f64 / pixels.len() as f64;
-    let hex = format!("#{:02x}{:02x}{:02x}", sky[0], sky[1], sky[2]);
-    if share < MIN_SKY_SHARE {
+    let share = |c: [u8; 3]| {
+        let n = pixels
+            .iter()
+            .filter(|p| close(p[0], c[0]) && close(p[1], c[1]) && close(p[2], c[2]))
+            .count();
+        n as f64 / pixels.len() as f64
+    };
+    let (light, blue) = (share(sky[0]), share(sky[1]));
+    let hex = |c: [u8; 3]| format!("#{:02x}{:02x}{:02x}", c[0], c[1], c[2]);
+    let (light_hex, blue_hex) = (hex(sky[0]), hex(sky[1]));
+    if light + blue < MIN_SKY_SHARE {
         return Err(format!(
-            "only {:.1} % of the screenshot is sky {hex} (need {:.0} %)",
-            share * 100.0,
+            "only {:.1} % of the screenshot is sky {light_hex}/{blue_hex} (need {:.0} %)",
+            (light + blue) * 100.0,
             MIN_SKY_SHARE * 100.0
         ));
     }
-    Ok(format!("{:.1} % sky {hex}", share * 100.0))
+    if blue < MIN_SKY_BLUE_SHARE {
+        return Err(format!(
+            "only {:.1} % of the screenshot is the upper sky band {blue_hex} (need {:.0} %): \
+             no parallax sky, not the Salzburg title?",
+            blue * 100.0,
+            MIN_SKY_BLUE_SHARE * 100.0
+        ));
+    }
+    Ok(format!(
+        "{:.1} % sky ({:.1} % {light_hex}, {:.1} % {blue_hex})",
+        (light + blue) * 100.0,
+        light * 100.0,
+        blue * 100.0
+    ))
 }
 
 #[cfg(test)]
@@ -485,43 +517,64 @@ mod tests {
     }
 
     const SKY: [u8; 3] = [0xa6, 0xda, 0xf2];
+    const SKY_BLUE: [u8; 3] = [0x64, 0xae, 0xe6];
+    const SKIES: [[u8; 3]; 2] = [SKY, SKY_BLUE];
     const GROUND: [u8; 3] = [0x5d, 0x66, 0x80];
 
     #[test]
-    fn analyse_accepts_a_sky_scene() {
-        let img = image(&[SKY, SKY, SKY, GROUND]);
-        assert_eq!(analyse(&img, SKY), Ok("75.0 % sky #a6daf2".to_owned()));
+    fn analyse_accepts_a_parallax_sky_scene() {
+        let img = image(&[SKY, SKY, SKY_BLUE, GROUND]);
+        assert_eq!(
+            analyse(&img, SKIES),
+            Ok("75.0 % sky (50.0 % #a6daf2, 25.0 % #64aee6)".to_owned())
+        );
         // Small rounding differences still count as sky.
-        let img = image(&[[0xa7, 0xd9, 0xf2], GROUND]);
-        assert!(analyse(&img, SKY).is_ok());
+        let img = image(&[[0xa7, 0xd9, 0xf2], [0x65, 0xad, 0xe6], GROUND]);
+        assert!(analyse(&img, SKIES).is_ok());
     }
 
     #[test]
     fn analyse_rejects_blank_and_skyless_screens() {
         assert!(
-            analyse(&image(&[[0; 3]; 4]), SKY)
+            analyse(&image(&[[0; 3]; 4]), SKIES)
                 .unwrap_err()
                 .contains("blank")
         );
         assert!(
-            analyse(&image(&[SKY; 4]), SKY)
+            analyse(&image(&[SKY; 4]), SKIES)
                 .unwrap_err()
                 .contains("blank")
         );
         // Exactly the minimum share passes, less fails.
-        assert!(analyse(&image(&[[0; 3], GROUND, GROUND, SKY]), SKY).is_ok());
+        assert!(analyse(&image(&[[0; 3], GROUND, GROUND, SKY_BLUE]), SKIES).is_ok());
         assert!(
-            analyse(&image(&[[0; 3], GROUND, GROUND, GROUND, SKY]), SKY)
+            analyse(&image(&[[0; 3], GROUND, GROUND, GROUND, SKY_BLUE]), SKIES)
                 .unwrap_err()
                 .contains("only 20.0 %")
         );
-        assert!(analyse(&[], SKY).unwrap_err().contains("empty"));
+        assert!(analyse(&[], SKIES).unwrap_err().contains("empty"));
+    }
+
+    #[test]
+    fn analyse_needs_the_upper_sky_band() {
+        // A flat light sky (the testbed) is not the Salzburg title.
+        let mut flat = vec![SKY; 19];
+        flat.push(GROUND);
+        assert!(
+            analyse(&image(&flat), SKIES)
+                .unwrap_err()
+                .contains("upper sky band")
+        );
+        // 1 of 20 pixels = exactly 5 % `S` passes.
+        flat[0] = SKY_BLUE;
+        assert!(analyse(&image(&flat), SKIES).is_ok());
     }
 
     #[test]
     fn sky_colour_comes_from_the_palette() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         assert_eq!(sky_colour(root), Ok(SKY));
+        assert_eq!(palette_colour(root, SKY_BLUE_CHAR), Ok(SKY_BLUE));
     }
 
     #[test]

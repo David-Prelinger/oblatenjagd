@@ -372,7 +372,8 @@ fn draw_popup(
         fb.fill_rect(x - 4, y, 8, 3, WHITE);
         return;
     }
-    font.draw_text(fb, atlas, &text, x - w / 2, y, WHITE, Some(OUTLINE));
+    // Full `k` outline like the HUD (D-037).
+    font.draw_text_outlined(fb, atlas, &text, x - w / 2, y, WHITE, OUTLINE);
 }
 
 /// Decimal digits of `n` in `buf` without allocating.
@@ -433,6 +434,44 @@ mod tests {
         let mut fb = Framebuffer::new();
         render(game, &ctx, &mut fb);
         fb
+    }
+
+    #[test]
+    fn popups_have_the_full_outline() {
+        use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
+        use crate::testutil::{self, image};
+        // Every glyph a full 8x8 block (advance 9).
+        let glyphs = CHARSET.chars().map(|_| image(&["aaaaaaaa"; 8])).collect();
+        let atlas = testutil::atlas(&[testutil::sprite(
+            FONT_SPRITE,
+            (0, 0),
+            false,
+            vec![(GLYPH_ANIM, 0, glyphs)],
+        )]);
+        let font = Font::from_atlas(&atlas);
+        let g = game();
+        let e = jnr_core::entity::popup(Popup::Score(100), Fx::from_px(160), Fx::from_px(80));
+        let mut fb = testutil::fb();
+        let cam = Camera { x: 0, y: 0 };
+        let texts = Texts::default();
+        draw_popup(
+            &g,
+            &atlas,
+            &font,
+            &texts,
+            &mut fb,
+            cam,
+            &e,
+            Popup::Score(100),
+        );
+        // „100" is 26 px wide, centred on x 160; top at y 80 minus the rise.
+        let (left, top) = (160 - 13, 80 - e.popup_rise_px(g.tuning()));
+        assert_eq!(fb.get(left, top), Some(WHITE));
+        assert_eq!(fb.get(left - 1, top), Some(OUTLINE), "left");
+        assert_eq!(fb.get(left - 1, top - 1), Some(OUTLINE), "top-left corner");
+        assert_eq!(fb.get(left, top - 1), Some(OUTLINE), "top");
+        assert_eq!(fb.get(left + 25, top + 8), Some(OUTLINE), "below");
+        assert_eq!(fb.get(left - 2, top), Some(testutil::BG));
     }
 
     #[test]

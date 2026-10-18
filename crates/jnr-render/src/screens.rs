@@ -4,7 +4,8 @@
 //! `content/text/de.toml` by key; [`TEXT_KEYS`] lists every key the engine
 //! itself uses (a test checks them against de.toml).
 //!
-//! Text is drawn in `w` with the `k` shadow unless noted; lines are centred
+//! Text is drawn in `w` with the `k` shadow unless noted (the title prompt
+//! has the full `k` outline); lines are centred
 //! horizontally. Blinking texts are on for [`BLINK_FRAMES`], then off as long.
 
 use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
@@ -92,9 +93,20 @@ const INTRO_TAGLINE_Y: i32 = 80;
 const INTRO_LIVES_Y: i32 = 112;
 const GAME_OVER_Y: i32 = 72;
 const CONTINUE_Y: i32 = 96;
-const CLEAR_Y: i32 = 72;
+const TIME_UP_Y: i32 = 72;
+const CLEAR_Y: i32 = 74;
 const NEXT_Y: i32 = 84;
-const BONUS_Y: i32 = 100;
+const BONUS_Y: i32 = 96;
+/// Stage-clear panel (D-037): top edge and height (y 69..=109, clear of
+/// the Maibaum crown above y 42 and the Ortsende sign below); the width
+/// follows the widest line. Inside the 1 px border: 4 px padding.
+const CLEAR_PANEL_Y: i32 = 69;
+const CLEAR_PANEL_H: i32 = 41;
+const PANEL_PADDING: i32 = 4;
+/// The time-bonus number is measured as this many digits (the maximum
+/// bonus, 300 s × 50, has 5), so the panel doesn't change width while the
+/// tally counts.
+const BONUS_DIGITS: &str = "00000";
 const CENTRE_Y: i32 = 86;
 /// Pause panel `(x, y, w, h)`: x 112..=207, y 78..=101.
 pub const PAUSE_PANEL: (i32, i32, i32, i32) = (112, 78, 96, 24);
@@ -140,8 +152,12 @@ pub fn draw_title(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, frames
     }
     centred(ctx, fb, &ctx.texts().get(SUBTITLE_KEY), SUBTITLE_Y, WHITE);
     if blink_on(u32::from(frames)) {
+        // Full `k` outline, not the drop shadow: the prompt crosses the
+        // cream Dom façade of the Salzburg rooftops (D-035).
         let prompt = ctx.texts().get(PRESS_START_KEY);
-        centred(ctx, fb, &prompt, PRESS_START_Y, WHITE);
+        let x = (WIDTH as i32 - ctx.font().measure(&prompt)) / 2;
+        ctx.font()
+            .draw_text_outlined(fb, ctx.atlas(), &prompt, x, PRESS_START_Y, WHITE, OUTLINE);
     }
 }
 
@@ -210,13 +226,31 @@ pub fn draw_to_be_continued(ctx: &RenderContext, fb: &mut Framebuffer) {
 /// Pause: the frozen level stays at full colour; a `B` panel with a `k`
 /// border and an `S` highlight (top and left) carries `ui.pause`.
 pub fn draw_pause(ctx: &RenderContext, fb: &mut Framebuffer) {
-    let (x, y, w, h) = PAUSE_PANEL;
+    draw_panel(fb, PAUSE_PANEL);
+    centred(ctx, fb, &ctx.texts().get(PAUSE_KEY), CENTRE_Y, WHITE);
+}
+
+/// An art-style §11 panel `(x, y, w, h)`: `B` fill, 1 px `k` border, 1 px
+/// `S` highlight inside the border on the top and left edges.
+fn draw_panel(fb: &mut Framebuffer, (x, y, w, h): (i32, i32, i32, i32)) {
     fb.fill_rect(x, y, w, h, NAVY);
-    // 1 px `S` highlight inside the border, top and left (art-style §11).
     fb.fill_rect(x + 1, y + 1, w - 2, 1, SKY_BLUE);
     fb.fill_rect(x + 1, y + 1, 1, h - 2, SKY_BLUE);
     fb.outline_rect(x, y, w, h, OUTLINE);
-    centred(ctx, fb, &ctx.texts().get(PAUSE_KEY), CENTRE_Y, WHITE);
+}
+
+/// The stage-clear panel `(x, y, w, h)`: centred, as wide as the widest of
+/// its three lines (+1 px shadow) plus padding and border on both sides.
+pub fn clear_panel(ctx: &RenderContext) -> (i32, i32, i32, i32) {
+    let (font, texts) = (ctx.font(), ctx.texts());
+    let bonus = font.measure(&texts.get(TIME_BONUS_KEY)) + GAP + font.measure(BONUS_DIGITS);
+    let widest = font
+        .measure(&texts.get(STAGE_CLEAR_KEY))
+        .max(font.measure(&texts.get(&ctx.stage_keys[2])))
+        .max(bonus);
+    // Rounded up to even, so the panel is exactly centred.
+    let w = (widest + 1 + 2 * (1 + PANEL_PADDING) + 1) / 2 * 2;
+    ((WIDTH as i32 - w) / 2, CLEAR_PANEL_Y, w, CLEAR_PANEL_H)
 }
 
 /// Overlays drawn over the level for the current mode: „Zeit is' um!"
@@ -224,13 +258,14 @@ pub fn draw_pause(ctx: &RenderContext, fb: &mut Framebuffer) {
 pub fn draw_overlays(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     match game.mode() {
         Mode::Dying { .. } if game.death_cause() == Some(DeathCause::TimeUp) => {
-            centred(ctx, fb, &ctx.texts().get(TIME_UP_KEY), CLEAR_Y, WHITE);
+            centred(ctx, fb, &ctx.texts().get(TIME_UP_KEY), TIME_UP_Y, WHITE);
         }
         Mode::StageClear => {
             let Some(c) = game.stage_clear() else { return };
             if !matches!(c.phase, ClearPhase::Tally | ClearPhase::Clear) {
                 return;
             }
+            draw_panel(fb, clear_panel(ctx));
             let texts = ctx.texts();
             centred(ctx, fb, &texts.get(STAGE_CLEAR_KEY), CLEAR_Y, WHITE);
             centred(ctx, fb, &texts.get(&ctx.stage_keys[2]), NEXT_Y, WHITE);
@@ -349,6 +384,13 @@ mod tests {
         let prompt = t.get(PRESS_START_KEY);
         let px = centred_x(&prompt);
         assert_eq!(fb.get(px, PRESS_START_Y), Some(WHITE));
+        // Full outline (D-035), not the +1/+1 shadow: also left of and
+        // above the first glyph.
+        assert_eq!(fb.get(px - 1, PRESS_START_Y), Some(OUTLINE));
+        assert_eq!(fb.get(px - 1, PRESS_START_Y - 1), Some(OUTLINE));
+        assert_eq!(fb.get(px, PRESS_START_Y - 1), Some(OUTLINE));
+        // The subtitle keeps the drop shadow.
+        assert_ne!(fb.get(centred_x(&sub) - 1, SUBTITLE_Y), Some(OUTLINE));
         for _ in 0..30 {
             g.step(InputFrame::NONE);
         }
@@ -446,7 +488,25 @@ mod tests {
         assert!(matches!(g.mode(), Mode::Dying { .. }));
         let fb = rendered(&g, &atlas);
         let text = texts().get(TIME_UP_KEY).into_owned();
-        assert_eq!(fb.get(centred_x(&text), CLEAR_Y), Some(WHITE));
+        assert_eq!(fb.get(centred_x(&text), TIME_UP_Y), Some(WHITE));
+        // No stage-clear panel while dying.
+        assert_ne!(fb.get(150, CLEAR_PANEL_Y), Some(OUTLINE));
+    }
+
+    #[test]
+    fn clear_panel_fits_the_real_texts_between_crown_and_sign() {
+        let texts = texts();
+        let lvl = level();
+        let ctx = RenderContext::new(jnr_assets::atlas(), &texts, &lvl);
+        let (x, y, w, h) = clear_panel(&ctx);
+        // About x 106..=214, y 69..=109 (art-director ruling, D-037).
+        assert!((100..=110).contains(&x), "left edge {x}, width {w}");
+        assert_eq!(x * 2 + w, 320, "centred");
+        assert_eq!((y, y + h - 1), (69, 109));
+        // 4 px padding inside the 1 px border on top and bottom: the first
+        // line starts at y + 5, the bonus line's shadow ends at y + h - 6.
+        assert_eq!(CLEAR_Y, y + 1 + PANEL_PADDING);
+        assert_eq!(BONUS_Y + 8, y + h - 1 - PANEL_PADDING - 1);
     }
 
     #[test]
@@ -462,6 +522,7 @@ mod tests {
         let clear = texts().get(STAGE_CLEAR_KEY).into_owned();
         let x = centred_x(&clear);
         assert_ne!(fb.get(x, CLEAR_Y), Some(WHITE), "not while sliding");
+        assert_ne!(fb.get(160, CLEAR_PANEL_Y), Some(OUTLINE), "no panel yet");
         while g.stage_clear().unwrap().phase != ClearPhase::Tally {
             g.step(InputFrame::NONE);
         }
@@ -475,6 +536,20 @@ mod tests {
         let x = (320 - (80 + 4 + 17)) / 2;
         assert_eq!(fb.get(x, BONUS_Y), Some(WHITE));
         assert_eq!(fb.get(x + 84, BONUS_Y), Some(MOZART_YELLOW));
+        assert_eq!(fb.get(x + 1, BONUS_Y + 8), Some(OUTLINE), "label shadow");
+        // The panel: k border, S highlight top and left, B fill behind
+        // the texts; the level is unchanged outside it.
+        let ctx_texts = texts();
+        let ctx = RenderContext::new(&atlas, &ctx_texts, g.level());
+        let (px, py, pw, ph) = clear_panel(&ctx);
+        assert_eq!(fb.get(px, py), Some(OUTLINE));
+        assert_eq!(fb.get(px + pw - 1, py + ph - 1), Some(OUTLINE));
+        assert_eq!(fb.get(px + 10, py + 1), Some(SKY_BLUE), "top highlight");
+        assert_eq!(fb.get(px + 1, py + 20), Some(SKY_BLUE), "left highlight");
+        assert_eq!(fb.get(px + pw - 2, py + ph - 2), Some(NAVY));
+        assert_eq!(fb.get(px + 2, py + 2), Some(NAVY));
+        assert_ne!(fb.get(px - 1, py + 20), Some(OUTLINE));
+        assert_ne!(fb.get(px - 1, py + 20), Some(NAVY));
         // HUD still shown.
         assert_eq!(fb.get(16, 4), Some(WHITE));
         while g.stage_clear().unwrap().phase != ClearPhase::ToBeContinued {

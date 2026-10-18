@@ -1,6 +1,6 @@
 //! The HUD (`docs/game-design.md` → "Screens and HUD"): two rows at the
-//! top, labels at y = 4 in `w`, values at y = 13 in `Y`, all with the
-//! font's `k` shadow and no panel. Columns (left-aligned): PUNKTE x = 16
+//! top, labels at y = 4 in `w`, values at y = 13 in `Y`, all with the full
+//! 1 px `k` outline (all 8 neighbours; D-037) and no panel. Columns (left-aligned): PUNKTE x = 16
 //! (6 digits, zero-padded), OBLATEN x = 96 (2 digits, after the optional
 //! `hud_oblate` icon), LEBEN x = 184, ZEIT x = 256 (3 digits, `r` at ≤ 60 s).
 //!
@@ -50,11 +50,11 @@ pub fn padded(mut n: u32, width: usize, buf: &mut [u8; 10]) -> &str {
 pub fn draw_hud(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let (atlas, font, texts) = (ctx.atlas(), ctx.font(), ctx.texts());
     for (key, x) in LABEL_KEYS.iter().zip(COLUMNS) {
-        font.draw_text(fb, atlas, &texts.get(key), x, LABEL_Y, WHITE, Some(OUTLINE));
+        font.draw_text_outlined(fb, atlas, &texts.get(key), x, LABEL_Y, WHITE, OUTLINE);
     }
     let mut buf = [0u8; 10];
     let value = |fb: &mut Framebuffer, text: &str, x: i32, colour: u32| {
-        font.draw_text(fb, atlas, text, x, VALUE_Y, colour, Some(OUTLINE));
+        font.draw_text_outlined(fb, atlas, text, x, VALUE_Y, colour, OUTLINE);
     };
     value(
         fb,
@@ -191,13 +191,18 @@ mod tests {
         assert_eq!(read_digits(&fb, 96, 2, MOZART_YELLOW), "00");
         assert_eq!(read_digits(&fb, 184, 1, MOZART_YELLOW), "3");
         assert_eq!(read_digits(&fb, 256, 3, MOZART_YELLOW), "305");
-        // Labels: white dots at y = 4 in every column, with a k shadow.
+        // Labels: white at y = 4 in every column, with the full k outline
+        // (also left of and above the text, not only a +1/+1 shadow).
         for x in COLUMNS {
             assert_eq!(fb.get(x, LABEL_Y), Some(WHITE), "label at {x}");
-            assert_eq!(fb.get(x + 1, LABEL_Y + 1), Some(OUTLINE), "shadow at {x}");
+            assert_eq!(fb.get(x - 1, LABEL_Y), Some(OUTLINE), "left at {x}");
+            assert_eq!(fb.get(x - 1, LABEL_Y - 1), Some(OUTLINE), "corner at {x}");
+            assert_eq!(fb.get(x, LABEL_Y - 1), Some(OUTLINE), "top at {x}");
         }
-        // Value shadow at +1,+1 below the last row of the 3 (rows 4..=7).
+        // Value outline: below the last row of the 3 (rows 4..=7) and left
+        // of the digit.
         assert_eq!(fb.get(185, VALUE_Y + 8), Some(OUTLINE));
+        assert_eq!(fb.get(183, VALUE_Y + 5), Some(OUTLINE));
     }
 
     #[test]

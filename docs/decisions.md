@@ -177,7 +177,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - The stairs under a Festungsbahn make the car optional: it's the comfortable ride, climbing is a valid alternative (accepted).
 
 ## D-029 Maibaum vs HUD (orchestrator, M1)
-- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 139–183: the OBLATEN shadow ends at 138, LEBEN starts at 184) and must not touch any HUD pixel; Stage 1's crown spans 152–183, never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
+- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 139–182: the OBLATEN outline ends at 138, LEBEN's outline starts at 183 since D-037) and must not touch any HUD pixel; inside the HUD rows Stage 1's crown spans 152–181, never behind HUD text. (Numbers corrected by D-037.) With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
 
 ## D-030 Salzburg level follow-ups (orchestrator, M1)
 - **Festungsbahn waits for its rider**: the car waits at its lower end until the player stands on it, then travels up, waits at the top, travels back down and waits again for the next rider. (Replaces the free-running cycle from activation; makes boarding a calm, readable moment and removes the 2-frame boarding window the solver measured.)
@@ -220,3 +220,15 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Walking off the rampart edge scores 100 (she lands on the meadow before the pole column); any held jump off the rampart or car reaches the Wurstkranz. This corrects the "walking off scores 2000" note in D-032.
 - The Fiaker stands at col 200 so that standing on the Residenzbrunnen triggers it (it charges through underneath).
 - The title prompt crosses the cream Dom façade of `bg_rooftops`: the prompt gets the full `k` outline (art-style §11 allows it) — polish task.
+
+## D-036 The app ships every level and starts on Stage 1 (engine, M1 task E6)
+- `jnr-app` embeds every `content/levels/*.level` through an explicit `include_str!` list (`options::LEVELS`) with a unit test that it matches the directory (no build script). `DEFAULT_LEVEL = "salzburg"`: native without flags and wasm start on the Salzburg title. Test levels stay reachable with `--level` and `--replay`.
+- `vnc-smoke` keeps the testbed route (its replay names the level); `wasm-smoke` now checks the Salzburg title: `s` + `S` sky ≥ 25 % and the parallax-only `S` band ≥ 5 % (measured 36.4 % / 16.0 %).
+- The title prompt `title.press_start` is drawn with the full 1 px `k` outline (all 8 neighbours, `Font::draw_text_outlined`) instead of the drop shadow (D-035); every other text keeps the shadow.
+- `tests/replays/salzburg_tour.replay` is the Stage 1 golden tour: `start = title`, START at frame 21, the intro, then the `salzburg_solver.replay` inputs unchanged from frame 171. After `cargo xtask solve salzburg --write` changes the route, copy its inputs into the tour and re-pick the shot frames.
+
+## D-037 HUD and popup outline, stage-clear panel (art-director ruling, M1 task E6)
+- HUD labels (`w`) and numbers (`Y`) and every popup (score digits and the text popups such as „Wurstkranz!") are drawn with the full 1 px `k` outline of D-036 (`Font::draw_text_outlined`, all 8 neighbours) instead of the drop shadow, so they read over light sky, clouds, façades and the Maibaum crown. The outline reaches 1 px left of and above each column: LEBEN's outline starts at x 183, the HUD still fits y 3–21. D-029's gap is now x 139–182.
+- Stage-clear texts sit on an art-style §11 panel (like pause): `B` fill, 1 px `k` border, 1 px `S` highlight inside the border on top and left, 4 px padding inside the border. y 69–109 (lines at 74, 84, 96), clear of the crown (y ≤ 41) and the Ortsende sign; the width is the widest line (time-bonus line measured with 5 digits, so it doesn't grow during the tally) + 1 px shadow + padding and border, rounded up to even and centred (Stage 1: about x 106–214). Texts in `w` with the `k` shadow, the bonus number in `Y`. The panel appears with the texts (tally and clear phases). The time-up text keeps y 72 without a panel.
+- The salzburg_tour busbahnhof shot is frame 216, the first frame where Resi's hitbox is right of the bus board (screen x ≥ 113).
+
