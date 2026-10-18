@@ -11,7 +11,7 @@ Goal: an agent can implement a feature and **prove** it works without a human lo
 | `cargo xtask check` | after every change, enforced by a hook before an agent may finish its turn | < 60 s incremental |
 | `cargo xtask verify` | before every commit / task completion | < 10 min |
 
-Both write a machine-readable report to `target/reports/{check,verify}.json` plus a short Markdown summary that agents read. Every failure includes the exact command to reproduce it.
+Both write a machine-readable report to `$CARGO_TARGET_DIR/reports/{check,verify}.json` (here: `/workspaces/.cargo-target/reports/`) plus a short Markdown summary that agents read. Every failure includes the exact command to reproduce it.
 
 ## Layers
 

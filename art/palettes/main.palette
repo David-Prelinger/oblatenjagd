@@ -1,0 +1,50 @@
+# Oblatenjagd master palette (30 colours + transparent, 2 slots reserved).
+# Format: char  hex  name. Ramps run light -> dark; see docs/art-style.md.
+# char  hex       name
+.       none      transparent
+
+# Neutrals: outline + stone/silver ramp (shadows cool slate, highlight warm white)
+k       #1a1c2c   outline
+d       #343a50   slate_dark
+m       #5d6680   stone_grey
+i       #a2abbe   silver_light
+w       #fbf7ee   white
+
+# Sky and atmosphere (light -> dark)
+h       #dff1f0   sky_haze
+s       #a6daf2   sky_light
+S       #64aee6   sky_blue
+
+# Distant parallax (bluish, desaturated)
+f       #a4bad8   far_light
+F       #8ea4cc   far_dark
+v       #7aa294   mid_sage
+
+# Water: Wolfgangsee turquoise and Salzach/lake blues
+t       #46cabe   lake_turquoise
+T       #1e8e9c   lake_teal
+b       #2e64ae   lake_deep
+B       #2a3878   navy
+
+# Greens: meadow (warm) -> pine (cool)
+y       #b0d65a   meadow_light
+g       #56a845   meadow
+G       #2a7050   pine_dark
+j       #1b4640   pine_shadow
+
+# Warm ramp: cream / Mozart yellow / ochre / wood / leather
+c       #f9e5b8   cream
+Y       #f5c547   mozart_yellow
+o       #d9913a   oblate_gold
+O       #9e5a2e   oblate_brown
+l       #5c3226   leather_dark
+
+# Reds: pastel facade pink -> Dirndl red -> wine shadow
+p       #f2aeb0   pastel_pink
+r       #cf3a3e   dirndl_red
+R       #8a2340   wine_dark
+
+# Skin (light: e/E, darker: E/n), terracotta roofs
+e       #f9cfa6   skin_light
+E       #dc9068   skin_shade
+n       #a85f40   skin_dark

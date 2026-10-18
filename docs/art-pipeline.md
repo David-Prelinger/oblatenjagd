@@ -16,6 +16,8 @@ A full written style guide with examples will live in `docs/art-style.md` (writt
 
 ## Palette format (`art/palettes/main.palette`)
 
+Example (illustrative; the source of truth is `art/palettes/main.palette`):
+
 ```
 # char  hex       name
 .       none      transparent
@@ -55,7 +57,7 @@ frame 1
 ```
 
 Features:
-- Several animations per file (`anim = walk frames=4 ticks=6 loop`).
+- Several animations per file (`anim = walk frames=4 ticks=6 loop`; illustrative values, the real frame counts and ticks are in `docs/art-style.md` §9).
 - `mirror = auto` creates left-facing versions.
 - `variant = tourist_b remap r->b l->g` creates palette-swapped copies.
 - `include = ...` reuses frames (e.g. same legs, different head).

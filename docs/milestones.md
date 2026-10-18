@@ -13,7 +13,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 - [ ] `jnr-core`: fixed-point types, `InputFrame`, `Game::step`, `state_hash`, tile collision, a player box that runs and jumps
 - [ ] `jnr-render`: framebuffer, blit, bitmap font with German characters
 - [ ] `jnr-artkit`: `.palette` + `.sprite` parser, atlas packing, lints, preview + contact sheet
-- [ ] Palette and `docs/art-style.md` written and approved by art-director
+- [x] Palette and `docs/art-style.md` written and approved by art-director
 - [ ] `jnr-app`: macroquad window on `:1`, integer scaling, keyboard input, replay playback, F12 screenshot
 - [ ] Headless runner: replays, screenshots, filmstrips
 - [ ] Solver bot finishes the grey-box test level
@@ -38,6 +38,7 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - [ ] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
 - [ ] Replays + goldens for the key scenes
 - [ ] wasm build runs the stage in the browser
+- [ ] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left)
 - [ ] Stretch: Sound-of-Music tour group enemy
 
 **Acceptance:** see "Milestone acceptance" below.
@@ -59,5 +60,5 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming
 - **M6** Strobl + Bad Ischl
 - **M7** Café Zauner finale + ending
-- **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill.
+- **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
 - **MW** Web release: polished `index.html`, gamepad support, headless-browser smoke test, hosting
