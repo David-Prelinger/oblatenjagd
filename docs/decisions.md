@@ -34,3 +34,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 
 ## D-008 Game decisions (human, 2026-10-18)
 - Title „Oblatenjagd"; hero **Resi** in a Dirndl; real names of places, businesses and historical people may be used; difficulty **medium** (see `game-design.md`).
+
+## D-009 Parallel code tasks run in git worktrees
+- Two engineers editing the same tree break each other's `cargo xtask check` (and block the orchestrator's Stop hook).
+- Parallel code tasks therefore run in isolated git worktrees, each with its own `CARGO_TARGET_DIR` (`/workspaces/.cargo-target/wt-<task>`), and commit on their own branch; the orchestrator merges them into the milestone branch.
