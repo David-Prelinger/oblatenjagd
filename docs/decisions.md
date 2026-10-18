@@ -197,3 +197,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Taube placement rule for all stages: a walking or running player meets a Taube ~7–11 columns left of its spawn; levels place first encounters by that meeting point, not by the spawn column.
 - Two Mozartkugel-Verkäufer in one stretch keep ≥ 10 columns apart so their landing zones don't overlap into a crossfire.
 - The Wurstkranz stays reachable with any held jump off the rampart or the car (first stage, medium difficulty: the finale is a celebration, not a skill wall); walking off scores 2000.
+
+## D-033 Jump windows measure recoverability, not a fixed press chain (orchestrator, M1)
+- Shifting one jump while keeping every later press fixed measured artefacts: a 1-frame shift could make a later fixed press miss its buffer, so the window collapsed although a player would simply press the next jump a frame later (Salzburg showed 1–2 frame windows that way).
+- New rule: a shift d succeeds if the player survives the shifted jump AND a short re-planning beam search from the state right after the shifted jump's landing (small beam, horizon up to the next jump's checkpoint + margin) reaches at least the original progress at that checkpoint without dying. The window is still the contiguous range of successful shifts around 0 with `fail`/`route`/`max` bounds; `min_jump_window` keeps meaning "a human has at least N frames of slack for this jump".
