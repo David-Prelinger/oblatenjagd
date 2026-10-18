@@ -66,7 +66,7 @@ pub struct Player {
     pub stomp_chain: u8,
     /// Frames left in which non-stompable enemies (the Fiaker) do no harm:
     /// set by a bounce off one when the feet could not be put on its top
-    /// because a solid tile was in the way (D-027).
+    /// because a solid or hazard tile was in the way (D-027).
     pub bounce_grace: u16,
 }
 

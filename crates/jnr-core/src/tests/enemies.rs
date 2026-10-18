@@ -656,26 +656,43 @@ fn landing_straight_down_on_the_fiaker_with_up_to_4_px_penetration_bounces() {
 
 #[test]
 fn a_fiaker_bounce_under_a_ceiling_falls_back_to_grace_frames() {
-    // A solid tile at row 8 (y 128..144) over the parked Fiaker (top 164):
-    // feet on its top (hitbox y 142) would overlap it, so the player stays
-    // where she is, bounces, and non-stompable enemies do no harm for
-    // `bounce_grace_frames` (every further bounce re-arms it).
+    // A solid (or hazard) tile at row 8 (y 128..144) over the parked
+    // Fiaker (top 164): feet on its top (hitbox y 142) would overlap it, so
+    // the player stays where she is, bounces, and non-stompable enemies do
+    // no harm for `bounce_grace_frames` (every further bounce re-arms it).
     let t = tuning();
-    let mut g = game(&world(40, &[(11, 14, 'f'), (8, 14, '#'), (8, 15, '#')]));
-    let f = g.entities()[fiaker_index(&g)];
-    let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
-    airborne(&mut g, x, f.y + Fx::from_px(6), Fx::from_px(2));
-    let y0 = g.player().y;
-    let events = g.step(input("-")).to_vec();
-    assert!(events.contains(&Event::Stomped), "{events:?}");
-    assert!(g.player().y > y0, "not pushed up into the ceiling");
-    // Counted down from this frame on (like `invulnerable`).
-    assert_eq!(g.player().bounce_grace, t.enemies.bounce_grace_frames - 1);
-    let hb = g.player().hitbox();
-    assert!(!g.map().touches(&hb, crate::level::TileKind::Solid));
-    let events = hold(&mut g, "-", 60);
-    assert!(!events.contains(&Event::Hurt), "{events:?}");
-    assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+    for ceiling in ['#', '^'] {
+        let mut g = game(&world(
+            40,
+            &[(11, 14, 'f'), (8, 14, ceiling), (8, 15, ceiling)],
+        ));
+        let f = g.entities()[fiaker_index(&g)];
+        let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
+        airborne(&mut g, x, f.y + Fx::from_px(6), Fx::from_px(2));
+        let y0 = g.player().y;
+        let events = g.step(input("-")).to_vec();
+        assert!(events.contains(&Event::Stomped), "{ceiling}: {events:?}");
+        assert!(g.player().y > y0, "{ceiling}: not pushed up into it");
+        assert_eq!(g.mode(), Mode::Playing, "{ceiling}");
+        // Counted down from this frame on (like `invulnerable`).
+        assert_eq!(
+            g.player().bounce_grace,
+            t.enemies.bounce_grace_frames - 1,
+            "{ceiling}"
+        );
+        let hb = g.player().hitbox();
+        assert!(!g.map().touches(&hb, crate::level::TileKind::Solid));
+        assert!(!g.map().touches(&hb, crate::level::TileKind::Hazard));
+        let events = hold(&mut g, "-", 60);
+        assert!(!events.contains(&Event::Hurt), "{ceiling}: {events:?}");
+        if ceiling == '#' {
+            assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+        } else {
+            // Rising into the hazard itself still kills - but never the
+            // Fiaker.
+            assert_ne!(g.death_cause(), Some(DeathCause::Hit));
+        }
+    }
 }
 
 #[test]
@@ -818,6 +835,36 @@ fn festungsbahn_waits_travels_150_frames_and_comes_back() {
     for w in path[59..210].windows(2) {
         assert!(w[1].0 >= w[0].0 && w[1].1 <= w[0].1);
     }
+}
+
+#[test]
+fn festungsbahn_never_despawns_behind_the_camera() {
+    // The car (x 64..112) is activated, then the player moves far right:
+    // the camera's left edge minus `despawn_margin` is far past the car's
+    // right edge. The car stays and keeps cycling exactly like in a game
+    // where the player stays next to it (D-027: a player who fell off can
+    // always wait for it).
+    let t = tuning();
+    let level = world(80, &[(11, 4, 'F')]);
+    let mut far = game(&level);
+    let mut near = game(&level);
+    park_player(&mut far);
+    park_player(&mut near);
+    far.step(input("-"));
+    near.step(input("-"));
+    far.teleport_player(1000);
+    let despawn_x = Fx::from_px(far.camera().x - t.game.despawn_margin);
+    assert!(car(&far).right() < despawn_x, "far behind the despawn line");
+    let y0 = car(&far).y;
+    let mut moved = false;
+    for _ in 0..900 {
+        far.step(input("-"));
+        near.step(input("-"));
+        let (a, b) = (car(&far), car(&near));
+        assert_eq!((a.x, a.y), (b.x, b.y), "same cycle");
+        moved |= a.y != y0;
+    }
+    assert!(moved, "still cycling");
 }
 
 #[test]

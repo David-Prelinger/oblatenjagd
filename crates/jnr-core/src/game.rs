@@ -876,15 +876,16 @@ impl Game {
 
     /// Puts the player's feet on `top` (a bounce off a non-stompable
     /// enemy). The move is upwards and shorter than the hitbox, so checking
-    /// the new hitbox covers the whole way: if it overlaps a solid tile she
-    /// stays and gets `bounce_grace_frames` without harm from
+    /// the new hitbox covers the whole way: if it overlaps a solid or a
+    /// hazard tile she stays and gets `bounce_grace_frames` without harm from
     /// non-stompable enemies instead.
     fn rest_feet_on(&mut self, top: Fx) {
         let placed = Aabb {
             y: top - self.player.h,
             ..self.player.hitbox()
         };
-        if self.map.touches(&placed, TileKind::Solid) {
+        if self.map.touches(&placed, TileKind::Solid) || self.map.touches(&placed, TileKind::Hazard)
+        {
             self.player.bounce_grace = self.tuning.enemies.bounce_grace_frames;
         } else {
             self.player.y = placed.y;

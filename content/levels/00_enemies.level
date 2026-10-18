@@ -12,7 +12,9 @@
 # top row 12, 95 row 11, 96-97 row 10, 98 row 9, then the plateau (steps
 # up of 1-2 tiles; `levels lint` checks <= 3), all below the car's path.
 # Then a 6-tile drop to the meadow (floor row 13) with the goal at 114 on
-# it, as low as possible so the Maibaum stays clear of the HUD.
+# it, as low as the level allows: the base at screen y 164 puts the pole
+# top (wreath) at y 36, but the 176 px Maibaum's tip still reaches into the
+# HUD (y -12; it can't fit a 180 px screen, D-028).
 # Replays: tests/replays/enemies_*.replay.
 
 [meta]

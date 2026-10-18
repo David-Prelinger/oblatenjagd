@@ -281,7 +281,8 @@ pub struct EnemyTuning {
     pub knock_speed: Fx,
     /// Frames in which non-stompable enemies do no harm after a bounce off
     /// one, when the player's feet could not be put on its top (a solid
-    /// tile was in the way, D-027 fallback).
+    /// or hazard tile was in the way, D-027 fallback). At least 2 (it is
+    /// counted down in the frame it is set).
     pub bounce_grace_frames: u16,
 }
 
@@ -465,7 +466,6 @@ impl Tuning {
             ("enemies.verkaeufer_period", e.verkaeufer_period),
             ("enemies.fiaker_telegraph", e.fiaker_telegraph),
             ("enemies.squish_frames", e.squish_frames),
-            ("enemies.bounce_grace_frames", e.bounce_grace_frames),
             (
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
@@ -480,6 +480,12 @@ impl Tuning {
             if v == 0 {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
             }
+        }
+        // Counted down in the frame it is set: 1 would protect no frame.
+        if e.bounce_grace_frames < 2 {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.bounce_grace_frames must be >= 2",
+            ));
         }
         if e.tourist_selfie_frames >= e.tourist_selfie_period
             || e.tourist_flash_at.saturating_add(e.tourist_flash_frames) > e.tourist_selfie_frames
@@ -652,6 +658,7 @@ mod tests {
             ("thrown_gravity", 0),
             ("squish_frames", 0),
             ("bounce_grace_frames", 0),
+            ("bounce_grace_frames", 1),
             ("festungsbahn_wait", 32700),
             ("hitbox_w", 3),
             ("hitbox_w", 17),
