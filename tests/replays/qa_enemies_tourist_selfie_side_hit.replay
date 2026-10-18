@@ -1,0 +1,10 @@
+# QA (E3): walking into the Selfie-Tourist from the side while it stands
+# still for its selfie (frames 240..287) kills a Normal player: it is
+# dangerous from the side all the time, posing or not.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=241..287 deaths=1
+---
+- 195
+R 80

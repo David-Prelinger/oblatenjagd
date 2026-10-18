@@ -1,0 +1,21 @@
+# QA (E3): walks up to the sitting Taube (column 80, centre x 1288) and stops
+# with the player's centre 96.94 px away (x 1185.06 at frame 782): whole
+# pixels 96 = "within 6 tiles" (D-026), so it takes off (rises 16 px, then
+# flies left on its wave) and hits the standing player at frame 910.
+# Partner: qa_enemies_taube_sitting_no_trigger_97 (1.5 px further away).
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=910..910 deaths=1
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20     # over the Fiaker
+R 193     # stops at x 1186
+- 200

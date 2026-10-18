@@ -64,6 +64,10 @@ pub struct Player {
     pub invulnerable: u8,
     /// Stomps since the player last stood on the ground (stomp chain).
     pub stomp_chain: u8,
+    /// Frames left in which non-stompable enemies (the Fiaker) do no harm:
+    /// set by a bounce off one when the feet could not be put on its top
+    /// because a solid or hazard tile was in the way (D-027).
+    pub bounce_grace: u16,
 }
 
 impl Player {
@@ -92,6 +96,7 @@ impl Player {
             transform: 0,
             invulnerable: 0,
             stomp_chain: 0,
+            bounce_grace: 0,
         }
     }
 
@@ -343,5 +348,6 @@ impl Player {
         h.u8(self.transform);
         h.u8(self.invulnerable);
         h.u8(self.stomp_chain);
+        h.u16(self.bounce_grace);
     }
 }

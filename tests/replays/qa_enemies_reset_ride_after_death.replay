@@ -1,0 +1,38 @@
+# QA (E3): qa_enemies_taube_sitting_trigger_96 (score 300, death at 910 by
+# the sitting Taube, while the Festungsbahn waits for its rider), respawn at frame
+# 970, then the whole enemies_festungsbahn_ride route again. A death resets
+# every enemy and the car to the level's start state, so the second run is
+# the first one shifted by 970 frames: goal at 970 + 1383 = 2353, no
+# further hurt or death.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=910..910 complete frames=2353..2353 deaths=1 state=stage_clear
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 193
+- 206     # dying (911..970), respawn at 970
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20
+- 175
+R 220

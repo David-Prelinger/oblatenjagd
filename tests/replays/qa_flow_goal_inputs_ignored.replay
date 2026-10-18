@@ -1,0 +1,42 @@
+# QA (E4): flow_title (real flow, goal at 582), but with every button
+# mashed during the goal sequence: START presses (no pause, no skip),
+# LEFT/JUMP/RUN (no effect on the slide, hop and walk-off). The phases keep
+# their lengths (walk-off ends 630, tally 94 s → 724, texts → 904,
+# „Fortsetzung folgt …" → 1084), so the run is back on the title screen at
+# 1084 with the score reset, and the last START press (1083) was not taken
+# as a title START.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=582..582 deaths=0 state=title score=0 lives=3
+---
+- 20
+S 1       # START: stage intro
+- 150
+S 1       # pause
+- 30
+S 1       # resume
+RB 88
+RBJ 36
+RB 71
+RBJ 36
+RB 40
+RBJ 36
+RB 72     # goal at 582 (the last frame of this line)
+S 1       # 583: START during the hop
+LBJ 40
+S 1       # 624: during the walk-off
+- 5
+SJ 1      # 630: tally starts
+LB 30
+S 1       # 661: during the tally
+- 100
+S 1       # 762: stage-clear texts
+RJ 140
+S 1       # 903: the texts end
+S 1       # 904: „Fortsetzung folgt …" (still held: no new press)
+- 100
+LJ 78
+S 1       # 1083: still in the goal sequence
+- 19      # title from 1084

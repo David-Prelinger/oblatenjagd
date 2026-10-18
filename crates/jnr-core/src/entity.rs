@@ -268,7 +268,7 @@ impl Entity {
         let feet_y = tile.mul_int(s.row + 1);
         let e = &t.enemies;
         let mut entity = match s.kind {
-            SpawnKind::PlayerStart | SpawnKind::Goal => return None,
+            SpawnKind::PlayerStart | SpawnKind::Goal | SpawnKind::Prop => return None,
             SpawnKind::Oblate => {
                 // Centred in its cell.
                 let [w, h] = t.items.oblate_hitbox;
@@ -316,7 +316,8 @@ impl Entity {
                 e.fiaker_hitbox,
             ),
             SpawnKind::Festungsbahn => {
-                // Left-aligned in its cell: the car is 3 tiles wide.
+                // Left-aligned in its cell: the car is 3 tiles wide; it
+                // waits at its lower end or first travels down to it.
                 let mut car = Entity::at_feet(
                     EntityKind::Festungsbahn,
                     feet_x,
@@ -325,6 +326,7 @@ impl Entity {
                 );
                 car.x = cell_x;
                 car.base_x = cell_x;
+                car.state = crate::platform::initial_state(s);
                 car
             }
         };
@@ -502,6 +504,9 @@ pub(crate) struct UpdateCtx<'a> {
     pub level: &'a crate::Level,
     /// The player's hitbox centre x.
     pub player_cx: Fx,
+    /// The player's hitbox while standing on the ground (a tile or a car),
+    /// `None` in the air (a Festungsbahn waits for its rider).
+    pub player_standing: Option<crate::physics::Aabb>,
     /// The left screen edge (camera x).
     pub screen_left: Fx,
 }
@@ -551,6 +556,7 @@ mod tests {
             tuning: &t,
             level: &level,
             player_cx: Fx::ZERO,
+            player_standing: None,
             screen_left: Fx::ZERO,
         };
         for _ in 0..15 {
@@ -578,8 +584,12 @@ mod tests {
             style: Default::default(),
             to: None,
             still: false,
+            sprite: None,
+            layer: Default::default(),
+            dx: 0,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
+        assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Goal), 0, &t).is_none());
         let o = Entity::from_spawn(&s(SpawnKind::Oblate), 5, &t).unwrap();
         assert!(!o.active);

@@ -1,0 +1,26 @@
+# QA (E3, D-030): the enemies_festungsbahn_ride route onto the waiting car
+# (frame 1029: it leaves the moment she lands on it), then standing still
+# for a whole ride: up (1029..1178), wait at the top (x 1540.5, y 82,
+# 1179..1238), down again (1239..1388) while the camera stays where it
+# was, and back at the bottom (1389): exactly where the ride started
+# (x 1412.5, y 162 = car top 184 - 22), carried without drift.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=1412 player_y>=162 player_y<=162
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car at the bottom
+- 370     # one whole ride: it left with her at 1029, back at 1389

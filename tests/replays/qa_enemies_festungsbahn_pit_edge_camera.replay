@@ -1,0 +1,34 @@
+# QA (E3): the original bug_festungsbahn_pit_softlock path. Up to the
+# plateau with the car (1237), on to x 1702 (the camera follows to 1564 and
+# never scrolls back), then back left off the plateau edge (x 1584). Before
+# D-027 she fell 6 tiles to the pit floor at the camera's edge with no way
+# out (softlock until time-up). Now the top step of the stair-stepped rock
+# (column 98, y 122) catches her at 1546: one 2-tile jump (1599) back onto
+# the plateau (1638), then off the rampart to the Maibaum (1775).
+# Partner: qa_enemies_festungsbahn_pit_recovery (all the way down and up).
+level  = enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1775..1775 deaths=0 no_event=Hurt state=stage_clear
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 175     # ride up
+R 104     # onto the plateau and on to x 1702 (camera 1564)
+- 140
+L 100     # back left: off the plateau edge onto the top step (1546)
+- 60
+RJ 24     # back onto the plateau
+R 200     # off the rampart to the Maibaum

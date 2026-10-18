@@ -1,0 +1,16 @@
+# QA (E4): real flow on 00_items (time_limit 100). Play starts at 151;
+# standing still, time-up would kill at 151 + 6000 = 6151. A pause of
+# 1001 frames (START at 500, START again at 1500) stops the timer, so the
+# time-up death comes exactly 1001 frames later, at 7152.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=7152..7152 deaths=1 lives=2 state=dying
+---
+S 1       # title → stage intro
+- 498
+S 1       # pause (frame 500)
+- 999
+S 1       # resume (frame 1500)
+- 5660

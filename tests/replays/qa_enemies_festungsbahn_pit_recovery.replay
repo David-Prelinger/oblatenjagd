@@ -1,0 +1,45 @@
+# QA (E3, was bug_festungsbahn_pit_softlock): falling off the Festungsbahn
+# plateau into the pit is never a softlock (D-027, design "Festungsbahn").
+# enemies_festungsbahn_ride up to the plateau, a few steps onto it (camera
+# 1467), then back left: off the plateau edge (1284) and down the
+# stair-stepped rock to the pit floor (y 186 at 1356, x 1467 = the camera's
+# left edge). The car comes down past her (no carry, no hurt) and waits at
+# its lower end behind the camera's left edge (D-030): climbing is the way.
+# She climbs back out on the rock: jumps at 1565, 1617 and 1669 land on
+# column 95 (y 154), column 98 (y 122) and the plateau (y 90, 1708), then
+# she walks off the rampart to the Maibaum on the meadow (1850).
+# Partner: qa_enemies_festungsbahn_pit_edge_camera (the original bug path).
+level  = enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1850..1850 deaths=0 no_event=Hurt state=stage_clear
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 175     # ride up
+R 40      # onto the plateau (camera 1467)
+- 10
+L 120     # back left, off the edge, down the rock to the pit floor
+- 200     # the car passes over her
+RJ 24     # climb: column 95 ...
+R 2
+RJ 24
+R 2
+RJ 24
+R 2
+RJ 24     # ... column 98 ...
+R 2
+RJ 24     # ... the plateau
+R 200     # off the rampart to the Maibaum

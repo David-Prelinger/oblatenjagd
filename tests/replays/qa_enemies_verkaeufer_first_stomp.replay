@@ -1,0 +1,16 @@
+# QA (E3): stomps the tourist (100), lands (the chain resets), then stomps
+# the Mozartkugel-Verkäufer (frame 410) as the first stomp of a new chain:
+# 200, not 100.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=300 deaths=0 no_event=Hurt state=playing
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 60

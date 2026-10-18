@@ -18,6 +18,7 @@ const LEGEND: &str = r##"
 "v" = { entity = "mozartkugel_verkaeufer" }
 "f" = { entity = "fiaker" }
 "F" = { entity = "festungsbahn", to = [8, -5] }
+"D" = { entity = "festungsbahn", to = [8, 5] }
 "T" = { entity = "selfie_tourist", still = true }
 "P" = { entity = "player_start" }
 "G" = { entity = "goal" }
@@ -591,6 +592,146 @@ fn fiaker_hurts_from_the_side() {
     assert_eq!(g.death_cause(), Some(DeathCause::Hit));
 }
 
+fn fiaker_index(g: &Game) -> usize {
+    g.entities()
+        .iter()
+        .position(|e| e.kind == EntityKind::Enemy(EnemyKind::Fiaker))
+        .unwrap()
+}
+
+/// Puts the player in the air, falling at `vy`, with the hitbox's left
+/// edge at `x` and the feet at `feet`.
+fn airborne(g: &mut Game, x: Fx, feet: Fx, vy: Fx) {
+    g.player.x = x;
+    g.player.y = feet - g.player.h;
+    g.player.vx = Fx::ZERO;
+    g.player.vy = vy;
+    g.player.on_ground = false;
+}
+
+#[test]
+fn a_charging_fiaker_reaching_a_falling_player_bounces_her_onto_its_top() {
+    // The Fiaker (top 164, middle 178) is already charging; the player
+    // hangs 1 px left of its front, falling slowly with her feet 10 px
+    // below its top (the QA bug replay: feet 174). Its front drives into
+    // her: the stomp rule holds (falling, feet above its middle on the
+    // previous frame), so she bounces - feet exactly on its top - and is
+    // never hurt afterwards (D-027).
+    let mut g = game(&world(40, &[(11, 14, 'f')]));
+    let i = fiaker_index(&g);
+    g.entities[i].active = true;
+    g.entities[i].state = state::CHARGE;
+    let f = g.entities()[i];
+    assert_eq!(f.y, Fx::from_px(164));
+    let x = f.x - g.player.w - Fx::from_px(1);
+    airborne(&mut g, x, f.y + Fx::from_px(10), Fx::from_raw(64));
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert_eq!(g.player().feet().1, f.y, "feet put on its top");
+    assert!(g.player().vy < Fx::ZERO, "bouncing up");
+    assert_eq!(g.player().bounce_grace, 0, "no fallback needed");
+    let events = hold(&mut g, "-", 120);
+    assert!(!events.contains(&Event::Hurt), "{events:?}");
+    assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+}
+
+#[test]
+fn landing_straight_down_on_the_fiaker_with_up_to_4_px_penetration_bounces() {
+    // Parked Fiaker; the player falls at max fall speed (4 px/frame)
+    // straight down onto its middle and ends the frame 1..=4 px inside it.
+    let max_fall = tuning().player.max_fall_speed;
+    for pen in 1..=4 {
+        let mut g = game(&world(40, &[(11, 14, 'f')]));
+        let f = g.entities()[fiaker_index(&g)];
+        let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
+        airborne(&mut g, x, f.y + Fx::from_px(pen) - max_fall, max_fall);
+        let events = g.step(input("-")).to_vec();
+        assert!(events.contains(&Event::Stomped), "pen {pen}: {events:?}");
+        assert_eq!(g.player().feet().1, f.y, "pen {pen}: feet on its top");
+        let events = hold(&mut g, "-", 30);
+        assert!(!events.contains(&Event::Hurt), "pen {pen}: {events:?}");
+        assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0), "pen {pen}");
+        assert_eq!(g.score(), 0, "pen {pen}: no points for the Fiaker");
+    }
+}
+
+#[test]
+fn a_fiaker_bounce_under_a_ceiling_falls_back_to_grace_frames() {
+    // A solid (or hazard) tile at row 8 (y 128..144) over the parked
+    // Fiaker (top 164): feet on its top (hitbox y 142) would overlap it, so
+    // the player stays where she is, bounces, and non-stompable enemies do
+    // no harm for `bounce_grace_frames` (every further bounce re-arms it).
+    let t = tuning();
+    for ceiling in ['#', '^'] {
+        let mut g = game(&world(
+            40,
+            &[(11, 14, 'f'), (8, 14, ceiling), (8, 15, ceiling)],
+        ));
+        let f = g.entities()[fiaker_index(&g)];
+        let x = f.x + f.w.div_int(2) - g.player.w.div_int(2);
+        airborne(&mut g, x, f.y + Fx::from_px(6), Fx::from_px(2));
+        let y0 = g.player().y;
+        let events = g.step(input("-")).to_vec();
+        assert!(events.contains(&Event::Stomped), "{ceiling}: {events:?}");
+        assert!(g.player().y > y0, "{ceiling}: not pushed up into it");
+        assert_eq!(g.mode(), Mode::Playing, "{ceiling}");
+        // Counted down from this frame on (like `invulnerable`).
+        assert_eq!(
+            g.player().bounce_grace,
+            t.enemies.bounce_grace_frames - 1,
+            "{ceiling}"
+        );
+        let hb = g.player().hitbox();
+        assert!(!g.map().touches(&hb, crate::level::TileKind::Solid));
+        assert!(!g.map().touches(&hb, crate::level::TileKind::Hazard));
+        let events = hold(&mut g, "-", 60);
+        assert!(!events.contains(&Event::Hurt), "{ceiling}: {events:?}");
+        if ceiling == '#' {
+            assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0));
+        } else {
+            // Rising into the hazard itself still kills - but never the
+            // Fiaker.
+            assert_ne!(g.death_cause(), Some(DeathCause::Hit));
+        }
+    }
+}
+
+#[test]
+fn an_enemy_hit_in_the_frame_of_the_goal_touch_is_ignored() {
+    // Goal column 10 (x 160..176); a still tourist moved to x 160 overlaps
+    // it. The running player's right edge goes from 159 to 161.5 in one
+    // step: she touches the tourist and the goal in the same frame, and
+    // the goal wins (D-027). Without the goal the same step kills her.
+    for with_goal in [true, false] {
+        let mut marks = vec![(11, 20, 'T')];
+        if with_goal {
+            marks.push((11, 10, 'G'));
+        }
+        let mut g = game(&world(30, &marks));
+        let i = g
+            .entities()
+            .iter()
+            .position(|e| e.kind == EntityKind::Enemy(EnemyKind::SelfieTourist))
+            .unwrap();
+        g.entities[i].x = Fx::from_px(160);
+        g.entities[i].active = true;
+        g.player.x = Fx::from_px(159) - g.player.w;
+        g.player.vx = tuning().player.run_speed;
+        let events = g.step(input("RB")).to_vec();
+        if with_goal {
+            assert!(events.contains(&Event::LevelComplete), "{events:?}");
+            assert_eq!((g.mode(), g.deaths()), (Mode::StageClear, 0));
+            assert_eq!(g.death_cause(), None);
+        } else {
+            assert!(
+                matches!(g.mode(), Mode::Dying { .. }),
+                "control: {events:?}"
+            );
+            assert_eq!(g.death_cause(), Some(DeathCause::Hit));
+        }
+    }
+}
+
 // --------------------------------------------------- bumped blocks
 
 #[test]
@@ -671,30 +812,181 @@ fn board(g: &mut Game, dx: i32) {
 }
 
 #[test]
-fn festungsbahn_waits_travels_150_frames_and_comes_back() {
+fn festungsbahn_waits_for_its_rider_then_travels_and_comes_back() {
     let mut g = game(&car_world());
     park_player(&mut g);
     let start = car(&g);
     assert_eq!((start.x, start.y), (Fx::from_px(64), Fx::from_px(168)));
+    // Nobody on it: it waits at its lower end, however long.
+    for _ in 0..600 {
+        g.step(input("-"));
+        assert_eq!((car(&g).x, car(&g).y), (start.x, start.y));
+    }
+    board(&mut g, 10);
     let mut path = Vec::new();
-    for _ in 0..840 {
+    for _ in 0..420 {
         g.step(input("-"));
         let c = car(&g);
         path.push((c.x, c.y));
     }
     // path[i] is after update i + 1.
-    assert_eq!(path[59], (start.x, start.y), "waits 60 frames");
-    assert_ne!(path[60], (start.x, start.y), "then moves");
+    assert_ne!(path[0], (start.x, start.y), "leaves with its rider");
     let top = (Fx::from_px(64 + 128), Fx::from_px(168 - 80));
-    assert_eq!(path[209], top, "arrives after 150 frames");
-    assert_eq!(path[269], top, "waits 60 frames at the top");
-    assert_ne!(path[270], top);
-    assert_eq!(path[419], (start.x, start.y), "back at the bottom");
-    assert_eq!(path[419 + 420], (start.x, start.y), "and again");
+    assert_eq!(path[149], top, "arrives after 150 frames");
+    assert_ne!(path[148], top);
+    assert_eq!(path[209], top, "waits 60 frames at the top");
+    assert_ne!(path[210], top);
+    assert_eq!(path[359], (start.x, start.y), "back at the bottom");
+    assert_eq!(path[360], (start.x, start.y), "stops there for a frame");
+    assert_ne!(
+        path[361],
+        (start.x, start.y),
+        "the rider is still on: up again"
+    );
     // A straight line: every point on the segment, monotonic.
-    for w in path[59..210].windows(2) {
+    for w in path[..150].windows(2) {
+        assert!(w[1].0 > w[0].0 || w[1].1 < w[0].1, "moves every frame");
         assert!(w[1].0 >= w[0].0 && w[1].1 <= w[0].1);
     }
+    // Off the car (on the floor left of it): back down, it waits again.
+    hold(&mut g, "-", 360);
+    g.player.x = Fx::from_px(8);
+    g.player.y = Fx::from_px(192) - g.player.h;
+    let mut away = 0;
+    for _ in 0..800 {
+        g.step(input("-"));
+        away += u32::from((car(&g).x, car(&g).y) != (start.x, start.y));
+    }
+    assert!(away < 360, "came down and stayed ({away} frames away)");
+    assert_eq!((car(&g).x, car(&g).y), (start.x, start.y));
+}
+
+/// A car placed at the upper end of its track (`to` goes down) travels
+/// down first, then waits there for a rider and takes them back up.
+/// Jumping off the waiting car in the frame JUMP is pressed: she is in the
+/// air before the car looks for its rider, so it stays.
+#[test]
+fn a_jump_off_the_waiting_car_does_not_call_it() {
+    let mut g = game(&car_world());
+    park_player(&mut g);
+    hold(&mut g, "-", 10);
+    board(&mut g, 10);
+    let events = g.step(input("J")).to_vec();
+    assert!(events.contains(&Event::Jumped), "{events:?}");
+    let c = car(&g);
+    assert_eq!(c.state, crate::platform::car::WAIT_LOWER);
+    assert_eq!((c.x, c.y), (Fx::from_px(64), Fx::from_px(168)));
+    // She lands on it again: now it leaves.
+    until(&mut g, "-", 120, |g| {
+        car(g).state == crate::platform::car::UP
+    });
+    assert_eq!(g.player().y + g.player().h, car(&g).y);
+}
+
+/// Feet at the car's top height but only touching its left edge (her right
+/// edge on `car.x`): the waiting car isn't called, a moving car doesn't
+/// carry her.
+#[test]
+fn an_edge_only_touch_neither_calls_nor_carries() {
+    let mut g = game(&car_world());
+    park_player(&mut g);
+    hold(&mut g, "-", 10);
+    let place = |g: &mut Game| {
+        let c = car(g);
+        g.player.x = c.x - g.player.w;
+        g.player.y = c.y - g.player.h;
+        g.player.vx = Fx::ZERO;
+        g.player.vy = Fx::ZERO;
+        g.player.on_ground = true;
+    };
+    place(&mut g);
+    g.step(input("-"));
+    assert_eq!(
+        car(&g).state,
+        crate::platform::car::WAIT_LOWER,
+        "not called"
+    );
+    // A car that is already rising: she isn't carried along.
+    let i = g
+        .entities
+        .iter()
+        .position(|e| e.kind == EntityKind::Festungsbahn)
+        .unwrap();
+    g.entities[i].state = crate::platform::car::UP;
+    g.entities[i].count = 20;
+    g.step(input("-"));
+    place(&mut g);
+    let before = (g.player().x, g.player().y);
+    g.step(input("-"));
+    let c = car(&g);
+    assert!(c.vy < Fx::ZERO, "the car rose");
+    assert_eq!(g.player().x, before.0, "not carried sideways");
+    assert!(g.player().y >= before.1, "not lifted");
+}
+
+#[test]
+fn festungsbahn_spawned_at_its_upper_end_comes_down_first() {
+    // Spawn cell (col 4, row 6): top 88; the lower end is [+8, +5] tiles
+    // away (x 192, top 168).
+    let mut g = game(&world(40, &[(6, 4, 'D')]));
+    park_player(&mut g);
+    let top = car(&g);
+    assert_eq!((top.x, top.y), (Fx::from_px(64), Fx::from_px(88)));
+    let bottom = (Fx::from_px(192), Fx::from_px(168));
+    let mut ys = Vec::new();
+    for _ in 0..400 {
+        g.step(input("-"));
+        ys.push(car(&g).y);
+    }
+    assert!(ys[0] > top.y, "goes down at once");
+    assert_eq!((car(&g).x, car(&g).y), bottom, "and waits at the bottom");
+    assert!(
+        ys[149..].iter().all(|&y| y == bottom.1),
+        "{:?}",
+        &ys[145..155]
+    );
+    board(&mut g, 10);
+    g.step(input("-"));
+    assert!(car(&g).y < bottom.1, "a rider takes it up");
+    assert_eq!(g.player().y + g.player().h, car(&g).y, "carried");
+}
+
+#[test]
+fn festungsbahn_never_despawns_behind_the_camera() {
+    // The car (x 64..112) is activated and boarded, then the player of one
+    // game jumps far right: the camera's left edge minus `despawn_margin`
+    // is far past the car's right edge. The car stays and finishes its
+    // ride exactly like in a game where the player rides along (D-027: a
+    // player who fell off can always wait for it); back at the bottom it
+    // waits for the next rider.
+    let t = tuning();
+    let level = world(80, &[(11, 4, 'F')]);
+    let mut far = game(&level);
+    let mut near = game(&level);
+    park_player(&mut far);
+    park_player(&mut near);
+    far.step(input("-"));
+    near.step(input("-"));
+    board(&mut far, 10);
+    board(&mut near, 10);
+    far.step(input("-"));
+    near.step(input("-"));
+    far.teleport_player(1000);
+    let despawn_x = Fx::from_px(far.camera().x - t.game.despawn_margin);
+    assert!(car(&far).right() < despawn_x, "far behind the despawn line");
+    let y0 = car(&far).y;
+    let mut moved = false;
+    for _ in 0..358 {
+        far.step(input("-"));
+        near.step(input("-"));
+        let (a, b) = (car(&far), car(&near));
+        assert_eq!((a.x, a.y), (b.x, b.y), "same ride");
+        moved |= a.y != y0;
+    }
+    assert!(moved, "still travelling");
+    hold(&mut far, "-", 300);
+    let c = car(&far);
+    assert_eq!((c.x, c.y, c.state), (Fx::from_px(64), Fx::from_px(168), 0));
 }
 
 #[test]
@@ -818,6 +1110,13 @@ fn a_rising_car_lifts_a_player_standing_in_its_way() {
     g.player.x = Fx::from_px(82);
     g.player.y = Fx::from_px(160) - g.player.h;
     g.player.on_ground = true;
+    // Someone else's ride: the car leaves its lower end.
+    let car_index = g
+        .entities
+        .iter()
+        .position(|e| e.kind == EntityKind::Festungsbahn)
+        .unwrap();
+    g.entities[car_index].state = crate::platform::car::UP;
     let mut lifted = false;
     for _ in 0..120 {
         let events = g.step(input("-")).to_vec();

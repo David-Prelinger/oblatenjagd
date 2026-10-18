@@ -1,0 +1,22 @@
+# QA (E3): the enemies_fiaker_jump_over route (tourist 100 + Verkäufer 200),
+# then a held jump onto the flying Taube near the bottom of its sine wave,
+# while it is already rising again (wave frame 96, stomp at frame 638): a
+# stomp (the chain restarted on landing: 100 points), it tumbles away
+# without collision and the player lands safely.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=400 deaths=0 no_event=Hurt state=playing
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20     # over the Fiaker
+R 33
+RJ 24     # onto the Taube
+- 100

@@ -1,0 +1,25 @@
+# QA (E3, was bug_fiaker_bounce_then_hurt): qa_enemies_fiaker_trigger_128
+# (player waits at x 802, the Fiaker charges from 566), plus a straight
+# jump at 569 so that she is falling when its front reaches her (616):
+# feet at 174, below its top (164) but above its middle (178) on the
+# previous frame → the stomp rule holds: `Stomped`, a bounce without
+# damage or points (design "Fiaker", D-017). D-027: the bounce puts her
+# feet on its top (y 142 at 616), so the next frame (rising) can't be a
+# side hit. She bounces once more (636) and it drives on under her: no
+# hurt, no death.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped deaths=0 no_event=Hurt no_event=Died state=playing
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 118     # stops at x 802; the Fiaker telegraphs at 526, charges from 566
+- 60
+J 30      # 569: straight up, falling again when it arrives (616)
+- 150

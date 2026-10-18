@@ -4,14 +4,18 @@
 //! Checks: the file parses (legend, grid, exactly one player start — all
 //! enforced by `Level::parse`), `meta.id` is unique, `meta.title_key` (if
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
-//! least one goal (`time_limit` is required by `Level::parse`), and every
+//! least one goal (`time_limit` is required by `Level::parse`), every
+//! `prop` names a catalog prop sprite (`jnr_core::PROP_SPRITES`), and every
 //! Festungsbahn track has 3 tiles of free space above the car
-//! (`jnr_core::platform::track_problems`).
+//! (`jnr_core::platform::track_problems`) and a way back up out of the pit
+//! under it: stair-stepped floor with steps up of at most 3 tiles to the
+//! upper end (`jnr_core::platform::recovery_problems`, D-027; its doc
+//! comment lists what it does not check).
 
 use std::path::Path;
 use std::process::ExitCode;
 
-use jnr_core::{SpawnKind, Texts, Tuning};
+use jnr_core::{PROP_SPRITES, SpawnKind, Texts, Tuning};
 
 use crate::content::{self, LevelFile};
 
@@ -21,8 +25,10 @@ cargo xtask levels <command>
 Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
-              sign text keys exist, a goal, 3 free tiles above every
-              Festungsbahn track
+              sign text keys exist, a goal, prop sprites are catalog props,
+              3 free tiles above every
+              Festungsbahn track, and a way back up (steps <= 3 tiles)
+              from the pit under it to its upper end
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -116,10 +122,25 @@ pub fn lint(
                 ));
             }
         }
+        for e in &level.entities {
+            if let Some(name) = &e.sprite
+                && !PROP_SPRITES.contains(&name.as_str())
+            {
+                problems.push(format!(
+                    "{shown}: prop at row {}, column {}: sprite `{name}` is not a catalog prop (one of {})",
+                    e.row + 1,
+                    e.col + 1,
+                    PROP_SPRITES.join(", ")
+                ));
+            }
+        }
         if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
             problems.push(format!("{shown}: no goal (add a `goal` entity)"));
         }
-        for p in jnr_core::platform::track_problems(level, tuning) {
+        for p in jnr_core::platform::track_problems(level, tuning)
+            .into_iter()
+            .chain(jnr_core::platform::recovery_problems(level, tuning))
+        {
             problems.push(format!("{shown}: {p}"));
         }
         let test_level = path
@@ -271,6 +292,57 @@ mod tests {
             [
                 "01_s.level: still enemy at row 1, column 2: `still = true` is for grey-box test levels (00_*.level) only"
             ]
+        );
+    }
+
+    #[test]
+    fn props_must_name_a_catalog_prop_sprite() {
+        let text = |sprite: &str| {
+            format!(
+                "[meta]\nid = \"p\"\ntime_limit = 1\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"s\" = {{ entity = \"prop\", sprite = \"{sprite}\", layer = \"back\" }}\n[map]\ngrid = '''\nPsG\n'''\n"
+            )
+        };
+        let texts = Texts::parse("").unwrap();
+        let check = |sprite: &str| {
+            let levels = vec![(
+                PathBuf::from("p.level"),
+                Level::parse(&text(sprite)).map_err(|e| e.to_string()),
+            )];
+            lint(&levels, &texts, &tuning(), None)
+        };
+        for name in PROP_SPRITES {
+            assert_eq!(check(name), Vec::<String>::new(), "{name}");
+        }
+        // PROP_SPRITES == the rows of the catalog's "Props and goal" table
+        // that are props (not the checkpoint, Maibaum, signs or the car,
+        // which have entities of their own).
+        let catalog = include_str!("../../docs/sprite-catalog.md");
+        let start = catalog.find("## Props and goal").expect("props section");
+        let section = &catalog[start..];
+        let section = &section[..section[3..].find("\n## ").map_or(section.len(), |e| e + 3)];
+        let own_entity = |n: &str| {
+            n == "checkpoint"
+                || n == "festungsbahn"
+                || n.starts_with("maibaum_")
+                || n.starts_with("sign_")
+        };
+        let mut in_catalog: Vec<&str> = section
+            .lines()
+            .filter_map(|l| l.strip_prefix("| `")?.split('`').next())
+            .filter(|n| !own_entity(n))
+            .collect();
+        in_catalog.sort_unstable();
+        let mut listed = PROP_SPRITES.to_vec();
+        listed.sort_unstable();
+        assert_eq!(listed, in_catalog);
+        let problems = check("sphere");
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0].starts_with(
+                "p.level: prop at row 1, column 2: sprite `sphere` is not a catalog prop (one of sphaera, "
+            ),
+            "{}",
+            problems[0]
         );
     }
 

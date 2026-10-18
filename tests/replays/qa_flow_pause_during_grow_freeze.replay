@@ -1,0 +1,27 @@
+# QA (E4): qa_items_freeze_stops_timer in the real flow (everything shifted
+# by the 151 frames of title START + stage intro): the Mozartkugel is eaten
+# at 658, the grow freeze would run 659..688. START at 670 pauses in the
+# middle of it, START at 700 resumes (31 frames without a play step); the
+# rest of the freeze still runs and neither the freeze nor the pause count
+# on the timer: time-up at 151 + 6030 + 31 = 6212.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = event=PowerUp dies_at frames=6212..6212 deaths=1 lives=2
+---
+S 1       # title → stage intro
+- 150
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+L 40      # catch it on its way back (658)
+- 280
+S 1       # 670: pause during the grow freeze
+- 29
+S 1       # 700: resume
+- 5520

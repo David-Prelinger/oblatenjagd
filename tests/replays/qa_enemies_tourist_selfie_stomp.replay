@@ -1,0 +1,13 @@
+# QA (E3): the Selfie-Tourist stops for its first selfie at frames 240..287
+# (x 138.5). A walking jump lands on it at frame 265, during the 2-frame
+# flash (selfie frames 24-25): a normal stomp (100 points), no hurt.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=100 deaths=0 no_event=Hurt state=playing
+---
+- 195
+R 38
+RJ 12
+R 6
+- 40
