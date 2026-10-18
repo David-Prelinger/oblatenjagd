@@ -1,0 +1,284 @@
+# Getreidegasse house wall: pastel pink render p with E shade; stone corner
+# pilasters m i (left) and n d (right) on exposed sides; one window per tile: d opening with T/b glass (1 px w glint),
+# stucco hood and sill i. Exposed top = stone cornice i/m with an E shadow;
+# exposed bottom = stone plinth / Erker console m/d. Used for house blocks
+# and the Erker (bay window).
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_facade
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+.iiiiiiiiiiiiii.
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEn
+mippiiiiiiiiipnd
+mipppdddddddEpnd
+mipppdwTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdddddddEpnd
+mipppdTTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdbbdbbdEpnd
+mipppdddddddEpnd
+mippiiiiiiiiipnd
+mmmmmmmmmmmmmmmd
+.dddddddddddddd.
+frame auto 1
+mippppppppppppnd
+mippppppppppppnd
+mippppppppppppnd
+mippppppppppppnd
+mippiiiiiiiiipnd
+mipppdddddddEpnd
+mipppdwTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdddddddEpnd
+mipppdTTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdbbdbbdEpnd
+mipppdddddddEpnd
+mippiiiiiiiiipnd
+mmmmmmmmmmmmmmmd
+.dddddddddddddd.
+frame auto 2
+.iiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEE
+mippiiiiiiiiippp
+mipppdddddddEppp
+mipppdwTdTTdEppp
+mipppdTbdTbdEppp
+mipppdddddddEppp
+mipppdTTdTTdEppp
+mipppdTbdTbdEppp
+mipppdbbdbbdEppp
+mipppdddddddEppp
+mippiiiiiiiiippp
+mmmmmmmmmmmmmmmm
+.ddddddddddddddd
+frame auto 3
+mipppppppppppppp
+mipppppppppppppp
+mipppppppppppppp
+mipppppppppppppp
+mippiiiiiiiiippp
+mipppdddddddEppp
+mipppdwTdTTdEppp
+mipppdTbdTbdEppp
+mipppdddddddEppp
+mipppdTTdTTdEppp
+mipppdTbdTbdEppp
+mipppdbbdbbdEppp
+mipppdddddddEppp
+mippiiiiiiiiippp
+mmmmmmmmmmmmmmmm
+.ddddddddddddddd
+frame auto 4
+.iiiiiiiiiiiiii.
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEn
+mippiiiiiiiiipnd
+mipppdddddddEpnd
+mipppdwTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdddddddEpnd
+mipppdTTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdbbdbbdEpnd
+mipppdddddddEpnd
+mippiiiiiiiiipnd
+mippppppppppppnd
+mippppppppppppnd
+frame auto 5
+mippppppppppppnd
+mippppppppppppnd
+mippppppppppppnd
+mippppppppppppnd
+mippiiiiiiiiipnd
+mipppdddddddEpnd
+mipppdwTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdddddddEpnd
+mipppdTTdTTdEpnd
+mipppdTbdTbdEpnd
+mipppdbbdbbdEpnd
+mipppdddddddEpnd
+mippiiiiiiiiipnd
+mippppppppppppnd
+mippppppppppppnd
+frame auto 6
+.iiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEE
+mippiiiiiiiiippp
+mipppdddddddEppp
+mipppdwTdTTdEppp
+mipppdTbdTbdEppp
+mipppdddddddEppp
+mipppdTTdTTdEppp
+mipppdTbdTbdEppp
+mipppdbbdbbdEppp
+mipppdddddddEppp
+mippiiiiiiiiippp
+mipppppppppppppp
+mipppppppppppppp
+frame auto 7
+mipppppppppppppp
+mipppppppppppppp
+mipppppppppppppp
+mipppppppppppppp
+mippiiiiiiiiippp
+mipppdddddddEppp
+mipppdwTdTTdEppp
+mipppdTbdTbdEppp
+mipppdddddddEppp
+mipppdTTdTTdEppp
+mipppdTbdTbdEppp
+mipppdbbdbbdEppp
+mipppdddddddEppp
+mippiiiiiiiiippp
+mipppppppppppppp
+mipppppppppppppp
+frame auto 8
+iiiiiiiiiiiiiii.
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEn
+ppppiiiiiiiiipnd
+pppppdddddddEpnd
+pppppdwTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdddddddEpnd
+pppppdTTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdbbdbbdEpnd
+pppppdddddddEpnd
+ppppiiiiiiiiipnd
+mmmmmmmmmmmmmmmd
+ddddddddddddddd.
+frame auto 9
+ppppppppppppppnd
+ppppppppppppppnd
+ppppppppppppppnd
+ppppppppppppppnd
+ppppiiiiiiiiipnd
+pppppdddddddEpnd
+pppppdwTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdddddddEpnd
+pppppdTTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdbbdbbdEpnd
+pppppdddddddEpnd
+ppppiiiiiiiiipnd
+mmmmmmmmmmmmmmmd
+ddddddddddddddd.
+frame auto 10
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEE
+ppppiiiiiiiiippp
+pppppdddddddEppp
+pppppdwTdTTdEppp
+pppppdTbdTbdEppp
+pppppdddddddEppp
+pppppdTTdTTdEppp
+pppppdTbdTbdEppp
+pppppdbbdbbdEppp
+pppppdddddddEppp
+ppppiiiiiiiiippp
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 11
+pppppppppppppppp
+pppppppppppppppp
+pppppppppppppppp
+pppppppppppppppp
+ppppiiiiiiiiippp
+pppppdddddddEppp
+pppppdwTdTTdEppp
+pppppdTbdTbdEppp
+pppppdddddddEppp
+pppppdTTdTTdEppp
+pppppdTbdTbdEppp
+pppppdbbdbbdEppp
+pppppdddddddEppp
+ppppiiiiiiiiippp
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 12
+iiiiiiiiiiiiiii.
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEn
+ppppiiiiiiiiipnd
+pppppdddddddEpnd
+pppppdwTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdddddddEpnd
+pppppdTTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdbbdbbdEpnd
+pppppdddddddEpnd
+ppppiiiiiiiiipnd
+ppppppppppppppnd
+ppppppppppppppnd
+frame auto 13
+ppppppppppppppnd
+ppppppppppppppnd
+ppppppppppppppnd
+ppppppppppppppnd
+ppppiiiiiiiiipnd
+pppppdddddddEpnd
+pppppdwTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdddddddEpnd
+pppppdTTdTTdEpnd
+pppppdTbdTbdEpnd
+pppppdbbdbbdEpnd
+pppppdddddddEpnd
+ppppiiiiiiiiipnd
+ppppppppppppppnd
+ppppppppppppppnd
+frame auto 14
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+EEEEEEEEEEEEEEEE
+ppppiiiiiiiiippp
+pppppdddddddEppp
+pppppdwTdTTdEppp
+pppppdTbdTbdEppp
+pppppdddddddEppp
+pppppdTTdTTdEppp
+pppppdTbdTbdEppp
+pppppdbbdbbdEppp
+pppppdddddddEppp
+ppppiiiiiiiiippp
+pppppppppppppppp
+pppppppppppppppp
+frame auto 15
+pppppppppppppppp
+pppppppppppppppp
+pppppppppppppppp
+pppppppppppppppp
+ppppiiiiiiiiippp
+pppppdddddddEppp
+pppppdwTdTTdEppp
+pppppdTbdTbdEppp
+pppppdddddddEppp
+pppppdTTdTTdEppp
+pppppdTbdTbdEppp
+pppppdbbdbbdEppp
+pppppdddddddEppp
+ppppiiiiiiiiippp
+pppppppppppppppp
+pppppppppppppppp

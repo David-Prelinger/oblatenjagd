@@ -27,3 +27,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Debris vs brick**: check the `debris` colours match the merged brick tile.
 - **fit_head inside the interact loop**: move `fit_head` after the entity loop so all contacts in a frame use the same hitbox (code review, M1 QA fixes); use the tile-size const in the tuning rule.
 - **Popup overlap**: „+1 Leben" and the popped Oblate's score popup can overlap at the same x when the 100th Oblate comes from a box — check in a shot.
+- **Getreidegasse block sizes**: keep façade blocks ~4–5 storeys × 3–4 windows, or break tall ones with an Erker/guild sign (art-director note for the level).
