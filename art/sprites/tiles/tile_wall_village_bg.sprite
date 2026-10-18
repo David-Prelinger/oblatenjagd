@@ -1,0 +1,286 @@
+# Village house wall, decorative and NON-solid (like railing_bg; D-041):
+# whitewash w with one window per tile (green G shutters with j panel
+# lines, i frame, transom and sill, b glass with s panes). Flat on purpose:
+# no light top lip. Edges only use i, so a wall next to a balcony cell (the
+# balcony draws the same wall behind itself) still reads as one wall:
+# exposed top = i shadow under the eaves or a balcony, exposed bottom = 2 px
+# i base band, exposed right = 1 px i; the left side stays lit.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_wall_village_bg
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 1
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 2
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 3
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 4
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+frame auto 5
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+frame auto 6
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+frame auto 7
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+frame auto 8
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 9
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 10
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 11
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 12
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+frame auto 13
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwiiiiiiwwwwi
+wwwGGiddddiGGwwi
+wwwGGisbbbiGGwwi
+wwwGGisbbbiGGwwi
+wwwjjiiiiiijjwwi
+wwwGGibbsbiGGwwi
+wwwGGibbsbiGGwwi
+wwwGGiiiiiiGGwwi
+wwwwiiiiiiiiwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+wwwwwwwwwwwwwwwi
+frame auto 14
+iiiiiiiiiiiiiiii
+iwwiiwwiiwwiiwwi
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+frame auto 15
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwGGiddddiGGwww
+wwwGGisbbbiGGwww
+wwwGGisbbbiGGwww
+wwwjjiiiiiijjwww
+wwwGGibbsbiGGwww
+wwwGGibbsbiGGwww
+wwwGGiiiiiiGGwww
+wwwwiiiiiiiiwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww

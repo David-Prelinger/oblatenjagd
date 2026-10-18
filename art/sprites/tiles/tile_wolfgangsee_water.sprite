@@ -1,0 +1,78 @@
+# Wolfgangsee surface (hazard): a rounder, slower lake swell than the
+# Salzach (period 16, 4 px per frame), bright turquoise t with s crests,
+# a drifting w sparkle and an s reflection streak, then the t/T dither band
+# (2 px, art-style 6) and flat T. Rows 6-15 are the same in every frame, so
+# the jetty tile shows the same water under its deck.
+sprite = tile_wolfgangsee_water
+size   = 16x16
+origin = 0,0
+anim   = idle frames=4 ticks=12 loop
+---
+frame idle 0
+......ss........
+....ttttts......
+..ttttttttttt...
+tttttttttttwwttt
+tttttttttttttttt
+tttssstttttttttt
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+frame idle 1
+..........ss....
+........ttttts..
+t.....tttttttttt
+tttttttttwwttttt
+tttttttttttttttt
+tttttssstttttttt
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+frame idle 2
+..............ss
+ts..........tttt
+ttttt.....tttttt
+tttttttwwttttttt
+tttttttttttttttt
+tttttttssstttttt
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+frame idle 3
+..ss............
+ttttts..........
+ttttttttt.....tt
+tttttwwttttttttt
+tttttttttttttttt
+tttttttttssstttt
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT

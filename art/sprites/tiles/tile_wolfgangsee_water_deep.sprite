@@ -1,0 +1,77 @@
+# Wolfgangsee below the surface row: flat bands T -> b -> B (lighter
+# towards the surface), a T glint drifting right in the b band and a b
+# streak drifting left in the B band. Matches the bottom T of
+# tile_wolfgangsee_water.
+sprite = tile_wolfgangsee_water_deep
+size   = 16x16
+origin = 0,0
+anim   = idle frames=4 ticks=12 loop
+---
+frame idle 0
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbTTTbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBbbbB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+frame idle 1
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbTTTbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBbbbBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+frame idle 2
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbTTTbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBbbbBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+frame idle 3
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+TbbbbbbbbbbbbbTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+bbbBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
