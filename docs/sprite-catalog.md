@@ -15,13 +15,15 @@ Conventions:
 | `player` (Resi, Normal) | 16×24 exact | 8,24 | `idle` 2f/30t loop · `walk` 4f/8t loop · `run` 4f/5t loop · `skid` held · `jump` held · `fall` held · `die` held (facing the camera, arms up) · `pole` 2f/8t loop (sliding down the Maibaum) |
 | `player_big` (Resi, Zuckerschock) | 16×32 exact | 8,32 | same names as `player` |
 
+`skid` faces the direction of motion (Resi brakes while still sliding forward), not the new input direction. The `pole` frames have no pole drawn: the engine places her with the pole just right of her body.
+
 Hurt/invulnerability and the 30-frame transformation are drawn by the engine (blinking / alternating `player` and `player_big`); no extra frames.
 
 ## Enemies (group `enemies`)
 
 | Sprite | Size | Origin | Animations |
 |---|---|---|---|
-| `selfie_tourist` | 16×24 | 8,24 | `walk` 2f/10t loop · `selfie` 2f (stick up, held / flash frame) · `squished` held |
+| `selfie_tourist` | 16×24 | 8,24 | `walk` 2f/10t loop · `selfie` 2f (frame 0 = stick up; frame 1 = flash — the engine picks the frame and shows the flash for only 2 game frames) · `squished` held |
 | `taube` | 16×16 | 8,16 | `fly` 2f/8t loop · `sit` 2f/30t loop · `tumble` held |
 | `mozartkugel_verkaeufer` | 16×24 | 8,24 | `idle` 2f/30t loop · `windup` held · `throw` held · `squished` held |
 | `mozartkugel_thrown` | 8×8 | 4,8 | `spin` 2f/6t loop (unwrapped brown chocolate ball) |
@@ -63,6 +65,6 @@ Hurt/invulnerability and the 30-frame transformation are drawn by the engine (bl
 
 ## Backgrounds (group `bg`, produced by generators or hand-made)
 
-Parallax layers, each tileable horizontally (left and right edges match), ≤ 640 px wide, ≤ 180 px high, origin 0,0. The level's `[meta].background` lists them back to front with a scroll factor (engine format).
+Parallax layers, each tileable horizontally (left and right edges match; lint `bg-tileable`), ≤ 640 px wide, ≤ 180 px high (lint `bg-size`), origin 0,0, first animation used. The level's `[meta].background` lists them back to front with a scroll factor in sixteenths (engine: `RenderContext::with_background`). Layers are drawn **bottom-aligned to the screen bottom** and do not move vertically, so a layer's interesting part must sit high enough above the playfield ground (≈ 32–48 px at the bottom are usually hidden by ground tiles). Drafts: `art/generators/salzburg_*.toml`.
 
 `bg_sky_salzburg` (factor 0) · `bg_untersberg` (far mountains) · `bg_festung` (Hohensalzburg on its hill, mid) · `bg_rooftops` (old-town roofs and domes, near).

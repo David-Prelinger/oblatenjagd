@@ -1,0 +1,28 @@
+# Thrown Mozartkugel: UNWRAPPED chocolate ball (O/l, no silver, no red) so it
+# never reads as the wrapped power-up. A 2 px O fleck travels round the ball
+# to show the spin; the lit top-left stays put.
+sprite = mozartkugel_thrown
+size   = 8x8
+origin = 4,8
+hitbox = 1,2,6,6
+mirror = auto
+anim   = spin frames=2 ticks=6 loop
+---
+frame spin 0
+........
+........
+..kkkk..
+.kOOllk.
+.kOlllk.
+.klllOk.
+.kllOlk.
+..kkkk..
+frame spin 1
+........
+........
+..kkkk..
+.kOOlOk.
+.kOlOlk.
+.kllllk.
+.kllllk.
+..kkkk..

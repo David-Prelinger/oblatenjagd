@@ -16,6 +16,10 @@ pub const OUTLINE_GROUPS: [&str; 3] = ["player", "enemies", "items"];
 pub const EMPTY_FRAME_ALLOWED: [(&str, &str, u32); 1] = [("font", "glyphs", 0)];
 /// The outline palette char.
 pub const OUTLINE_CHAR: char = 'k';
+/// Sprite group of parallax background layers (`docs/sprite-catalog.md`).
+pub const BG_GROUP: &str = "bg";
+/// Largest background layer (`docs/sprite-catalog.md`).
+pub const BG_MAX_SIZE: (u32, u32) = (640, 180);
 
 /// One raw finding of a check, before rule id and severity are attached.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -91,6 +95,18 @@ pub const SPRITE_RULES: &[SpriteRule] = &[
         severity: Severity::Error,
         summary: "origin and hitbox lie inside the sprite (hitbox non-empty)",
         check: bounds,
+    },
+    SpriteRule {
+        id: "bg-tileable",
+        severity: Severity::Warning,
+        summary: "background layers tile horizontally: the seam (last column -> column 0) differs in no more rows than the most different pair of neighbouring columns inside",
+        check: bg_tileable,
+    },
+    SpriteRule {
+        id: "bg-size",
+        severity: Severity::Warning,
+        summary: "background layers are at most 640x180",
+        check: bg_size,
     },
     SpriteRule {
         id: "file-name",
@@ -350,6 +366,53 @@ fn bounds(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
     out
 }
 
+fn bg_tileable(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
+    if s.group != BG_GROUP || s.width < 2 {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for f in &s.frames {
+        let rows: Vec<Vec<char>> = f.rows.iter().map(|r| r.text.chars().collect()).collect();
+        if rows.iter().any(|r| r.len() != s.width as usize) {
+            continue; // `row-width` reports it
+        }
+        let differ = |a: usize, b: usize| rows.iter().filter(|r| r[a] != r[b]).count();
+        let w = s.width as usize;
+        let inner = (0..w - 1).map(|x| differ(x, x + 1)).max().unwrap_or(0);
+        let seam = differ(w - 1, 0);
+        if seam > inner {
+            out.push(hit(
+                &s.file,
+                f.line,
+                0,
+                format!(
+                    "frame `{} {}` does not tile: the last column and column 0 differ in {seam} rows \
+                     (neighbouring columns inside differ in at most {inner})",
+                    f.anim, f.index
+                ),
+            ));
+        }
+    }
+    out
+}
+
+fn bg_size(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
+    let (mw, mh) = BG_MAX_SIZE;
+    if s.group == BG_GROUP && (s.width > mw || s.height > mh) {
+        vec![hit(
+            &s.file,
+            s.size_line,
+            0,
+            format!(
+                "background `{}` is {}x{}, larger than {mw}x{mh}",
+                s.name, s.width, s.height
+            ),
+        )]
+    } else {
+        Vec::new()
+    }
+}
+
 fn file_name(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
     let stem = s
         .file
@@ -482,6 +545,31 @@ mod tests {
         let s = parse_sprite("ui/font.sprite", "ui", src).unwrap();
         // Frame 0 (space) is allowed; frame 1 (line 8) is still reported.
         assert_eq!(rules(&s), [("empty-frame", 8, 0)]);
+    }
+
+    #[test]
+    fn bg_tileable_rule_compares_the_seam_with_inner_columns() {
+        let bg = |rows: &str| {
+            let src = format!("sprite = a\nsize = 4x2\nanim = idle frames=1\n---\nframe 0\n{rows}");
+            parse_sprite("bg/a.sprite", "bg", &src).unwrap()
+        };
+        // Seam (col 3 -> col 0) differs in 1 row, inner pairs in up to 1: fine.
+        assert!(rules(&bg("rwww\nwwww\n")).is_empty());
+        // Seam differs in 2 rows, inner pairs in at most 1: warning.
+        let s = bg("rrrw\nrwww\n");
+        assert_eq!(rules(&s), [("bg-tileable", 5, 0)]);
+        assert!(lint_sprite(&s, &pal())[0].severity == Severity::Warning);
+        // Other groups are not checked.
+        let src = "sprite = a\nsize = 4x2\nanim = idle frames=1\n---\nframe 0\nrrrw\nrwww\n";
+        assert!(rules(&parse_sprite("tiles/a.sprite", "tiles", src).unwrap()).is_empty());
+    }
+
+    #[test]
+    fn bg_size_rule() {
+        let mut s = sprite("bg", GOOD);
+        assert!(!rules(&s).iter().any(|r| r.0 == "bg-size"));
+        s.width = 641;
+        assert!(rules(&s).iter().any(|r| r.0 == "bg-size"));
     }
 
     #[test]

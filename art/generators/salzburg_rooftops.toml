@@ -1,0 +1,344 @@
+# Stage 1 near layer: old-town (Altstadt) roofs, domes and towers behind
+# the street, parallax factor ~0.8 (13/16). FIRST DRAFT by the engine
+# engineer: the pixel-artist tunes it (or hand-draws it), the art-director
+# reviews it. Colours per docs/art-style.md §7 near layer: facades `c p o`
+# (never `Y` as main fill), terracotta `E`/`n` and red `r`/`R` roofs with an
+# `n`/`R` eave, copper domes and spires `t`/`T`, windows `d` (2x3) or `T`.
+
+[[skyline]]
+name   = "bg_rooftops"
+width  = 640
+height = 96
+seed   = 21
+
+[[skyline.building]]
+x = 0
+width = 34
+height = 34
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "c"
+wall_shadow = "i"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "n"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 34
+width = 28
+height = 42
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "p"
+wall_shadow = "E"
+shadow_width = 3
+roof_colour = "r"
+roof_shadow = "R"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 62
+width = 40
+height = 30
+base = 0
+roof = "flat"
+wall = "o"
+wall_shadow = "O"
+shadow_width = 3
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 102
+width = 30
+height = 38
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "c"
+wall_shadow = "o"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "n"
+window = "T"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+# Dom-like dome
+[[skyline.building]]
+x = 132
+width = 44
+height = 40
+base = 0
+roof = "dome"
+roof_height = 14
+wall = "c"
+wall_shadow = "i"
+shadow_width = 3
+roof_colour = "t"
+roof_shadow = "T"
+eave = "n"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 176
+width = 26
+height = 36
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "o"
+wall_shadow = "O"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 202
+width = 36
+height = 32
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "p"
+wall_shadow = "E"
+shadow_width = 3
+roof_colour = "r"
+roof_shadow = "R"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+# church tower
+[[skyline.building]]
+x = 238
+width = 22
+height = 44
+base = 0
+roof = "tower"
+roof_height = 18
+wall = "c"
+wall_shadow = "i"
+shadow_width = 3
+roof_colour = "t"
+roof_shadow = "T"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 260
+width = 38
+height = 34
+base = 0
+roof = "flat"
+wall = "c"
+wall_shadow = "o"
+shadow_width = 3
+eave = "n"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 298
+width = 30
+height = 40
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "o"
+wall_shadow = "O"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 328
+width = 34
+height = 30
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "c"
+wall_shadow = "i"
+shadow_width = 3
+roof_colour = "r"
+roof_shadow = "R"
+eave = "R"
+window = "T"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+# Kollegienkirche-like dome
+[[skyline.building]]
+x = 362
+width = 46
+height = 42
+base = 0
+roof = "dome"
+roof_height = 14
+wall = "p"
+wall_shadow = "E"
+shadow_width = 3
+roof_colour = "t"
+roof_shadow = "T"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 408
+width = 28
+height = 36
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "c"
+wall_shadow = "o"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "n"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 436
+width = 36
+height = 32
+base = 0
+roof = "flat"
+wall = "p"
+wall_shadow = "E"
+shadow_width = 3
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+# church tower
+[[skyline.building]]
+x = 472
+width = 24
+height = 46
+base = 0
+roof = "tower"
+roof_height = 18
+wall = "o"
+wall_shadow = "O"
+shadow_width = 3
+roof_colour = "t"
+roof_shadow = "T"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 496
+width = 40
+height = 34
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "c"
+wall_shadow = "i"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "n"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 536
+width = 32
+height = 38
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "o"
+wall_shadow = "O"
+shadow_width = 3
+roof_colour = "r"
+roof_shadow = "R"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 568
+width = 38
+height = 30
+base = 0
+roof = "flat"
+wall = "c"
+wall_shadow = "o"
+shadow_width = 3
+eave = "n"
+window = "T"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85
+
+[[skyline.building]]
+x = 606
+width = 34
+height = 40
+base = 0
+roof = "gable"
+roof_height = 10
+wall = "p"
+wall_shadow = "E"
+shadow_width = 3
+roof_colour = "E"
+roof_shadow = "n"
+eave = "R"
+window = "d"
+window_size = [2, 3]
+window_gap = [4, 5]
+window_chance = 85

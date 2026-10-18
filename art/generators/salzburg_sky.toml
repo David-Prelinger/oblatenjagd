@@ -1,0 +1,33 @@
+# Stage 1 (Salzburg) sky, parallax factor 0 (static). FIRST DRAFT by the
+# engine engineer: the pixel-artist tunes it, the art-director reviews it.
+# Format: docs/art-pipeline.md ("Procedural generators"). Colours per
+# docs/art-style.md §7: sky layer `S s h w` only.
+
+[[sky]]
+name   = "bg_sky_salzburg"
+width  = 320
+height = 180
+seed   = 3
+bands  = [
+  { colour = "S", until = 64 },
+  { colour = "s", until = 124 },
+  { colour = "h" },
+]
+dither  = 6
+pattern = "bayer4"
+cloud_colour = "w"
+cloud_shadow = "h"
+random_clouds = 2
+random_cloud_rows = [20, 60]
+
+[[sky.cloud]]
+x = 30
+y = 26
+width = 52
+height = 12
+
+[[sky.cloud]]
+x = 210
+y = 44
+width = 36
+height = 10

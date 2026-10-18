@@ -1,6 +1,7 @@
 //! `jnr-artkit`: the text-based pixel-art pipeline of Oblatenjagd.
 //!
-//! Parses `.palette` and `.sprite` sources, compiles them to RGBA frames,
+//! Parses `.palette` and `.sprite` sources, runs the procedural
+//! generators (`art/generators/*.toml`), compiles everything to RGBA frames,
 //! packs atlases and runs art lints. It is used at build time by
 //! `jnr-assets/build.rs` and by `cargo xtask sprites ...`.
 //! See `docs/art-pipeline.md`.
@@ -11,15 +12,17 @@
 //! - [`compile`]: sprite → RGBA frames (+ palette-swap variants)
 //! - [`atlas`]: runtime atlas types (used by `jnr-assets`/`jnr-render`) and the packer
 //! - [`codegen`]: atlas metadata → Rust source for `jnr-assets`
+//! - [`generators`]: procedural backgrounds (`sky`, `mountains`, `skyline`) → sprite sources
 //! - [`project`]: loads the whole `art/` tree from disk
 //!
-//! Feature `png` adds [`Image::encode_png`] (xtask only); the rest has no
-//! dependencies and builds for wasm.
+//! Feature `png` adds [`Image::encode_png`] (xtask only); the rest depends
+//! only on `serde` + `toml` (generator params) and builds for wasm.
 
 pub mod atlas;
 pub mod codegen;
 pub mod compile;
 pub mod diag;
+pub mod generators;
 pub mod image;
 pub mod lint;
 pub mod palette;
