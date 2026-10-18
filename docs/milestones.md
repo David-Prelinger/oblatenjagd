@@ -7,9 +7,9 @@ Status: **approved v1**. Agents tick boxes here as work is completed (definition
 Goal: the whole toolchain and validation loop work end-to-end on a grey-box test level.
 
 - [x] Human approves the plan docs, agents and skills (2026-10-18)
-- [ ] Cargo workspace with all crates (rename package `hello_daniel` away)
-- [ ] `xtask` with `check` and `verify` skeletons and JSON/Markdown reports
-- [ ] Hooks in `.claude/settings.json` (rustfmt, Stop → check, golden guard)
+- [x] Cargo workspace with all crates (rename package `hello_daniel` away)
+- [x] `xtask` with `check` and `verify` skeletons and JSON/Markdown reports
+- [x] Hooks in `.claude/settings.json` (rustfmt, Stop → check, golden guard)
 - [ ] `jnr-core`: fixed-point types, `InputFrame`, `Game::step`, `state_hash`, tile collision, a player box that runs and jumps
 - [ ] `jnr-render`: framebuffer, blit, bitmap font with German characters
 - [ ] `jnr-artkit`: `.palette` + `.sprite` parser, atlas packing, lints, preview + contact sheet
