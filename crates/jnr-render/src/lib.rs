@@ -12,7 +12,9 @@
 //! Modules:
 //! - [`blit`]: atlas frames and sprites onto the framebuffer (clipping, flip, tint)
 //! - [`font`]: the variable-width bitmap font (sprite `font`, anim `glyphs`)
-//! - [`scene`]: [`render`] a whole `Game`, plus the opt-in [`render_debug`] overlay
+//! - [`scene`]: [`render`] a whole `Game` through a [`RenderContext`]
+//!   (font, texts and sprite lookups resolved once), plus the opt-in
+//!   [`render_debug`] overlay
 //! - [`palette`]: the few palette colours used for grey-box drawing and text
 
 pub mod blit;
@@ -25,7 +27,7 @@ mod testutil;
 
 pub use blit::{blit_frame, blit_frame_tinted, draw_sprite, draw_sprite_tinted};
 pub use font::{CHARSET, Font};
-pub use scene::{Layer, render, render_debug};
+pub use scene::{Layer, PlayerAnim, RenderContext, render, render_debug};
 
 /// Framebuffer width in pixels.
 pub const WIDTH: usize = 320;

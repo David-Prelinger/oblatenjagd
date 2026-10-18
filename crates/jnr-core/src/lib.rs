@@ -14,6 +14,7 @@
 //! - [`player`]: run/jump physics
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
+//! - [`text`]: the keyed text table (`content/text/de.toml`)
 
 use std::fmt;
 
@@ -26,6 +27,7 @@ pub mod level;
 pub mod physics;
 pub mod player;
 pub mod rng;
+pub mod text;
 pub mod tuning;
 
 #[cfg(test)]
@@ -37,6 +39,7 @@ pub use game::{Event, Game, Mode};
 pub use input::InputFrame;
 pub use level::{EntityKind, EntitySpawn, Level, TileKind};
 pub use player::{Facing, Player};
+pub use text::Texts;
 pub use tuning::Tuning;
 
 /// Simulation ticks per second. `Game::step` advances exactly one tick.

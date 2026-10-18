@@ -1,6 +1,6 @@
 # Architecture
 
-Status: **approved v1** — nothing here is implemented yet.
+Status: **approved v1** — M0 in progress (see docs/milestones.md for what is implemented).
 
 ## Goals
 
@@ -83,7 +83,7 @@ impl Game {
 pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
 ```
 
-Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, plus `hash` (FNV-1a) and `rng` (xorshift64*).
+Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), plus `hash` (FNV-1a) and `rng` (xorshift64*).
 
 - **Game modes** as a state machine inside core: `Title → StageIntro → Playing → (Dying | StageClear) → ...`. Menus are part of core so they are testable too.
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
@@ -93,7 +93,7 @@ Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes +
 - **Camera** lives in core (it affects enemy activation like in SMB and must be deterministic).
 - **Spawning**: enemies activate when they come within one screen of the camera; despawn when far behind.
 - **RNG**: own xorshift in state, seeded. No other randomness.
-- **Text**: core only references string keys (`"hud.oblaten"`); rendering resolves them from `de.toml`.
+- **Text**: core only references string keys (`"hud.oblaten"`). `jnr_core::Texts::parse(&str)` flattens `de.toml` into dotted keys (`BTreeMap`); `get(key)` falls back to `[key]` for missing keys, never panics. The app embeds `de.toml`; the renderer resolves keys through its `RenderContext`.
 - `Game: Clone` and cheap to clone (needed by the level-solver bot, see `validation.md`).
 
 ## jnr-render: software renderer
@@ -107,8 +107,9 @@ Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes +
 Implemented (M0):
 - `jnr-render` never depends on `jnr-assets` (only as a dev-dependency for a sanity test): every draw call takes `&Atlas`, so tests use small hand-built atlases.
 - `Framebuffer` (`fill_rect`, `outline_rect`, `get`/`set`, `to_rgba_bytes`/`write_rgba_bytes`); `blit_frame` and `draw_sprite` (origin placement via `origin_facing`, mirrored frames or flip fallback, optional tint). Atlas alpha 0 is skipped, everything else drawn opaque; all blits clip at every edge.
-- Font: sprite `font`, 8×8 frames, one anim `glyphs`, one frame per character of `jnr_render::CHARSET` (89 glyphs, order fixed). Advance = rightmost opaque column + 2, space = 3 px, line height 9, unknown characters draw as `?`. No `font` sprite → text is a no-op.
-- `render(&Game, &Atlas, &mut Framebuffer)`: sky (`Layer` list as the parallax hook) → tiles (`tile_<name>` sprite, else grey-box per `TileKind`) → goal (`goal` sprite, else a pole) → player (`player` sprite at the feet, anim idle/walk/run/jump/fall with fallbacks, else the hitbox box; blinks every 4 frames while dying) → stage-clear text. `render_debug` is the opt-in F1 overlay (hitboxes, frame, position).
+- Font (D-012): sprite `font`, 8×8 frames, one anim `glyphs`, one frame per character of `jnr_render::CHARSET` (89 glyphs, order fixed). Advance = rightmost opaque column + 2, space = 3 px, line height 9 (room for the +1 shadow); `measure` leaves out the gap after a line's last glyph. Unknown characters draw as `?`. No `font` sprite → text is a no-op.
+- `RenderContext::new(&Atlas, &Texts, &Level)` is built once (by `jnr-app` at startup, again on level change) and resolves the font, the texts and the tile/player/goal sprite lookups (incl. the player anim per state), so drawing a frame does no lookups or allocations.
+- `render(&Game, &RenderContext, &mut Framebuffer)`: sky (`Layer` list as the parallax hook) → tiles (`tile_<name>` sprite, else grey-box per `TileKind`) → goal (`goal` sprite, else a pole) → player (`player` sprite at the feet, anim idle/walk/run/jump/fall with fallbacks, else the hitbox box; blinks every 4 frames counted from the death) → stage-clear text (key `stage.clear`). `render_debug` is the opt-in F1 overlay (hitboxes, frame, position).
 
 ## jnr-app: macroquad shell
 

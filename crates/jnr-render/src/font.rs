@@ -22,7 +22,9 @@ pub const CHARSET: &str =
 pub const FONT_SPRITE: &str = "font";
 /// Name of the font sprite's only anim.
 pub const GLYPH_ANIM: &str = "glyphs";
-/// Pixels between the tops of two text lines (`\n`).
+/// Pixels between the tops of two text lines (`\n`): the 8 px glyph cell
+/// plus 1 px, so the `k` shadow drawn at (+1, +1) below a line's descenders
+/// never touches the next line.
 pub const LINE_HEIGHT: i32 = 9;
 /// Advance of the space character in pixels.
 pub const SPACE_ADVANCE: i32 = 3;
@@ -34,6 +36,9 @@ const FALLBACK: char = '?';
 struct Glyph {
     rect: Rect,
     advance: i32,
+    /// Trailing empty spacing inside `advance` (1 px for inked glyphs, 0 for
+    /// blank ones), left out by `measure` at the end of a line.
+    gap: i32,
 }
 
 /// Glyph rects and advances, measured once from an atlas.
@@ -56,12 +61,11 @@ impl Font {
             .chars()
             .zip(&anim.frames)
             .map(|(ch, &rect)| {
-                let advance = if ch == ' ' {
-                    SPACE_ADVANCE
-                } else {
-                    rightmost_opaque(atlas, rect).map_or(SPACE_ADVANCE, |c| c + 2)
+                let (advance, gap) = match rightmost_opaque(atlas, rect) {
+                    Some(c) if ch != ' ' => (c + 2, 1),
+                    _ => (SPACE_ADVANCE, 0),
                 };
-                (ch, Glyph { rect, advance })
+                (ch, Glyph { rect, advance, gap })
             })
             .collect();
         glyphs.sort_by_key(|&(ch, _)| ch);
@@ -73,14 +77,23 @@ impl Font {
         self.glyphs.is_empty()
     }
 
-    /// Width in pixels of the widest line (sum of advances, so it includes
-    /// the 1 px gap after the last glyph). 0 for an empty font.
+    /// Width in pixels of the widest line: the sum of advances without the
+    /// 1 px gap after a line's last glyph, so centred text is truly centred.
+    /// 0 for an empty font.
     pub fn measure(&self, text: &str) -> i32 {
         if self.is_empty() {
             return 0;
         }
         text.split('\n')
-            .map(|line| line.chars().map(|ch| self.advance(ch)).sum())
+            .map(|line| {
+                let width: i32 = line.chars().map(|ch| self.advance(ch)).sum();
+                let last_gap = line
+                    .chars()
+                    .last()
+                    .and_then(|ch| self.glyph(ch))
+                    .map_or(0, |g| g.gap);
+                width - last_gap
+            })
             .max()
             .unwrap_or(0)
     }
@@ -216,6 +229,18 @@ mod tests {
     }
 
     #[test]
+    fn real_font_has_every_glyph() {
+        let atlas = jnr_assets::atlas();
+        let font = Font::from_atlas(atlas);
+        assert_eq!(font.glyphs.len(), CHARSET.chars().count());
+        assert_eq!(font.measure(" "), SPACE_ADVANCE);
+        // Every glyph except the space has ink.
+        for ch in CHARSET.chars().filter(|&c| c != ' ') {
+            assert_eq!(font.find(ch).unwrap().gap, 1, "glyph {ch:?} is empty");
+        }
+    }
+
+    #[test]
     fn charset_has_89_unique_glyphs() {
         let chars: Vec<char> = CHARSET.chars().collect();
         assert_eq!(chars.len(), 89);
@@ -230,16 +255,23 @@ mod tests {
 
     #[test]
     fn advance_is_rightmost_column_plus_two() {
+        // measure leaves out the 1 px gap after the last glyph of a line.
         let (_, font) = full_font();
-        assert_eq!(font.measure("A"), 6);
-        assert_eq!(font.measure("I"), 2);
-        assert_eq!(font.measure("Ä"), 6);
+        assert_eq!(font.measure("A"), 5);
+        assert_eq!(font.measure("I"), 1);
+        assert_eq!(font.measure("Ä"), 5);
+        assert_eq!(font.measure("AA"), 6 + 5);
         assert_eq!(font.measure(" "), SPACE_ADVANCE);
+        assert_eq!(
+            font.measure("A "),
+            6 + SPACE_ADVANCE,
+            "a space has no gap to drop"
+        );
         // Empty glyph frames (not drawn yet) advance like a space.
         assert_eq!(font.measure("B"), SPACE_ADVANCE);
-        assert_eq!(font.measure("AI A"), 6 + 2 + SPACE_ADVANCE + 6);
+        assert_eq!(font.measure("AI A"), 6 + 2 + SPACE_ADVANCE + 5);
         // Widest line wins.
-        assert_eq!(font.measure("I\nAA\nA"), 12);
+        assert_eq!(font.measure("I\nAA\nA"), 11);
         assert_eq!(font.measure(""), 0);
     }
 

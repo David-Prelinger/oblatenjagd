@@ -9,14 +9,16 @@
 //! M0: always plays the grey-box testbed (`content/levels/00_testbed.level`).
 //! Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, F1 debug overlay.
 
-use jnr_core::{Game, InputFrame, Level, TICKS_PER_SECOND, Tuning};
-use jnr_render::{Framebuffer, HEIGHT, WIDTH, render, render_debug};
+use jnr_core::{Game, InputFrame, Level, TICKS_PER_SECOND, Texts, Tuning};
+use jnr_render::{Framebuffer, HEIGHT, RenderContext, WIDTH, render, render_debug};
 use macroquad::prelude::*;
 
 /// The level played in M0 (embedded, so wasm needs no file access).
 const LEVEL_SRC: &str = include_str!("../../../content/levels/00_testbed.level");
 /// Gameplay constants (embedded).
 const TUNING_SRC: &str = include_str!("../../../content/tuning.toml");
+/// All player-visible German text (embedded).
+const TEXTS_SRC: &str = include_str!("../../../content/text/de.toml");
 /// Seed of the game RNG.
 const SEED: u64 = 1;
 /// Longest real time one frame may account for; more is dropped (e.g. after
@@ -79,16 +81,22 @@ fn new_game() -> Game {
     Game::new(&level, &tuning, SEED)
 }
 
+fn texts() -> Texts {
+    Texts::parse(TEXTS_SRC).unwrap_or_else(|e| panic!("de.toml: {e}"))
+}
+
 #[macroquad::main(window_conf)]
 async fn main() {
-    let atlas = jnr_assets::atlas();
     let mut game = new_game();
+    let texts = texts();
+    // All renderer lookups are resolved once here (rebuild on level change).
+    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, game.level());
     let mut fb = Framebuffer::new();
     let mut bytes = Vec::with_capacity(WIDTH * HEIGHT * 4);
     let mut accumulator = 0.0;
     let mut debug_overlay = false;
 
-    render(&game, atlas, &mut fb);
+    render(&game, &ctx, &mut fb);
     fb.write_rgba_bytes(&mut bytes);
     let texture = Texture2D::from_rgba8(WIDTH as u16, HEIGHT as u16, &bytes);
     texture.set_filter(FilterMode::Nearest);
@@ -102,9 +110,9 @@ async fn main() {
             game.step(input);
         }
 
-        render(&game, atlas, &mut fb);
+        render(&game, &ctx, &mut fb);
         if debug_overlay {
-            render_debug(&game, atlas, &mut fb);
+            render_debug(&game, &ctx, &mut fb);
         }
         fb.write_rgba_bytes(&mut bytes);
         texture.update_from_bytes(WIDTH as u32, HEIGHT as u32, &bytes);
@@ -171,8 +179,9 @@ mod tests {
     }
 
     #[test]
-    fn embedded_level_and_tuning_parse() {
+    fn embedded_content_parses() {
         let game = new_game();
         assert_eq!(game.level().meta.id, "testbed");
+        assert_eq!(texts().get("stage.clear"), "Etappe geschafft!");
     }
 }

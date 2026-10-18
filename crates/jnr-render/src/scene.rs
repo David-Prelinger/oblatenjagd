@@ -5,12 +5,16 @@
 //! drawn as flat palette shapes, so levels are playable before the art
 //! exists. Draw order follows `docs/architecture.md` (backgrounds → tiles →
 //! entities → player → text).
+//!
+//! All lookups (font, texts, tile/player/goal sprites) are resolved once in
+//! a [`RenderContext`]; drawing a frame allocates nothing (the debug overlay
+//! formats its one line of text).
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::level::TILE_PX;
 use jnr_core::physics::Aabb;
 use jnr_core::tuning::PlayerTuning;
-use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Mode, Player, TileKind};
+use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Level, Mode, Player, Texts, TileKind};
 
 use crate::Framebuffer;
 use crate::blit::{blit_frame, draw_sprite};
@@ -19,11 +23,8 @@ use crate::palette::{
     DIRNDL_RED, LEATHER_DARK, MEADOW, MOZART_YELLOW, OUTLINE, SKY_LIGHT, STONE_GREY, WHITE,
 };
 
-/// Shown centred on the screen in `StageClear`.
-///
-/// TODO(M1 HUD): player-visible text must come from `content/text/de.toml`
-/// (keys only in code). This M0 placeholder moves there with the HUD task.
-pub const STAGE_CLEAR_TEXT: &str = "ETAPPE GESCHAFFT!";
+/// Text key shown centred on the screen in `StageClear` (`content/text/de.toml`).
+pub const STAGE_CLEAR_KEY: &str = "stage.clear";
 
 /// Sprite name of the player.
 pub const PLAYER_SPRITE: &str = "player";
@@ -55,29 +56,175 @@ pub fn background_layers(_game: &Game) -> &'static [Layer] {
     &[Layer::Sky]
 }
 
+/// Which player animation a state shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PlayerAnim {
+    /// Standing still on the ground.
+    Idle,
+    /// Moving on the ground up to walk speed.
+    Walk,
+    /// Moving on the ground faster than walk speed.
+    Run,
+    /// In the air, moving up.
+    Jump,
+    /// In the air, moving down.
+    Fall,
+}
+
+impl PlayerAnim {
+    /// Every state, in the order of [`PlayerAnim::index`].
+    pub const ALL: [PlayerAnim; 5] = [
+        PlayerAnim::Idle,
+        PlayerAnim::Walk,
+        PlayerAnim::Run,
+        PlayerAnim::Jump,
+        PlayerAnim::Fall,
+    ];
+
+    /// The state of a player.
+    pub fn of(p: &Player, t: &PlayerTuning) -> PlayerAnim {
+        if !p.on_ground {
+            if p.vy < Fx::ZERO {
+                PlayerAnim::Jump
+            } else {
+                PlayerAnim::Fall
+            }
+        } else if p.vx == Fx::ZERO {
+            PlayerAnim::Idle
+        } else if p.vx.abs() > t.walk_speed {
+            PlayerAnim::Run
+        } else {
+            PlayerAnim::Walk
+        }
+    }
+
+    /// Position in [`PlayerAnim::ALL`].
+    pub const fn index(self) -> usize {
+        match self {
+            PlayerAnim::Idle => 0,
+            PlayerAnim::Walk => 1,
+            PlayerAnim::Run => 2,
+            PlayerAnim::Jump => 3,
+            PlayerAnim::Fall => 4,
+        }
+    }
+
+    /// Anim names to try, best first (then `idle`, then the sprite's first anim).
+    fn names(self) -> &'static [&'static str] {
+        match self {
+            PlayerAnim::Idle => &["idle"],
+            PlayerAnim::Walk => &["walk", "run"],
+            PlayerAnim::Run => &["run", "walk"],
+            PlayerAnim::Jump => &["jump", "fall"],
+            PlayerAnim::Fall => &["fall", "jump"],
+        }
+    }
+}
+
+/// The player sprite with one resolved anim per [`PlayerAnim`].
+#[derive(Clone, Debug)]
+struct PlayerLook<'a> {
+    sprite: &'a AtlasSprite,
+    anims: [&'a AtlasAnim; 5],
+}
+
+/// Everything the renderer looks up, resolved once: the atlas, the font,
+/// the texts and the tile/player/goal sprites. Build it at startup (and
+/// again when the level changes: tile sprites are indexed by the level's
+/// `tile_names`) and pass it to [`render`] and [`render_debug`].
+#[derive(Clone, Debug)]
+pub struct RenderContext<'a> {
+    atlas: &'a Atlas,
+    texts: &'a Texts,
+    font: Font,
+    /// `tile_<name>` sprite per [`Level::tile_names`] index (index 0 = no name).
+    tiles: Vec<Option<&'a AtlasSprite>>,
+    player: Option<PlayerLook<'a>>,
+    goal: Option<&'a AtlasSprite>,
+}
+
+impl<'a> RenderContext<'a> {
+    /// Resolves all lookups for `level` in `atlas`. Sprites without anims
+    /// count as missing (grey-box).
+    pub fn new(atlas: &'a Atlas, texts: &'a Texts, level: &Level) -> RenderContext<'a> {
+        let with_anims = |name: &str| atlas.sprite(name).filter(|s| !s.anims.is_empty());
+        let tiles = level
+            .tile_names
+            .iter()
+            .map(|n| {
+                if n.is_empty() {
+                    None
+                } else {
+                    with_anims(&format!("{TILE_SPRITE_PREFIX}{n}"))
+                }
+            })
+            .collect();
+        let player = with_anims(PLAYER_SPRITE).map(|sprite| PlayerLook {
+            sprite,
+            anims: PlayerAnim::ALL.map(|state| {
+                state
+                    .names()
+                    .iter()
+                    .chain(&["idle"])
+                    .find_map(|name| sprite.anim(name))
+                    .unwrap_or(&sprite.anims[0])
+            }),
+        });
+        RenderContext {
+            atlas,
+            texts,
+            font: Font::from_atlas(atlas),
+            tiles,
+            player,
+            goal: with_anims(GOAL_SPRITE),
+        }
+    }
+
+    /// The atlas everything is drawn from.
+    pub fn atlas(&self) -> &'a Atlas {
+        self.atlas
+    }
+
+    /// The font (empty if the atlas has none).
+    pub fn font(&self) -> &Font {
+        &self.font
+    }
+
+    /// The player-visible texts.
+    pub fn texts(&self) -> &'a Texts {
+        self.texts
+    }
+
+    /// The resolved player anim for a state, if the atlas has a player sprite.
+    pub fn player_anim(&self, state: PlayerAnim) -> Option<&'a AtlasAnim> {
+        self.player.as_ref().map(|look| look.anims[state.index()])
+    }
+}
+
 /// Draws one frame of the game. Deterministic: the same game state and
-/// atlas give identical pixels.
-pub fn render(game: &Game, atlas: &Atlas, fb: &mut Framebuffer) {
+/// context give identical pixels.
+pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let cam = game.camera();
     for &layer in background_layers(game) {
         draw_layer(layer, fb);
     }
-    draw_tiles(game, atlas, fb, cam);
-    draw_goals(game, atlas, fb, cam);
-    draw_player(game, atlas, fb, cam);
+    draw_tiles(game, ctx, fb, cam);
+    draw_goals(game, ctx, fb, cam);
+    draw_player(game, ctx, fb, cam);
     if game.mode() == Mode::StageClear {
-        let font = Font::from_atlas(atlas);
-        let w = font.measure(STAGE_CLEAR_TEXT);
+        let text = ctx.texts.get(STAGE_CLEAR_KEY);
+        let w = ctx.font.measure(&text);
         let x = (fb.w as i32 - w) / 2;
         let y = fb.h as i32 / 2 - 4;
-        font.draw_text(fb, atlas, STAGE_CLEAR_TEXT, x, y, WHITE, Some(OUTLINE));
+        ctx.font
+            .draw_text(fb, ctx.atlas, &text, x, y, WHITE, Some(OUTLINE));
     }
 }
 
 /// Debug overlay (opt-in, drawn after [`render`]): 1 px outlines of the
 /// player hitbox (`Y`) and goal boxes (`g`), and a line of text with the
 /// frame number and the player position in whole pixels.
-pub fn render_debug(game: &Game, atlas: &Atlas, fb: &mut Framebuffer) {
+pub fn render_debug(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let cam = game.camera();
     for g in game.goals() {
         outline_aabb(fb, g, cam, MEADOW);
@@ -85,7 +232,8 @@ pub fn render_debug(game: &Game, atlas: &Atlas, fb: &mut Framebuffer) {
     let p = game.player();
     outline_aabb(fb, &p.hitbox(), cam, MOZART_YELLOW);
     let text = format!("F:{} X:{} Y:{}", game.frame(), p.x.to_px(), p.y.to_px());
-    Font::from_atlas(atlas).draw_text(fb, atlas, &text, 2, 2, WHITE, Some(OUTLINE));
+    ctx.font
+        .draw_text(fb, ctx.atlas, &text, 2, 2, WHITE, Some(OUTLINE));
 }
 
 fn draw_layer(layer: Layer, fb: &mut Framebuffer) {
@@ -96,23 +244,8 @@ fn draw_layer(layer: Layer, fb: &mut Framebuffer) {
 
 /// Tiles inside the camera view: the `tile_<name>` sprite if the atlas has
 /// it, else a grey-box shape per [`TileKind`].
-fn draw_tiles(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
+fn draw_tiles(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     let level = game.level();
-    // One lookup per tile name (index 0 is "no name").
-    let sprites: Vec<Option<&AtlasSprite>> = level
-        .tile_names
-        .iter()
-        .map(|n| {
-            if n.is_empty() {
-                None
-            } else {
-                atlas
-                    .sprite(&format!("{TILE_SPRITE_PREFIX}{n}"))
-                    .filter(|s| !s.anims.is_empty())
-            }
-        })
-        .collect();
-
     let col0 = cam.x.div_euclid(TILE_PX).max(0);
     let col1 = (cam.x + fb.w as i32 - 1)
         .div_euclid(TILE_PX)
@@ -128,11 +261,11 @@ fn draw_tiles(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
             };
             let x = col * TILE_PX - cam.x;
             let y = row * TILE_PX - cam.y;
-            match sprites.get(tile.name as usize).copied().flatten() {
+            match ctx.tiles.get(tile.name as usize).copied().flatten() {
                 Some(s) => {
                     let anim = &s.anims[0];
                     let rect = anim.frame(anim.frame_index_at(game.frame()), false);
-                    blit_frame(fb, atlas, rect, x, y, false);
+                    blit_frame(fb, ctx.atlas, rect, x, y, false);
                 }
                 None => match tile.kind {
                     TileKind::Empty => {}
@@ -147,25 +280,18 @@ fn draw_tiles(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
 
 /// Goals: sprite `goal` with its origin at the bottom centre of the goal
 /// cell, else a grey-box pole (2 px `Y`) with a small `r` flag.
-fn draw_goals(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
-    let sprite = atlas.sprite(GOAL_SPRITE).filter(|s| !s.anims.is_empty());
+fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     for e in &game.level().entities {
         if e.kind != EntityKind::Goal {
             continue;
         }
         let foot_x = e.col * TILE_PX + TILE_PX / 2 - cam.x;
         let foot_y = (e.row + 1) * TILE_PX - cam.y;
-        match sprite {
-            Some(s) => draw_sprite(
-                fb,
-                atlas,
-                s,
-                &s.anims[0],
-                game.frame(),
-                foot_x,
-                foot_y,
-                false,
-            ),
+        match ctx.goal {
+            Some(s) => {
+                let anim = &s.anims[0];
+                draw_sprite(fb, ctx.atlas, s, anim, game.frame(), foot_x, foot_y, false);
+            }
             None => {
                 let top = foot_y - GOAL_POLE_PX;
                 fb.fill_rect(foot_x - 1, top, 2, GOAL_POLE_PX, MOZART_YELLOW);
@@ -178,21 +304,23 @@ fn draw_goals(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
 
 /// The player: sprite `player` with its origin at the feet (bottom centre
 /// of the hitbox, D-011), else the hitbox as an `r` box with a `k` outline.
-/// Blinks while dying.
-fn draw_player(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
-    if let Mode::Dying { .. } = game.mode() {
-        if (game.frame() / DYING_FLASH_FRAMES) % 2 == 1 {
+/// Blinks while dying, counted from the moment of death.
+fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
+    if let Mode::Dying { timer } = game.mode() {
+        let elapsed = u32::from(game.tuning().game.death_frames.saturating_sub(timer));
+        if (elapsed / DYING_FLASH_FRAMES) % 2 == 1 {
             return;
         }
     }
     let p = game.player();
-    match atlas.sprite(PLAYER_SPRITE).filter(|s| !s.anims.is_empty()) {
-        Some(s) => {
+    match &ctx.player {
+        Some(look) => {
             let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
             let feet_y = (p.y + p.h).to_px() - cam.y;
-            let anim = player_anim(s, p, &game.tuning().player);
+            let anim = look.anims[PlayerAnim::of(p, &game.tuning().player).index()];
             let left = p.facing == Facing::Left;
-            draw_sprite(fb, atlas, s, anim, game.frame(), feet_x, feet_y, left);
+            let (atlas, tick) = (ctx.atlas, game.frame());
+            draw_sprite(fb, atlas, look.sprite, anim, tick, feet_x, feet_y, left);
         }
         None => {
             let (x, y) = (p.x.to_px() - cam.x, p.y.to_px() - cam.y);
@@ -201,30 +329,6 @@ fn draw_player(game: &Game, atlas: &Atlas, fb: &mut Framebuffer, cam: Camera) {
             fb.outline_rect(x, y, w, h, OUTLINE);
         }
     }
-}
-
-/// The player animation for the current state (idle, walk, run, jump,
-/// fall): the first of the wanted names the sprite has, else `idle`, else
-/// its first anim. The sprite must have at least one anim.
-fn player_anim<'a>(s: &'a AtlasSprite, p: &Player, t: &PlayerTuning) -> &'a AtlasAnim {
-    let wanted: &[&str] = if !p.on_ground {
-        if p.vy < Fx::ZERO {
-            &["jump", "fall"]
-        } else {
-            &["fall", "jump"]
-        }
-    } else if p.vx == Fx::ZERO {
-        &["idle"]
-    } else if p.vx.abs() > t.walk_speed {
-        &["run", "walk"]
-    } else {
-        &["walk", "run"]
-    };
-    wanted
-        .iter()
-        .chain(&["idle"])
-        .find_map(|name| s.anim(name))
-        .unwrap_or(&s.anims[0])
 }
 
 fn outline_aabb(fb: &mut Framebuffer, b: &Aabb, cam: Camera, rgba: u32) {
@@ -242,10 +346,14 @@ mod tests {
     use super::*;
     use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
     use crate::testutil::{self, A, B, image};
-    use jnr_core::{InputFrame, Level, Tuning};
+    use jnr_core::{InputFrame, Tuning};
 
     fn tuning() -> Tuning {
         Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap()
+    }
+
+    fn texts() -> Texts {
+        Texts::parse(include_str!("../../../content/text/de.toml")).unwrap()
     }
 
     fn level(grid: &str) -> Level {
@@ -279,8 +387,10 @@ mod tests {
     }
 
     fn rendered(game: &Game, atlas: &Atlas) -> Framebuffer {
+        let texts = texts();
+        let ctx = RenderContext::new(atlas, &texts, game.level());
         let mut fb = Framebuffer::new();
-        render(game, atlas, &mut fb);
+        render(game, &ctx, &mut fb);
         fb
     }
 
@@ -340,7 +450,7 @@ mod tests {
     }
 
     #[test]
-    fn player_anim_follows_state() {
+    fn context_resolves_player_anims_with_fallbacks() {
         let atlas = testutil::atlas(&[testutil::sprite(
             PLAYER_SPRITE,
             (0, 0),
@@ -351,39 +461,70 @@ mod tests {
                 ("fall", 0, vec![image(&["a"])]),
             ],
         )]);
-        let s = atlas.sprite(PLAYER_SPRITE).unwrap();
-        let t = tuning().player;
-        let p = *tiny_game().player();
-        let name = |p: &Player| player_anim(s, p, &t).name.clone();
-        assert_eq!(name(&p), "idle");
-        let walking = Player {
-            vx: t.walk_speed,
-            ..p
-        };
-        assert_eq!(name(&walking), "walk");
-        let running = Player {
-            vx: -t.run_speed,
-            ..p
-        };
-        assert_eq!(name(&running), "walk", "no `run` anim: falls back to walk");
-        let rising = Player {
-            on_ground: false,
-            vy: Fx(-100),
-            ..p
-        };
-        assert_eq!(name(&rising), "fall", "no `jump` anim: falls back to fall");
+        let texts = Texts::default();
+        let game = tiny_game();
+        let ctx = RenderContext::new(&atlas, &texts, game.level());
+        let name = |state| ctx.player_anim(state).unwrap().name.as_str();
+        assert_eq!(name(PlayerAnim::Idle), "idle");
+        assert_eq!(name(PlayerAnim::Walk), "walk");
+        assert_eq!(name(PlayerAnim::Run), "walk", "no `run` anim");
+        assert_eq!(name(PlayerAnim::Jump), "fall", "no `jump` anim");
+        assert_eq!(name(PlayerAnim::Fall), "fall");
+
         let only_first = testutil::atlas(&[testutil::sprite(
             PLAYER_SPRITE,
             (0, 0),
             false,
             vec![("stand", 0, vec![image(&["a"])])],
         )]);
-        let s = only_first.sprite(PLAYER_SPRITE).unwrap();
-        assert_eq!(player_anim(s, &rising, &t).name, "stand");
+        let ctx = RenderContext::new(&only_first, &texts, game.level());
+        assert_eq!(ctx.player_anim(PlayerAnim::Jump).unwrap().name, "stand");
+
+        let ctx = RenderContext::new(&atlas, &texts, game.level());
+        assert!(ctx.tiles.iter().all(Option::is_none));
+        assert!(ctx.font().is_empty());
+        let none = empty_atlas();
+        assert!(
+            RenderContext::new(&none, &texts, game.level())
+                .player_anim(PlayerAnim::Idle)
+                .is_none()
+        );
     }
 
     #[test]
-    fn dying_player_flashes_every_four_frames() {
+    fn player_state_picks_anim() {
+        let t = tuning().player;
+        let p = *tiny_game().player();
+        assert_eq!(PlayerAnim::of(&p, &t), PlayerAnim::Idle);
+        let walking = Player {
+            vx: t.walk_speed,
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&walking, &t), PlayerAnim::Walk);
+        let running = Player {
+            vx: -t.run_speed,
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&running, &t), PlayerAnim::Run);
+        let rising = Player {
+            on_ground: false,
+            vy: Fx(-100),
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&rising, &t), PlayerAnim::Jump);
+        let falling = Player {
+            on_ground: false,
+            vy: Fx(0),
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&falling, &t), PlayerAnim::Fall);
+        for (i, s) in PlayerAnim::ALL.iter().enumerate() {
+            assert_eq!(s.index(), i);
+        }
+    }
+
+    #[test]
+    fn dying_player_blinks_from_the_moment_of_death() {
         let mut game = tiny_game();
         let atlas = empty_atlas();
         let mut guard = 0;
@@ -392,25 +533,20 @@ mod tests {
             guard += 1;
             assert!(guard < 600, "the player should walk into the hazard pit");
         }
-        let mut seen = [false; 2];
+        let mut seen = Vec::new();
         for _ in 0..16 {
             let p = *game.player();
             let (x, y) = (p.x.to_px(), p.y.to_px());
-            let visible = rendered(&game, &atlas).get(x, y) == Some(OUTLINE);
-            assert_eq!(
-                visible,
-                (game.frame() / 4).is_multiple_of(2),
-                "frame {}",
-                game.frame()
-            );
-            seen[visible as usize] = true;
+            seen.push(rendered(&game, &atlas).get(x, y) == Some(OUTLINE));
             game.step(InputFrame::NONE);
         }
-        assert_eq!(seen, [true, true]);
+        let on = [true; 4];
+        let off = [false; 4];
+        assert_eq!(seen, [on, off, on, off].concat());
     }
 
     #[test]
-    fn stage_clear_shows_centred_text() {
+    fn stage_clear_shows_centred_text_from_texts() {
         // Every glyph a full 8x8 block: advance 9, space 3.
         let glyphs = CHARSET.chars().map(|_| image(&["aaaaaaaa"; 8])).collect();
         let atlas = testutil::atlas(&[testutil::sprite(
@@ -431,20 +567,34 @@ mod tests {
         }
         assert_eq!(game.mode(), Mode::StageClear);
         let fb = rendered(&game, &atlas);
-        // "ETAPPE GESCHAFFT!": 16 glyphs * 9 + 3 = 147 px -> x 86, y 86.
-        assert_eq!(Font::from_atlas(&atlas).measure(STAGE_CLEAR_TEXT), 147);
-        assert_eq!(fb.get(86, 86), Some(WHITE));
-        assert_eq!(fb.get(85, 86), Some(SKY_LIGHT));
-        assert_eq!(fb.get(94, 94), Some(OUTLINE), "shadow at +1,+1");
-        assert_eq!(before.get(86, 86), Some(SKY_LIGHT));
+        // "Etappe geschafft!": 16 glyphs * 9 + 3 - 1 (no trailing gap) = 146 px
+        // -> x (320 - 146) / 2 = 87, y 86.
+        let text = texts().get(STAGE_CLEAR_KEY).into_owned();
+        assert_eq!(text, "Etappe geschafft!");
+        assert_eq!(Font::from_atlas(&atlas).measure(&text), 146);
+        assert_eq!(fb.get(87, 86), Some(WHITE));
+        assert_eq!(fb.get(86, 86), Some(SKY_LIGHT));
+        assert_eq!(fb.get(95, 94), Some(OUTLINE), "shadow at +1,+1");
+        assert_eq!(before.get(87, 86), Some(SKY_LIGHT));
+
+        // A missing key shows the bracketed key instead of panicking.
+        let empty = Texts::default();
+        let ctx = RenderContext::new(&atlas, &empty, game.level());
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        let w = ctx.font().measure("[stage.clear]");
+        assert_eq!(fb.get((320 - w) / 2, 86), Some(WHITE));
     }
 
     #[test]
     fn debug_overlay_outlines_hitbox() {
         let game = tiny_game();
         let atlas = empty_atlas();
-        let mut fb = rendered(&game, &atlas);
-        render_debug(&game, &atlas, &mut fb);
+        let texts = texts();
+        let ctx = RenderContext::new(&atlas, &texts, game.level());
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        render_debug(&game, &ctx, &mut fb);
         assert_eq!(fb.get(34, 122), Some(MOZART_YELLOW));
         assert_eq!(fb.get(40, 130), Some(DIRNDL_RED), "outline only");
         // Goal box column 16 (x 256..272): its left edge is visible.
@@ -457,11 +607,14 @@ mod tests {
         let run = || {
             let mut game = tiny_game();
             let atlas = empty_atlas();
+            let texts = texts();
+            let ctx = RenderContext::new(&atlas, &texts, game.level());
             let mut frames = Vec::new();
             for i in 0..90 {
                 game.step(inputs[(i / 20) % 2]);
-                let mut fb = rendered(&game, &atlas);
-                render_debug(&game, &atlas, &mut fb);
+                let mut fb = Framebuffer::new();
+                render(&game, &ctx, &mut fb);
+                render_debug(&game, &ctx, &mut fb);
                 frames.push(fb);
             }
             frames
@@ -475,11 +628,19 @@ mod tests {
         );
     }
 
+    /// Smoke test only (no pixel asserts): `render` and `render_debug` run
+    /// with the real embedded atlas (incl. the real font) without panicking
+    /// while the player runs and jumps through the testbed.
     #[test]
     fn renders_the_testbed_with_the_real_atlas() {
         let level = Level::parse(include_str!("../../../content/levels/00_testbed.level")).unwrap();
         let mut game = Game::new(&level, &tuning(), 1);
-        let atlas = jnr_assets::atlas();
+        let texts = texts();
+        let ctx = RenderContext::new(jnr_assets::atlas(), &texts, game.level());
+        assert!(
+            !ctx.font().is_empty(),
+            "art/sprites/ui/font.sprite is embedded"
+        );
         let mut fb = Framebuffer::new();
         for i in 0..240u32 {
             let input = if i % 40 < 30 {
@@ -488,8 +649,8 @@ mod tests {
                 InputFrame::RIGHT.with(InputFrame::JUMP)
             };
             game.step(input);
-            render(&game, atlas, &mut fb);
-            render_debug(&game, atlas, &mut fb);
+            render(&game, &ctx, &mut fb);
+            render_debug(&game, &ctx, &mut fb);
         }
         assert!(fb.pixels.contains(&SKY_LIGHT));
     }
