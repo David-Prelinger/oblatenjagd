@@ -39,6 +39,8 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Two engineers editing the same tree break each other's `cargo xtask check` (and block the orchestrator's Stop hook).
 - Parallel code tasks therefore run in isolated git worktrees, each with its own `CARGO_TARGET_DIR` (`/workspaces/.cargo-target/wt-<task>`), and commit on their own branch; the orchestrator merges them into the milestone branch.
 
+- (added in M1) The orchestrator deletes `/workspaces/.cargo-target/wt-<task>` when it merges or abandons that worktree; reviewers use one shared `wt-review` dir (deleted after each review). Each worktree target dir is 1–3 GB, and the 59 GB disk ran full once.
+
 ## D-010 Atlas data is owned and built once at startup
 - The atlas types (`Atlas`, `AtlasSprite`, `AtlasAnim`) are plain owned data (`Vec`/`String`) shared by build time and runtime; `jnr_assets::atlas()` builds the atlas once via `OnceLock` from embedded RGBA bytes and generated metadata.
 - One type family instead of separate `&'static` statics; the cost is one pixel copy at startup.
@@ -102,3 +104,29 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-020 Sprite catalog and autotiling (M1)
 - `docs/sprite-catalog.md` is the contract between art and engine: sprite names, sizes, origins, animation names. The engine falls back to grey boxes for missing sprites, so art and code proceed in parallel.
 - Autotiling without a new artkit header: a tile sprite with a 16-frame animation `auto` is drawn with frame = 4-neighbour mask (N=1, E=2, S=4, W=8; level edge counts as same). The `tileset` header stays unsupported.
+
+## D-021 Parallax layers and procedural backgrounds (M1, engine)
+- Background layers are `(sprite, factor in sixteenths)` pairs, back to front, set on the `RenderContext` (`with_background`); the level format provides the list later. Each layer is tiled horizontally from `-((camera.x * factor / 16) mod width)` and **bottom-aligned to the screen bottom**, with no vertical parallax for now (simple and predictable for art; revisit if levels scroll a lot vertically). Integer sixteenths keep the renderer free of floats.
+- The flat sky fill stays behind the layers unless the first layer is fully opaque and at least screen-tall (precomputed once), so a partial layer list never shows stale framebuffer pixels.
+- Generators live in `jnr-artkit::generators` (the requested `gen` name is a reserved keyword in Rust 2024) and turn `art/generators/*.toml` entries into ordinary `SpriteSource`s, so lints, compile, atlas and previews treat generated and hand-made sprites the same. Params are parsed with `serde` + `toml` (`Spanned` values give `file:line:col` errors); this makes `serde`/`toml` default dependencies of `jnr-artkit` (pure, wasm-safe, already used by `jnr-core`).
+- Generated sprites are compiled into the game atlas like all art (the four Stage 1 layers add ~0.9 MB of raw RGBA to the embedded atlas).
+- Autotile masks are computed from the live level while drawing (4 lookups per visible tile), not cached in the `RenderContext`, so tiles that change during play (bricks) stay correct; only the per-tile-name look is precomputed.
+
+## D-022 Level format v2, entities, power states, level reset (M1, task E1)
+- Legend values: a tile name, `{ tile = "...", contains = "oblate|mozartkugel|zaunerstollen|oblaten_10" }` (only `brick` and `oblaten_box`; a box defaults to `oblate`), or `{ entity = "..." }`; signs take `text = "<key>"` (required) and `style = "street|bus|ortsende"`. Unknown fields are errors. `[meta]`: `time_limit` is required (1..=999), `background = [{ sprite, factor, y }]` (factor in 1/16 of the camera speed, 0..=32; optional `y` = px above the screen bottom, 0..=180, default 0; orchestrator decision), optional `min_jump_window`. `RenderContext::for_level` wires it into `with_background(&[(sprite, factor, y)])`; the app, `replay --shots`/goldens, the solver images and `xtask scene` (unless `--bg` overrides it) use it.
+- Level spawns are `SpawnKind` (level.rs); runtime entities are `entity::EntityKind` in one `Vec<Entity>` (enum + match, per-kind update). Level entities activate when their left edge is within `game.activate_margin` (320 px, one screen) of the right screen edge, and are removed `game.despawn_margin` px behind the camera or below the level. Order: spawns in grid order, then spawned entities appended.
+- The current tile grid lives in `Game` (copy-on-write `Arc<TileMap>`), with a sorted list of changed cells for the hash; `Level` stays the start state. A death resets tiles, entities and the timer; score, Oblaten, lives and the checkpoint survive. Lives 0 → `Mode::GameOver`; START (after `game_over_frames`) restarts from the stage start with 3 lives, score 0, Oblaten 0.
+- Power states: Normal/Big hitbox heights from tuning (feet stay in place), a 30-frame freeze for growing and shrinking (the whole game stands still, timer included), `invulnerable_frames` counted after the freeze (so 120 frames of play without harm). Hazards, pits and time-up kill regardless.
+- Enemies are parsed and placed now as standing placeholders with the generic contact rules (stomp = falling and feet above the enemy's middle on the previous frame; otherwise hurt; Fiaker bounces only; SMB chain with the Verkäufer starting at 200), so hurt/stomp are testable; movement comes with the enemy task.
+- (after review) Contact is order-independent: items and stomps are resolved for every touched entity first, hurts afterwards (one hurt per frame). Every enemy whose stomp rule holds in a frame is stomped (each counts in the chain); the player bounces once and gets **one `Stomped` event per frame**. The stomp rule uses the enemy's `prev_y` (snapshot before entities move) and the player's previous feet. `Entity` has per-kind `state: u8`, `dir: i8` (enemies start at -1), `base_y` for the enemy task; all hashed.
+- (after review) At the lives cap an extra life does nothing: no `ExtraLife` event, no „+1 Leben" popup (points still count). Levels have at most 65 535 entity spawns (parse error). The Festungsbahn size is `platforms.festungsbahn_size` in tuning; frame counts where 0 breaks behaviour are validated ≥ 1.
+- A head bump hits only the solid tile nearest the player's centre column. A brick with contents behaves like a box. Static Oblaten give no popup (SMB); everything else that scores shows one.
+- `Game::world_hash` is a coarse progress hash (no timers, no cosmetic entities) used by the solver's de-duplication key; `state_hash` hashes everything exactly.
+- Replay expectations `oblaten>=N` (HUD counter), `score>=N`, `lives=N`, `state=game_over`.
+- Renderer: Zuckerschock uses `player_big` (fallback `player`) with the same anim selection; `PlayerAnim::Skid` (anim `skid`, fallback `walk`) while braking against the motion on the ground, drawn facing the direction of motion (sprite catalog), decided in the renderer so core's `facing` stays the input direction.
+
+## D-023 QA rulings on items and stomping (orchestrator, M1)
+- Stomp boundary stays as specified (D-017): a fall whose previous-frame feet are below the enemy's middle is a side hit, even near the corner. Generous enough for medium difficulty; revisit only if playtests disagree.
+- Reaching 100 Oblaten shows the „+1 Leben" popup like the Zaunerstollen (unless at the lives cap).
+- Goal and time-up in the same frame: the goal wins.
+- Popups freeze during the 30-frame transformation freeze like everything else.

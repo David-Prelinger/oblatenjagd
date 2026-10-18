@@ -1,0 +1,42 @@
+# Hand-written route through content/levels/00_items.level (grey box):
+# Oblatenkiste, Mozartkugel (Zuckerschock), brick break, Oblaten,
+# oblaten_10 brick (3 hits), Zaunerstollen (+1 life), hurt by the
+# Selfie-Tourist (back to Normal, walks through during the i-frames),
+# checkpoint, jump over the Salzach pit, goal.
+# Score: 200 + 1000 + 50 + 5 * 200 + 3 * 200 = 2850; Oblaten 1 + 5 + 3 = 9.
+level  = items
+seed   = 1
+source = handwritten
+expect = complete frames=1308..1308 deaths=0 state=stage_clear
+expect = oblaten>=9 score>=2850 lives=4 no_event=Died
+---
+R 28
+- 30
+J 10      # Oblatenkiste: Oblate
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+- 280     # the Mozartkugel rolls to the wall and back: Zuckerschock
+L 14
+- 30
+J 10      # break the brick
+- 20
+R 60
+RJ 30     # over the wall
+R 111     # through the Oblaten
+- 30
+J 10      # oblaten_10 brick, 3 times
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10      # Zaunerstollen box
+- 30
+RB 60     # catch the Zaunerstollen
+R 115     # into the Selfie-Tourist: hurt, then through it; checkpoint
+RJ 20     # over the Salzach pit
+R 200     # to the goal

@@ -213,10 +213,13 @@ impl Node {
 }
 
 /// Coarse state for de-duplication within a frame bucket: position in 4 px
-/// cells, speed in 1/4 px (x) and 1/2 px (y) per frame, grounded or not.
-/// Of several nodes with the same key only the best-ranked one is kept.
+/// cells, speed in 1/4 px (x) and 1/2 px (y) per frame, grounded or not,
+/// plus [`Game::world_hash`] (changed tiles, entities, checkpoint, power
+/// state), so states that differ in collected items, broken bricks or the
+/// power-up are kept apart. Of several nodes with the same key only the
+/// best-ranked one is kept.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct StateKey(i32, i32, i32, i32, bool);
+struct StateKey(i32, i32, i32, i32, bool, u64);
 
 impl StateKey {
     fn of(game: &Game) -> StateKey {
@@ -227,6 +230,7 @@ impl StateKey {
             p.vx.raw() >> 6,
             p.vy.raw() >> 7,
             p.on_ground,
+            game.world_hash(),
         )
     }
 }
@@ -1079,7 +1083,7 @@ fn solve_and_report(
     let mut files = Files::default();
 
     let texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, level);
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, level);
     let dir = &out.preview;
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     if sol.search.complete() {
@@ -1605,9 +1609,11 @@ mod tests {
         assert!(!ok, "{out}");
         assert!(out.contains("missing solver replay"), "{out}");
         assert!(out.contains("`cargo xtask solve testbed --write`"), "{out}");
-        assert!(note.starts_with("testbed: "), "{note}");
-        // With the replay present (any content: the `replays` step checks it).
+        assert!(out.contains("`cargo xtask solve items --write`"), "{out}");
+        assert!(note.contains("testbed: "), "{note}");
+        // With the replays present (any content: the `replays` step checks them).
         fs::write(dirs.replays.join("testbed_solver.replay"), "").unwrap();
+        fs::write(dirs.replays.join("items_solver.replay"), "").unwrap();
         let (ok, out, _) = verify_into(&root(), &dirs);
         assert!(ok, "{out}");
     }

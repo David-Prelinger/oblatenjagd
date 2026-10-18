@@ -27,10 +27,15 @@ cargo xtask filmstrip <file|name> [--every N]
     Contact sheet of every Nth frame (default 30, plus the last frame),
     labelled with the frame number -> preview/filmstrips/<replay>.png
 
-cargo xtask scene <level-id> --x <px>
+cargo xtask scene <level-id> --x <px> [--bg <sprite:factor,...>]
     Renders the level with the camera's left edge at x (clamped to the level);
     the player stands on the topmost floor where the camera would follow it
     -> preview/scenes/<level>_<px>.png (1x) and <level>_<px>_x4.png
+    --bg sets parallax background layers back to front, each a sprite name and
+    a scroll factor in sixteenths of the camera movement (0 = static sky,
+    16 = with the playfield), e.g.
+    --bg bg_sky_salzburg:0,bg_untersberg:3,bg_festung:8,bg_rooftops:13
+    -> preview/scenes/<level>_<px>_bg.png (and _bg_x4.png)
 
 Images go to $CARGO_TARGET_DIR/preview/ (or ./target/preview).
 ";
@@ -90,7 +95,7 @@ pub fn play(root: &Path, path: &Path, render_frames: &[u32]) -> Result<Played, S
         content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
     let tuning = content::tuning(root)?;
     let texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, &level);
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, &level);
 
     let mut hashes = Vec::new();
     let mut images = Vec::new();
@@ -329,18 +334,72 @@ fn filmstrip(root: &Path, path: &Path, every: u32) -> Result<(), String> {
     Ok(())
 }
 
-/// `cargo xtask scene <level-id> --x <px>`.
+/// Usage line of `cargo xtask scene`.
+const SCENE_USAGE: &str = "usage: cargo xtask scene <level-id> --x <px> [--bg <sprite:factor,...>]";
+
+/// Arguments of `cargo xtask scene`.
+#[derive(Debug, PartialEq, Eq)]
+pub struct SceneArgs {
+    pub id: String,
+    pub x: i32,
+    /// Background layers (sprite, factor in sixteenths), back to front.
+    pub bg: Vec<(String, u32)>,
+}
+
+/// `<level-id> --x <px> [--bg <list>]` in any order.
+pub fn parse_scene_args(args: &[&str]) -> Result<SceneArgs, String> {
+    let (mut id, mut x, mut bg) = (None, None, Vec::new());
+    let mut it = args.iter();
+    while let Some(&a) = it.next() {
+        match a {
+            "--x" => {
+                let v = it.next().ok_or("--x needs a number")?;
+                x = Some(
+                    v.parse::<i32>()
+                        .map_err(|_| format!("bad --x `{v}` (whole pixels)"))?,
+                );
+            }
+            "--bg" => bg = parse_bg_list(it.next().ok_or("--bg needs a list")?)?,
+            _ if id.is_none() && !a.starts_with('-') => id = Some(a.to_owned()),
+            _ => return Err(format!("unexpected argument `{a}`")),
+        }
+    }
+    match (id, x) {
+        (Some(id), Some(x)) => Ok(SceneArgs { id, x, bg }),
+        _ => Err(SCENE_USAGE.to_owned()),
+    }
+}
+
+/// `sprite:factor,sprite:factor,...` (factor in sixteenths, 0..=64).
+pub fn parse_bg_list(s: &str) -> Result<Vec<(String, u32)>, String> {
+    s.split(',')
+        .map(|item| {
+            let (name, factor) = item
+                .split_once(':')
+                .ok_or_else(|| format!("bad --bg item `{item}`: expected sprite:factor"))?;
+            let factor = factor
+                .parse::<u32>()
+                .ok()
+                .filter(|f| *f <= 64)
+                .ok_or_else(|| format!("bad factor in `{item}`: sixteenths 0..=64"))?;
+            if name.is_empty() {
+                return Err(format!("bad --bg item `{item}`: missing sprite name"));
+            }
+            Ok((name.to_owned(), factor))
+        })
+        .collect()
+}
+
+/// `cargo xtask scene <level-id> --x <px> [--bg <list>]`.
 pub fn run_scene(root: &Path, args: &[String]) -> ExitCode {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    let (id, x) = match args.as_slice() {
-        [id, "--x", x] | ["--x", x, id] => match x.parse::<i32>() {
-            Ok(x) => (*id, x),
-            Err(_) => return usage_err(&format!("bad --x `{x}` (whole pixels)")),
-        },
-        ["help" | "-h" | "--help"] => return usage_ok(),
-        _ => return usage_err("usage: cargo xtask scene <level-id> --x <px>"),
-    };
-    exit(scene(root, id, x))
+    if let ["help" | "-h" | "--help"] = args.as_slice() {
+        return usage_ok();
+    }
+    match parse_scene_args(&args) {
+        Ok(a) => exit(scene(root, &a)),
+        Err(msg) => usage_err(&msg),
+    }
 }
 
 /// A game on `level` with the camera's left edge at `camera_x` (clamped by
@@ -357,11 +416,24 @@ pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> (G
     (game, player_x != wanted)
 }
 
-fn scene(root: &Path, id: &str, x: i32) -> Result<(), String> {
+fn scene(root: &Path, args: &SceneArgs) -> Result<(), String> {
+    let (id, x) = (args.id.as_str(), args.x);
     let level = content::find_level(root, id)?;
     let tuning = content::tuning(root)?;
     let texts: Texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, &level);
+    let atlas = jnr_assets::atlas();
+    for (name, _) in &args.bg {
+        if atlas.sprite(name).is_none() {
+            eprintln!("warning: --bg sprite `{name}` is not in the atlas; layer skipped");
+        }
+    }
+    // `--bg` replaces the level's own `[meta].background`.
+    let ctx = if args.bg.is_empty() {
+        RenderContext::for_level(atlas, &texts, &level)
+    } else {
+        let bg: Vec<(&str, u32, u32)> = args.bg.iter().map(|(n, f)| (n.as_str(), *f, 0)).collect();
+        RenderContext::new(atlas, &texts, &level).with_background(&bg)
+    };
     let (game, clamped) = scene_game(&level, &tuning, x);
     if clamped {
         eprintln!(
@@ -372,7 +444,9 @@ fn scene(root: &Path, id: &str, x: i32) -> Result<(), String> {
         );
     }
     let dir = preview_dir(root, "scenes")?;
-    let path = write_with_view_copy(&dir, &format!("{id}_{x}"), &render_image(&game, &ctx))?;
+    let suffix = if args.bg.is_empty() { "" } else { "_bg" };
+    let name = format!("{id}_{x}{suffix}");
+    let path = write_with_view_copy(&dir, &name, &render_image(&game, &ctx))?;
     println!(
         "camera x={} (player x={}) -> {}",
         game.camera().x,
@@ -512,6 +586,35 @@ mod tests {
         assert!(g.player().on_ground);
         // Ground (row 12) under column (600 + follow_x) / 16.
         assert_eq!((g.player().y + g.player().h).to_px(), 12 * 16);
+    }
+
+    #[test]
+    fn scene_args_with_and_without_backgrounds() {
+        let a = parse_scene_args(&["testbed", "--x", "40"]).unwrap();
+        assert_eq!((a.id.as_str(), a.x, a.bg.len()), ("testbed", 40, 0));
+        let a = parse_scene_args(&["--bg", "bg_sky:0,bg_far:3", "--x", "-8", "t"]).unwrap();
+        assert_eq!(a.id, "t");
+        assert_eq!(a.x, -8);
+        assert_eq!(a.bg, [("bg_sky".to_owned(), 0), ("bg_far".to_owned(), 3)]);
+        assert!(parse_scene_args(&["t"]).unwrap_err().contains("usage"));
+        assert!(
+            parse_scene_args(&["t", "--x", "a"])
+                .unwrap_err()
+                .contains("bad --x")
+        );
+        assert!(parse_scene_args(&["t", "--x", "1", "u"]).is_err());
+        assert!(
+            parse_bg_list("bg_sky")
+                .unwrap_err()
+                .contains("sprite:factor")
+        );
+        assert!(
+            parse_bg_list("bg_sky:x")
+                .unwrap_err()
+                .contains("sixteenths")
+        );
+        assert!(parse_bg_list("bg_sky:65").is_err());
+        assert!(parse_bg_list(":3").unwrap_err().contains("missing sprite"));
     }
 
     #[test]

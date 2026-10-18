@@ -1,0 +1,8 @@
+# Stands still until the 100 s timer of 00_items runs out: death at
+# frame 6000 (100 * 60), respawn with the timer full.
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=6000..6000 deaths=1 lives=2 state=playing
+---
+- 6070

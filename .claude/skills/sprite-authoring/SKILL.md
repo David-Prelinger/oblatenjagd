@@ -44,4 +44,5 @@ frame squished 0
 - Use dithering only in backgrounds.
 - Don't put the outline colour inside a shape for details; use a dark shade of the material.
 - For palette-swapped variants use `variant = … remap a->b` instead of copying grids.
-- Large art (mountains, facades, water) → use a generator, don't hand-type 320-wide grids.
+- Large art (mountains, facades, water) → use a generator, don't hand-type 320-wide grids. Generators `sky`, `mountains`, `skyline` exist; format and params in `docs/art-pipeline.md` ("Generator file format"). Preview with `cargo xtask sprites preview bg_` and in context with `cargo xtask scene <level> --x <px> --bg bg_sky_salzburg:0,bg_untersberg:3,...`.
+- Autotiled tiles: a 16-frame anim `auto`, frame index = neighbour mask (N=1, E=2, S=4, W=8; same tile name or level edge = set).

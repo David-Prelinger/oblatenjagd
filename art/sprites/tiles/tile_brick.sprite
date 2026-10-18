@@ -1,0 +1,23 @@
+# Salzburg brick (breakable): n body, E lit edges, R mortar, k outline.
+sprite = tile_brick
+size   = 16x16
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kEEEEEEEREEEEEEk
+kEnnnnnnREnnnnnk
+knnnnnnnRnnnnnnk
+knnnnnnRRnnnnnRk
+kRRRRRRRRRRRRRRk
+kEEEREEEEEEEREEk
+kEnnREnnnnnnREnk
+knnnRnnnnnnnRnnk
+knnRRnnnnnnRRnRk
+kRRRRRRRRRRRRRRk
+kEEEEEEEREEEEEEk
+kEnnnnnnREnnnnnk
+knnnnnnnRnnnnnnk
+knnnnnnRRnnnnnRk
+kkkkkkkkkkkkkkkk

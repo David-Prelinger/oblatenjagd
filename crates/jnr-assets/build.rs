@@ -1,7 +1,8 @@
 //! Compiles the text art sources into embedded data via `jnr-artkit`.
 //!
-//! Loads `art/palettes/main.palette` and every `art/sprites/**/*.sprite`,
-//! runs the art lints, packs one atlas and writes to `$OUT_DIR`:
+//! Loads `art/palettes/main.palette`, every `art/sprites/**/*.sprite` and
+//! the sprites generated from `art/generators/*.toml`, runs the art lints,
+//! packs one atlas and writes to `$OUT_DIR`:
 //! - `atlas.rgba`: raw RGBA8 pixels
 //! - `atlas.rs`: `fn generated_atlas(pixels) -> Atlas` (metadata)
 //! - `assets.rs`: small constants

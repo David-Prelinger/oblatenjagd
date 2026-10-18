@@ -39,7 +39,8 @@ Commands:
             (see `cargo xtask solve help`)
   replay    <file|name|--all> [--shots]   run replays (expectations + determinism)
   filmstrip <file|name> [--every N]       contact sheet of every Nth frame
-  scene     <level-id> --x <px>           render the level at camera x
+  scene     <level-id> --x <px> [--bg <sprite:factor,...>]
+                                          render the level at camera x (with parallax layers)
   golden    [--accept <name>|--all]       compare / accept golden screenshots
             (see `cargo xtask replay help`, `cargo xtask golden help`)
   wasm      [--debug] [--serve] [--port N]: build + assemble $CARGO_TARGET_DIR/web
