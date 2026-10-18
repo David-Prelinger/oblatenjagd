@@ -132,7 +132,7 @@ mod tests {
 
     fn level(id: &str) -> Level {
         let text = format!(
-            "[meta]\nid = \"{id}\"\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP\n'''\n"
+            "[meta]\nid = \"{id}\"\ntime_limit = 1\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP\n'''\n"
         );
         Level::parse(&text).unwrap()
     }

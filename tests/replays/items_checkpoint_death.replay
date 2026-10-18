@@ -1,0 +1,39 @@
+# Like items_route up to the checkpoint, then walks into the Salzach pit:
+# death, the level resets, the player respawns at the checkpoint as Normal
+# with the timer full; score, Oblaten and lives (4 - 1) survive.
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=1145..1145 deaths=1 state=playing lives=3
+expect = oblaten>=9 score>=2850 player_x>=640
+---
+R 28
+- 30
+J 10      # Oblatenkiste: Oblate
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+- 280     # Zuckerschock
+L 14
+- 30
+J 10      # break the brick
+- 20
+R 60
+RJ 30     # over the wall
+R 111     # through the Oblaten
+- 30
+J 10      # oblaten_10 brick, 3 times
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10      # Zaunerstollen box
+- 30
+RB 60     # catch the Zaunerstollen
+R 185     # hurt, checkpoint at 1082, into the pit at 1145
+- 60      # dying; respawn at the checkpoint (frame 1205)
+R 30
