@@ -14,7 +14,7 @@
 //! - [`player`]: run/jump physics, power states
 //! - [`entity`]: items, particles, popups, props, enemies (`Vec<Entity>`)
 //! - [`enemies`]: enemy patterns, thrown Mozartkugeln, defeated enemies
-//! - [`platform`]: the Festungsbahn car (moving one-way platform)
+//! - [`platform`]: the Festungsbahn car and the Gondel (moving one-way platforms)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)

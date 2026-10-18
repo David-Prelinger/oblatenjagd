@@ -714,7 +714,7 @@ impl Game {
         self.events.push(Event::BrickBroken);
     }
 
-    fn set_tile(&mut self, col: i32, row: i32, tile: Tile) {
+    pub(crate) fn set_tile(&mut self, col: i32, row: i32, tile: Tile) {
         let Some(i) = self.map.index(col, row) else {
             return;
         };
@@ -759,7 +759,7 @@ impl Game {
             if let Some(new) = e.update(&ctx) {
                 spawned.push(new);
             }
-            if e.kind == EntityKind::Festungsbahn {
+            if e.kind.is_platform() {
                 crate::platform::carry(
                     &mut self.player,
                     old,
@@ -772,8 +772,7 @@ impl Game {
             }
             // Moving platforms never despawn (D-027): a player who fell
             // off must be able to wait for the car.
-            let platform = e.kind == EntityKind::Festungsbahn;
-            if !platform && (e.right() < despawn_x || e.y >= bottom) {
+            if !e.kind.is_platform() && (e.right() < despawn_x || e.y >= bottom) {
                 e.removed = true;
             }
         }
@@ -829,6 +828,9 @@ impl Game {
                         spawned.push(popup(Popup::ExtraLife, fx, e.y));
                     }
                 }
+                EntityKind::Enemy(_) if !e.harmful() => {}
+                // A swarm hurts on any contact, also from above.
+                EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
                 EntityKind::Enemy(kind) => {
                     // Stomp: falling, and the feet were above the enemy's
                     // middle on the previous frame (both positions from
@@ -851,7 +853,7 @@ impl Game {
                         hurt = true;
                     }
                 }
-                EntityKind::Thrown => hurt = true,
+                EntityKind::Thrown | EntityKind::Note => hurt = true,
                 EntityKind::PoppedOblate
                 | EntityKind::Defeated(_)
                 | EntityKind::Debris
@@ -859,7 +861,8 @@ impl Game {
                 | EntityKind::Bump
                 | EntityKind::Checkpoint
                 | EntityKind::Sign
-                | EntityKind::Festungsbahn => {}
+                | EntityKind::Festungsbahn
+                | EntityKind::Gondel => {}
             }
         }
         if hurt && !self.touches_goal() {
@@ -900,12 +903,13 @@ impl Game {
     }
 
     /// Points (or a life) for a stomp in the current chain; returns its
-    /// popup (none for a life at the lives cap).
+    /// popup (none for a life at the lives cap). A chain started by an
+    /// enemy worth 200 starts at 200 (D-046, [`EnemyKind::chain_start`]).
     pub(crate) fn stomp_reward(&mut self, kind: EnemyKind, x: Fx, y: Fx) -> Option<Entity> {
         let chain = &self.tuning.score.stomp_chain;
         let mut idx = usize::from(self.player.stomp_chain);
-        if idx == 0 && kind == EnemyKind::MozartkugelVerkaeufer {
-            idx = 1;
+        if idx == 0 {
+            idx = kind.chain_start();
         }
         self.player.stomp_chain = (idx + 1).min(usize::from(u8::MAX)) as u8;
         match chain.get(idx) {
@@ -1097,8 +1101,8 @@ impl Game {
     /// Coarse hash of the level progress, for the solver's de-duplication
     /// key: changed tiles, `oblaten_10` progress, the checkpoint, the
     /// player's power state and every gameplay entity (spawn, position in
-    /// 4 px cells, direction); for enemies, projectiles and the
-    /// Festungsbahn also their state, facing and pattern counters (moving
+    /// 4 px cells, direction); for enemies, projectiles and the moving
+    /// platforms also their state, facing and pattern counters (moving
     /// enemies at the same spot can be at different points of their
     /// pattern). Cosmetic entities (popups, debris, bumps, defeated
     /// enemies) and item timers are left out, so states that only differ
@@ -1128,7 +1132,11 @@ impl Game {
             h.bool(e.rising(&self.tuning));
             if matches!(
                 e.kind,
-                EntityKind::Enemy(_) | EntityKind::Thrown | EntityKind::Festungsbahn
+                EntityKind::Enemy(_)
+                    | EntityKind::Thrown
+                    | EntityKind::Note
+                    | EntityKind::Festungsbahn
+                    | EntityKind::Gondel
             ) {
                 h.bool(e.active);
                 h.u8(e.state);

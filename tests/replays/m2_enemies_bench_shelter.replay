@@ -1,0 +1,15 @@
+# After the walker: walks up to the park bench (it stops her) while the
+# Blasmusiker's notes vanish on it, then stands on the bench: the notes
+# fly below her feet. Never hit.
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = score=100 deaths=0 no_event=Died state=playing player_x>=395
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+R 200
+RJ 20
+- 300

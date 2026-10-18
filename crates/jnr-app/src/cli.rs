@@ -284,7 +284,7 @@ mod tests {
     fn bad_input_is_reported() {
         assert!(
             error(&["--level", "atlantis"])
-                .contains("embedded levels: enemies, items, testbed, salzburg")
+                .contains("embedded levels: enemies, items, m2_enemies, testbed, salzburg")
         );
         assert!(error(&["--seed"]).contains("needs a value"));
         assert!(error(&["--seed", "-1"]).contains("not a valid"));

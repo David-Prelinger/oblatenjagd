@@ -21,6 +21,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_items.level"),
     ),
     (
+        "m2_enemies",
+        include_str!("../../../content/levels/00_m2_enemies.level"),
+    ),
+    (
         "testbed",
         include_str!("../../../content/levels/00_testbed.level"),
     ),

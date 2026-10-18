@@ -1,0 +1,51 @@
+# Grey-box test level for the M2 enemies and the Gondel (M2 task E11; not
+# part of the journey). Sections (columns): start 0-4; a Nordic-Walker on a
+# 1-tile planter (10-15) that turns at its ledges; a park bench (24-25,
+# 1 tile, shelters from notes) and a Blasmusiker at street level at 30
+# (notes 10 px above the street: jump them, hide behind the bench or stomp
+# him); a 2-tile boulder at 38-39 and a parked E-Biker at 48 (triggers
+# within 9 tiles, crashes into the boulder: „Hoppala!"); a swarm high above
+# the path at 56 (row 7, run right, len 2: walking under it is safe) and a
+# swarm crossing the path at 64 (row 11, run up, len 3: wait for the
+# opening); Gondel A from the station platform (72-75, 1 tile up; cabin
+# roof 8 px above it) over a 1-deep trench (77-82, recovery by stairs) up
+# [6, -1] to a knoll (84-89, top 2 tiles up); Gondel B from the knoll's edge
+# [8, -2] across a 10-tile death pit (90-99) to a ledge 2 tiles higher
+# (100-103; too far to jump) with stairs down; goal at 109. A `talstation`
+# prop (back layer) behind the station.
+# Replays: tests/replays/m2_enemies_*.replay.
+
+[meta]
+id = "m2_enemies"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"w" = { entity = "nordic_walker" }
+"b" = { entity = "blasmusiker" }
+"e" = { entity = "e_biker" }
+"s" = { entity = "bienenschwarm", dir = 0, len = 2 }
+"S" = { entity = "bienenschwarm", dir = 2, len = 3 }
+"A" = { entity = "gondel", to = [6, -1] }
+"B" = { entity = "gondel", to = [8, -2] }
+"t" = { entity = "prop", sprite = "talstation", layer = "back" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+................................................................................................................
+................................................................................................................
+................................................................................................................
+................................................................................................................
+................................................................................................................
+................................................................................................................
+................................................................................................................
+........................................................s.......................................................
+....................................................................................................####........
+..........................................................................t.........................####........
+............w.........................##............................................######B.........#####.......
+..P.......######........##....b.......##........e...............S.......####A.......######..........######...G..
+#############################################################################......#######..........############
+##########################################################################################..........############
+'''

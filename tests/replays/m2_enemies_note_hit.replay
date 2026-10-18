@@ -1,0 +1,15 @@
+# Steps down off the bench towards the Blasmusiker into a note train:
+# a note hits her as Normal (frame 364).
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=364..364 deaths=1 score=100
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+R 200
+RJ 20
+- 21
+R 60
