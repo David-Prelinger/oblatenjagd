@@ -1,0 +1,18 @@
+# Futterschaelchen (bee bonus marker, Brunnwinkl): von Frisch's sugar-water
+# dish on blue paper. A shallow glass dish (i/w, m shadow bottom right) with
+# sugar water s on a flat sky-blue card (S top, b front edge), k outline.
+# Never gold and never round from the side (no Oblate look). Front layer.
+sprite = futterschaelchen
+size   = 16x8
+origin = 8,8
+anim   = idle frames=1
+---
+frame idle 0
+................
+....kkkkkkkk....
+...kwsssssssk...
+.kkkiwwiiiiikkk.
+kSSSkiiiiiimkSSk
+kSSSSkkkkkkkSSbk
+kbbbbbbbbbbbbbbk
+.kkkkkkkkkkkkkk.
