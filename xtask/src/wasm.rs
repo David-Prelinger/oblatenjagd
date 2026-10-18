@@ -58,7 +58,7 @@ const PROMPT_BAND: (i32, i32) = (
 );
 /// Changes of the prompt band the probe must see: at most one while the
 /// title first appears, then the blink (every 30 frames, about 9 changes in
-/// the 5 s virtual-time budget). A frozen frame or a dead loop shows ≤ 1.
+/// the 5 s virtual-time budget). A frozen game frame shows ≤ 1 (the probe drives the frame export itself, so it does not prove the page's requestAnimationFrame loop).
 const MIN_PROMPT_CHANGES: u32 = 3;
 
 #[derive(Debug, PartialEq, Eq)]
