@@ -1,0 +1,152 @@
+# QA (M1 Stage 1): a relaxed, curious, imperfect full run at walking speed
+# (handwritten, no solver prefix). Busbahnhof: walks under the box row,
+# bumps the ?-box from below, climbs onto the brick row and walks over its
+# Oblaten, steps. Mirabellgarten: jumps over tourist #1 while it takes a
+# selfie, bumps the M-box, eats the Mozartkugel after the hedge wall turns it
+# back (PowerUp), stomps tourist #2 on the walled hedge top (D-038), breaks
+# two planter bricks from below as Zuckerschock (tourist #3 knocked out),
+# climbs the Pegasus basin and plinth for the Oblaten arc, stomps tourist #4
+# in the Zwergerl trench. Makartsteg: stomps Taube #1 over the deck, walking
+# jumps over the four gaps. Getreidegasse: past the checkpoint, back to bump
+# the M-box at col 132 as Zuckerschock (points only), stomps a tourist, up
+# onto Z1, a running jump enters the Erker from the side under the burger sign
+# (one-way) and jumps back out onto the sign, a normal jump from the sign
+# (headroom since D-038) onto Z3, Z4, stomps Verkaeufer #1, walks under the
+# stand. Domplatz: hides on the Residenzbrunnen top while the Fiaker charges
+# through, gets hit by the stage tourist (Hurt: back to Normal), jumps onto the
+# Jedermann stage and lets the flying Taube pass over her, waits under the
+# grandstand for the risen Sphaera Taube to pass (D-038 stagger), over the
+# Sphaera onto the car, rides up and takes a running jump to the Wurstkranz
+# (5000). 60 of 81 Oblaten, 4158 frames (69 s).
+level  = salzburg
+source = handwritten
+expect = complete frames=4158..4158 deaths=0 lives=3 state=stage_clear
+expect = oblaten>=60 score>=19750
+expect = event=PowerUp event=BrickBroken event=CheckpointReached event=Hurt
+---
+R 130
+- 40
+J 20
+- 40
+L 25
+- 25
+RJ 40
+R 60
+RJ 12
+R 20
+J 10
+R 80
+R 80
+RJ 14
+R 48
+RJ 8
+R 10
+- 10
+- 6
+R 14
+- 4
+J 14        # bump the M-box
+- 86        # the hedge wall turns the Mozartkugel back: PowerUp
+RJ 24       # stomp tourist #2 on the walled hedge top
+R 12
+RJ 10
+R 10
+- 6
+RJ 12       # out of the hedge top, down to the street
+R 20
+- 10
+R 40        # under the planter
+- 4
+J 10        # break a planter brick (tourist #3 knocked out)
+R 14
+J 8         # and another one
+R 60        # to the Pegasus basin
+- 10
+RJ 16
+R 4
+- 16
+J 30
+- 20
+RJ 30
+R 40
+R 10
+RJ 12
+R 16
+RJ 24
+R 30
+R 34
+RJ 20
+R 30
+R 59
+RJ 30
+R 34
+RJ 30
+R 45
+RJ 30
+R 87
+RJ 30
+R 155
+L 34
+- 20
+J 12
+- 40
+R 10
+- 60
+R 16
+RJ 20
+R 6
+RJ 24
+R 40
+- 10
+L 14
+J 30
+- 4
+RB 16
+RBJ 30
+R 6
+- 20
+R 30
+- 30
+L 10
+- 10
+J 30
+- 20
+R 20
+- 20
+R 10
+RJ 30
+R 10
+- 30
+R 30
+RJ 24
+R 30
+- 10
+R 30
+RJ 30
+R 60
+R 142
+RJ 24       # onto the Residenzbrunnen (all five columns solid, D-038)
+R 14
+- 186       # the Fiaker charges through underneath
+R 60
+R 160
+R 6
+R 34
+RJ 20       # onto the Jedermann stage
+R 10
+- 100       # the flying Taube passes over her head, the grandstand tourists walk under the stage
+- 40
+R 90        # off the stage, under the grandstand
+- 100       # the Sphaera Taube rises ...
+- 70        # ... and passes over her
+R 20
+RJ 24       # over the Sphaera
+R 50
+- 10
+RJ 12       # onto the waiting car
+R 16
+- 10
+- 160       # the ride
+RB 12
+RBJ 30      # running jump to the Wurstkranz
+R 40

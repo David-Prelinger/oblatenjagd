@@ -7,7 +7,7 @@
 
 use crate::fx::Fx;
 use crate::hash::Fnv;
-use crate::level::{Level, TILE_PX, TileKind};
+use crate::level::{Level, TILE_PX, Tile, TileKind};
 
 /// One tile in subpixels.
 pub const TILE: Fx = Fx::from_px(TILE_PX);
@@ -48,33 +48,60 @@ pub fn tile_of(v: Fx) -> i32 {
     v.raw().div_euclid(TILE.raw())
 }
 
-/// The collision view of a level grid.
+/// The tile grid as the simulation sees it: collision kinds plus the
+/// look and block data of every cell. `Game` keeps the current grid
+/// (bricks break, boxes empty); the level keeps the start state.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TileMap {
     /// Width in tiles.
     pub width: i32,
     /// Height in tiles.
     pub height: i32,
-    kinds: Vec<TileKind>,
+    tiles: Vec<Tile>,
 }
 
 impl TileMap {
-    /// Builds the collision grid of a level.
+    /// The grid of a level in its start state.
     pub fn from_level(level: &Level) -> TileMap {
         TileMap {
             width: level.width,
             height: level.height,
-            kinds: level.tiles.iter().map(|t| t.kind).collect(),
+            tiles: level.tiles.clone(),
         }
     }
 
-    /// Feeds the grid into a state hash.
+    /// Feeds the whole grid into a state hash.
     pub(crate) fn hash(&self, h: &mut Fnv) {
         h.i32(self.width);
         h.i32(self.height);
-        for k in &self.kinds {
-            h.u8(k.id());
+        for t in &self.tiles {
+            hash_tile(t, h);
         }
+    }
+
+    /// The tile at a grid cell, or `None` outside the grid.
+    pub fn tile(&self, col: i32, row: i32) -> Option<Tile> {
+        self.index(col, row).map(|i| self.tiles[i])
+    }
+
+    /// The tile at a row-major index (see [`TileMap::index`]).
+    pub fn tile_at_index(&self, i: usize) -> Tile {
+        self.tiles[i]
+    }
+
+    /// Replaces the tile at a grid cell (ignored outside the grid).
+    pub fn set_tile(&mut self, col: i32, row: i32, tile: Tile) {
+        if let Some(i) = self.index(col, row) {
+            self.tiles[i] = tile;
+        }
+    }
+
+    /// Row-major index of a cell inside the grid.
+    pub fn index(&self, col: i32, row: i32) -> Option<usize> {
+        if col < 0 || row < 0 || col >= self.width || row >= self.height {
+            return None;
+        }
+        Some((row * self.width + col) as usize)
     }
 
     /// Level width in subpixels.
@@ -99,12 +126,12 @@ impl TileMap {
             return TileKind::Empty;
         }
         if row < 0 {
-            return match self.kinds[col as usize] {
+            return match self.tiles[col as usize].kind {
                 TileKind::Solid => TileKind::Solid,
                 _ => TileKind::Empty,
             };
         }
-        self.kinds[(row * self.width + col) as usize]
+        self.tiles[(row * self.width + col) as usize].kind
     }
 
     /// True if any tile overlapped by `b` has kind `kind`.
@@ -162,7 +189,9 @@ impl TileMap {
     /// Moves `b` vertically by `dy` and stops it at tiles.
     /// Moving down, solid tiles and one-way tiles (unless `drop_through`)
     /// stop it, but only rows the bottom edge newly enters, so one-way tiles
-    /// block from above only. Moving up, only solid tiles stop it.
+    /// block from above only. Moving up, only solid tiles stop it; a box
+    /// whose top edge already is inside a solid tile does not move up at all
+    /// (it never tunnels through) and reports `Ceiling`.
     pub fn move_y(&self, b: &mut Aabb, dy: Fx, drop_through: bool) -> YHit {
         let (c0, c1) = (tile_of(b.x), tile_of(b.right() - Fx(1)));
         if dy > Fx::ZERO {
@@ -182,9 +211,13 @@ impl TileMap {
         } else if dy < Fx::ZERO {
             let old_edge = tile_of(b.y);
             let new_edge = tile_of(b.y + dy);
-            for r in (new_edge..old_edge).rev() {
+            for r in (new_edge..=old_edge).rev() {
                 if (c0..=c1).any(|c| self.kind_at(c, r) == TileKind::Solid) {
-                    b.y = TILE.mul_int(r + 1);
+                    // Top edge already inside this row: stay put (pushing
+                    // out is the caller's job, see `Player::fit_head`).
+                    if r < old_edge {
+                        b.y = TILE.mul_int(r + 1);
+                    }
                     return YHit::Ceiling;
                 }
             }
@@ -192,6 +225,14 @@ impl TileMap {
         b.y += dy;
         YHit::None
     }
+}
+
+/// Feeds one tile (kind, look, block data) into a state hash.
+pub(crate) fn hash_tile(t: &Tile, h: &mut Fnv) {
+    h.u8(t.kind.id());
+    h.u16(t.name);
+    h.u8(t.block.id());
+    h.u8(t.contains.id());
 }
 
 /// Result of [`TileMap::move_y`].
@@ -215,7 +256,7 @@ mod tests {
         let first_air = grid.find('.').unwrap();
         grid.replace_range(first_air..first_air + 1, "P");
         let text = format!(
-            "[meta]\nid = \"t\"\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
+            "[meta]\nid = \"t\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
         );
         TileMap::from_level(&Level::parse(&text).unwrap())
     }
@@ -313,6 +354,24 @@ mod tests {
         let mut b = bx(20, 18);
         assert_eq!(m.move_y(&mut b, Fx::from_px(-4), false), YHit::Ceiling);
         assert_eq!(b.y, Fx::from_px(16));
+    }
+
+    #[test]
+    fn moving_up_from_inside_a_solid_does_not_tunnel() {
+        // A block at column 2, row 1 (y 16..32) with air above it.
+        let m = map(&["......", "..#...", "......", "......", "######"]);
+        // Top edge 4 px inside the block: a long move up stays put.
+        let mut b = bx(30, 28);
+        assert_eq!(m.move_y(&mut b, Fx::from_px(-20), false), YHit::Ceiling);
+        assert_eq!(b.y, Fx::from_px(28), "neither through nor snapped");
+        // Small moves too, frame after frame.
+        for _ in 0..10 {
+            assert_eq!(m.move_y(&mut b, Fx::from_px(-3), false), YHit::Ceiling);
+        }
+        assert_eq!(b.y, Fx::from_px(28));
+        // Moving down out of it still works.
+        assert_eq!(m.move_y(&mut b, Fx::from_px(3), false), YHit::None);
+        assert_eq!(b.y, Fx::from_px(31));
     }
 
     #[test]

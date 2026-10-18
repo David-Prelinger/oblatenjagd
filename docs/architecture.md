@@ -62,7 +62,7 @@ jnr-app ──► jnr-render ──► jnr-core
 xtask ──► everything (never the other way round)
 ```
 
-- `jnr-artkit` has no dependencies by default and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
+- `jnr-artkit` depends by default only on `serde` + `toml` (generator params; pure and wasm-safe, like jnr-core) and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
 
 - `jnr-core` depends on **nothing** except tiny pure crates (e.g. `serde`/`toml` for parsing tuning, if needed). Never on macroquad, std::time, rand, threads, filesystem.
 - `jnr-render` depends only on `jnr-core` and asset data types. Pure Rust, no GPU.
@@ -83,13 +83,18 @@ impl Game {
 pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
 ```
 
-Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run`, expectation checks; see `validation.md` L5), plus `hash` (FNV-1a) and `rng` (xorshift64*).
+Modules (M0, + `entity` in M1): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run`, expectation checks; see `validation.md` L5), plus `hash` (FNV-1a) and `rng` (xorshift64*).
 
 `Game::teleport_player(x_px)` is a tooling-only entry point (`cargo xtask scene`): it places the player on the floor at x without physics; the game, replays and the solver never call it (enforced by the architecture lint: only xtask and test code may call it).
 
 - **Game modes** as a state machine inside core: `Title → StageIntro → Playing → (Dying | StageClear) → ...`. Menus are part of core so they are testable too.
+  - Implemented (M1, E4, `game.rs` + `game/flow.rs`, D-025): `Mode::{Title, StageIntro, Playing, Paused, Dying, StageClear, GameOver}`. `Game::new_at(.., Start::Title)` is the real game (title, a 150-frame intro at the start and after every death and continue, START pauses); `Game::new` (= `Start::Playing`) starts in play without those screens (tests, solver, replays by default). `StageClear` runs the Maibaum sequence (`Game::stage_clear()`: phase `Slide → Hop → Walk → Tally → Clear → ToBeContinued`), then `Title`. The renderer draws the full screens in `jnr-render::screens`, the HUD in `hud`, signs in `signs`; `screens::TEXT_KEYS` lists every text key the engine uses (unit-tested against de.toml).
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
 - **Entities**: a plain `Vec<Entity>` with an `EntityKind` enum and per-kind update functions. No ECS framework — the game is small and an enum is easier for agents to reason about.
+  - Implemented (M1, E1, `entity.rs` + `game.rs`): level spawns (`SpawnKind`) become inactive entities on every level reset; activation within `game.activate_margin` of the right screen edge, removal `game.despawn_margin` px behind the camera, below the level, or when finished (moving platforms are never removed, D-027). Kinds: `Oblate`, `PoppedOblate`, `Mozartkugel`, `Zaunerstollen`, `Debris`, `Popup(Score|ExtraLife|Checkpoint)`, `Bump` (a raised tile), `Checkpoint`, `Sign`, `Enemy(..)`, `Defeated(..)` (a stomped or knocked enemy: squished in place for `enemies.squish_frames`, or tumbling down without collision), `Thrown` (the Verkäufer's Mozartkugel: hurts, can't be stomped), `Festungsbahn` (moving one-way platform). The renderer reads `Game::entities()`, `Game::tile(col, row)` (the current grid), `Game::tile_bump_px`, `Game::checkpoint()`, `score()`, `oblaten()`, `lives()`, `time_left()`, `death_cause()`.
+  - Enemy behaviour (M1, E3, `enemies.rs`, D-026): per-kind update functions driven by frame counters from activation (`Entity::timer`, `Entity::count`; never the RNG), numbers in `tuning.toml` `[enemies]`. Selfie-Tourist walks (turns at walls and at other enemies on foot, walks off ledges) with a selfie stop every `tourist_selfie_period` frames; Taube flies left on an integer sine (`enemies::sine_offset`, Bhaskara approximation, no floats) ignoring tiles; the sitting Taube waits, rises, then flies; the Verkäufer faces the player and throws while the player is in range; the Fiaker telegraphs, then charges left along its row ignoring tiles until off screen. Distances to the player are horizontal, centre to centre. Bumping a block knocks off stompable enemies standing on it (`score.bump_enemy`) and makes rolling items on it hop. Per-kind `state` values are `enemies::state::*`; the renderer reads `Entity::pose(&Tuning) -> Pose` (animation incl. the selfie flash frame) and `Entity::facing_left()` (`dir < 0`).
+  - Festungsbahn (M1, E3, `platform.rs`): legend `{ entity = "festungsbahn", to = [dx, dy] }` (required; the other end point in tiles relative to the spawn cell, the car starts left-aligned in its spawn cell with its bottom on the cell's bottom edge). It waits for its rider (D-030), a state machine in `Entity::state` (`platform::car::{WAIT_LOWER, UP, WAIT_UPPER, DOWN}`, frame counter `count`): at its lower end (the larger y; `to`'s dy sign, a level track's lower end is its spawn cell) it waits until the player stands on it (`UpdateCtx::player_standing`: grounded, feet on its top), then travels up `festungsbahn_travel` frames in a straight line (position recomputed from the start point every frame, so no drift), waits `platforms.festungsbahn_wait` at the upper end, travels down and waits again. A car spawned at its upper end first travels down. Only its top edge collides, from above: `platform::land` after the player's own movement (feet crossed the top while not moving up), `platform::carry` when the car moves (a standing player moves by exactly the car's movement, with tile collision; a car rising into a player who isn't moving up lifts them). Squeezed against a ceiling, the player is held by the ceiling and drops through the car (never crushed); `cargo xtask levels lint` requires `platform::TRACK_CLEARANCE_PX` (3 tiles) of free space above the car along the whole track, and a way back up out of the pit under it (`platform::recovery_problems`: steps up of at most 3 tiles from the floor under the track to its upper end, D-028). DOWN + JUMP on the car is a normal jump (drop-through is for one-way tiles only).
+  - Player power states (`Power::Normal|Big`), hurt/i-frames, 30-frame transformation freeze, score/Oblaten/lives/timer, checkpoint, level reset on death and `Mode::GameOver` live in `game.rs` (D-022).
 - **Collision**: AABB vs tile grid (solid, one-way, hazard, water/death), AABB vs AABB for entities. No slopes in M1.
 - **One-way platforms** block only from above; the player drops through by pressing DOWN + JUMP while standing on one (DOWN alone does nothing).
 - **Camera** lives in core (it affects enemy activation like in SMB and must be deterministic).
@@ -110,8 +115,9 @@ Implemented (M0):
 - `jnr-render` never depends on `jnr-assets` (only as a dev-dependency for a sanity test): every draw call takes `&Atlas`, so tests use small hand-built atlases.
 - `Framebuffer` (`fill_rect`, `outline_rect`, `get`/`set`, `to_rgba_bytes`/`write_rgba_bytes`); `blit_frame` and `draw_sprite` (origin placement via `origin_facing`, mirrored frames or flip fallback, optional tint). Atlas alpha 0 is skipped, everything else drawn opaque; all blits clip at every edge.
 - Font (D-012): sprite `font`, 8×8 frames, one anim `glyphs`, one frame per character of `jnr_render::CHARSET` (89 glyphs, order fixed). Advance = rightmost opaque column + 2, space = 3 px, line height 9 (room for the +1 shadow); `measure` leaves out the gap after a line's last glyph. Unknown characters draw as `?`. No `font` sprite → text is a no-op.
+- Implemented (M1): parallax backgrounds (`background.rs`): `RenderContext::with_background(&[(sprite, factor16)])`, layers back to front, tiled horizontally at `-((camera.x * factor / 16) mod width)`, bottom-aligned to the screen, no vertical parallax; the flat sky `s` stays behind them unless the first layer is opaque and full-height; missing sprites are skipped. Autotiling (`tiles.rs`, D-020): `TileLook` per tile name resolved once; `auto` (16 frames) picks the frame by `autotile_mask` (computed from the live level while drawing), other tiles animate by the game frame.
 - `RenderContext::new(&Atlas, &Texts, &Level)` is built once (by `jnr-app` at startup, again on level change) and resolves the font, the texts and the tile/player/goal sprite lookups (incl. the player anim per state), so drawing a frame does no lookups or allocations.
-- `render(&Game, &RenderContext, &mut Framebuffer)`: sky (`Layer` list as the parallax hook) → tiles (`tile_<name>` sprite, else grey-box per `TileKind`) → goal (`goal` sprite, else a pole) → player (`player` sprite at the feet, anim idle/walk/run/jump/fall with fallbacks, else the hitbox box; blinks every 4 frames counted from the death) → stage-clear text (key `stage.clear`). `render_debug` is the opt-in F1 overlay (hitboxes, frame, position).
+- `render(&Game, &RenderContext, &mut Framebuffer)`: backgrounds → tiles (`tile_<name>` sprite, else grey-box per `TileKind`) → goal (`goal` sprite, else a pole) → player (`player` sprite at the feet, anim idle/walk/run/jump/fall with fallbacks, else the hitbox box; blinks every 4 frames counted from the death) → stage-clear text (key `stage.clear`). `render_debug` is the opt-in F1 overlay (hitboxes, frame, position).
 
 ## jnr-app: macroquad shell
 
@@ -124,7 +130,8 @@ loop {
 ```
 
 - `FilterMode::Nearest`, integer scale, black letterbox.
-- CLI flags (native; `--help` lists them): `--level <id>`, `--seed <n>`, `--scale <n>`, `--exit-after <frames>`, `--screenshot-at <frame>:<file>` (repeatable), `--replay <file>`, `--record <file>`. Wasm always uses the defaults.
+- CLI flags (native; `--help` lists them): `--level <id>`, `--seed <n>`, `--scale <n>`, `--exit-after <frames>`, `--screenshot-at <frame>:<file>` (repeatable), `--replay <file>`, `--record <file>`. Wasm always uses the defaults: Stage 1 (`salzburg`) from its title screen.
+- App levels (M1, E6): `options::LEVELS` is an explicit `include_str!` list of every `content/levels/*.level` (id = `[meta] id`); a unit test fails when it differs from the directory, so a new level file must be added there. `DEFAULT_LEVEL = "salzburg"`; the real game (native without flags, and wasm) starts at the Salzburg title (`Start::Title`). The test levels (`testbed`, `items`, `enemies`) stay reachable with `--level <id>` and via `--replay`.
   - `--replay`: parsed with `jnr_core::replay`; its `level` must be embedded and its `level`/`seed` are used (a conflicting `--level`/`--seed` is an error). The input of step N is the replay's frame N (`InputSource::input_for`), nothing after the last one; game input comes only from the replay (Escape quits; F1/F12 still work).
   - `--record`: `record::Recorder` RLE-encodes the input of every step and tracks a `replay::Outcome`; on exit (window close, Escape, `--exit-after`) it writes a replay with `source = human` and a derived `expect` (`complete frames=N..N`, else `state=<mode> player_x>=<x>`; always `deaths=<n>`), creating directories, and prints `recorded: <path>`. Not combinable with `--replay`.
 - Escape and closing the window (native) end the loop cleanly (`prevent_quit`), so the recording can be written; the process exits 0.
@@ -133,7 +140,7 @@ loop {
 - Wasm: built with `cargo xtask wasm`, served from `web/` with any static server. All assets are embedded (`include_bytes!`), so no fetching at runtime.
 
 Implemented (M0):
-- Native CLI (`cli.rs`, not compiled for wasm; `jnr-app --help`): `--level <id>` (embedded levels only, listed in `options::LEVELS`; currently `testbed`; unknown ids exit 2 with the list), `--seed <n>` (default 1), `--scale <n>` (initial window 320n×180n, 1..=16, default 4), `--exit-after <frames>` (quit with exit code 0 after that many simulation frames), `--screenshot-at <frame>:<png>` (repeatable; writes the plain 320×180 framebuffer after that simulation frame, frame 0 = start; a write error exits 1). `--replay`/`--record` follow with the replay format.
+- Native CLI (`cli.rs`, not compiled for wasm; `jnr-app --help`): `--level <id>` (embedded levels only, listed in `options::LEVELS`: `enemies`, `items`, `testbed`, `salzburg` (default); unknown ids exit 2 with the list), `--seed <n>` (default 1), `--scale <n>` (initial window 320n×180n, 1..=16, default 4), `--exit-after <frames>` (quit with exit code 0 after that many simulation frames), `--screenshot-at <frame>:<png>` (repeatable; writes the plain 320×180 framebuffer after that simulation frame, frame 0 = start; a write error exits 1). `--replay`/`--record` follow with the replay format.
 - The "what happens after frame N" decision is the pure `Options::actions_after(frame)`; it runs after every tick (not every render frame), so screenshots and exits are exact even when several ticks run per render frame.
 - F12 (native debug builds) saves the framebuffer as shown (incl. F1 overlay) to `$CARGO_TARGET_DIR/preview/f12_<frame>.png` (else `./f12_<frame>.png`) and prints the path. F2/F3 are not implemented yet.
 - PNG encoding uses the `png` crate as a native-only dependency of `jnr-app`.
@@ -152,14 +159,20 @@ Implemented (M0):
 
 TOML header + one ASCII grid. One char = one 16×16 tile or an entity spawn.
 
-The example below is the **M1 target** (`oblaten_box` with `contains`, `oblate`, `selfie_tourist`, … are not parsed yet). `jnr-core` currently supports the tile names `ground`/`brick`/`solid`, `oneway`/`oneway_sign`, `hazard`/`salzach_water` (and `empty`) and the entities `player_start` and `goal`/`goal_maibaum`; anything else is a parse error.
+Format v2 (M1, D-022). Tile names: grey-box `solid`/`oneway`/`hazard`/`empty` and the catalog tiles (`ground`, `meadow`, `rock`, `rampart`, `hedge`, `stone`, `bridge`, `railing`, `arch`, `brick`, `oblaten_box`, `oblaten_box_empty` → solid; `railing_bg` → decorative air; `oneway_sign`, `oneway_burger`, `oneway_wood` → one-way; `salzach_water` → hazard). `contains = "oblate|mozartkugel|zaunerstollen|oblaten_10"` is allowed on `brick` and `oblaten_box` only (a box defaults to `oblate`). Entities: `player_start` (exactly one), `goal`/`goal_maibaum`, `checkpoint`, `oblate`, `sign` (`text` key required, `style = "street|bus|ortsende"`, default street), `selfie_tourist` (optional `still = true`: never walks, for grey-box `00_*` test levels only, D-026), `taube`, `taube_sitting`, `mozartkugel_verkaeufer`, `fiaker`, `festungsbahn` (`to = [dx, dy]` required: its other end point in tiles relative to its spawn cell, each within ±64, not both 0; the spawn cell is where it starts, e.g. the bottom end), `prop` (`sprite` required, one of `jnr_core::PROP_SPRITES` (checked by `levels lint`); optional `layer = "front|back"` (default front: after the tiles, behind the player; back: after the parallax, before the tiles) and `dx` (px, ±64); decorative, no collision, not a core entity — the renderer draws it from the spawn with its origin on the cell's bottom centre + `dx`, grey-box: the cell's outline). Tiles `facade`, `arch_under`, `invisible` (never drawn) → solid; `arch`/`arch_under` are one autotile family (`autotile_family` in `jnr-render/src/tiles.rs`). Unknown names or fields are parse errors.
 
 ```toml
 [meta]
 id = "salzburg"
 title_key = "stage.salzburg.title"   # "Etappe 1: Salzburg"
-time_limit = 300
-background = ["sky_salzburg", "untersberg_far", "festung_mid", "rooftops_near"]
+time_limit = 300                     # required, 1..=999 seconds
+min_jump_window = 6                  # optional, frames (checked by the solver)
+background = [                       # far to near; factor in 1/16 of the camera speed (0..=32)
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_untersberg", factor = 2, y = 24 },   # y: px above the screen bottom (default 0)
+  { sprite = "bg_festung", factor = 4 },
+  { sprite = "bg_rooftops", factor = 8 },
+]
 music = "salzburg"
 
 [legend]

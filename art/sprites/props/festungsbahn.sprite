@@ -1,0 +1,34 @@
+# Festungsbahn car (funicular, since 1892), side view, drawn level: red body
+# r/R with a w livery stripe, flat silver roof i/m (the one-way top surface,
+# full 48 px), four windows b/s with tourist silhouettes B, two bogies d
+# with wheels m/d/i, k outline. The engine moves it along the track.
+sprite = festungsbahn
+size   = 48x24
+origin = 24,24
+anim   = idle frames=1
+---
+frame idle 0
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+krrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrRk
+kRRbbbbbbbbRRRbbbbbbbbRRRbbbbbbbbRRRbbbbbbbbRRRk
+kRRbbbssbbbRRRbbbssbbbRRRbbbssbbbRRRbbbssbbbRRRk
+kRRbbssbBBbRRRbbssbBBbRRRbbssbBBbRRRbbssbBBbRRRk
+kRRbssbbBBbRRRbssbbBBbRRRbssbbBBbRRRbssbbBBbRRRk
+kRRbbbbBBBBRRRbbbbBBBBRRRbbbbBBBBRRRbbbbBBBBRRRk
+kRRbbbbBBBBRRRbbbbBBBBRRRbbbbBBBBRRRbbbbBBBBRRRk
+kRRrrrrrrrrRRRrrrrrrrrRRRrrrrrrrrRRRrrrrrrrrRRRk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+kRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRk
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+...kkmmddkddkmmddkk..........kkmmddkddkmmddkk...
+...kmmmdddkkmmmdddk..........kmmmdddkkmmmdddk...
+...kdddiddkkdddiddk..........kdddiddkkdddiddk...
+....kddddk..kddddk............kddddk..kddddk....
+.....kkkk....kkkk..............kkkk....kkkk.....

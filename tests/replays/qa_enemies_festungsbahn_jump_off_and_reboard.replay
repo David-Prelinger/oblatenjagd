@@ -1,0 +1,36 @@
+# QA (E3, D-030): onto the waiting car (frame 1029, it leaves with her), a
+# straight jump off it mid-travel (1106; the car moves on under the player,
+# so she misses it) down into the pit (1162). She stands in the pit while
+# the car comes back down past her (1239..1388): no crush, no carry, no
+# hurt; then it waits at the bottom. She walks left under it (1501), jumps
+# up through it from below (1516, one-way) and lands on its top (1554): it
+# leaves with its rider, she rides up, walks onto the plateau during the
+# wait at the top and reaches the goal (1909): falling off only means
+# waiting.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1909..1909 deaths=0 no_event=Hurt state=stage_clear
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 86
+J 20      # straight up mid-travel: off the car
+- 360     # in the pit, the car passes over her and waits at the bottom
+L 24      # under the waiting car
+- 6
+J 20      # up through the car
+- 175     # ride up
+R 200     # onto the plateau, to the goal

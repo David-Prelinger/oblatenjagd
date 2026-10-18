@@ -10,7 +10,7 @@ Status: approved v1. Needs `jnr-app` (from M0).
 The dev container runs a virtual desktop on `DISPLAY=:1` (1440x768, 16-bit colour). The human watches it at http://localhost:6080 (noVNC, no password). Commands below assume `DISPLAY=:1` is set (`export DISPLAY=:1`).
 
 ## Commands
-- Play: `cargo run -p jnr-app -- --level salzburg` (run in the background so you aren't blocked). Today only `--level testbed` (the default) is embedded; `cargo run -p jnr-app -- --help` lists all flags.
+- Play: `cargo run -p jnr-app -- --level salzburg` (run in the background so you aren't blocked). Without `--level` the game starts on the Salzburg title (the default); every `content/levels/*.level` is embedded (`--level testbed|items|enemies` for the test levels); `cargo run -p jnr-app -- --help` lists all flags.
 - Scripted run that quits by itself: `cargo run -p jnr-app -- --exit-after 120 --screenshot-at 60:target/preview/f60.png` (exit code 0; the PNG is the 320×180 framebuffer after simulation frame 60; `--screenshot-at` is repeatable, `--seed`/`--scale` also exist)
 - Show a replay: `cargo run -p jnr-app -- --replay tests/replays/testbed_route.replay --exit-after 760`. Level and seed come from the replay; game input comes only from the replay (Escape quits; F1/F12 still work); after the last input nothing is held. Combine with `--screenshot-at` to grab frames.
 - Record a run: `cargo run -p jnr-app -- --record tests/replays/human_<name>.replay` (see below).

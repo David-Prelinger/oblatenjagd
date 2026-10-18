@@ -1,0 +1,31 @@
+# QA (E3, D-030): onto the waiting car (frame 1029, it leaves with her),
+# then while it rises:
+# a few steps left, a longer walk right towards its front edge, a short
+# walk back; the player stays on the moving car the whole way and stands
+# on it at the top (y 82 = car top 104 - 22), still waiting there.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_y>=82 player_y<=82 player_x>=1560
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 66
+L 6       # walking on the rising car
+- 20
+R 24
+- 20
+L 12
+- 59      # at the top (1179), waiting

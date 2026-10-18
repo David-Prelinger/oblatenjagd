@@ -1,0 +1,25 @@
+# QA (E3): onto the car (frame 1029) and riding it up and down (she stays
+# on, so it leaves again each time it is back at the bottom, D-030) until the
+# timer runs out (300 s = 18000 playing frames): the player dies on the
+# moving car at exactly frame 18000, the level (car included) is reset and
+# she respawns at the start on the ground (y 170), Normal, with 2 lives.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=18000..18000 deaths=1 lives=2 state=playing player_y>=170 event=Respawned
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 274
+RJ 20
+R 4
+- 130
+R 20      # onto the car
+- 17100   # ride until the time is up (18000), respawn at 18060

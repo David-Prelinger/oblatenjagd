@@ -108,7 +108,7 @@ pub fn lint_report(root: &Path) -> (bool, String) {
     let warnings = findings.len() - errors;
     let mut text: String = findings.iter().map(|d| format!("{d}\n")).collect();
     text.push_str(&format!(
-        "sprites lint: {errors} error(s), {warnings} warning(s) in {sprites} sprite file(s)\n"
+        "sprites lint: {errors} error(s), {warnings} warning(s) in {sprites} sprite(s) (hand-made + generated)\n"
     ));
     (errors == 0, text)
 }

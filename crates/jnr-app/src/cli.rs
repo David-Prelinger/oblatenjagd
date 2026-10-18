@@ -14,13 +14,17 @@ jnr-app: Oblatenjagd
 Usage: jnr-app [options]
 
 Options:
-  --level <id>                  embedded level to play (default: testbed)
+  --level <id>                  embedded level to play: salzburg (Stage 1, the
+                                default), or the test levels testbed, items,
+                                enemies
   --seed <n>                    seed of the game RNG (default: 1)
   --scale <n>                   initial window size 320n x 180n, 1..=16 (default: 4)
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
   --screenshot-at <frame>:<png> write the 320x180 framebuffer after that simulation
                                 frame (0 = start); repeatable
-  --replay <file>               play a replay file: its level and seed are used;
+  --replay <file>               play a replay file: its level, seed and start are
+                                used (without `start = title` the game starts in
+                                play, not on the title screen);
                                 game input comes only from the replay (Escape
                                 quits; F1/F12 still work); after the last
                                 input nothing is held
@@ -136,6 +140,7 @@ pub fn parse_args_with(
         opts.level = replay.level.clone();
         opts.seed = replay.seed;
         opts.input = InputSource::Replay(replay.frames().collect());
+        opts.start = replay.start;
     }
     if let Some(exit) = opts.exit_after {
         if let Some((frame, path)) = opts.screenshots.iter().find(|(f, _)| *f > exit) {
@@ -264,6 +269,7 @@ mod tests {
                 screenshots: vec![(60, "/tmp/a.png".into()), (0, "b.png".into())],
                 input: InputSource::Keyboard,
                 record: None,
+                start: jnr_core::Start::Title,
             }
         );
     }
@@ -276,7 +282,10 @@ mod tests {
 
     #[test]
     fn bad_input_is_reported() {
-        assert!(error(&["--level", "atlantis"]).contains("embedded levels: testbed"));
+        assert!(
+            error(&["--level", "atlantis"])
+                .contains("embedded levels: enemies, items, testbed, salzburg")
+        );
         assert!(error(&["--seed"]).contains("needs a value"));
         assert!(error(&["--seed", "-1"]).contains("not a valid"));
         assert!(error(&["--scale", "0"]).contains("1..=16"));
@@ -302,6 +311,11 @@ mod tests {
         // Matching --level/--seed are fine.
         let same = run(&["--level", "testbed", "--seed", "7", "--replay", "r.replay"]);
         assert_eq!(same.input, opts.input);
+        assert_eq!(
+            opts.start,
+            jnr_core::Start::Playing,
+            "a replay starts in play by default"
+        );
     }
 
     #[test]

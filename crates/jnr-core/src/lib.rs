@@ -11,7 +11,10 @@
 //! - [`input`]: per-frame input bitflags and replay tokens
 //! - [`tuning`], [`level`]: content parsing (`tuning.toml`, `.level`)
 //! - [`physics`]: boxes and tile collision
-//! - [`player`]: run/jump physics
+//! - [`player`]: run/jump physics, power states
+//! - [`entity`]: items, particles, popups, props, enemies (`Vec<Entity>`)
+//! - [`enemies`]: enemy patterns, thrown Mozartkugeln, defeated enemies
+//! - [`platform`]: the Festungsbahn car (moving one-way platform)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
@@ -20,12 +23,15 @@
 use std::fmt;
 
 pub mod camera;
+pub mod enemies;
+pub mod entity;
 pub mod fx;
 pub mod game;
 pub mod hash;
 pub mod input;
 pub mod level;
 pub mod physics;
+pub mod platform;
 pub mod player;
 pub mod replay;
 pub mod rng;
@@ -36,11 +42,16 @@ pub mod tuning;
 mod tests;
 
 pub use camera::{Camera, SCREEN_H, SCREEN_W};
+pub use enemies::Pose;
+pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
-pub use game::{Event, Game, Mode};
+pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};
 pub use input::InputFrame;
-pub use level::{EntityKind, EntitySpawn, Level, TileKind};
-pub use player::{Facing, Player};
+pub use level::{
+    Block, Contents, EntitySpawn, Level, PROP_SPRITES, PropLayer, SignStyle, SpawnKind, Tile,
+    TileKind,
+};
+pub use player::{Facing, Player, Power};
 pub use replay::Replay;
 pub use text::Texts;
 pub use tuning::Tuning;

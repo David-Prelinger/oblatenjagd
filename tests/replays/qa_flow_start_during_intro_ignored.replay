@@ -1,0 +1,15 @@
+# QA (E4): START pressed twice during the stage intro (frames 50 and 100)
+# neither pauses nor shortens it: play starts at 151 as usual and the
+# tourist reaches the standing player at 624, like without the presses.
+level  = enemies
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=624..624 deaths=1
+---
+S 1       # title → stage intro
+- 48
+S 1       # 50
+- 49
+S 1       # 100
+- 540

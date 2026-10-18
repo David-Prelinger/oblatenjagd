@@ -10,24 +10,39 @@
 //! Everything is integer math: the same inputs give identical pixels.
 //!
 //! Modules:
+//! - [`background`]: parallax background layers (tiled, bottom-aligned)
 //! - [`blit`]: atlas frames and sprites onto the framebuffer (clipping, flip, tint)
 //! - [`font`]: the variable-width bitmap font (sprite `font`, anim `glyphs`)
 //! - [`scene`]: [`render`] a whole `Game` through a [`RenderContext`]
 //!   (font, texts and sprite lookups resolved once), plus the opt-in
 //!   [`render_debug`] overlay
+//! - [`entities`]: entities (items, props, enemies, popups) and block tile looks
+//! - [`signs`]: level signs (board by style, centred text, Ortsende bar)
+//! - [`hud`]: the HUD (score, Oblaten, lives, time)
+//! - [`screens`]: title, stage intro, pause, game over, stage clear and the
+//!   other flow texts, plus the list of the engine's text keys
+//! - [`tiles`]: the tile grid, incl. autotiling (D-020)
 //! - [`palette`]: the few palette colours used for grey-box drawing and text
 
+pub mod background;
 pub mod blit;
+pub mod entities;
 pub mod font;
+pub mod hud;
 pub mod palette;
 pub mod scene;
+pub mod screens;
+pub mod signs;
+pub mod tiles;
 
 #[cfg(test)]
 mod testutil;
 
+pub use background::{BackgroundLayer, parallax_offset};
 pub use blit::{blit_frame, blit_frame_tinted, draw_sprite, draw_sprite_tinted};
 pub use font::{CHARSET, Font};
-pub use scene::{Layer, PlayerAnim, RenderContext, render, render_debug};
+pub use scene::{PlayerAnim, RenderContext, render, render_debug};
+pub use tiles::{TileLook, autotile_mask};
 
 /// Framebuffer width in pixels.
 pub const WIDTH: usize = 320;

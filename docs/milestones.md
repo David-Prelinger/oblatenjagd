@@ -2,7 +2,7 @@
 
 Status: **approved v1**. Agents tick boxes here as work is completed (definition of done: `validation.md`).
 
-## M0 – Foundations (no game content yet)
+## M0 – Foundations (no game content yet) — ✅ accepted (docs/reports/M0.md)
 
 Goal: the whole toolchain and validation loop work end-to-end on a grey-box test level.
 
@@ -23,23 +23,23 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 
 **Acceptance:** see "Milestone acceptance" below; plus the grey box moves on the noVNC desktop (`vnc-smoke`).
 
-## M1 – Stage 1: Salzburg (first playable)
+## M1 – Stage 1: Salzburg (first playable) — ✅ accepted 2026-10-18 (docs/reports/M1.md)
 
 Scope as in `game-design.md` → "Stage 1: Salzburg".
 
-- [ ] Player: walk, run, variable jump, coyote time, jump buffer, stomp; game-feel tests green
-- [ ] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
-- [ ] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
-- [ ] Enemies: Selfie-Tourist, Taube, Mozartkugel-Verkäufer, Fiaker
-- [ ] Checkpoint, Maibaum goal with height-based score
-- [ ] Camera (no scrolling back), enemy activation by distance
-- [ ] HUD, title screen, stage intro, game over, stage clear (German text from `de.toml`)
-- [ ] Salzburg tileset, parallax (sky, Untersberg, Festung, rooftops), all M1 sprites — art-director APPROVED
-- [ ] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
-- [ ] Replays + goldens for the key scenes
-- [ ] wasm build runs the stage in the browser
+- [x] Player: walk, run, variable jump, coyote time, jump buffer, stomp; game-feel tests green
+- [x] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
+- [x] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
+- [x] Enemies: Selfie-Tourist, Taube, Mozartkugel-Verkäufer, Fiaker
+- [x] Checkpoint, Maibaum goal with height-based score
+- [x] Camera (no scrolling back), enemy activation by distance
+- [x] HUD, title screen, stage intro, game over, stage clear (German text from `de.toml`)
+- [x] Salzburg tileset, parallax (sky, Untersberg, Festung, rooftops), all M1 sprites — art-director APPROVED
+- [x] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
+- [x] Replays + goldens for the key scenes (salzburg_tour: 10 shots, art-director APPROVED)
+- [x] wasm build runs the stage in the browser (E6: the app embeds every level and starts on the Salzburg title; `wasm-smoke` checks the Salzburg parallax sky)
 - [x] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left; `Skipped` status removed in M0)
-- [ ] Stretch: Sound-of-Music tour group enemy
+- [ ] Stretch: Sound-of-Music tour group enemy — deferred to backlog (not required for M1)
 
 **Acceptance:** see "Milestone acceptance" below.
 

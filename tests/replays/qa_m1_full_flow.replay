@@ -1,0 +1,102 @@
+# QA (M1 acceptance): the whole M1 flow in one run of the real game on
+# Stage 1. Title, START (21) -> stage intro -> play (from 172) -> the
+# Hanuschplatz checkpoint -> over the house steps into tourist pair A: deaths
+# at 1183, 1714, 2245, each followed by the dying pause, the stage intro and
+# a respawn at the checkpoint -> GameOver (2305) -> START (2411, accepted
+# 60 frames into the game over) restarts the stage from its start -> the
+# solver route unchanged (a continue is a clean restart: the route still
+# completes 1601 frames after play starts) -> Maibaum, tally, stage clear,
+# „Fortsetzung folgt …" -> back on the title with the run reset.
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = event=CheckpointReached event=Respawned event=GameOver deaths=3
+expect = complete frames=4161..4161 state=title score=0 lives=3
+---
+- 20
+S 1         # title: START -> stage intro
+- 150       # stage intro; play from frame 172
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 67       # checkpoint
+R 10
+RJ 20       # over the house steps (136-137) ...
+R 300       # ... into tourist pair A: side hit, death 1 at 1183
+- 42        # dying 1184-1243, stage intro until 1393
+R 70        # respawned at the checkpoint (life 2 from 1394)
+RJ 20
+R 300       # death 2 at 1714
+- 141       # dying, intro; life 3 from 1925
+R 70
+RJ 20
+R 300       # death 3 at 2245: GameOver at 2305
+- 95        # GameOver from 2305; START is accepted from 2365
+S 1         # continue at 2411: the stage from its start, intro 2412-2561
+- 150
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 62
+RBJ 20
+RB 40
+- 900       # goal sequence, Fortsetzung folgt, title

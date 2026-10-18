@@ -1,0 +1,78 @@
+# QA (M1 Stage 1, D-038): the high Makartsteg Tauben (spawns 105/114/123) fly
+# at row 6, one tile higher than before, so they stay above the jump arc of a
+# Zuckerschock Resi doing full held standing/walking jumps from the raised
+# railing (cols 111-115). The relaxed explorer's route (Big since the
+# Mirabellgarten) to the railing (frame 1625, x 1774), then three full held
+# jumps on the spot; the Taube spawned at col 123 crosses right over her
+# during the first one. No contact (no Hurt, no stomp).
+level  = salzburg
+source = handwritten
+expect = deaths=0 lives=3 state=playing no_event=Hurt
+---
+R 130
+- 40
+J 20
+- 40
+L 25
+- 25
+RJ 40
+R 60
+RJ 12
+R 20
+J 10
+R 80
+R 80
+RJ 14
+R 48
+RJ 8
+R 10
+- 10
+- 6
+R 14
+- 4
+J 14        # bump the M-box
+- 86        # the hedge wall turns the Mozartkugel back: PowerUp
+RJ 24       # stomp tourist #2 on the walled hedge top
+R 12
+RJ 10
+R 10
+- 6
+RJ 12       # out of the hedge top, down to the street
+R 20
+- 10
+R 40        # under the planter
+- 4
+J 10        # break a planter brick (tourist #3 knocked out)
+R 14
+J 8         # and another one
+R 60        # to the Pegasus basin
+- 10
+RJ 16
+R 4
+- 16
+J 30
+- 20
+RJ 30
+R 40
+R 10
+RJ 12
+R 16
+RJ 24
+R 30
+R 34
+RJ 20
+R 30
+R 59
+RJ 30
+R 34
+RJ 30
+R 45
+RJ 30
+R 19
+- 6         # standing on the raised railing (col 111, feet y 224) as Zuckerschock
+J 40        # full held jump: head peaks at y 129 while the col-123 Taube crosses above (bottom <= 128)
+- 6
+J 40
+- 6
+J 40
+- 20

@@ -1,6 +1,8 @@
-# QA (M0): touching the goal pole in mid-air completes the stage (step 731,
-# hitbox ~80 px above the ground); in StageClear the simulation stands still,
-# so running/jumping left afterwards must not move the player.
+# QA (M0): touching the goal pole completes the stage at step 731 (the jump
+# at 699 reaches the pole near the ground: 100 points). Since E4 the Maibaum
+# sequence runs on its own (slide, hop, walk off), so `player_x>=1829` is now
+# met by the walk-off, not by standing still; that the inputs after the touch
+# are ignored is checked by the unit test `goal_completes_the_stage`.
 level  = testbed
 seed   = 1
 source = handwritten
@@ -21,7 +23,7 @@ RBJ 14
 RB 38
 RBJ 30
 RB 140
-RBJ 40    # jump at 699 into the goal pole, LevelComplete at 731 in mid-air
-LB 60     # inputs after StageClear: ignored
+RBJ 40    # jump at 699 into the goal pole, LevelComplete at 731
+LB 60     # inputs during the goal sequence: ignored
 LBJ 30
 - 30

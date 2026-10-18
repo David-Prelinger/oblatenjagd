@@ -8,12 +8,13 @@
 use std::path::Path;
 
 use jnr_core::replay::{Expect, FrameRange, Outcome, Source};
-use jnr_core::{Game, InputFrame, Replay};
+use jnr_core::{Game, InputFrame, Replay, Start};
 
 /// Records one input per simulation step plus what happened.
 pub struct Recorder {
     level: String,
     seed: u64,
+    start: Start,
     /// Run-length encoded: (input, frames held).
     inputs: Vec<(InputFrame, u32)>,
     outcome: Outcome,
@@ -26,6 +27,7 @@ impl Recorder {
         Recorder {
             level: game.level().meta.id.clone(),
             seed,
+            start: game.start(),
             inputs: Vec::new(),
             outcome: Outcome::new(game),
         }
@@ -46,6 +48,7 @@ impl Recorder {
             level: self.level.clone(),
             seed: self.seed,
             source: Source::Human,
+            start: self.start,
             expects: expects_for(&self.outcome),
             shots: Vec::new(),
             inputs: self.inputs.clone(),
@@ -86,9 +89,18 @@ mod tests {
         Tuning::parse(crate::TUNING_SRC).expect("parses")
     }
 
-    /// Plays `inputs` like the app does and returns the recorded replay.
+    /// Plays `inputs` on the testbed like the app does (starting in play, as a `--replay`
+    /// without `start` would) and returns the recorded replay.
     fn record(inputs: &[InputFrame]) -> Replay {
-        let opts = Options::default();
+        record_from(Start::Playing, inputs)
+    }
+
+    fn record_from(start: Start, inputs: &[InputFrame]) -> Replay {
+        let opts = Options {
+            level: "testbed".to_owned(),
+            start,
+            ..Options::default()
+        };
         let mut game = crate::new_game(&opts);
         let mut rec = Recorder::new(&game, opts.seed);
         for &input in inputs {
@@ -157,6 +169,17 @@ mod tests {
             vec![Expect::Complete(Some(first)), Expect::Deaths(0)]
         );
         assert_eq!(replay.inputs, route.inputs);
+        assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn recording_from_the_title_screen_writes_its_start() {
+        let mut inputs = vec![InputFrame::NONE; 10];
+        inputs.push(InputFrame::START);
+        inputs.extend([InputFrame::RIGHT; 200]);
+        let replay = record_from(Start::Title, &inputs);
+        assert_eq!(replay.start, Start::Title);
+        assert!(replay.format().contains("start  = title"));
         assert_round_trip_passes(&replay);
     }
 

@@ -1,0 +1,18 @@
+# QA (E4): waits 600 frames, then the 00_items solver route: goal at 979
+# with 84 s left (100 for the ground-level touch + 200 for the Oblate =
+# 300). The tally starts at 1027 and counts one second per frame at 50
+# points each: 42 frames in (1069) the score is exactly 300 + 42 x 50.
+level  = items
+seed   = 1
+source = handwritten
+expect = complete frames=979..979 deaths=0 state=stage_clear score=2400
+---
+- 600
+RB 88
+RBJ 36
+RB 71
+RBJ 36
+RB 40
+RBJ 36
+RB 72     # goal at 979
+- 90      # to 1069

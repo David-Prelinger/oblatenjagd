@@ -1,0 +1,34 @@
+# Checkpoint: the solver's route past the Hanuschplatz bus stop (col 128,
+# CheckpointReached at frame 820), a stomp in tourist pair A, then a side hit
+# by the second tourist kills Normal Resi (frame 938); she respawns at the
+# checkpoint (x 2050) with the level reset and the Oblaten counter kept.
+level  = salzburg
+source = handwritten
+expect = dies_at frames=935..940 deaths=1 lives=2 oblaten>=22 state=playing
+expect = player_x>=2040 no_event=Hurt
+---
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 67       # checkpoint
+RJ 8
+- 40
+R 20
+- 150       # side_hit; respawn_at_checkpoint

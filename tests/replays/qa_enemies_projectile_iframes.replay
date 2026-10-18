@@ -1,0 +1,25 @@
+# QA (E3): enemies_projectile_hurt, but waiting 9 px further left (x 580).
+# The Verkäufer's thrown Mozartkugel hits the Zuckerschock player's head at
+# frame 670 (Hurt, shrink freeze 671..700) and then keeps falling *through*
+# the now Normal player during the invulnerability frames: no second hit,
+# no death. It vanishes on the ground. The next throw (the Verkäufer's
+# counter stood still during the freeze) arrives at 823, after the 120
+# harmless frames (701..820), and kills the Normal player.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=Hurt dies_at frames=823..823 deaths=1 lives=2
+---
+R 80
+RJ 12
+R 60
+R 78
+- 30
+J 20
+- 120
+R 40
+- 40
+R 30
+RJ 20
+R 54      # stops at x 580
+- 250

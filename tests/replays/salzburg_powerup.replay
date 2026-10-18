@@ -1,0 +1,51 @@
+# Zuckerschock: after the intro (box, steps, tourist #1) bump the M-box
+# (col 47) and catch the Mozartkugel after the hedge wall turns it back
+# (PowerUp, frame 676), stomp tourist #2 on the walled hedge top (D-038),
+# break a planter brick from below as Zuckerschock (frame 861; it also knocks
+# out tourist #3 standing on it), cross the Pegasus fountain and get hit by
+# tourist #4 from the trench between the dwarfs (Hurt, frame 1267): she
+# shrinks and survives.
+level  = salzburg
+seed   = 1
+source = handwritten
+expect = deaths=0 lives=3 score>=5350 oblaten>=20 state=playing
+expect = no_event=Died event=PowerUp event=BrickBroken event=Hurt
+---
+R 138
+- 12
+J 20
+- 20
+R 10
+RJ 24
+R 12
+RJ 24
+R 158
+RJ 16
+R 50        # stomp_tourist_1
+R 60
+- 14
+J 14        # bump_M_box
+- 140       # power_up (the hedge wall at col 51 turns the Mozartkugel back)
+RJ 24       # onto the hedge wall
+R 12
+RJ 10       # stomp_tourist_2 in the walled hedge top
+R 10
+- 6
+R 16        # off the hedge to the street
+- 20
+R 46        # under the planter
+- 4
+J 10        # break_brick (knocks out tourist #3 standing on it)
+- 20
+R 74
+RJ 20
+R 26
+RJ 24
+R 40
+- 30
+RJ 16       # onto the dwarf stone at col 74
+- 26
+L 10
+- 60
+R 10        # hurt_shrink: tourist #4 in the trench walks into her
+- 100

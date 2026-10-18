@@ -154,7 +154,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 | Resi walk | 4 | 8 |
 | Resi run | 4 | 5 |
 | Resi jump / fall | 1 / 1 | – |
-| Enemy walk | 2 | 12 |
+| Enemy walk | 2 | 10–12 (per `docs/sprite-catalog.md`) |
 | Enemy squished / hit | 1 | held 30 then removed |
 | Oblate spin | 4 | 8 |
 | Water surface | 4 | 12 |
@@ -198,6 +198,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 - HUD text: `w` with a 1 px `k` shadow to the bottom right (or a full `k` outline), numbers in `Y`. Must stay readable over every background, including `h` sky and `w` clouds.
 - Panels: `B` fill with a `k` border and a 1 px `S` or `i` inner highlight on top/left.
 - Titles: `r` with `w` inner highlight and `k` outline; logo accents `Y`.
+- The game logo (`title_logo`) may be gold Oblaten branding instead: `c Y o` face, `O l` extrusion, `k` outline (approved M1).
 - No UI dithering, no transparency effects.
 
 ## 12. Do / don't

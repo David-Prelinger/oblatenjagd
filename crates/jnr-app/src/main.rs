@@ -87,7 +87,7 @@ fn new_game(opts: &Options) -> Game {
         .unwrap_or_else(|| panic!("level `{}` is not embedded", opts.level));
     let level = Level::parse(src).unwrap_or_else(|e| panic!("level {}: {e}", opts.level));
     let tuning = Tuning::parse(TUNING_SRC).unwrap_or_else(|e| panic!("tuning.toml: {e}"));
-    Game::new(&level, &tuning, opts.seed)
+    Game::new_at(&level, &tuning, opts.seed, opts.start)
 }
 
 fn texts() -> Texts {
@@ -214,7 +214,7 @@ async fn run(opts: Options) {
     let mut game = new_game(&opts);
     let texts = texts();
     // All renderer lookups are resolved once here (rebuild on level change).
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, game.level());
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, game.level());
     let mut fb = Framebuffer::new();
     let mut bytes = Vec::with_capacity(WIDTH * HEIGHT * 4);
     let mut accumulator = 0.0;
@@ -337,8 +337,13 @@ mod tests {
     #[test]
     fn embedded_content_parses() {
         let game = new_game(&Options::default());
-        assert_eq!(game.level().meta.id, "testbed");
+        assert_eq!(game.level().meta.id, "salzburg");
         assert_eq!(game.frame(), 0);
+        assert_eq!(
+            game.mode(),
+            jnr_core::Mode::Title { frames: 0 },
+            "starts at the title"
+        );
         assert_eq!(texts().get("stage.clear"), "Etappe geschafft!");
     }
 

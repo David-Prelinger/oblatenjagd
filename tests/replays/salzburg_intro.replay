@@ -1,0 +1,19 @@
+# Stage 1 safe introductions: walk over the first Oblaten, bump the first
+# Oblatenkiste (col 15) from below, climb the 2- and 3-tile steps, then stomp
+# the first Selfie-Tourist on the flat Mirabellgarten ground (stomp at frame
+# ~454; JUMP pressed 3 frames earlier or later still stomps).
+level  = salzburg
+source = handwritten
+expect = deaths=0 no_event=Hurt oblaten>=15 score>=3100 lives=3 player_x>=640 state=playing
+---
+R 138       # walk under the ?-box
+- 12
+J 20        # bump it: +1 Oblate
+- 20
+R 10
+RJ 24       # 2-tile step
+R 12
+RJ 24       # 3-tile step
+R 158       # down to the meadow, the tourist walks towards Resi
+RJ 16       # jump onto it: stomp
+R 50

@@ -1,0 +1,27 @@
+# Brick debris: a chunk of the terracotta brick tile (E light, n body,
+# R shadow/mortar side) with a k outline. Spin = the chunk tumbles a
+# quarter turn between the two frames (lit edge stays top left).
+sprite = debris
+size   = 8x8
+origin = 4,8
+hitbox = 1,1,6,6
+anim   = spin frames=2 ticks=4 loop
+---
+frame spin 0
+........
+.kkkkk..
+.kEEEnk.
+.kEnnnRk
+.knnnnRk
+.knnRRRk
+..kkkkk.
+........
+frame spin 1
+........
+..kkkk..
+.kEEnnk.
+.kEnnnk.
+.knnnRk.
+.knnnRk.
+.kRRRRk.
+..kkkk..

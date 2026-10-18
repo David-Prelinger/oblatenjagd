@@ -1,0 +1,21 @@
+# QA (E1): hit the oblaten_10 brick once (frame 233), wait past its
+# 240-frame window, hit it again (489): that pays the last Oblate and
+# empties it; the next two hits pay nothing. 5 static + 2 = 7 Oblaten
+# (exactly 7 per the trace; the replay format only has `oblaten>=`).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 oblaten>=7 score>=1400 no_event=BrickBroken
+---
+RB 70
+RBJ 20
+R 95
+- 40
+J 6
+- 250
+J 6
+- 16
+J 6
+- 16
+J 6
+- 30

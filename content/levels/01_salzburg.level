@@ -1,0 +1,160 @@
+# Stage 1: Salzburg (docs/game-design.md "Stage 1: Salzburg").
+# 262 columns x 17 rows; the street's top is row 15 (rows 15-16 ground or
+# water). The top 3 rows are headroom so the camera can follow a high Maibaum
+# touch (D-030); the meadow after the rampart is one row lower, the goal's
+# lowest ground (D-029). Rows below are grid rows.
+#   1 Busbahnhof        0-29   bus sign 4; 5 Oblaten 7-11 at walking height;
+#                              B ? B at 14-16 (row 11, 4 above the street);
+#                              steps 18-19 (2) and 20-22 (3).
+#   2 Mirabellgarten   30-79   tourist #1 at 46 (activates after the start and
+#                              meets Resi on flat ground); B M at 46-47
+#                              (row 11); hedge A 51-55 (rows 13-14, walls 51
+#                              and 55 on row 12; 4 right of the M-box, turns
+#                              the Mozartkugel) with tourist #2 walled in on
+#                              its top 52-54 so it is still there when Resi
+#                              arrives (D-038); hedge
+#                              planter 57-61 (compact 5x2, brick floor) with
+#                              Oblaten and tourist #3 (break in as Zuckerschock
+#                              or jump in from the hedge); „Do-Re-Mi" sign 60
+#                              (clear of the basin edge, D-038) by the Pegasus
+#                              fountain 64-71 (basins 2 high with
+#                              fountain_water, plinth 67-68 4 high with the
+#                              pegasus prop, Oblaten arc); Zwergerlgarten:
+#                              zwerg props on stones 73/74/78/79, tourist #4 at
+#                              76. No pits.
+#   3 Makartsteg       80-124  ground 80-82, sign 83 (off the Zwerg stone),
+#                              deck from 83; Salzach
+#                              gaps 94-95 (2), 100-102 (3), 107-109 (3),
+#                              118-121 (4); Taube #1 spawns at 97 (row 12) and
+#                              meets Resi at head height over the deck ~86-90;
+#                              three more high above the gaps (105/114/123,
+#                              row 6: above every jump arc incl. Zuckerschock
+#                              jumps from the railing, D-038);
+#                              raised solid railing 111-115 for the optional
+#                              6-tile running jump to 122 (Oblaten arc 116-121).
+#   4 Getreidegasse   125-179  house blocks (facade, rows 3-7: five storeys of
+#                              upper floors over the street) 125-128, 166-169,
+#                              175-178; checkpoint
+#                              128, M-box 132 (row 11), house steps 136-137;
+#                              Zunftschilder Z1 138-140 (row 11), Z3 152-154
+#                              (row 8), Z4 157-159 (row 11); house 144-148 with
+#                              an Erker (facade box, Oblaten inside) under the
+#                              burger sign (row 8): drop-through only; bench 142
+#                              keeps tourist pair A (138/141) out from under the
+#                              Erker; pair B 150/155; geburtshaus prop (back
+#                              layer) behind 159-163 with its sign at 160 and
+#                              Verkaeufer #1 at 163; stand 171-174 (roof row
+#                              12, 3 up) with Verkaeufer #2 at 173 (10 apart).
+#                              The house over the burger sign is rows 0-3, so
+#                              there are 4 tiles of air over the sign (D-038).
+#   5 Domplatz/Festung 180-261 Residenzbrunnen 190-194 (all five columns 3
+#                              high, the prop drawn over them, D-038), Fiaker 200 (standing on the fountain
+#                              triggers it; it charges through underneath); Dombogen 205-211: a building
+#                              up to the top row (facade, arch, arch_under on
+#                              row 10) over a 4-high passage; Jedermann sign 215
+#                              in front of the stage 215-220 (2 high) with a
+#                              tourist; grandstand 223-228 (tiers 1/2) with two
+#                              tourists; Kapitelplatz: sign 227, sphaera prop
+#                              over invisible tiles 230-231 (2x2) and 231 row 12
+#                              (the man; dx 28 splits the 8 px grid offset: man
+#                              inside his cell, ball 4 px right of its 2x2)
+#                              with a sitting Taube on his head;
+#                              Festungsbahn sign 235; Festungsbahn 238-247: the
+#                              car waits for its rider at the lower station in
+#                              the trench 238-242 (row 15 open, rock below; car
+#                              top 8 px above the street) and rides to = [7, -5]
+#                              (top 8 px above the rampart top); rock stairs
+#                              243-247 under the track (steps <= 2, D-027/D-028);
+#                              rampart edge 248 (top row 10, 5 above the street,
+#                              6 above the meadow); a Taube spawned at 229 (row 9)
+#                              meets Resi over the stage / grandstand approach
+#                              (~219-222, D-032 meeting rule: 7-11 columns left of
+#                              spawn) before the Sphaera Taube rises (Resi within
+#                              6 tiles of 231), so the two arrive one after the
+#                              other (D-038); neither reaches the track;
+#                              Maibaum 252 on the meadow, Ortsende sign 255,
+#                              level end 261 (D-031: the camera clamps at the
+#                              goal).
+
+[meta]
+id = "salzburg"
+title_key = "stage.salzburg.title"
+time_limit = 300
+min_jump_window = 6
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_untersberg", factor = 3 },
+  { sprite = "bg_festung", factor = 8 },
+  { sprite = "bg_rooftops", factor = 13 },
+]
+
+[legend]
+"#" = "ground"
+"," = "meadow"
+"R" = "rock"
+"Q" = "rampart"
+"h" = "hedge"
+"S" = "stone"
+"=" = "bridge"
+"X" = "railing"
+"|" = "railing_bg"
+"~" = "salzach_water"
+"w" = "salzach_water_deep"
+"B" = "brick"
+"A" = "arch"
+"n" = "arch_under"
+"H" = "facade"
+"I" = "invisible"
+"-" = "oneway_sign"
+"_" = "oneway_burger"
+"k" = "oneway_wood"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"o" = { entity = "oblate" }
+"t" = { entity = "selfie_tourist" }
+"p" = { entity = "taube" }
+"q" = { entity = "taube_sitting" }
+"v" = { entity = "mozartkugel_verkaeufer" }
+"f" = { entity = "fiaker" }
+"F" = { entity = "festungsbahn", to = [7, -5] }
+"C" = { entity = "checkpoint" }
+"c" = { entity = "sign", text = "stage.salzburg.sign_checkpoint", style = "bus" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal_maibaum" }
+"W" = { entity = "prop", sprite = "fountain_water" }
+"Y" = { entity = "prop", sprite = "pegasus", dx = 8 }
+"Z" = { entity = "prop", sprite = "zwerg" }
+"U" = { entity = "prop", sprite = "residenzbrunnen", dx = 48 }
+"K" = { entity = "prop", sprite = "geburtshaus", layer = "back" }
+"V" = { entity = "prop", sprite = "dombogen", layer = "back" }
+"D" = { entity = "prop", sprite = "sphaera", dx = 28 }
+"b" = { entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }
+"m" = { entity = "sign", text = "stage.salzburg.sign_mirabell" }
+"l" = { entity = "sign", text = "stage.salzburg.sign_makartsteg" }
+"g" = { entity = "sign", text = "stage.salzburg.sign_geburtshaus" }
+"u" = { entity = "sign", text = "stage.salzburg.sign_stand" }
+"j" = { entity = "sign", text = "stage.salzburg.sign_jedermann" }
+"z" = { entity = "sign", text = "stage.salzburg.sign_sphaera" }
+"e" = { entity = "sign", text = "stage.salzburg.sign_festungsbahn" }
+"x" = { entity = "sign", text = "stage.salzburg.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+................................................................................................................................................HHHHH........................................................HHHHHHH..................................................
+................................................................................................................................................HHHHH........................................................HHHHHHH..................................................
+................................................................................................................................................HHHHH........................................................HHHHHHH..................................................
+.............................................................................................................................HHHH...............HHHHH.................HHHH.....HHHH..........................HHHHHHH..................................................
+.............................................................................................................................HHHH.....................................HHHH.....HHHH..........................HHHHHHH..................................................
+.............................................................................................................................HHHH.....................................HHHH.....HHHH..........................HHHHHHH..................................................
+.........................................................................................................p........p........p.HHHH.....................................HHHH.....HHHH..........................HHHHHHH..................................................
+...................................................................oo........................................................HHHH.......................ooo...........HHHH.....HHHH..........................AAAAAAA......................................oo..........
+..................................................................o..o................................................oo........................_____...---..................................................AAAAAAA.....................................o............
+..............ooo................................................o....o..............................................o..o.................ooo...H...H........ooo.............................................AAAAAAA................op................................
+.....................o.............................................Y................................................o....o......................HoooH..........................................ooo...........nnnnnnn...............o..o.................Q.............
+..............B?B...o.o.......................BM.........hotoh.....SS......ooo................oo....ooo....ooo......................M.....---...HHHHH........---.............v...................................................o..t..q................Q.............
+..................ooSSSo...........................h.t.h.hBBBh...W.SS.W..oo...oo.............o..op.........................................................................kkkk...............SSSSS......................t.....otkkkk..I...............RQ.............
+..................SSSSS.o..........................hhhhh........SSSSSSSS.ZZ...ZZ........................................................SS....................................................SSSSS...........ooooo....kkkkkk..kk.....II..............RRQ.............
+..P.b..ooooo......SSSSS...ooo.................t....hhhhh....m...SSSSSSSS.SS.t.SS...l||||||||||..||||...||||...|XXXXX||....|||...C...c...SSt..tS.......t....t....gK.v........u...ooo..........USSSSS.....f.......V......j...........z.DII...e........RRRRQ.............
+##############################,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,###===========~~====~~~====~~~========~~~~===#################################################################################################################F....RRRRRR...G..x......
+##############################,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,###wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww#################################################################################################################RRRRRRRRRRR,,,,,,,,,,,,,
+'''

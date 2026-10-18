@@ -1,0 +1,39 @@
+# QA (M1 Stage 1): walking back after a checkpoint respawn. salzburg_checkpoint's
+# route dies after the Hanuschplatz checkpoint and respawns there (frame 998,
+# x 2050, camera 1912: the 4-tile Salzach gap 118-121 is at the screen's left
+# edge). Walking left off the Makartsteg end drops into the Salzach: a clean
+# death (frame 1149), she respawns at the checkpoint again with the level reset
+# (no softlock, the checkpoint is not lost).
+level  = salzburg
+source = handwritten
+expect = deaths=2 lives=1 state=playing oblaten>=22
+expect = dies_at frames=1149..1149
+expect = player_x>=2040 event=Respawned
+---
+RB 64
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 67       # checkpoint
+RJ 8
+- 40
+R 20
+- 150       # side_hit; respawn_at_checkpoint
+L 80        # walk left off the bridge end into the Salzach
+- 120       # respawn at the checkpoint again

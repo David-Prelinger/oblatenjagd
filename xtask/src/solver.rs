@@ -7,7 +7,7 @@
 //! first, then fewer jumps; remaining ties keep their insertion order,
 //! which is deterministic), de-duplicated by a coarse state key (see
 //! [`StateKey`]) so the beam stays diverse, cut to the beam width plus a
-//! grounded reserve (see [`select_beam`]), and every survivor is expanded
+//! grounded and a "high" reserve (see [`select_beam`]), and every survivor is expanded
 //! with every macro-action in [`MACROS`]. A macro that makes the player die is pruned
 //! and counted as a "search death"; a macro that touches the goal stops at
 //! that frame. The search ends at the first bucket at or after the earliest
@@ -25,19 +25,26 @@
 //! if a search runs into the limit, which is why the limit (60 s) is
 //! generous: the testbed takes about 0.6 s.
 //!
-//! **Difficulty.** For every jump of the route (a JUMP press followed by a
-//! `Jumped`), the whole held-JUMP segment is shifted by d ∈ [-12, +12]
-//! frames with the rest of the inputs unchanged (padded with the last input
-//! past the end of the route). Its checkpoint is the first landing after
-//! that `Jumped` + 2 s, capped at the route's end. A shift succeeds if the
-//! player survives up to the next jump's checkpoint (or the end of the
-//! route) and, at its own checkpoint, is at most one tile behind the
-//! original (or has completed the level). The jump window is the
-//! contiguous successful range around d = 0. Each side records why it
-//! stopped ([`Bound`]): a failed shift, the route (the shift would start
-//! before frame 0 or touch a neighbouring JUMP hold) or ±12. Windows with
-//! a route-limited side are only lower bounds and never count as the
-//! narrowest.
+//! **Difficulty** (D-033: jump windows measure recoverability). For every
+//! jump of the route (a JUMP press followed by a `Jumped`), the whole
+//! held-JUMP segment is shifted by d ∈ [-12, +12] frames with the rest of
+//! the inputs unchanged (padded with the last input past the end of the
+//! route). Its checkpoint is the first landing after that `Jumped` + 2 s,
+//! capped at the route's end; the progress there is the original x minus
+//! one tile. A shift succeeds if the player survives the shifted jump and
+//! then reaches that progress (or completes the level) without dying:
+//! either the unchanged later inputs do it by the checkpoint (fast path),
+//! or a short re-planning beam search ([`recovers`], beam
+//! [`REPLAN_BEAM`]) from the state right after the shifted jump's landing
+//! (or, if the press made no jump, after its buffer ran out) reaches it
+//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames. So
+//! a later press that a 1-frame shift makes miss its buffer no longer
+//! collapses the window: a player would simply press it a frame later. The
+//! jump window is the contiguous successful range around d = 0. Each side
+//! records why it stopped ([`Bound`]): a failed shift, the route (the
+//! shift would start before frame 0 or touch a neighbouring JUMP hold) or
+//! ±12. Windows with a route-limited side are only lower bounds and never
+//! count as the narrowest.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -138,6 +145,11 @@ pub const MAX_SHIFT: i32 = 12;
 const CHECKPOINT_AFTER_LANDING: u32 = 2 * TICKS_PER_SECOND;
 /// A shifted jump may end up this many pixels behind the original.
 const PROGRESS_TOLERANCE_PX: i32 = 16;
+/// Beam width of the re-planning search after a shifted jump (D-033).
+pub const REPLAN_BEAM: usize = 12;
+/// The re-planning search may reach the progress this many frames after
+/// the jump's checkpoint (a shifted jump lands up to 12 frames later).
+pub const REPLAN_MARGIN: u32 = 30;
 
 // ------------------------------------------------------------------ search
 
@@ -213,10 +225,13 @@ impl Node {
 }
 
 /// Coarse state for de-duplication within a frame bucket: position in 4 px
-/// cells, speed in 1/4 px (x) and 1/2 px (y) per frame, grounded or not.
-/// Of several nodes with the same key only the best-ranked one is kept.
+/// cells, speed in 1/4 px (x) and 1/2 px (y) per frame, grounded or not,
+/// plus [`Game::world_hash`] (changed tiles, entities incl. enemy/platform state and pattern counters, checkpoint, power
+/// state), so states that differ in collected items, broken bricks or the
+/// power-up are kept apart. Of several nodes with the same key only the
+/// best-ranked one is kept.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct StateKey(i32, i32, i32, i32, bool);
+struct StateKey(i32, i32, i32, i32, bool, u64);
 
 impl StateKey {
     fn of(game: &Game) -> StateKey {
@@ -227,6 +242,7 @@ impl StateKey {
             p.vx.raw() >> 6,
             p.vy.raw() >> 7,
             p.on_ground,
+            game.world_hash(),
         )
     }
 }
@@ -352,10 +368,15 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
     }
 }
 
-/// The beam: the first `width` of the ranked `nodes`, plus the best
-/// grounded nodes after them until at least a quarter of `width` is
-/// grounded. Airborne nodes far right are often already doomed; the
-/// grounded reserve keeps safe states alive (e.g. waiting at an edge).
+/// The beam: the first `width` of the ranked `nodes`, plus, from the rest
+/// in rank order:
+/// - the best grounded nodes until at least a quarter of `width` is
+///   grounded. Airborne nodes far right are often already doomed; the
+///   grounded reserve keeps safe states alive (e.g. waiting at an edge);
+/// - up to a quarter of `width` "high" nodes: a node whose feet are higher
+///   than every kept node's in its [`HEIGHT_COLUMN_PX`] column. Furthest
+///   right alone drops a player waiting above a pit for a moving platform
+///   (or riding it) in favour of nodes further right down in the pit.
 fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
     let width = width.max(1);
     if nodes.len() <= width {
@@ -363,14 +384,34 @@ fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
     }
     let rest = nodes.split_off(width);
     let grounded = nodes.iter().filter(|n| n.game.player().on_ground).count();
-    let missing = (width / 4).saturating_sub(grounded);
-    nodes.extend(
-        rest.into_iter()
-            .filter(|n| n.game.player().on_ground)
-            .take(missing),
-    );
+    let mut missing = (width / 4).saturating_sub(grounded);
+    let mut high = width / 4;
+    let column = |n: &Node| n.game.player().x.to_px().div_euclid(HEIGHT_COLUMN_PX);
+    let feet = |n: &Node| n.game.player().feet().1;
+    let mut highest: BTreeMap<i32, jnr_core::Fx> = BTreeMap::new();
+    let keep = |n: &Node, highest: &mut BTreeMap<i32, jnr_core::Fx>| {
+        let y = highest.entry(column(n)).or_insert(feet(n));
+        *y = (*y).min(feet(n));
+    };
+    for n in &nodes {
+        keep(n, &mut highest);
+    }
+    for n in rest {
+        if missing > 0 && n.game.player().on_ground {
+            missing -= 1;
+        } else if high > 0 && highest.get(&column(&n)).is_none_or(|&y| feet(&n) < y) {
+            high -= 1;
+        } else {
+            continue;
+        }
+        keep(&n, &mut highest);
+        nodes.push(n);
+    }
     nodes
 }
+
+/// Column width of the beam's "high node" reserve (see [`select_beam`]).
+const HEIGHT_COLUMN_PX: i32 = 16;
 
 /// Expands every node (on up to `threads` threads); the result is in node order.
 fn expand_all(nodes: &[Node], threads: usize) -> Vec<Vec<Option<Node>>> {
@@ -513,26 +554,104 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
 }
 
 /// Runs `inputs` up to frame `until` (or their end): `None` if the player
-/// died on the way, else the x at frame `check` (≤ `until`) and whether the
-/// level was completed by then.
+/// died on the way, else the x at frame `check` and whether the level was
+/// completed by then.
 fn progress(
     level: &Level,
     tuning: &Tuning,
     inputs: &[InputFrame],
     check: u32,
-    until: u32,
 ) -> Option<(i32, bool)> {
     let mut g = Game::new(level, tuning, 1);
-    let mut at_check = (g.player().x.to_px(), false);
-    for &i in inputs.iter().take(until as usize) {
+    for &i in inputs.iter().take(check as usize) {
         if g.step(i).contains(&Event::Died) {
             return None;
         }
-        if g.frame() <= check {
-            at_check = (g.player().x.to_px(), g.mode() == Mode::StageClear);
+        if g.mode() == Mode::StageClear {
+            return Some((g.player().x.to_px(), true));
         }
     }
-    Some(at_check)
+    Some((g.player().x.to_px(), false))
+}
+
+/// Where a shifted jump leaves the player for re-planning: after the step
+/// that lands it (the first `Landed` after its `Jumped`), or, if the press
+/// made no jump, after the jump buffer ran out. `Err(true)`: the level was
+/// completed on the way (success), `Err(false)`: died or never landed
+/// before `deadline` (failure).
+fn after_shifted_jump(
+    level: &Level,
+    tuning: &Tuning,
+    inputs: &[InputFrame],
+    press: u32,
+    deadline: u32,
+) -> Result<Game, bool> {
+    let buffer = tuning.player.jump_buffer_frames as u32;
+    let mut g = Game::new(level, tuning, 1);
+    let mut jumped = false;
+    let pad = inputs
+        .last()
+        .map_or(InputFrame::NONE, |f| f.without(InputFrame::JUMP));
+    while g.frame() < deadline {
+        let input = inputs.get(g.frame() as usize).copied().unwrap_or(pad);
+        let events = g.step(input);
+        if events.contains(&Event::Died) {
+            return Err(false);
+        }
+        if g.mode() == Mode::StageClear {
+            return Err(true);
+        }
+        let f = g.frame();
+        if f >= press && !jumped {
+            jumped = g.events().contains(&Event::Jumped);
+            if !jumped && f >= press + buffer {
+                return Ok(g);
+            }
+        } else if jumped && g.events().contains(&Event::Landed) {
+            return Ok(g);
+        }
+    }
+    Err(false)
+}
+
+/// The re-planning search (D-033): a small beam search with the solver's
+/// macro-actions from `game` that finds a node standing on the ground at
+/// x ≥ `x_goal` px (or completing the level) by frame `deadline`, without
+/// dying. Deterministic like [`search`] (nodes in rank order, results
+/// joined in node order).
+pub fn recovers(game: Game, x_goal: i32, deadline: u32, threads: usize) -> bool {
+    let reached = |g: &Game| {
+        g.mode() == Mode::StageClear || (g.player().on_ground && g.player().x.to_px() >= x_goal)
+    };
+    if reached(&game) {
+        return true;
+    }
+    let mut buckets: BTreeMap<u32, Vec<Node>> = BTreeMap::new();
+    buckets.insert(
+        game.frame(),
+        vec![Node {
+            game,
+            jumps: 0,
+            trail: None,
+        }],
+    );
+    while let Some((_, mut nodes)) = buckets.pop_first() {
+        nodes.sort_by_key(|n| (std::cmp::Reverse(n.x()), n.jumps));
+        let mut seen = BTreeSet::new();
+        nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
+        let nodes = select_beam(nodes, REPLAN_BEAM);
+        for node in expand_all(&nodes, threads).into_iter().flatten().flatten() {
+            let f = node.game.frame();
+            if f > deadline {
+                continue;
+            }
+            if reached(&node.game) {
+                return true;
+            }
+            buckets.entry(f).or_default().push(node);
+        }
+    }
+    false
 }
 
 /// The JUMP-held segments `[start, end)` of `inputs`.
@@ -638,20 +757,29 @@ pub fn jump_windows(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Ve
         })
         .collect();
 
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
     let mut out = Vec::new();
-    for (k, jump) in jumps.iter().enumerate() {
+    for jump in &jumps {
         let (s, e) = jump.hold;
         let check = jump.check;
-        // Survive up to the next jump's checkpoint (or the end of the
-        // route): a shift that ruins a later jump fails too.
-        let until = jumps.get(k + 1).map_or(total, |n| n.check).max(check);
-        let x_ref = orig.x[check as usize];
-        let (lo, lo_bound, hi, hi_bound) = window_range(|d| match shift_hold(inputs, s, e, d) {
-            None => Shifted::Route,
-            Some(shifted) => match progress(level, tuning, &shifted, check, until) {
-                Some((x, done)) if done || x >= x_ref - PROGRESS_TOLERANCE_PX => Shifted::Ok,
-                _ => Shifted::Fail,
-            },
+        let x_goal = orig.x[check as usize] - PROGRESS_TOLERANCE_PX;
+        let deadline = check + REPLAN_MARGIN;
+        let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
+            let Some(shifted) = shift_hold(inputs, s, e, d) else {
+                return Shifted::Route;
+            };
+            // Fast path: the unchanged later inputs already get there.
+            if let Some((x, done)) = progress(level, tuning, &shifted, check)
+                && (done || x >= x_goal)
+            {
+                return Shifted::Ok;
+            }
+            let press = (s as i64 + i64::from(d)) as u32 + 1;
+            let ok = match after_shifted_jump(level, tuning, &shifted, press, deadline) {
+                Ok(game) => recovers(game, x_goal, deadline, threads),
+                Err(done) => done,
+            };
+            if ok { Shifted::Ok } else { Shifted::Fail }
         });
         out.push(JumpWindow {
             index: s,
@@ -772,6 +900,7 @@ impl Solution {
             level: self.level.clone(),
             seed: 1,
             source: Source::Solver,
+            start: jnr_core::Start::Playing,
             expects: vec![
                 Expect::Complete(Some(FrameRange { first: n, last: n })),
                 Expect::Deaths(0),
@@ -1079,7 +1208,7 @@ fn solve_and_report(
     let mut files = Files::default();
 
     let texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, level);
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, level);
     let dir = &out.preview;
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     if sol.search.complete() {
@@ -1138,9 +1267,31 @@ fn write_report(dir: &Path, sol: &Solution, files: &Files) -> Result<(PathBuf, P
     Ok((json_path, md_path))
 }
 
-/// The `solver` verify step: every level must be solved and have its
-/// committed `tests/replays/<id>_solver.replay`. Returns (ok, output, note
-/// with the narrowest jump window per level).
+/// Why a solved route breaks the level's `min_jump_window` (D-030): its
+/// narrowest jump window (see [`narrowest`]) is smaller. `None` if fine,
+/// the level sets no minimum, or the search failed (reported elsewhere).
+pub fn window_problem(level: &Level, sol: &Solution) -> Option<String> {
+    let min = level.meta.min_jump_window?;
+    if !sol.search.complete() {
+        return None;
+    }
+    let w = narrowest(&sol.windows).filter(|w| w.size() < min)?;
+    Some(format!(
+        "FAIL {}: narrowest jump window {} frames < min_jump_window {min} (jump at frame {}, x={}, bounds {}/{}; see the {}_narrowest image)",
+        level.meta.id,
+        w.size(),
+        w.frame(),
+        w.x,
+        w.lo_bound.as_str(),
+        w.hi_bound.as_str(),
+        level.meta.id
+    ))
+}
+
+/// The `solver` verify step: every level must be solved, have its
+/// committed `tests/replays/<id>_solver.replay`, and keep its narrowest
+/// jump window at least `min_jump_window` (if set, [`window_problem`]).
+/// Returns (ok, output, note with the narrowest jump window per level).
 pub fn verify(root: &Path) -> (bool, String, String) {
     verify_into(root, &OutDirs::of(root))
 }
@@ -1167,6 +1318,10 @@ fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
                 ok &= sol.search.complete();
                 out.push_str(&text);
                 notes.push(sol.note());
+                if let Some(p) = window_problem(level, &sol) {
+                    ok = false;
+                    out.push_str(&format!("{p}\n"));
+                }
                 let id = &level.meta.id;
                 let replay = dirs.replays.join(format!("{id}_solver.replay"));
                 if !replay.is_file() {
@@ -1387,7 +1542,27 @@ mod tests {
         mixed.extend(vec![airborne.clone(); 6]);
         assert_eq!(select_beam(mixed, 4).len(), 4);
         // Fewer nodes than the width: unchanged.
-        assert_eq!(select_beam(vec![airborne; 3], 4).len(), 3);
+        assert_eq!(select_beam(vec![airborne.clone(); 3], 4).len(), 3);
+
+        // High reserve: a node higher than every kept node in its column
+        // survives the cut (one per quarter of the width), lower ones don't.
+        let mut low_first = vec![grounded.clone(); 6];
+        low_first.extend([airborne.clone(), airborne.clone(), grounded.clone()]);
+        let beam = select_beam(low_first, 4);
+        assert_eq!(on_ground(&beam), [true, true, true, true, false]);
+        // In another column it counts on its own.
+        let mut far = grounded.clone();
+        let centre = far.game.player().center_px().0;
+        far.game.teleport_player(centre + HEIGHT_COLUMN_PX);
+        far.game.step(InputFrame::JUMP);
+        let mut ranked = vec![far; 4];
+        ranked.extend([airborne.clone(), grounded]);
+        let beam = select_beam(ranked, 4);
+        assert_eq!(
+            beam.len(),
+            6,
+            "a higher node in the column and the grounded reserve"
+        );
     }
 
     #[test]
@@ -1489,20 +1664,21 @@ mod tests {
         assert_eq!(narrowest(&w), Some(&w[0]));
     }
 
+    /// D-033: jump 1 is a hop while still accelerating (air accel < ground
+    /// accel), so its timing moves the player by a few pixels for good.
+    /// Jump 2, before jump 1's checkpoint, is pressed on the last coyote
+    /// frame before a pit. With every later press fixed, a later hop makes
+    /// jump 2 too late and the player dies (the old metric: a narrow
+    /// window). Re-planning after the hop's landing simply jumps a frame
+    /// earlier, so jump 1's window is wide.
     #[test]
-    fn shifted_jump_that_ruins_a_later_jump_fails() {
-        // Jump 1 is a hop while still accelerating (air accel < ground
-        // accel), so its timing moves the player by a few pixels for good.
-        // Jump 2, more than 2 s after jump 1's landing, is pressed on the
-        // last coyote frame before a pit. A shift of jump 1 that is fine at
-        // its own checkpoint can make jump 2 too late; it must count as a
-        // failure of jump 1's window.
-        let w = 70;
+    fn a_fixed_later_press_no_longer_narrows_the_window() {
+        let w = 60;
         let air = ".".repeat(w);
         let mut top = ".".repeat(w);
         top.replace_range(1..2, "P");
         top.replace_range(w - 2..w - 1, "G");
-        let pit_col = 40;
+        let pit_col = 16;
         let ground = format!(
             "{}{}{}",
             "#".repeat(pit_col),
@@ -1514,19 +1690,25 @@ mod tests {
         let hop = 3;
         let mut prefix = vec![RB; hop];
         prefix.push(RBJ);
-        // Find the first airborne step at the pit edge (after the hop).
+        // The hop's landing, then the first airborne step at the pit edge.
         let mut probe = Game::new(&level, &t, 1);
-        let mut left_ground = 0;
+        let (mut landed, mut left_ground) = (0, 0);
         for i in 0..400 {
             let input = prefix.get(i).copied().unwrap_or(RB);
-            probe.step(input);
-            if i > 60 && !probe.player().on_ground {
+            let events = probe.step(input).to_vec();
+            if landed == 0 && events.contains(&Event::Landed) {
+                landed = probe.frame();
+            } else if landed > 0 && !probe.player().on_ground {
                 left_ground = i;
                 break;
             }
         }
-        assert!(left_ground > 0);
+        assert!(landed > 0 && left_ground > 0);
         let press2 = left_ground + t.player.coyote_frames as usize - 1;
+        assert!(
+            (press2 as u32) < landed + CHECKPOINT_AFTER_LANDING,
+            "jump 2 comes before jump 1's checkpoint"
+        );
         let mut inputs = prefix.clone();
         inputs.resize(press2, RB);
         inputs.extend([RBJ; 20]);
@@ -1534,30 +1716,59 @@ mod tests {
         let windows = jump_windows(&level, &t, &inputs);
         assert_eq!(windows.len(), 2, "{windows:?}");
         let w1 = &windows[0];
-        assert!(
-            windows[1].index > (w1.index + 150),
-            "jump 2 is far after jump 1"
-        );
 
-        // Some shift of jump 1 dies only after jump 1's own checkpoint ...
+        // With the later inputs fixed, some later hops die at the pit ...
         let (s, e) = (w1.index, w1.index + 1);
         let dies = |d: i32| {
             let shifted = shift_hold(&inputs, s, e, d).unwrap();
             let mut g = Game::new(&level, &t, 1);
             shifted.iter().any(|&i| g.step(i).contains(&Event::Died))
         };
-        let late_deaths: Vec<i32> = (1..=MAX_SHIFT).filter(|&d| dies(d)).collect();
+        let fixed_deaths: Vec<i32> = (1..=MAX_SHIFT).filter(|&d| dies(d)).collect();
         assert!(
-            !late_deaths.is_empty(),
-            "scenario: a later hop ruins jump 2"
+            !fixed_deaths.is_empty(),
+            "scenario: a later hop ruins the fixed jump 2"
         );
-        // ... and the window stops before it.
-        assert!(
-            w1.hi < late_deaths[0],
-            "{w1:?} vs deaths at {late_deaths:?}"
+        // ... before jump 1's checkpoint, so the fast path fails ...
+        let shifted = shift_hold(&inputs, s, e, fixed_deaths[0]).unwrap();
+        let check = landed + CHECKPOINT_AFTER_LANDING;
+        assert_eq!(
+            progress(&level, &t, &shifted, check),
+            None,
+            "dies by {check}"
         );
-        assert_eq!(w1.hi_bound, Bound::Fail, "{w1:?}");
+        // ... but the window re-plans and reaches +12.
+        assert_eq!(
+            (w1.hi, w1.hi_bound),
+            (MAX_SHIFT, Bound::Max),
+            "{w1:?} vs fixed deaths at {fixed_deaths:?}"
+        );
+        assert_eq!(w1.lo_bound, Bound::Route, "{w1:?}");
+        // Jump 2 itself is a real coyote-limited jump: still narrow on the
+        // late side.
+        let w2 = &windows[1];
+        assert_eq!(w2.hi_bound, Bound::Fail, "{w2:?}");
+        assert!(w2.hi <= 1, "{w2:?}");
     }
+
+    #[test]
+    fn replanning_finds_a_way_or_reports_none() {
+        // From the start of a level with a 3-tile gap the re-planning
+        // search gets past the gap; across an 11-tile gap it can't.
+        let t = tuning();
+        let threads = 2;
+        let ok = gap_level(3);
+        let g = Game::new(&ok, &t, 1);
+        assert!(recovers(g, 20 * 16, 400, threads));
+        let wide = gap_level(11);
+        let g = Game::new(&wide, &t, 1);
+        assert!(!recovers(g, 26 * 16, 400, threads));
+        // Already there: true without searching.
+        let g = Game::new(&ok, &t, 1);
+        let x = g.player().x.to_px();
+        assert!(recovers(g, x, 0, threads));
+    }
+
     #[test]
     fn clean_route_drops_mid_air_presses_and_trims_long_holds() {
         let level = gap_level(0);
@@ -1601,15 +1812,58 @@ mod tests {
     #[test]
     fn verify_fails_without_the_committed_solver_replay() {
         let dirs = tmp_dirs("verify_missing_replay");
+        // Every level in content/levels, whatever they are.
+        let ids: Vec<String> = all_levels(&root())
+            .unwrap()
+            .into_iter()
+            .map(|l| l.meta.id)
+            .collect();
+        assert!(ids.contains(&"testbed".to_owned()), "{ids:?}");
         let (ok, out, note) = verify_into(&root(), &dirs);
         assert!(!ok, "{out}");
         assert!(out.contains("missing solver replay"), "{out}");
-        assert!(out.contains("`cargo xtask solve testbed --write`"), "{out}");
-        assert!(note.starts_with("testbed: "), "{note}");
-        // With the replay present (any content: the `replays` step checks it).
-        fs::write(dirs.replays.join("testbed_solver.replay"), "").unwrap();
+        for id in &ids {
+            assert!(
+                out.contains(&format!("`cargo xtask solve {id} --write`")),
+                "{id}: {out}"
+            );
+            assert!(note.contains(&format!("{id}: ")), "{note}");
+        }
+        // With the replays present (any content: the `replays` step checks them).
+        for id in &ids {
+            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
+        }
+        // Other failures (a level's `min_jump_window`) are not this test's
+        // business: whatever fails is reported as a FAIL line.
         let (ok, out, _) = verify_into(&root(), &dirs);
-        assert!(ok, "{out}");
+        assert!(!out.contains("missing solver replay"), "{out}");
+        assert_eq!(ok, !out.contains("FAIL "), "{out}");
+    }
+
+    #[test]
+    fn a_window_below_min_jump_window_fails() {
+        let mut level = gap_level(3);
+        let t = tuning();
+        let sol = solve(&level, &t, &opts(&level, 4));
+        let w = narrowest(&sol.windows)
+            .expect("one jump over the gap")
+            .clone();
+        assert_eq!(window_problem(&level, &sol), None, "no minimum set");
+        level.meta.min_jump_window = Some(w.size());
+        assert_eq!(window_problem(&level, &sol), None, "exactly the minimum");
+        level.meta.min_jump_window = Some(w.size() + 1);
+        let p = window_problem(&level, &sol).expect("too narrow");
+        let id = &level.meta.id;
+        assert!(
+            p.starts_with(&format!(
+                "FAIL {id}: narrowest jump window {} frames < min_jump_window {} (jump at frame {}, x={}, ",
+                w.size(),
+                w.size() + 1,
+                w.frame(),
+                w.x
+            )),
+            "{p}"
+        );
     }
 
     #[test]

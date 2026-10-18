@@ -1,0 +1,62 @@
+# Maibaum Wurstkranz from the Festungsbahn car (D-038): ride the car up
+# (salzburg_festungsbahn's route), stand on it at the top station (x 3946,
+# feet y 152), then a running held jump (RBJ) towards the pole touches it
+# with the feet 118 px (>= 7 tiles) above its base -> Wurstkranz, 5000.
+# (Was bug_salzburg_wurstkranz_from_car with a standing jump; that one is
+# now qa_salzburg_car_standing_jump.) 8700 before the jump + an Oblate (200)
+# on the running arc + 5000 = 13900, ending during the slide (with the 2000
+# zone it would end at 10900).
+level  = salzburg
+source = handwritten
+expect = event=LevelComplete deaths=0 state=stage_clear score=13400
+# frames 0-1479 re-spliced from salzburg_solver after the D-038 Taube move (orchestrator)
+---
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 42
+L 6
+- 152
+RBJ 30
+RB 60

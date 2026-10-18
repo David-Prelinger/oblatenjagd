@@ -1,0 +1,25 @@
+# Written by `cargo xtask solve enemies --write`; re-create it instead of editing.
+level  = enemies
+seed   = 1
+source = solver
+expect = complete frames=717..717 deaths=0
+---
+RB 76
+RBJ 36
+RB 56
+RBJ 6
+RB 13
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 16
+RBJ 36
+RB 56
+RBJ 36
+RB 10
+RBJ 36
+RB 48
+RBJ 36
+RB 100

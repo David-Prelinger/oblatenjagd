@@ -272,6 +272,137 @@ fn head_bump_stops_the_jump() {
     assert!(g.player().on_ground);
 }
 
+/// Horizontal distance (subpixels) of a held jump at full speed from the
+/// take-off to the landing on flat ground.
+fn jump_reach(token_run: &str, token_jump: &str) -> Fx {
+    let mut g = Game::new(&flat(120), &tuning(), 1);
+    hold(&mut g, "-", 2);
+    hold(&mut g, token_run, 60);
+    let x0 = g.player().x;
+    assert!(g.step(input(token_jump)).contains(&Event::Jumped));
+    for _ in 0..200 {
+        if g.step(input(token_jump)).contains(&Event::Landed) {
+            return g.player().x - x0;
+        }
+    }
+    panic!("never landed");
+}
+
+#[test]
+fn walking_jump_reaches_5_tiles() {
+    let reach = jump_reach("R", "RJ");
+    assert_near(
+        "walking jump reach",
+        reach,
+        Fx::from_px(5 * TILE_PX),
+        Fx::from_px(8),
+    );
+}
+
+/// "~9 tiles" (game-design.md) is the M0 measurement of 157 px airborne
+/// distance; this pins it to 9–10 tiles (a ceiling for optional routes).
+#[test]
+fn running_jump_reaches_9_to_10_tiles() {
+    let reach = jump_reach("RB", "RBJ");
+    assert!(
+        (Fx::from_px(9 * TILE_PX)..=Fx::from_px(10 * TILE_PX)).contains(&reach),
+        "running jump reach {} px",
+        reach.to_px()
+    );
+}
+
+/// Falls from high above onto a (standing) Mozartkugel-Verkäufer holding
+/// `token`; returns how far the feet rise after the stomp (subpixels).
+fn stomp_rise(token: &str) -> Fx {
+    let air = "..........";
+    let mut rows = vec![air; 14];
+    rows[2] = "..P.......";
+    rows[11] = "..v.......";
+    rows[12] = "##########";
+    rows[13] = "##########";
+    let mut g = Game::new(&level(&rows), &tuning(), 1);
+    for _ in 0..120 {
+        if g.step(input(token)).contains(&Event::Stomped) {
+            let stomp_feet = g.player().y + g.player().h;
+            let mut top = stomp_feet;
+            while g.player().vy < Fx::ZERO {
+                g.step(input(token));
+                top = top.min(g.player().y + g.player().h);
+            }
+            return stomp_feet - top;
+        }
+    }
+    panic!("no stomp");
+}
+
+#[test]
+fn stomp_bounce_is_1_tile_without_jump() {
+    let rise = stomp_rise("-");
+    assert_near("stomp bounce", rise, Fx::from_px(16), Fx::from_px(4));
+}
+
+#[test]
+fn stomp_bounce_is_3_tiles_with_jump_held() {
+    let rise = stomp_rise("J");
+    assert!(
+        (Fx::from_px(48)..=Fx::from_px(56)).contains(&rise),
+        "held stomp bounce: {} px (target 48..56)",
+        rise.to_px()
+    );
+}
+
+#[test]
+fn zuckerschock_hitbox_is_12_by_30_and_growing_keeps_the_feet() {
+    let t = tuning();
+    let mut g = Game::new(&flat(20), &t, 1);
+    let feet = g.player().feet();
+    assert_eq!(
+        (g.player().w, g.player().h),
+        (Fx::from_px(12), Fx::from_px(22))
+    );
+    g.player.set_power(crate::Power::Big, &t.player);
+    assert_eq!(
+        (g.player().w, g.player().h),
+        (Fx::from_px(12), Fx::from_px(30))
+    );
+    assert_eq!(g.player().feet(), feet);
+    assert_eq!(g.player().transform, 30, "transformation freeze");
+}
+
+#[test]
+fn transformation_freezes_30_frames_and_hurt_gives_120_safe_frames() {
+    // A (standing) Verkäufer next to a Zuckerschock player: hurt, freeze,
+    // then exactly 120 frames in which touching it does nothing.
+    let rows = ["..........", "..P.v.....", "##########"];
+    let t = tuning();
+    let mut g = Game::new(&level(&rows), &t, 1);
+    g.player.set_power(crate::Power::Big, &t.player);
+    g.player.transform = 0;
+    let mut frames = 0;
+    while !g.step(input("R")).contains(&Event::Hurt) {
+        frames += 1;
+        assert!(frames < 60);
+    }
+    let mut frozen = 0;
+    let x = g.player().x;
+    while g.player().transform > 0 {
+        g.step(input("R"));
+        assert_eq!(g.player().x, x);
+        frozen += 1;
+    }
+    assert_eq!(frozen, 30);
+    let mut safe = 0;
+    loop {
+        let events = g.step(input("-")).to_vec();
+        if events.contains(&Event::Died) {
+            break;
+        }
+        safe += 1;
+        assert!(safe < 200, "never hurt again");
+    }
+    assert_eq!(safe, 120, "invulnerable frames");
+}
+
 /// Not an assertion: prints the measured numbers
 /// (`cargo test -p jnr-core print_measured -- --ignored --nocapture`).
 #[test]
@@ -287,4 +418,14 @@ fn print_measured_feel() {
     println!("tap jump {} px ({tap_air} f air)", px(tap));
     println!("walking jump {} px ({wj_air} f air)", px(wj));
     println!("running jump {} px ({rj_air} f air)", px(rj));
+    println!(
+        "jump reach walking {} px, running {} px",
+        px(jump_reach("R", "RJ")),
+        px(jump_reach("RB", "RBJ"))
+    );
+    println!(
+        "stomp bounce {} px, held {} px",
+        px(stomp_rise("-")),
+        px(stomp_rise("J"))
+    );
 }
