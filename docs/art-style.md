@@ -198,6 +198,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 - HUD text: `w` with a 1 px `k` shadow to the bottom right (or a full `k` outline), numbers in `Y`. Must stay readable over every background, including `h` sky and `w` clouds.
 - Panels: `B` fill with a `k` border and a 1 px `S` or `i` inner highlight on top/left.
 - Titles: `r` with `w` inner highlight and `k` outline; logo accents `Y`.
+- The game logo (`title_logo`) may be gold Oblaten branding instead: `c Y o` face, `O l` extrusion, `k` outline (approved M1).
 - No UI dithering, no transparency effects.
 
 ## 12. Do / don't
