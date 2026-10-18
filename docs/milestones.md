@@ -28,8 +28,8 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 Scope as in `game-design.md` → "Stage 1: Salzburg".
 
 - [ ] Player: walk, run, variable jump, coyote time, jump buffer, stomp; game-feel tests green
-- [ ] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
-- [ ] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
+- [x] Player states: normal, Zuckerschock (Mozartkugel), hurt with invulnerability frames, death
+- [x] Oblaten, Oblatenkisten, bricks, one-way Zunftschilder, Salzach water death
 - [ ] Enemies: Selfie-Tourist, Taube, Mozartkugel-Verkäufer, Fiaker
 - [ ] Checkpoint, Maibaum goal with height-based score
 - [ ] Camera (no scrolling back), enemy activation by distance
