@@ -2,9 +2,8 @@
 # Sections (columns): start 0-4; Oblatenkiste (Oblate) 5, bricks 6-7 and a
 # Mozartkugel box 8 (row 8, 4 tiles above the ground); a 2-tile wall at 16
 # turns the rolling Mozartkugel back; Oblaten 19-23; an oblaten_10 brick at 26
-# and a Zaunerstollen box at 28; a Selfie-Tourist at 34 (walks left from the
-# start and turns at the wall at 16); checkpoint 38; a 2-tile Salzach pit
-# 44-45; goal 60.
+# and a Zaunerstollen box at 28; a Selfie-Tourist at 34 to get
+# hurt by (`still = true`: a fixed target, it never walks; D-026); checkpoint 38; a 2-tile Salzach pit 44-45; goal 60.
 # Replays: tests/replays/items_*.replay.
 
 [meta]
@@ -20,7 +19,7 @@ time_limit = 100
 "Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
 "T" = { tile = "brick", contains = "oblaten_10" }
 "o" = { entity = "oblate" }
-"t" = { entity = "selfie_tourist" }
+"t" = { entity = "selfie_tourist", still = true }   # a fixed target (D-026)
 "C" = { entity = "checkpoint" }
 "S" = { entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }
 "s" = { entity = "sign", text = "stage.salzburg.sign_ortsende", style = "ortsende" }

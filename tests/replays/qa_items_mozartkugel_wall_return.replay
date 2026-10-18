@@ -1,0 +1,18 @@
+# QA (E1): bump the Mozartkugel box as Normal, step back left and wait.
+# The Mozartkugel rises, rolls right, falls off the box, turns at the
+# 2-tile wall (column 16) and rolls back into the waiting player:
+# Zuckerschock at frame 507, 1000 points (+200 for the box Oblate).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score>=1200 oblaten>=1 lives=3
+---
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10
+L 40
+- 330

@@ -20,10 +20,10 @@ RB 30
 RBJ 18
 - 10
 ```
-Other expectations: `dies_at frames=a..b`, `deaths<=N`, `player_x>=<px>`, `state=<playing|dying|stage_clear|game_over>`, `event=<Event>` (at least once), `no_event=<Event>` (`Jumped`, `Landed`, `Died`, `Respawned`, `LevelComplete`, `OblateCollected`, `PowerUp`, `Hurt`, `ExtraLife`, `BlockBumped`, `BrickBroken`, `Stomped`, `CheckpointReached`, `GameOver`), `oblaten>=N` (the HUD Oblaten counter at the end, 0..99), `score>=N`, `lives=N` (at the end).
+Other expectations: `dies_at frames=a..b`, `deaths<=N`, `player_x>=<px>` (hitbox left edge), `player_y>=<px>` / `player_y<=<px>` (hitbox top edge, whole level pixels, y grows downwards), `state=<playing|dying|stage_clear|game_over>`, `event=<Event>` (at least once), `no_event=<Event>` (`Jumped`, `Landed`, `Died`, `Respawned`, `LevelComplete`, `OblateCollected`, `PowerUp`, `Hurt`, `ExtraLife`, `BlockBumped`, `BrickBroken`, `Stomped`, `CheckpointReached`, `GameOver`), `oblaten>=N` / `oblaten=N` (the HUD Oblaten counter at the end, 0..99), `score>=N` / `score=N`, `lives=N` / `lives>=N` (at the end).
 Anything else is a parse error "not supported yet".
 
-Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 = before the first step), so `complete frames=731..731` means `LevelComplete` happened in step 731. Ranges are inclusive. The replay always runs to its last input; `state=`, `deaths`, `player_x` are checked at the end. `seed` defaults to 1; `level` is a `meta.id`. `expect` and `shots` may repeat. Shot names: `a-z 0-9 _`; frames ≤ the replay length.
+Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 = before the first step), so `complete frames=731..731` means `LevelComplete` happened in step 731. Ranges are inclusive. The replay always runs to its last input; `state=`, `deaths`, `player_x`, `player_y`, `oblaten`, `score`, `lives` are checked at the end. `seed` defaults to 1; `level` is a `meta.id`. `expect` and `shots` may repeat. Shot names: `a-z 0-9 _`; frames ≤ the replay length.
 
 ## Commands
 - `cargo xtask replay <file|name>` – run it, check expectations, check determinism (runs twice, compares `state_hash` every frame); `--all` runs every `tests/replays/*.replay`

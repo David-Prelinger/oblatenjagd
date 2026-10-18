@@ -27,6 +27,32 @@ pub struct Tuning {
     pub enemies: EnemyTuning,
     /// Moving platforms.
     pub platforms: PlatformTuning,
+    /// The Maibaum goal sequence.
+    pub goal: GoalTuning,
+}
+
+/// The Maibaum goal sequence (`docs/game-design.md` → "Goal sequence").
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GoalTuning {
+    /// Feet heights above the pole base (whole px) where the next score
+    /// zone starts, strictly increasing.
+    pub zone_heights: [i32; 4],
+    /// Points per zone (below the first height, ..., at or above the last
+    /// height = the Wurstkranz).
+    pub zone_scores: [u32; 5],
+    /// The player's hitbox right edge stays this many px left of the pole
+    /// centre while sliding (and the left edge as far right of it when
+    /// hopping off).
+    pub pole_offset: i32,
+    /// Slide speed down the pole.
+    pub slide_speed: Fx,
+    /// Upward speed of the hop off the pole base (player gravity applies).
+    pub hop_speed: Fx,
+    /// Frames the stage-clear texts stay after the time-bonus tally.
+    pub clear_frames: u16,
+    /// Frames of „Fortsetzung folgt …" before the title screen (M1).
+    pub to_be_continued_frames: u16,
 }
 
 /// Moving platforms.
@@ -112,6 +138,9 @@ pub struct GameTuning {
     pub death_frames: u16,
     /// Frames in `GameOver` before START restarts the stage.
     pub game_over_frames: u16,
+    /// Frames of the stage intro screen (at the start and after each death,
+    /// title flow only).
+    pub intro_frames: u16,
     /// Lives at the start and after a game over.
     pub lives_start: u8,
     /// Most lives.
@@ -179,6 +208,8 @@ pub struct ScoreTuning {
     pub stomp_chain: [u32; 8],
     /// An enemy defeated by bumping the block it stands on.
     pub bump_enemy: u32,
+    /// Time bonus per second left at the goal (tallied one second per frame).
+    pub time_bonus: u32,
     /// Frames a score popup is shown.
     pub popup_frames: u16,
     /// How far a popup floats up over its lifetime, whole pixels.
@@ -319,9 +350,14 @@ impl Tuning {
                 "tuning.toml: need 4 <= player.hitbox_w <= 16 and 4 <= player.hitbox_h <= 32",
             ));
         }
-        if !(p.hitbox_h..=32).contains(&p.hitbox_h_big) {
+        // Every gap a Normal player fits in (whole tiles on the 16 px grid)
+        // must fit the Zuckerschock too, so growing always finds room
+        // (`Player::fit_head`).
+        let gap = (p.hitbox_h + 15) / 16 * 16;
+        if !(p.hitbox_h..=gap).contains(&p.hitbox_h_big) {
             return Err(ParseError::new(
-                "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= 32",
+                "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= player.hitbox_h \
+                 rounded up to whole tiles (16 px)",
             ));
         }
         for (name, v) in [
@@ -429,6 +465,12 @@ impl Tuning {
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
             ),
+            ("game.intro_frames", g.intro_frames),
+            ("goal.clear_frames", self.goal.clear_frames),
+            (
+                "goal.to_be_continued_frames",
+                self.goal.to_be_continued_frames,
+            ),
         ] {
             if v == 0 {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
@@ -483,6 +525,27 @@ impl Tuning {
                 "tuning.toml: score.popup_frames must be >= 1",
             ));
         }
+        let goal = &self.goal;
+        if goal.zone_heights[0] <= 0 || goal.zone_heights.windows(2).any(|w| w[0] >= w[1]) {
+            return Err(ParseError::new(
+                "tuning.toml: goal.zone_heights must be > 0 and strictly increasing",
+            ));
+        }
+        if !(0..=TILE_PX / 2).contains(&goal.pole_offset) {
+            return Err(ParseError::new(
+                "tuning.toml: goal.pole_offset must be 0..=8 px",
+            ));
+        }
+        for (name, v) in [
+            ("goal.slide_speed", goal.slide_speed),
+            ("goal.hop_speed", goal.hop_speed),
+        ] {
+            if v <= Fx::ZERO || v >= max_step {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -531,6 +594,14 @@ mod tests {
     }
 
     #[test]
+    fn rejects_unordered_goal_zones() {
+        let t = REAL.replace("zone_heights = [32, 64,", "zone_heights = [32, 32,");
+        assert!(Tuning::parse(&t).is_err());
+        let t = REAL.replace("zone_heights = [32,", "zone_heights = [0,");
+        assert!(Tuning::parse(&t).is_err());
+    }
+
+    #[test]
     fn rejects_bad_values() {
         let neg = REAL.replace("friction = ", "friction = -");
         assert!(Tuning::parse(&neg).is_err());
@@ -553,6 +624,12 @@ mod tests {
             ("pop_frames", 0),
             ("multi_frames", 0),
             ("death_frames", 0),
+            ("intro_frames", 0),
+            ("clear_frames", 0),
+            ("to_be_continued_frames", 0),
+            ("slide_speed", 0),
+            ("hop_speed", 0),
+            ("pole_offset", 9),
             ("bump_frames", 1),
             ("multi_oblaten", 0),
             ("popup_frames", 0),
@@ -574,6 +651,9 @@ mod tests {
             ("hitbox_w", 17),
             ("hitbox_h", 3),
             ("hitbox_h", 33),
+            ("hitbox_h", 16),
+            ("hitbox_h_big", 21),
+            ("hitbox_h_big", 33),
         ] {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");

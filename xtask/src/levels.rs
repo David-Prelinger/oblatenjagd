@@ -122,6 +122,17 @@ pub fn lint(
         for p in jnr_core::platform::track_problems(level, tuning) {
             problems.push(format!("{shown}: {p}"));
         }
+        let test_level = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(|n| n.starts_with("00_"));
+        for e in level.entities.iter().filter(|e| e.still && !test_level) {
+            problems.push(format!(
+                "{shown}: still enemy at row {}, column {}: `still = true` is for grey-box test levels (00_*.level) only",
+                e.row + 1,
+                e.col + 1
+            ));
+        }
     }
     if let Some(id) = only
         && !matched
@@ -243,6 +254,23 @@ mod tests {
                 .starts_with("low.level: festungsbahn at row 6, column 2: less than 48 px free"),
             "{}",
             problems[0]
+        );
+    }
+
+    #[test]
+    fn still_enemies_only_in_test_levels() {
+        let text = "[meta]\nid = \"s\"\ntime_limit = 1\n[legend]\n\"P\" = { entity = \"player_start\" }\n\"G\" = { entity = \"goal\" }\n\"t\" = { entity = \"selfie_tourist\", still = true }\n[map]\ngrid = '''\nPtG\n'''\n";
+        let level = || Level::parse(text).map_err(|e| e.to_string());
+        let texts = Texts::parse("").unwrap();
+        let test = vec![(PathBuf::from("00_s.level"), level())];
+        assert_eq!(lint(&test, &texts, &tuning(), None), Vec::<String>::new());
+        let stage = vec![(PathBuf::from("01_s.level"), level())];
+        let problems = lint(&stage, &texts, &tuning(), None);
+        assert_eq!(
+            problems,
+            [
+                "01_s.level: still enemy at row 1, column 2: `still = true` is for grey-box test levels (00_*.level) only"
+            ]
         );
     }
 

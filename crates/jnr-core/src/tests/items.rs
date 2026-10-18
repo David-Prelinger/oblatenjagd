@@ -661,7 +661,11 @@ fn timer_stops_while_dying_and_at_the_goal() {
     let mut g = game(&world_with(20, 100, &[(11, 4, 'G')]));
     until(&mut g, "R", 120, |g| g.mode() == Mode::StageClear);
     let t = g.time_left();
-    hold(&mut g, "-", 300);
+    // It stands still while sliding, hopping and walking off; only the
+    // time-bonus tally counts it down (tests/goal.rs).
+    until(&mut g, "-", 400, |g| {
+        g.stage_clear().unwrap().phase == crate::ClearPhase::Tally
+    });
     assert_eq!(g.time_left(), t);
 }
 
@@ -788,7 +792,10 @@ fn losing_the_last_life_is_game_over_and_start_restarts_the_stage() {
     assert!(matches!(g.mode(), Mode::GameOver { .. }));
     hold(&mut g, "-", 1);
     let events = g.step(input("S")).to_vec();
-    assert!(events.contains(&Event::Respawned));
+    assert!(
+        !events.contains(&Event::Respawned),
+        "a restart is no respawn"
+    );
     assert_eq!(g.mode(), Mode::Playing);
     assert_eq!((g.lives(), g.score(), g.oblaten()), (3, 0, 0));
     assert_eq!(g.checkpoint(), None);
@@ -858,4 +865,169 @@ fn world_state_is_part_of_the_hash() {
     assert_ne!(a.state_hash(), base);
     a.time += 1;
     assert_eq!(a.state_hash(), base);
+}
+
+// ------------------------------------------------- growing under blocks
+
+/// Puts a Mozartkugel (done rising) on the player's centre, so the next
+/// step's `interact` makes her grow.
+fn feed_mozartkugel(g: &mut Game) {
+    let t = tuning();
+    let p = *g.player();
+    let mut m = crate::entity::Entity::at_feet(
+        EntityKind::Mozartkugel,
+        p.x + p.w.div_int(2),
+        p.y + p.h.div_int(2),
+        t.items.mozartkugel_hitbox,
+    );
+    m.timer = t.items.rise_frames + 1;
+    g.entities.push(m);
+}
+
+#[test]
+fn growing_while_rising_under_a_box_is_a_head_bump() {
+    let t = tuning();
+    // A solid block at column 2, row 9 (y 144..160), right above the start.
+    let mut g = game(&world(20, &[(9, 2, '#')]));
+    // Rising, head 4 px below the block: growing by 8 px puts it inside.
+    g.player.y = Fx::from_px(164);
+    g.player.vy = Fx::from_px(-2);
+    g.player.on_ground = false;
+    feed_mozartkugel(&mut g);
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::PowerUp));
+    let p = *g.player();
+    assert_eq!(p.power, Power::Big);
+    assert_eq!(p.y, Fx::from_px(160), "pushed down, flush below the block");
+    assert_eq!(p.vy, Fx::ZERO, "upward speed stopped");
+    assert!(!p.jump_rising);
+    // After the freeze she falls back to the ground and never gets above
+    // the block's bottom.
+    for _ in 0..t.player.transform_frames + 60 {
+        g.step(input("-"));
+        assert!(g.player().y >= Fx::from_px(160), "never into the block");
+    }
+    assert!(g.player().on_ground);
+    assert_eq!(feet_y(&g), Fx::from_px(12 * 16));
+    assert_eq!(g.tile(2, 9).unwrap().kind, TileKind::Solid);
+}
+
+#[test]
+fn growing_while_rising_with_jump_held_does_not_pass_the_box() {
+    // Same, but JUMP stays held the whole time (lower gravity while rising).
+    let mut g = game(&world(20, &[(9, 2, '#')]));
+    g.player.y = Fx::from_px(163);
+    g.player.vy = Fx::from_px(-3);
+    g.player.on_ground = false;
+    g.player.jump_rising = true;
+    g.player.jump_held = true;
+    feed_mozartkugel(&mut g);
+    for _ in 0..120 {
+        g.step(input("J"));
+        assert!(g.player().y >= Fx::from_px(160));
+    }
+    assert_eq!(g.player().power, Power::Big);
+    assert_eq!(feet_y(&g), Fx::from_px(12 * 16));
+}
+
+#[test]
+fn growing_on_the_ground_under_the_lowest_ceiling_fits_and_walks_out() {
+    let t = tuning();
+    // A ceiling at row 9 over columns 0..8 (y 144..160): two tiles of air
+    // above the ground, the lowest a Normal Resi can stand under.
+    let marks: Vec<_> = (0..8).map(|c| (9, c, '#')).collect();
+    let mut g = game(&world(20, &marks));
+    feed_mozartkugel(&mut g);
+    g.step(input("-"));
+    let p = *g.player();
+    assert_eq!(p.power, Power::Big);
+    assert_eq!(feet_y(&g), Fx::from_px(12 * 16), "feet stay on the ground");
+    assert!(p.y >= Fx::from_px(160), "the head fits under the ceiling");
+    assert!(p.on_ground);
+    hold(&mut g, "-", u32::from(t.player.transform_frames));
+    // A jump under the ceiling bumps, it does not pass.
+    for _ in 0..40 {
+        g.step(input("J"));
+        assert!(g.player().y >= Fx::from_px(160));
+    }
+    hold(&mut g, "-", 30);
+    // She walks out from under it.
+    until(&mut g, "R", 200, |g| g.player().x >= Fx::from_px(8 * 16));
+    assert_eq!(feet_y(&g), Fx::from_px(12 * 16));
+}
+
+#[test]
+fn fit_head_only_acts_on_overlap() {
+    let level = world(20, &[(9, 2, '#')]);
+    let map = crate::physics::TileMap::from_level(&level);
+    let mut p = *game(&level).player();
+    p.set_power(Power::Big, &tuning().player);
+    // Standing on the ground: the big head (y 162) is below the block.
+    let before = p;
+    assert!(!p.fit_head(&map));
+    assert_eq!(p, before);
+    // In the air with the head inside the block: pushed down, never up.
+    p.y = Fx::from_px(150);
+    p.vy = Fx::from_px(-2);
+    assert!(p.fit_head(&map));
+    assert_eq!((p.y, p.vy), (Fx::from_px(160), Fx::ZERO));
+    // Falling speed is kept.
+    p.y = Fx::from_px(150);
+    p.vy = Fx::from_px(2);
+    assert!(p.fit_head(&map));
+    assert_eq!((p.y, p.vy), (Fx::from_px(160), Fx::from_px(2)));
+}
+
+// ------------------------------------------------------------- popups
+
+#[test]
+fn breaking_a_brick_shows_a_50_popup() {
+    let mut g = game(&world(20, &[(9, 2, 'B')]));
+    g.player.set_power(Power::Big, &tuning().player);
+    g.player.transform = 0;
+    until(&mut g, "J", 30, |g| {
+        g.events().contains(&Event::BrickBroken)
+    });
+    let pops: Vec<_> = g
+        .entities()
+        .iter()
+        .filter(|e| matches!(e.kind, EntityKind::Popup(_)))
+        .collect();
+    assert_eq!(pops.len(), 1);
+    assert_eq!(pops[0].kind, EntityKind::Popup(Popup::Score(50)));
+    assert_eq!(pops[0].feet().0, Fx::from_px(2 * 16 + 8), "above the brick");
+}
+
+#[test]
+fn the_100th_oblate_shows_the_extra_life_popup() {
+    let mut g = game(&world(20, &[(11, 4, 'o')]));
+    g.oblaten = 99;
+    let events = until(&mut g, "R", 60, |g| {
+        g.events().contains(&Event::OblateCollected)
+    });
+    assert!(events.contains(&Event::ExtraLife));
+    assert_eq!(count(&g, EntityKind::Popup(Popup::ExtraLife)), 1);
+}
+
+#[test]
+fn the_100th_oblate_from_a_box_shows_the_extra_life_popup() {
+    let mut g = game(&world(20, &[(9, 2, '?')]));
+    g.oblaten = 99;
+    until(&mut g, "J", 30, |g| {
+        g.events().contains(&Event::OblateCollected)
+    });
+    assert_eq!(g.lives(), 4);
+    assert_eq!(count(&g, EntityKind::Popup(Popup::ExtraLife)), 1);
+}
+
+#[test]
+fn the_100th_oblate_at_the_lives_cap_shows_no_popup() {
+    let mut g = game(&world(20, &[(11, 4, 'o')]));
+    g.oblaten = 99;
+    g.lives = tuning().game.lives_max;
+    until(&mut g, "R", 60, |g| {
+        g.events().contains(&Event::OblateCollected)
+    });
+    assert_eq!(g.oblaten(), 0);
+    assert_eq!(count(&g, EntityKind::Popup(Popup::ExtraLife)), 0);
 }

@@ -45,7 +45,7 @@ pub use camera::{Camera, SCREEN_H, SCREEN_W};
 pub use enemies::Pose;
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
-pub use game::{DeathCause, Event, Game, Mode};
+pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};
 pub use input::InputFrame;
 pub use level::{Block, Contents, EntitySpawn, Level, SignStyle, SpawnKind, Tile, TileKind};
 pub use player::{Facing, Player, Power};

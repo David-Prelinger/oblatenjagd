@@ -1,0 +1,74 @@
+# Salzach surface (hazard): waves, t/T dither band (2 px), then flat T and b.
+sprite = tile_salzach_water
+size   = 16x16
+origin = 0,0
+anim   = idle frames=4 ticks=12 loop
+---
+frame idle 0
+.st......st.....
+tttt....tttt....
+tttwwttttttssttt
+TtTtTtTtTtTtTtTt
+tTtTtTtTtTtTtTtT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+frame idle 1
+...st......st...
+..tttt....tttt..
+sttttttwwtttttts
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+frame idle 2
+.....st......st.
+....tttt....tttt
+tttssttttttwwttt
+TtTtTtTtTtTtTtTt
+tTtTtTtTtTtTtTtT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+frame idle 3
+t......st......s
+tt....tttt....tt
+wttttttssttttttw
+tTtTtTtTtTtTtTtT
+TtTtTtTtTtTtTtTt
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbb

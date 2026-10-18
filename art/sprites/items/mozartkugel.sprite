@@ -1,0 +1,23 @@
+# Mozartkugel power-up, WRAPPED: silver foil ball i/m with a 1 px w glint
+# top left, a red r/R wrapper band round the middle with a gold Y portrait
+# medallion. Clearly different from the unwrapped brown
+# mozartkugel_thrown (no silver, no red there).
+sprite = mozartkugel
+size   = 12x12
+origin = 6,12
+hitbox = 1,2,10,10
+anim   = idle frames=1
+---
+frame idle 0
+....kkkk....
+..kkiiiikk..
+.kiwiiiiimk.
+.kiiiiiimmk.
+kiiiiiiimmmk
+krrrrYYrrRRk
+krRRRYoRRRRk
+kiiiiimmmmmk
+kiimmmmmmmmk
+.kimmmmmmmk.
+..kkmmmmkk..
+....kkkk....

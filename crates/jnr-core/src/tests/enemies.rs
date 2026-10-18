@@ -18,6 +18,7 @@ const LEGEND: &str = r##"
 "v" = { entity = "mozartkugel_verkaeufer" }
 "f" = { entity = "fiaker" }
 "F" = { entity = "festungsbahn", to = [8, -5] }
+"T" = { entity = "selfie_tourist", still = true }
 "P" = { entity = "player_start" }
 "G" = { entity = "goal" }
 "##;
@@ -193,6 +194,26 @@ fn tourist_takes_a_selfie_every_240_frames_for_48_with_a_2_frame_flash() {
     assert_eq!(xs[239], xs[287 - 1], "no movement during the selfie");
     assert_ne!(xs[288], xs[287], "walks again");
     assert_eq!(poses[0], Pose::Walk);
+}
+
+/// `still = true` (grey-box test levels): the tourist never walks or
+/// turns, even when another tourist walks into it, but still hurts.
+#[test]
+fn a_still_tourist_never_moves() {
+    let mut g = game(&world(30, &[(11, 12, 'T'), (11, 20, 't')]));
+    park_player(&mut g);
+    let still = first(&g, EntityKind::Enemy(EnemyKind::SelfieTourist));
+    assert_eq!(still.dir, 0);
+    for _ in 0..400 {
+        g.step(input("-"));
+        let e = first(&g, EntityKind::Enemy(EnemyKind::SelfieTourist));
+        assert_eq!((e.x, e.y, e.dir), (still.x, still.y, 0));
+    }
+    let walker = g.entities()[1];
+    assert_eq!(walker.dir, 1, "the walking one turned at the still one");
+    g.player.invulnerable = 0;
+    until(&mut g, "R", 200, |g| g.mode() != Mode::Playing);
+    assert_eq!(g.death_cause(), Some(DeathCause::Hit));
 }
 
 #[test]

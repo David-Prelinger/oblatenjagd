@@ -1,0 +1,38 @@
+# QA (E1): items_route up to the Selfie-Tourist, hurt as Zuckerschock at
+# frame 1007, then skid to a stop *inside* the tourist and stay there.
+# Freeze 1008-1037 (30 frames), then exactly 120 harmless frames
+# (1038-1157); the first frame without invulnerability (1158) kills.
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=1158..1158 deaths=1 lives=3 state=playing
+---
+R 28
+- 30
+J 10      # Oblatenkiste: Oblate
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+- 280     # the Mozartkugel rolls to the wall and back: Zuckerschock
+L 14
+- 30
+J 10      # break the brick
+- 20
+R 60
+RJ 30     # over the wall
+R 111     # through the Oblaten
+- 30
+J 10      # oblaten_10 brick, 3 times
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10      # Zaunerstollen box
+- 30
+RB 60     # catch the Zaunerstollen
+L 33
+- 200

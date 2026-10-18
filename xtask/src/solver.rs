@@ -801,6 +801,7 @@ impl Solution {
             level: self.level.clone(),
             seed: 1,
             source: Source::Solver,
+            start: jnr_core::Start::Playing,
             expects: vec![
                 Expect::Complete(Some(FrameRange { first: n, last: n })),
                 Expect::Deaths(0),

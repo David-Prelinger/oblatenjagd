@@ -1,5 +1,5 @@
 //! The Festungsbahn car: a moving one-way platform (`docs/game-design.md`
-//! → "Festungsbahn car", D-023).
+//! → "Festungsbahn car", D-026).
 //!
 //! - Level syntax: `{ entity = "festungsbahn", to = [dx, dy] }`; the car
 //!   starts left-aligned in its spawn cell with its bottom on the cell's

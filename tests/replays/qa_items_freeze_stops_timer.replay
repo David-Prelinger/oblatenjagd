@@ -1,0 +1,17 @@
+# QA (E1): eat the Mozartkugel (frame 507, 30-frame grow freeze), then
+# stand still until time-up. The timer doesn't run during the freeze, so
+# time-up comes at 6000 + 30 = 6030; it kills Zuckerschock Resi too.
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=6030..6030 deaths=1 lives=2
+---
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10
+L 40
+- 5900

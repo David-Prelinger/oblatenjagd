@@ -43,7 +43,7 @@ impl TileKind {
                 Some(TileKind::Solid)
             }
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" => Some(TileKind::OneWay),
-            "hazard" | "salzach_water" => Some(TileKind::Hazard),
+            "hazard" | "salzach_water" | "salzach_water_deep" => Some(TileKind::Hazard),
             _ => None,
         }
     }
@@ -256,6 +256,10 @@ pub struct EntitySpawn {
     /// The other end point `[dx, dy]` in tiles, relative to the spawn cell
     /// (`to = [dx, dy]`, required for `festungsbahn`, `None` otherwise).
     pub to: Option<[i32; 2]>,
+    /// `still = true` on a `selfie_tourist`: it never walks (a fixed
+    /// target for grey-box test levels, `00_*.level` only, checked by
+    /// `levels lint`; D-026).
+    pub still: bool,
 }
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -347,6 +351,7 @@ enum LegendEntry {
         text: Option<String>,
         style: SignStyle,
         to: Option<[i32; 2]>,
+        still: bool,
     },
 }
 
@@ -428,6 +433,7 @@ impl Level {
                         text,
                         style,
                         to,
+                        still,
                     } => {
                         tiles.push(Tile::default());
                         entities.push(EntitySpawn {
@@ -437,6 +443,7 @@ impl Level {
                             text: text.clone(),
                             style: *style,
                             to: *to,
+                            still: *still,
                         });
                     }
                 }
@@ -574,6 +581,7 @@ fn parse_legend_value(
                 (Some(_), None) => &["tile", "contains"],
                 (None, Some("sign")) => &["entity", "text", "style"],
                 (None, Some("festungsbahn")) => &["entity", "to"],
+                (None, Some("selfie_tourist")) => &["entity", "still"],
                 (None, Some(_)) => &["entity"],
                 _ => {
                     return Err(ParseError::new(format!(
@@ -690,17 +698,39 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
             _ => return Err(bad()),
         }
     }
+    let still = match t.get("still") {
+        None => false,
+        Some(toml::Value::Boolean(b)) => *b,
+        Some(_) => {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": field \"still\" must be true or false"
+            )));
+        }
+    };
     Ok(LegendEntry::Entity {
         kind,
         text,
         style,
         to,
+        still,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn salzburg_water_tiles_are_hazards() {
+        assert_eq!(
+            TileKind::from_tile_name("salzach_water"),
+            Some(TileKind::Hazard)
+        );
+        assert_eq!(
+            TileKind::from_tile_name("salzach_water_deep"),
+            Some(TileKind::Hazard)
+        );
+    }
 
     const SMALL: &str = r##"
 [meta]
@@ -730,6 +760,7 @@ grid = '''
             text: None,
             style: SignStyle::Street,
             to: None,
+            still: false,
         }
     }
 
@@ -976,6 +1007,36 @@ P.sSC.tfG
         assert!(err(&bad_style).contains("neon"));
         let window = V2.replace("min_jump_window = 6", "min_jump_window = -1");
         assert!(Level::parse(&window).is_err());
+    }
+
+    #[test]
+    fn a_selfie_tourist_can_be_still() {
+        let with = |field: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"t\" = {{ entity = \"selfie_tourist\"{field} }}"),
+                )
+                .replace(".P.--..", ".Pt--..")
+        };
+        let still = |field: &str| {
+            Level::parse(&with(field))
+                .unwrap()
+                .entities
+                .iter()
+                .find(|e| e.kind == SpawnKind::SelfieTourist)
+                .unwrap()
+                .still
+        };
+        assert!(!still(""));
+        assert!(!still(", still = false"));
+        assert!(still(", still = true"));
+        assert!(err(&with(", still = 1")).contains("true or false"));
+        let on_fiaker = SMALL.replace(
+            "{ entity = \"goal\" }",
+            "{ entity = \"goal\", still = true }",
+        );
+        assert!(err(&on_fiaker).contains("field \"still\""));
     }
 
     #[test]

@@ -291,7 +291,7 @@ fn throw(e: &Entity, t: &Tuning) -> Entity {
 
 /// Parked until the player is within `fiaker_trigger`, then telegraphs for
 /// `fiaker_telegraph` frames (`count` = frame of the telegraph), then
-/// charges left along its row (ignoring tiles, D-023) until it has left
+/// charges left along its row (ignoring tiles, D-026) until it has left
 /// the screen.
 fn update_fiaker(e: &mut Entity, ctx: &UpdateCtx) {
     let et = &ctx.tuning.enemies;
@@ -382,7 +382,12 @@ fn on_foot(e: &Entity) -> bool {
 pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
     for i in 0..entities.len() {
         let a = entities[i];
-        if !a.active || a.removed || a.kind != EntityKind::Enemy(EnemyKind::SelfieTourist) {
+        // `dir == 0`: a `still` tourist (test levels) never turns.
+        if !a.active
+            || a.removed
+            || a.dir == 0
+            || a.kind != EntityKind::Enemy(EnemyKind::SelfieTourist)
+        {
             continue;
         }
         let ac = a.x + a.w.div_int(2);

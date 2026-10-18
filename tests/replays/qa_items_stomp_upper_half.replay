@@ -1,0 +1,15 @@
+# QA (E1): stomp boundary, stomp side. Falling onto the Selfie-Tourist's
+# upper-left corner with the feet at 181.x px on the previous frame
+# (hitbox 172..192, middle 182): stomp at frame 271, 100 points, bounce.
+# Pair: qa_items_stomp_below_middle (1 px lower -> hurt).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died score>=1100
+---
+RB 70
+RBJ 20
+R 115
+R 34
+RJ 9
+R 60

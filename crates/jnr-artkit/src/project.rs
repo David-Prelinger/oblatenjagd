@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn real_generator_drafts_generate_without_lint_findings() {
+    fn real_salzburg_backgrounds_load_without_lint_findings() {
         let p = Project::load(&workspace_root()).unwrap();
         for name in [
             "bg_sky_salzburg",
@@ -200,7 +200,11 @@ mod tests {
                 .iter()
                 .find(|s| s.name == name)
                 .unwrap_or_else(|| panic!("{name} generated"));
-            assert!(s.file.starts_with(GENERATORS_DIR), "{}", s.file);
+            // The sky is generated; the other layers may be generated or
+            // hand-drawn (art-pipeline.md allows both).
+            if name == "bg_sky_salzburg" {
+                assert!(s.file.starts_with(GENERATORS_DIR), "{}", s.file);
+            }
             assert_eq!(s.group, "bg");
             let findings = lint::lint_sprite(s, &p.palette);
             assert!(findings.is_empty(), "{name}: {findings:?}");

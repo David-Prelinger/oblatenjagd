@@ -1,0 +1,23 @@
+# Used Oblatenkiste: dull O l, no emblem.
+sprite = tile_oblaten_box_empty
+size   = 16x16
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kOOOOOOOOOOOOOOk
+kOOOOOOOOOOOOOlk
+kOOlOOOOOOOOlOlk
+kOOOOOOOOOOOOOlk
+kOlllllllllllllk
+kOOOOOOOOOOOOOlk
+kOOOOOOOOOOOOOlk
+kOOOOOOOOOOOOOlk
+kOOOOOOOOOOOOOlk
+kOlllllllllllllk
+kOOOOOOOOOOOOOlk
+kOOlOOOOOOOOlOlk
+kOOOOOOOOOOOOOlk
+kOlllllllllllllk
+kkkkkkkkkkkkkkkk

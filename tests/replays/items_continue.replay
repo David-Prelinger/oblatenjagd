@@ -1,5 +1,5 @@
 # items_game_over, then START in the GameOver mode (game over at frame
-# 790, START accepted from frame 850): the stage restarts from its start
+# 837, START accepted from frame 897): the stage restarts from its start
 # with 3 lives, score 0 and Oblaten 0.
 level  = items
 seed   = 1
@@ -18,7 +18,7 @@ RB 70
 RBJ 20
 RB 110
 - 80      # game over at 837
-S 60      # pressed at 841 (too early) and held across 850: not a press
+S 60      # held across frame 897: not a press
 - 1
 S 1       # START pressed: restart
 R 30

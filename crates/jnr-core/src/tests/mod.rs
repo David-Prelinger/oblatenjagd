@@ -4,7 +4,9 @@
 mod enemies;
 mod feel;
 mod flow;
+mod goal;
 mod items;
+mod modes;
 mod testbed;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};

@@ -5,7 +5,7 @@
 level  = enemies
 seed   = 1
 source = handwritten
-expect = event=Stomped deaths=0 no_event=Hurt no_event=Died player_x>=950 state=playing
+expect = event=Stomped score=0 deaths=0 no_event=Hurt no_event=Died player_x>=950 state=playing
 ---
 R 90
 RJ 20

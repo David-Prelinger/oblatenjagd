@@ -36,6 +36,8 @@ pub enum Popup {
     ExtraLife,
     /// `popup.checkpoint` („Zwischenstopp").
     Checkpoint,
+    /// `popup.wurstkranz` („Wurstkranz!"), the top Maibaum zone.
+    Wurstkranz,
 }
 
 impl Popup {
@@ -45,6 +47,7 @@ impl Popup {
             Popup::Score(_) => None,
             Popup::ExtraLife => Some("popup.extra_life"),
             Popup::Checkpoint => Some("popup.checkpoint"),
+            Popup::Wurstkranz => Some("popup.wurstkranz"),
         }
     }
 }
@@ -159,6 +162,7 @@ impl EntityKind {
                     }
                     Popup::ExtraLife => h.u8(1),
                     Popup::Checkpoint => h.u8(2),
+                    Popup::Wurstkranz => h.u8(3),
                 }
             }
             EntityKind::Bump => h.u8(6),
@@ -327,7 +331,8 @@ impl Entity {
         entity.active = false;
         entity.spawn = Some(index as u16);
         if let EntityKind::Enemy(kind) = entity.kind {
-            entity.dir = -1;
+            // A `still` tourist has no direction: it never walks (D-026).
+            entity.dir = if s.still { 0 } else { -1 };
             entity.state = crate::enemies::initial_state(kind);
         }
         Some(entity)
@@ -572,6 +577,7 @@ mod tests {
             text: None,
             style: Default::default(),
             to: None,
+            still: false,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Goal), 0, &t).is_none());
