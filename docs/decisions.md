@@ -161,3 +161,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - The solver's beam keeps a "high" reserve (up to a quarter of the width: the highest node per 16 px column when higher than every kept one), because furthest-right ranking alone drops players waiting above a pit for the car (or riding it) in favour of nodes further right in the pit below. The testbed route is unchanged by it.
 - Replays can assert `event=<Event>` (at least once).
 - (merge with E1 QA / E4) Grey-box fixture: `{ entity = "selfie_tourist", still = true }` never walks or turns (`dir = 0`; selfie poses and contact rules unchanged). `00_items.level` uses it, so the E1/E4 regression replays built around a fixed target at column 34 (stomp boundaries, i-frames, 100-Oblaten loops, flow/goal goldens) stay valid unchanged. `levels lint` allows `still` only in `00_*.level` files, so real stages always have walking tourists.
+
+## D-027 QA rulings on enemies, platforms and flow (orchestrator, M1)
+- Trigger distances (sitting Taube, Fiaker, Verkäufer range) compare whole pixels with truncation; „within 6 tiles" means < 97 px. Accepted as specified.
+- Enemy hit and goal touch in the same frame: the goal wins (consistent with D-023 goal vs time-up).
+- A sitting Taube that rises and later hits a standing player is acceptable: the rise is the visible telegraph.
+- Moving platforms never despawn. Every pit under a moving platform must have a way back up (stair-stepped rock as in the Stage 1 spec) — "falling off means waiting for the car or climbing back, never a softlock". A bounce off a non-stompable enemy (Fiaker) puts the player's feet on its top, so the bounce can never be followed by a side hit.
