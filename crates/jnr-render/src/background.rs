@@ -29,21 +29,24 @@ pub struct BackgroundLayer<'a> {
     pub anim: &'a AtlasAnim,
     /// Scroll factor in sixteenths (0 = static, 16 = like the playfield).
     pub factor16: u32,
+    /// Raised this many pixels above the screen bottom (level `y`, default 0).
+    pub y_offset: u32,
 }
 
 /// Resolves `(sprite name, factor in sixteenths)` pairs against the atlas,
 /// back to front. Names the atlas lacks (or sprites without frames) are
 /// skipped, like every missing sprite in the renderer.
-pub fn resolve<'a>(atlas: &'a Atlas, layers: &[(&str, u32)]) -> Vec<BackgroundLayer<'a>> {
+pub fn resolve<'a>(atlas: &'a Atlas, layers: &[(&str, u32, u32)]) -> Vec<BackgroundLayer<'a>> {
     layers
         .iter()
-        .filter_map(|&(name, factor16)| {
+        .filter_map(|&(name, factor16, y_offset)| {
             let sprite = atlas.sprite(name)?;
             let anim = sprite.anims.first().filter(|a| !a.frames.is_empty())?;
             Some(BackgroundLayer {
                 sprite,
                 anim,
                 factor16,
+                y_offset,
             })
         })
         .collect()
@@ -91,7 +94,7 @@ pub fn draw(
             continue;
         }
         let rect = layer.anim.frame(layer.anim.frame_index_at(tick), false);
-        let y = fb.h as i32 - layer.sprite.height as i32;
+        let y = fb.h as i32 - layer.sprite.height as i32 - layer.y_offset.min(10_000) as i32;
         let mut x = parallax_offset(camera_x, layer.factor16, layer.sprite.width);
         while x < fb.w as i32 {
             blit_frame(fb, atlas, rect, x, y, false);
@@ -161,7 +164,7 @@ mod tests {
     #[test]
     fn layers_tile_horizontally_bottom_aligned() {
         let atlas = layer_atlas();
-        let layers = resolve(&atlas, &[("bg_strip", 16)]);
+        let layers = resolve(&atlas, &[("bg_strip", 16, 0)]);
         let mut fb = testutil::fb();
         draw(&mut fb, &atlas, &layers, false, 1, 0);
         // Camera 1 at factor 16: offset -1, so the screen starts with `b c a b c ...`.
@@ -177,16 +180,33 @@ mod tests {
         assert_eq!(fb.get(0, HEIGHT as i32 - 2), Some(B));
         assert_eq!(fb.get(0, HEIGHT as i32 - 3), Some(SKY_LIGHT));
         // Factor 0 ignores the camera.
-        let still = resolve(&atlas, &[("bg_strip", 0)]);
+        let still = resolve(&atlas, &[("bg_strip", 0, 0)]);
         let mut fb = testutil::fb();
         draw(&mut fb, &atlas, &still, false, 1000, 0);
         assert_eq!(fb.get(0, y), Some(A));
     }
 
     #[test]
+    fn y_offset_raises_a_layer_above_the_screen_bottom() {
+        let atlas = layer_atlas();
+        let layers = resolve(&atlas, &[("bg_strip", 0, 10)]);
+        assert_eq!(layers[0].y_offset, 10);
+        let mut fb = testutil::fb();
+        draw(&mut fb, &atlas, &layers, false, 0, 0);
+        let bottom = HEIGHT as i32 - 1;
+        assert_eq!(fb.get(0, bottom), Some(SKY_LIGHT));
+        assert_eq!(fb.get(0, bottom - 10), Some(A));
+        assert_eq!(fb.get(0, bottom - 11), Some(A));
+        assert_eq!(fb.get(0, bottom - 12), Some(SKY_LIGHT));
+    }
+
+    #[test]
     fn later_layers_draw_over_earlier_ones_and_missing_ones_are_skipped() {
         let atlas = layer_atlas();
-        let layers = resolve(&atlas, &[("bg_full", 0), ("nope", 4), ("bg_holey", 16)]);
+        let layers = resolve(
+            &atlas,
+            &[("bg_full", 0, 0), ("nope", 4, 0), ("bg_holey", 16, 0)],
+        );
         assert_eq!(layers.len(), 2);
         assert!(covers_screen(&atlas, &layers[0], HEIGHT as u32));
         assert!(
@@ -208,7 +228,7 @@ mod tests {
     #[test]
     fn partial_layers_keep_the_flat_sky_behind_them() {
         let atlas = layer_atlas();
-        let strip = resolve(&atlas, &[("bg_strip", 16)]);
+        let strip = resolve(&atlas, &[("bg_strip", 16, 0)]);
         assert!(
             !covers_screen(&atlas, &strip[0], HEIGHT as u32),
             "too short"

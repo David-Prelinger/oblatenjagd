@@ -95,7 +95,7 @@ pub fn play(root: &Path, path: &Path, render_frames: &[u32]) -> Result<Played, S
         content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
     let tuning = content::tuning(root)?;
     let texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, &level);
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, &level);
 
     let mut hashes = Vec::new();
     let mut images = Vec::new();
@@ -427,8 +427,13 @@ fn scene(root: &Path, args: &SceneArgs) -> Result<(), String> {
             eprintln!("warning: --bg sprite `{name}` is not in the atlas; layer skipped");
         }
     }
-    let bg: Vec<(&str, u32)> = args.bg.iter().map(|(n, f)| (n.as_str(), *f)).collect();
-    let ctx = RenderContext::new(atlas, &texts, &level).with_background(&bg);
+    // `--bg` replaces the level's own `[meta].background`.
+    let ctx = if args.bg.is_empty() {
+        RenderContext::for_level(atlas, &texts, &level)
+    } else {
+        let bg: Vec<(&str, u32, u32)> = args.bg.iter().map(|(n, f)| (n.as_str(), *f, 0)).collect();
+        RenderContext::new(atlas, &texts, &level).with_background(&bg)
+    };
     let (game, clamped) = scene_game(&level, &tuning, x);
     if clamped {
         eprintln!(

@@ -11,7 +11,8 @@
 //! - [`input`]: per-frame input bitflags and replay tokens
 //! - [`tuning`], [`level`]: content parsing (`tuning.toml`, `.level`)
 //! - [`physics`]: boxes and tile collision
-//! - [`player`]: run/jump physics
+//! - [`player`]: run/jump physics, power states
+//! - [`entity`]: items, particles, popups, props, enemies (`Vec<Entity>`)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
@@ -20,6 +21,7 @@
 use std::fmt;
 
 pub mod camera;
+pub mod entity;
 pub mod fx;
 pub mod game;
 pub mod hash;
@@ -36,11 +38,12 @@ pub mod tuning;
 mod tests;
 
 pub use camera::{Camera, SCREEN_H, SCREEN_W};
+pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
-pub use game::{Event, Game, Mode};
+pub use game::{DeathCause, Event, Game, Mode};
 pub use input::InputFrame;
-pub use level::{EntityKind, EntitySpawn, Level, TileKind};
-pub use player::{Facing, Player};
+pub use level::{Block, Contents, EntitySpawn, Level, SignStyle, SpawnKind, Tile, TileKind};
+pub use player::{Facing, Player, Power};
 pub use replay::Replay;
 pub use text::Texts;
 pub use tuning::Tuning;

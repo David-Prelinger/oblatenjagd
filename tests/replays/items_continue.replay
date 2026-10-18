@@ -1,0 +1,24 @@
+# items_game_over, then START in the GameOver mode (game over at frame
+# 837, START accepted from frame 897): the stage restarts from its start
+# with 3 lives, score 0 and Oblaten 0.
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=3 lives=3 state=playing player_x>=60
+---
+RB 70
+RBJ 20    # over the wall
+RB 110    # through the Oblaten into the Selfie-Tourist
+- 80      # dying, respawn at the start
+RB 70
+RBJ 20
+RB 110
+- 80
+RB 70
+RBJ 20
+RB 110
+- 80      # game over at 837
+S 60      # held across frame 897: not a press
+- 1
+S 1       # START pressed: restart
+R 30

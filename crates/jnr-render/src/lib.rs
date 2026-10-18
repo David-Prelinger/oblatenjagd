@@ -16,11 +16,13 @@
 //! - [`scene`]: [`render`] a whole `Game` through a [`RenderContext`]
 //!   (font, texts and sprite lookups resolved once), plus the opt-in
 //!   [`render_debug`] overlay
+//! - [`entities`]: entities (items, props, enemies, popups) and block tile looks
 //! - [`tiles`]: the tile grid, incl. autotiling (D-020)
 //! - [`palette`]: the few palette colours used for grey-box drawing and text
 
 pub mod background;
 pub mod blit;
+pub mod entities;
 pub mod font;
 pub mod palette;
 pub mod scene;

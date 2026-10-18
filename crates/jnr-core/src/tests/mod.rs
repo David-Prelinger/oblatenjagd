@@ -3,6 +3,7 @@
 
 mod feel;
 mod flow;
+mod items;
 mod testbed;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
@@ -12,11 +13,12 @@ fn tuning() -> Tuning {
     Tuning::parse(include_str!("../../../../content/tuning.toml")).unwrap()
 }
 
-/// Builds a level from grid rows of `.`, `#`, `-`, `^`, `P`, `G`.
+/// Builds a level from grid rows of `.`, `#`, `-`, `^`, `P`, `G`, `t`
+/// (Selfie-Tourist), `M` (Mozartkugel box).
 fn level(rows: &[&str]) -> Level {
     let grid = rows.join("\n");
     let text = format!(
-        "[meta]\nid = \"test\"\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
+        "[meta]\nid = \"test\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"t\" = {{ entity = \"selfie_tourist\" }}\n\"M\" = {{ tile = \"oblaten_box\", contains = \"mozartkugel\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
     );
     Level::parse(&text).unwrap()
 }

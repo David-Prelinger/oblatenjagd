@@ -21,7 +21,12 @@ max_fall_speed = 1024     # 4.0 px/frame
 coyote_frames = 6         # 0.1 s
 jump_buffer_frames = 6    # 0.1 s
 hitbox_w = 12             # px (whole pixels): smaller than the 16x24 sprite, forgiving
-hitbox_h = 22             # px; the feet are at the hitbox's bottom centre
+hitbox_h = 22             # px; the feet are at the hitbox's bottom centre (Normal)
+hitbox_h_big = 30         # px as Zuckerschock (sprite 16x32); growing keeps the feet in place
+stomp_bounce = 900        # upward speed after a stomp, JUMP not held: rise ~1 tile
+stomp_bounce_held = 940   # with JUMP held (gravity_hold while held): rise ~3 tiles
+invulnerable_frames = 120 # 2 s after shrinking (counted after the transformation freeze)
+transform_frames = 30     # the game freezes while growing or shrinking
 
 [camera]
 follow_x = 144            # px: camera scrolls right once the player's centre passes this screen x
@@ -30,3 +35,41 @@ deadzone_bottom = 120
 
 [game]
 death_frames = 60         # 1 s from death to respawn
+game_over_frames = 60     # GameOver: START restarts the stage after this many frames
+lives_start = 3
+lives_max = 99
+oblaten_per_life = 100    # 100 Oblaten -> +1 life, counter back to 0
+activate_margin = 320     # px beyond the right screen edge: entities activate (one screen)
+despawn_margin = 64       # px left of the screen: entities are removed
+
+[items]
+oblate_hitbox = [10, 10]        # px [w, h]
+mozartkugel_hitbox = [10, 10]
+zaunerstollen_hitbox = [14, 10]
+rise_frames = 32          # a power-up rises out of its box for 32 frames ...
+rise_speed = 128          # ... at 0.5 px/frame (16 px)
+mozartkugel_speed = 256   # 1.0 px/frame rolling
+zaunerstollen_speed = 320 # 1.25 px/frame rolling
+pop_speed = 1280          # 5 px/frame: an Oblate from a box pops up ~2 tiles ...
+pop_frames = 28           # ... and disappears (collected) after this many frames
+bump_frames = 8           # a hit block moves up and down again over 8 frames ...
+bump_px = 4               # ... by 4 px
+debris_speed_x = 256      # 1 px/frame sideways
+debris_speed_high = 1280  # upper pieces fly up at 5 px/frame
+debris_speed_low = 768    # lower pieces at 3 px/frame
+multi_oblaten = 10        # an oblaten_10 brick pays up to 10 Oblaten ...
+multi_frames = 240        # ... or until 4 s after the first hit
+
+[score]
+oblate = 200
+power_up = 1000
+brick = 50
+stomp_chain = [100, 200, 400, 800, 1000, 2000, 4000, 8000]  # then +1 life per stomp
+popup_frames = 30         # score popups float up 16 px over 30 frames
+popup_rise = 16
+
+[enemies]
+selfie_tourist_hitbox = [12, 20]          # px [w, h]
+taube_hitbox = [12, 10]
+mozartkugel_verkaeufer_hitbox = [12, 22]
+fiaker_hitbox = [44, 28]

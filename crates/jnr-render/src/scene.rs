@@ -16,10 +16,11 @@ use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::level::TILE_PX;
 use jnr_core::physics::Aabb;
 use jnr_core::tuning::PlayerTuning;
-use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Level, Mode, Player, Texts};
+use jnr_core::{Camera, Facing, Fx, Game, Level, Mode, Player, Power, SpawnKind, Texts};
 
 use crate::background::{self, BackgroundLayer};
 use crate::blit::draw_sprite;
+use crate::entities::{self, EntityLooks};
 use crate::font::Font;
 use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
 use crate::tiles::{self, TileLook};
@@ -30,12 +31,15 @@ pub const STAGE_CLEAR_KEY: &str = "stage.clear";
 
 /// Sprite name of the player.
 pub const PLAYER_SPRITE: &str = "player";
+/// Sprite name of the Zuckerschock player.
+pub const PLAYER_BIG_SPRITE: &str = "player_big";
 /// Sprite name of the goal.
 pub const GOAL_SPRITE: &str = "goal";
 /// Prefix of tile sprites: a tile named `ground` in the legend uses `tile_ground`.
 pub const TILE_SPRITE_PREFIX: &str = "tile_";
 
-/// The player blinks during `Dying`: visible for this many frames, then hidden as long.
+/// The player blinks during `Dying` and while invulnerable, and alternates
+/// sizes while transforming: this many frames per phase.
 const DYING_FLASH_FRAMES: u32 = 4;
 /// Height of the grey-box goal pole in pixels.
 const GOAL_POLE_PX: i32 = 8 * TILE_PX;
@@ -53,16 +57,19 @@ pub enum PlayerAnim {
     Jump,
     /// In the air, moving down.
     Fall,
+    /// On the ground, braking against the motion (holding the other way).
+    Skid,
 }
 
 impl PlayerAnim {
     /// Every state, in the order of [`PlayerAnim::index`].
-    pub const ALL: [PlayerAnim; 5] = [
+    pub const ALL: [PlayerAnim; 6] = [
         PlayerAnim::Idle,
         PlayerAnim::Walk,
         PlayerAnim::Run,
         PlayerAnim::Jump,
         PlayerAnim::Fall,
+        PlayerAnim::Skid,
     ];
 
     /// The state of a player.
@@ -75,6 +82,8 @@ impl PlayerAnim {
             }
         } else if p.vx == Fx::ZERO {
             PlayerAnim::Idle
+        } else if p.skidding {
+            PlayerAnim::Skid
         } else if p.vx.abs() > t.walk_speed {
             PlayerAnim::Run
         } else {
@@ -90,6 +99,7 @@ impl PlayerAnim {
             PlayerAnim::Run => 2,
             PlayerAnim::Jump => 3,
             PlayerAnim::Fall => 4,
+            PlayerAnim::Skid => 5,
         }
     }
 
@@ -101,7 +111,19 @@ impl PlayerAnim {
             PlayerAnim::Run => &["run", "walk"],
             PlayerAnim::Jump => &["jump", "fall"],
             PlayerAnim::Fall => &["fall", "jump"],
+            PlayerAnim::Skid => &["skid", "walk"],
         }
+    }
+}
+
+/// Whether the player sprite is drawn mirrored (facing left): the look
+/// direction, except while skidding, when Resi still faces the direction
+/// she slides in (sprite catalog: `skid` faces the motion).
+pub fn player_faces_left(p: &Player, t: &PlayerTuning) -> bool {
+    if PlayerAnim::of(p, t) == PlayerAnim::Skid {
+        p.vx < Fx::ZERO
+    } else {
+        p.facing == Facing::Left
     }
 }
 
@@ -109,7 +131,7 @@ impl PlayerAnim {
 #[derive(Clone, Debug)]
 struct PlayerLook<'a> {
     sprite: &'a AtlasSprite,
-    anims: [&'a AtlasAnim; 5],
+    anims: [&'a AtlasAnim; 6],
 }
 
 /// Everything the renderer looks up, resolved once: the atlas, the font,
@@ -125,7 +147,9 @@ pub struct RenderContext<'a> {
     /// `tile_<name>` look per [`Level::tile_names`] index (index 0 = no name).
     tiles: Vec<Option<TileLook<'a>>>,
     player: Option<PlayerLook<'a>>,
+    player_big: Option<PlayerLook<'a>>,
     goal: Option<&'a AtlasSprite>,
+    entities: EntityLooks<'a>,
     /// Parallax layers, back to front (empty = flat sky only).
     background: Vec<BackgroundLayer<'a>>,
     /// True if the first layer hides the whole screen (no flat sky fill).
@@ -148,34 +172,50 @@ impl<'a> RenderContext<'a> {
                 }
             })
             .collect();
-        let player = with_anims(PLAYER_SPRITE).map(|sprite| PlayerLook {
-            sprite,
-            anims: PlayerAnim::ALL.map(|state| {
-                state
-                    .names()
-                    .iter()
-                    .chain(&["idle"])
-                    .find_map(|name| sprite.anim(name))
-                    .unwrap_or(&sprite.anims[0])
-            }),
-        });
+        let look = |name: &str| {
+            with_anims(name).map(|sprite| PlayerLook {
+                sprite,
+                anims: PlayerAnim::ALL.map(|state| {
+                    state
+                        .names()
+                        .iter()
+                        .chain(&["idle"])
+                        .find_map(|name| sprite.anim(name))
+                        .unwrap_or(&sprite.anims[0])
+                }),
+            })
+        };
         RenderContext {
             atlas,
             texts,
             font: Font::from_atlas(atlas),
             tiles,
-            player,
+            player: look(PLAYER_SPRITE),
+            player_big: look(PLAYER_BIG_SPRITE),
             goal: with_anims(GOAL_SPRITE),
+            entities: EntityLooks::new(atlas),
             background: Vec::new(),
             background_covers: false,
         }
     }
 
+    /// [`RenderContext::new`] plus the level's `[meta].background` layers.
+    pub fn for_level(atlas: &'a Atlas, texts: &'a Texts, level: &Level) -> RenderContext<'a> {
+        let layers: Vec<(&str, u32, u32)> = level
+            .meta
+            .background
+            .iter()
+            .map(|l| (l.sprite.as_str(), l.factor, l.y))
+            .collect();
+        RenderContext::new(atlas, texts, level).with_background(&layers)
+    }
+
     /// Sets the parallax background: `(sprite name, scroll factor in
-    /// sixteenths)` pairs, back to front (e.g. `[("bg_sky_salzburg", 0),
-    /// ("bg_untersberg", 3)]`). Sprites the atlas lacks are skipped; without
-    /// layers the flat sky is drawn. See [`crate::background`] for placement.
-    pub fn with_background(mut self, layers: &[(&str, u32)]) -> RenderContext<'a> {
+    /// sixteenths, y offset in px above the screen bottom)` triples, back
+    /// to front (e.g. `[("bg_sky_salzburg", 0, 0), ("bg_untersberg", 3, 32)]`).
+    /// Sprites the atlas lacks are skipped; without layers the flat sky is
+    /// drawn. See [`crate::background`] for placement.
+    pub fn with_background(mut self, layers: &[(&str, u32, u32)]) -> RenderContext<'a> {
         self.background = background::resolve(self.atlas, layers);
         self.background_covers = self
             .background
@@ -223,9 +263,12 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         cam.x,
         tick,
     );
-    tiles::draw_tiles(fb, atlas, &ctx.tiles, game.level(), cam, tick);
+    entities::draw_behind_tiles(game, &ctx.entities, ctx.atlas, fb);
+    tiles::draw_tiles(fb, atlas, &ctx.tiles, game, cam, tick);
     draw_goals(game, ctx, fb, cam);
+    entities::draw_entities(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     draw_player(game, ctx, fb, cam);
+    entities::draw_front(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     if game.mode() == Mode::StageClear {
         let text = ctx.texts.get(STAGE_CLEAR_KEY);
         let w = ctx.font.measure(&text);
@@ -255,7 +298,7 @@ pub fn render_debug(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
 /// cell, else a grey-box pole (2 px `Y`) with a small `r` flag.
 fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     for e in &game.level().entities {
-        if e.kind != EntityKind::Goal {
+        if e.kind != SpawnKind::Goal {
             continue;
         }
         let foot_x = e.col * TILE_PX + TILE_PX / 2 - cam.x;
@@ -275,9 +318,24 @@ fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
     }
 }
 
-/// The player: sprite `player` with its origin at the feet (bottom centre
-/// of the hitbox, D-011), else the hitbox as an `r` box with a `k` outline.
-/// Blinks while dying, counted from the moment of death.
+/// Whether the player is drawn big this frame: the power state, except
+/// while transforming, when the old and new size alternate every 4 frames
+/// (starting with the old one).
+pub fn player_shown_big(p: &Player, t: &PlayerTuning) -> bool {
+    let big = p.power == Power::Big;
+    if p.transform == 0 {
+        return big;
+    }
+    let elapsed = u32::from(t.transform_frames.saturating_sub(p.transform));
+    let show_new = (elapsed / DYING_FLASH_FRAMES) % 2 == 1;
+    if show_new { big } else { !big }
+}
+
+/// The player: sprite `player` (Normal) or `player_big` (Zuckerschock,
+/// falls back to `player`) with its origin at the feet (bottom centre of
+/// the hitbox, D-011), else the hitbox as an `r` box (`R` when big) with a
+/// `k` outline. Blinks while dying (counted from the moment of death) and
+/// while invulnerable; alternates sizes while transforming.
 fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     if let Mode::Dying { timer } = game.mode() {
         let elapsed = u32::from(game.tuning().game.death_frames.saturating_sub(timer));
@@ -286,19 +344,31 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
         }
     }
     let p = game.player();
-    match &ctx.player {
+    let t = &game.tuning().player;
+    if p.transform == 0 && (u32::from(p.invulnerable) / DYING_FLASH_FRAMES) % 2 == 1 {
+        return;
+    }
+    let big = player_shown_big(p, t);
+    let look = if big {
+        ctx.player_big.as_ref().or(ctx.player.as_ref())
+    } else {
+        ctx.player.as_ref()
+    };
+    let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
+    let feet_y = (p.y + p.h).to_px() - cam.y;
+    match look {
         Some(look) => {
-            let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
-            let feet_y = (p.y + p.h).to_px() - cam.y;
-            let anim = look.anims[PlayerAnim::of(p, &game.tuning().player).index()];
-            let left = p.facing == Facing::Left;
+            let anim = look.anims[PlayerAnim::of(p, t).index()];
+            let left = player_faces_left(p, t);
             let (atlas, tick) = (ctx.atlas, game.frame());
             draw_sprite(fb, atlas, look.sprite, anim, tick, feet_x, feet_y, left);
         }
         None => {
-            let (x, y) = (p.x.to_px() - cam.x, p.y.to_px() - cam.y);
-            let (w, h) = (p.w.to_px(), p.h.to_px());
-            fb.fill_rect(x, y, w, h, DIRNDL_RED);
+            let h = if big { t.hitbox_h_big } else { t.hitbox_h };
+            let (x, y) = (p.x.to_px() - cam.x, feet_y - h);
+            let w = p.w.to_px();
+            let fill = if big { entities::WINE_DARK } else { DIRNDL_RED };
+            fb.fill_rect(x, y, w, h, fill);
             fb.outline_rect(x, y, w, h, OUTLINE);
         }
     }
@@ -332,7 +402,7 @@ mod tests {
 
     fn level(grid: &str) -> Level {
         let text = format!(
-            "[meta]\nid = \"tiny\"\n\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
+            "[meta]\nid = \"tiny\"\ntime_limit = 300\n\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
              \"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n\
              \"G\" = {{ entity = \"goal\" }}\n\n[map]\ngrid = '''\n{grid}'''\n"
         );
@@ -444,9 +514,9 @@ mod tests {
         let texts = texts();
         let game = tiny_game();
         let ctx = RenderContext::new(&atlas, &texts, game.level()).with_background(&[
-            ("bg_sky", 0),
-            ("bg_missing", 2),
-            ("bg_hills", 8),
+            ("bg_sky", 0, 0),
+            ("bg_missing", 2, 0),
+            ("bg_hills", 8, 0),
         ]);
         assert_eq!(ctx.background().len(), 2);
         assert!(ctx.background_covers);
@@ -464,12 +534,29 @@ mod tests {
 
         // Only a partial layer: the flat sky stays behind it.
         let ctx =
-            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8)]);
+            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8, 0)]);
         assert!(!ctx.background_covers);
         let mut fb = Framebuffer::new();
         render(&game, &ctx, &mut fb);
         assert_eq!(fb.get(0, 0), Some(SKY_LIGHT));
         assert_eq!(fb.get(0, 179), Some(A));
+
+        // From the level: `[meta].background` with a `y` offset.
+        let text = "[meta]\nid = \"bg\"\ntime_limit = 300\n\
+                    background = [{ sprite = \"bg_hills\", factor = 8, y = 5 }]\n\
+                    [legend]\n\"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\nP\n'''\n";
+        let level = Level::parse(text).unwrap();
+        let ctx = RenderContext::for_level(&atlas, &texts, &level);
+        assert_eq!(ctx.background().len(), 1);
+        assert_eq!(
+            (ctx.background()[0].factor16, ctx.background()[0].y_offset),
+            (8, 5)
+        );
+        let game = Game::new(&level, &tuning(), 1);
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(fb.get(0, 179 - 5), Some(A), "raised by y = 5");
+        assert_eq!(fb.get(0, 179), Some(SKY_LIGHT));
     }
 
     #[test]
@@ -541,6 +628,29 @@ mod tests {
             ..p
         };
         assert_eq!(PlayerAnim::of(&falling, &t), PlayerAnim::Fall);
+        assert!(!player_faces_left(&running, &t), "facing stays right");
+        // Running right, holding left: skids, facing the motion (right).
+        let skidding = Player {
+            vx: t.run_speed,
+            skidding: true,
+            facing: Facing::Left,
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&skidding, &t), PlayerAnim::Skid);
+        assert!(!player_faces_left(&skidding, &t), "skid faces the motion");
+        let skid_left = Player {
+            vx: -t.walk_speed,
+            facing: Facing::Right,
+            ..skidding
+        };
+        assert!(player_faces_left(&skid_left, &t));
+        // Once stopped it is idle again and faces the input direction.
+        let stopped = Player {
+            vx: Fx::ZERO,
+            ..skidding
+        };
+        assert_eq!(PlayerAnim::of(&stopped, &t), PlayerAnim::Idle);
+        assert!(player_faces_left(&stopped, &t));
         for (i, s) in PlayerAnim::ALL.iter().enumerate() {
             assert_eq!(s.index(), i);
         }

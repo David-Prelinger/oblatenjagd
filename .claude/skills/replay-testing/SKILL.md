@@ -20,8 +20,8 @@ RB 30
 RBJ 18
 - 10
 ```
-Other expectations: `dies_at frames=a..b`, `deaths<=N`, `player_x>=<px>`, `state=<playing|dying|stage_clear>`, `no_event=<Event>` (`Jumped`, `Landed`, `Died`, `Respawned`, `LevelComplete`).
-`oblaten>=N` is not supported until M1 (parse error "not supported yet").
+Other expectations: `dies_at frames=a..b`, `deaths<=N`, `player_x>=<px>`, `state=<playing|dying|stage_clear|game_over>`, `no_event=<Event>` (`Jumped`, `Landed`, `Died`, `Respawned`, `LevelComplete`, `OblateCollected`, `PowerUp`, `Hurt`, `ExtraLife`, `BlockBumped`, `BrickBroken`, `Stomped`, `CheckpointReached`, `GameOver`), `oblaten>=N` (the HUD Oblaten counter at the end, 0..99), `score>=N`, `lives=N` (at the end).
+Anything else is a parse error "not supported yet".
 
 Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 = before the first step), so `complete frames=731..731` means `LevelComplete` happened in step 731. Ranges are inclusive. The replay always runs to its last input; `state=`, `deaths`, `player_x` are checked at the end. `seed` defaults to 1; `level` is a `meta.id`. `expect` and `shots` may repeat. Shot names: `a-z 0-9 _`; frames ≤ the replay length.
 
