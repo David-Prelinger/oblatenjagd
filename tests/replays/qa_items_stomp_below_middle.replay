@@ -1,0 +1,15 @@
+# QA (E1): stomp boundary, hurt side. Same approach as
+# qa_items_stomp_upper_half but the feet were at 182.x px (just below the
+# tourist's middle, 182) on the previous frame: a side hit, the Normal
+# player dies at frame 271, no stomp.
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=271..271 deaths=1 lives=2 no_event=Stomped
+---
+RB 70
+RBJ 20
+R 115
+R 35
+RJ 8
+R 60

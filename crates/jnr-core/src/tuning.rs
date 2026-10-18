@@ -293,9 +293,14 @@ impl Tuning {
                 "tuning.toml: need 4 <= player.hitbox_w <= 16 and 4 <= player.hitbox_h <= 32",
             ));
         }
-        if !(p.hitbox_h..=32).contains(&p.hitbox_h_big) {
+        // Every gap a Normal player fits in (whole tiles on the 16 px grid)
+        // must fit the Zuckerschock too, so growing always finds room
+        // (`Player::fit_head`).
+        let gap = (p.hitbox_h + 15) / 16 * 16;
+        if !(p.hitbox_h..=gap).contains(&p.hitbox_h_big) {
             return Err(ParseError::new(
-                "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= 32",
+                "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= player.hitbox_h \
+                 rounded up to whole tiles (16 px)",
             ));
         }
         for (name, v) in [
@@ -520,6 +525,9 @@ mod tests {
             ("hitbox_w", 17),
             ("hitbox_h", 3),
             ("hitbox_h", 33),
+            ("hitbox_h", 16),
+            ("hitbox_h_big", 21),
+            ("hitbox_h_big", 33),
         ] {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");

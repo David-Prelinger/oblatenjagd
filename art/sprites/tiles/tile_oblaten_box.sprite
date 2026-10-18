@@ -1,0 +1,109 @@
+# Oblatenkiste: Zauner-gold box (Y o O) with an Oblate emblem, k outline;
+# frames 0-3 plain, 4-5 a short glint.
+sprite = tile_oblaten_box
+size   = 16x16
+origin = 0,0
+anim   = idle frames=6 ticks=10 loop
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 1
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 2
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 3
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 4
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooYYooooooOk
+kYoOYYooooooOoOk
+kYYYooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 5
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooYYOk
+kYoOooooooYYOoOk
+kYooooooYYooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk

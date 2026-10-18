@@ -134,7 +134,7 @@ All x coordinates wrap around the width, so every generated layer tiles horizont
 
 Building keys: `x`, `width` (>= 2), `height` (wall rows), `base` (px from the bottom; default: the lowest hill point under the building, else 0), `roof` (`flat` | `gable` | `dome` | `tower`, default `flat`), `roof_height` (default: gable (width + 1) / 2, dome width / 2, tower width; a tower is a narrow block a third as wide with a small gable cap; a dome gets a lantern 2 px wide and max(roof_height / 3, 2) + 1 px tall), `wall`, `wall_shadow` + `shadow_width` (darker right edge, default width / 5), `roof_colour` (required for gable/dome/tower), `roof_shadow` (right half of the roof), `eave` (1 px line on top of the wall), `window` (colour; no windows without it), `window_size` `[2, 3]`, `window_gap` `[3, 4]`, `window_margin` `[2, 3]`, `window_chance` (percent of windows drawn, from the seed, default 100).
 
-The Stage 1 drafts are `art/generators/salzburg_{sky,untersberg,festung,rooftops}.toml` (first drafts by the engine engineer; the pixel-artist tunes them, the art-director reviews them).
+Stage 1: the sky is generated (`art/generators/salzburg_sky.toml`); the Untersberg, Festung and rooftop layers started as generator drafts and were replaced by hand-drawn sprites in `art/sprites/bg/` (both ways are allowed).
 
 ### Parallax layers in the renderer
 

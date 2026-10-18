@@ -23,7 +23,7 @@ use crate::level::{SpawnKind, TILE_PX};
 use crate::player::Facing;
 use crate::tuning::GoalTuning;
 
-/// How a game starts, and with it which flow screens it has (D-023).
+/// How a game starts, and with it which flow screens it has (D-025).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Start {
     /// Directly in `Playing`, without title, stage intros or pause; a

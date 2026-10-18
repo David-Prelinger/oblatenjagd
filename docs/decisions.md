@@ -125,7 +125,19 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Replay expectations `oblaten>=N` (HUD counter), `score>=N`, `lives=N`, `state=game_over`.
 - Renderer: Zuckerschock uses `player_big` (fallback `player`) with the same anim selection; `PlayerAnim::Skid` (anim `skid`, fallback `walk`) while braking against the motion on the ground, drawn facing the direction of motion (sprite catalog), decided in the renderer so core's `facing` stays the input direction.
 
-## D-023 Game flow, replay start, goal sequence (M1, task E4)
+## D-023 QA rulings on items and stomping (orchestrator, M1)
+- Stomp boundary stays as specified (D-017): a fall whose previous-frame feet are below the enemy's middle is a side hit, even near the corner. Generous enough for medium difficulty; revisit only if playtests disagree.
+- Reaching 100 Oblaten shows the „+1 Leben" popup like the Zaunerstollen (unless at the lives cap).
+- Goal and time-up in the same frame: the goal wins.
+- Popups freeze during the 30-frame transformation freeze like everything else.
+
+## D-024 Growing into a solid is a head bump (engine, M1 QA fixes)
+- Growing keeps the feet (D-017). If the new Zuckerschock head then overlaps solid tiles (e.g. eating the Mozartkugel while rising just below a box), it counts as a head bump: upward speed stops and the hitbox is pushed down flush below the lowest overlapped solid tile (`Player::fit_head`). The block is not hit (no bump, no brick break).
+- Tuning guarantees there is always room below: `hitbox_h_big` must not exceed `hitbox_h` rounded up to whole tiles (16 px), so every gap a Normal Resi fits in also fits Zuckerschock (validated in `tuning.rs`; 22 → 32 ≥ 30). Growing on the ground therefore never overlaps a ceiling.
+- `TileMap::move_y` moving up never tunnels: a box whose top edge already is inside a solid row does not move up and reports `Ceiling`.
+- Score popups: breaking a brick shows „50"; the 100th Oblate shows „+1 Leben" (D-023, none at the lives cap).
+
+## D-025 Game flow, replay start, goal sequence (M1, task E4)
 - `Game::new_at(level, tuning, seed, Start)`: `Start::Title` is the real game (the app's default): title screen → START → stage intro (`game.intro_frames` = 150) → play; after every death `Dying` → level reset + respawn → intro → play; game over → START (after `game_over_frames`) → intro; START during play pauses (`Mode::Paused`, nothing moves, timer stands still), START again resumes. `Start::Playing` (`Game::new`) starts in play and keeps the M0/E1 behaviour (no title, no intros, START does not pause), so tests, the solver and all existing replays and goldens keep their frame numbers. JUMP is tracked in every non-play mode, so a held JUMP is never a new press afterwards.
 - Replays opt into the real flow with the header `start = title` (default `playing`; written only when not the default). `--replay` uses the replay's `start`; `--record` writes the start it recorded with. New end states `state=title|stage_intro|paused`.
 - Maibaum sequence (`Mode::StageClear` + `Game::stage_clear()`, phases `Slide → Hop → Walk → Tally → Clear → ToBeContinued`, then `Title` with the run reset to the stage start): at the first touch the height of the feet above the goal cell's bottom picks the zone (`goal.zone_heights` / `goal.zone_scores`; top zone = Wurstkranz + popup „Wurstkranz!"), the player is placed with her hitbox `goal.pole_offset` px left of the pole centre and slides at `goal.slide_speed`; at the base she is put `pole_offset` right of the pole and hops (`goal.hop_speed`, player gravity), then walks at walk speed with no collision until her hitbox is 16 px past the right screen edge (the camera stays); tally one second per frame (`score.time_bonus` each, skipped at 0 s); texts `goal.clear_frames` after the tally; „Fortsetzung folgt …" `goal.to_be_continued_frames`. Enemies, items and the timer freeze; popups, debris and bumps keep animating. Input is ignored (except JUMP tracking).

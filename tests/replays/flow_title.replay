@@ -1,4 +1,4 @@
-# The real game flow (start = title, D-023) on 00_items: title, START at 21,
+# The real game flow (start = title, D-025) on 00_items: title, START at 21,
 # stage intro (21..170), pause at 172 and resume at 203 (nothing moves), the
 # solver route (goal at 582), the goal sequence and back on the title (1084).
 level  = items

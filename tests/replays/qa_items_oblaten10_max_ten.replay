@@ -1,0 +1,37 @@
+# QA (E1): hit the oblaten_10 brick as Normal 12 times, 22 frames apart
+# (all within 240 frames of the first hit): exactly 10 Oblaten, then it
+# is an empty box (hits 11 and 12 do nothing). 5 static Oblaten on the
+# way: 15 Oblaten, 3000 points.
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 oblaten>=15 score>=3000 no_event=BrickBroken no_event=ExtraLife
+---
+RB 70
+RBJ 20
+R 95
+- 40
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16
+J 6
+- 16

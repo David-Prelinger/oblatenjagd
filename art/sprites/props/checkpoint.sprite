@@ -1,0 +1,78 @@
+# Checkpoint = Haltestelle (Austrian bus stop): round yellow disc Y/o with a
+# green G rim and a bold green "H" on an iron pole i/m, timetable board
+# below (d frame, b header bar, w/i timetable rows).
+# active: the header turns red and a paper note ("auch voll") is taped on,
+# its corner sticking out past the board.
+sprite = checkpoint
+size   = 16x32
+origin = 8,32
+hitbox = 6,0,4,32
+anim   = idle   frames=1
+anim   = active frames=1
+---
+frame idle 0
+.....kkkkkk.....
+...kkGGGGGGkk...
+..kGGYYYYYYGGk..
+.kGYYYYYYYYYYGk.
+.kGYYGGYYGGYYGk.
+.kGYYGGYYGGYYGk.
+.kGYYGGGGGGYYGk.
+.kGYYGGGGGGYoGk.
+.kGYYGGYYGGYoGk.
+.kGYYGGYYGGooGk.
+.kGYYYYYYYoooGk.
+..kGGYYYoooGGk..
+...kkGGGGGGkk...
+.....kkkkkk.....
+......kimk......
+......kimk......
+..kkkkkkkkkkkk..
+..kddddddddddk..
+..kdbbbbbbbbdk..
+..kdwwwwwwwidk..
+..kdiiiwiiiidk..
+..kdwwwwwwwidk..
+..kdiiiwiiiidk..
+..kdwwwwwwwidk..
+..kdiiiwiiiidk..
+..kddddddddddk..
+..kkkkkkkkkkkk..
+......kimk......
+......kimk......
+......kimk......
+......kimk......
+......kimk......
+frame active 0
+.....kkkkkk.....
+...kkGGGGGGkk...
+..kGGYYYYYYGGk..
+.kGYYYYYYYYYYGk.
+.kGYYGGYYGGYYGk.
+.kGYYGGYYGGYYGk.
+.kGYYGGGGGGYYGk.
+.kGYYGGGGGGYoGk.
+.kGYYGGYYGGYoGk.
+.kGYYGGYYGGooGk.
+.kGYYYYYYYoooGk.
+..kGGYYYoooGGk..
+...kkGGGGGGkk...
+.....kkkkkk.....
+......kimk......
+......kimk......
+..kkkkkkkkkkkk..
+..kddddddddddk..
+..kdrrrrrrrrdk..
+..kdwwwkkkkkkkk.
+..kdiiikwwwwwwk.
+..kdwwwkwrrrrwk.
+..kdiiikwwwwwwk.
+..kdwwwkwrrrwik.
+..kdiiikwiiiiik.
+..kdddddkkkkkk..
+..kkkkkkkkkkkk..
+......kimk......
+......kimk......
+......kimk......
+......kimk......
+......kimk......

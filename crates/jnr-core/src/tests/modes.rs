@@ -1,5 +1,5 @@
 //! Flow modes of the real game (`Start::Title`): title, stage intro, pause,
-//! intro after a death and after a continue (M1 task E4, D-023).
+//! intro after a death and after a continue (M1 task E4, D-025).
 
 use super::*;
 use crate::{DeathCause, Mode, Start};

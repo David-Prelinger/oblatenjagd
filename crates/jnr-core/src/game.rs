@@ -9,7 +9,7 @@
 //!
 //! The screens around play (title, stage intro, pause) and the Maibaum goal
 //! sequence live in the child module [`flow`]; which of them a game has is
-//! set by its [`Start`] (D-023).
+//! set by its [`Start`] (D-025).
 
 mod flow;
 
@@ -625,7 +625,8 @@ impl Game {
                 );
                 o.vy = -it.pop_speed;
                 self.entities.push(o);
-                self.collect_oblate();
+                let life = self.collect_oblate(feet_x, TILE.mul_int(row - 1));
+                self.entities.extend(life);
             }
             Contents::Mozartkugel => self.entities.push(Entity::at_feet(
                 EntityKind::Mozartkugel,
@@ -679,6 +680,9 @@ impl Game {
             self.entities.push(d);
         }
         self.add_score(self.tuning.score.brick);
+        let centre = x + half;
+        self.entities
+            .push(popup(Popup::Score(self.tuning.score.brick), centre, y));
         self.events.push(Event::BrickBroken);
     }
 
@@ -744,12 +748,13 @@ impl Game {
             match e.kind {
                 EntityKind::Oblate => {
                     self.entities[i].removed = true;
-                    self.collect_oblate();
+                    spawned.extend(self.collect_oblate(fx, e.y));
                 }
                 EntityKind::Mozartkugel => {
                     self.entities[i].removed = true;
                     if self.player.power == Power::Normal {
                         self.player.set_power(Power::Big, &self.tuning.player);
+                        self.player.fit_head(&self.map);
                         self.events.push(Event::PowerUp);
                     }
                     self.add_score(self.tuning.score.power_up);
@@ -829,14 +834,18 @@ impl Game {
         }
     }
 
-    fn collect_oblate(&mut self) {
+    /// One Oblate at feet position (`x`, `y`): score, counter, and every
+    /// 100th a life; returns the „+1 Leben" popup for that life (none at the
+    /// lives cap, D-023).
+    fn collect_oblate(&mut self, x: Fx, y: Fx) -> Option<Entity> {
         self.add_score(self.tuning.score.oblate);
         self.oblaten = self.oblaten.saturating_add(1);
         self.events.push(Event::OblateCollected);
         if self.oblaten >= self.tuning.game.oblaten_per_life {
             self.oblaten = 0;
-            self.add_life();
+            return self.add_life().then(|| popup(Popup::ExtraLife, x, y));
         }
+        None
     }
 
     /// +1 life with an `ExtraLife` event; at the cap nothing happens and

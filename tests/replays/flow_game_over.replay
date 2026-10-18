@@ -1,6 +1,6 @@
 # Title flow: three deaths at the Selfie-Tourist (each followed by the stage
 # intro), game over at 1308, „Weiter?" from 1368, START at 1372 → stage intro
-# with 3 lives (D-017, D-023).
+# with 3 lives (D-017, D-025).
 level  = items
 seed   = 1
 source = handwritten

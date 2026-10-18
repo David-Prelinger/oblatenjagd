@@ -44,7 +44,7 @@ pub struct Options {
     /// `--record`: write the played inputs as a replay to this file on exit.
     pub record: Option<PathBuf>,
     /// How the game starts: the title screen, unless a `--replay` says
-    /// otherwise (its `start`, default `playing`, D-023).
+    /// otherwise (its `start`, default `playing`, D-025).
     pub start: Start,
 }
 

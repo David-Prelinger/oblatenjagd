@@ -1,0 +1,15 @@
+# QA (E1): bump the Zaunerstollen box as Normal and stay under it.
+# The Zaunerstollen rolls right through the (static) Selfie-Tourist,
+# falls into the Salzach pit (columns 44-45, ~frame 480) and is gone:
+# no extra life, no death, the player never touched it.
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 lives=3 no_event=ExtraLife no_event=Died
+---
+RB 70
+RBJ 20
+R 115
+- 30
+J 10
+- 400
