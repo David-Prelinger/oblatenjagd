@@ -1,7 +1,7 @@
 # Dombögen arch underside: the stone i m d of tile_arch (same top course)
 # with the arch ring (voussoirs, joints m) and a curved soffit cut-out below,
 # intrados edge d. Autotiled left/right only (the N bit only rounds the top
-# corners): left end = springing, middle = crown with keystone, right end =
+# corners): left end = springing, middle = crown (m depth band inside the intrados), right end =
 # springing; a single tile is a small complete arch.
 # Autotiled (D-020): anim `auto`, frame = neighbour mask
 # (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
@@ -19,9 +19,9 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiimiiiiiiiimiii
-iimmiiiiiiiimmii
-imimiiddddiimimi
-iiimdd....ddmiii
+iimimiiiiiimimii
+imiiimddddmiiimi
+iiiidd....ddiiii
 miid........diim
 iid..........dii
 id............di
@@ -36,9 +36,9 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiimiiiiiiiimiii
-iimmiiiiiiiimmii
-imimiiddddiimimi
-iiimdd....ddmiii
+iimimiiiiiimimii
+imiiimddddmiiimi
+iiiidd....ddiiii
 miid........diim
 iid..........dii
 id............di
@@ -53,10 +53,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiiiimmmiiimiiim
-iiimmiimiiimiiim
-iimmiiimiiimdddd
-imimiiimdddd....
-miimiddd........
+iiimmmiiiiimiiim
+iimiiimiiiimdddd
+imiiiiimdddd....
+miiiiddd........
 iiidd...........
 iid.............
 id..............
@@ -70,10 +70,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiiiimmmiiimiiim
-iiimmiimiiimiiim
-iimmiiimiiimdddd
-imimiiimdddd....
-miimiddd........
+iiimmmiiiiimiiim
+iimiiimiiiimdddd
+imiiiiimdddd....
+miiiiddd........
 iiidd...........
 iid.............
 id..............
@@ -87,9 +87,9 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiimiiiiiiiimiii
-iimmiiiiiiiimmii
-imimiiddddiimimi
-iiimdd....ddmiii
+iimimiiiiiimimii
+imiiimddddmiiimi
+iiiidd....ddiiii
 miid........diim
 iid..........dii
 id............di
@@ -104,9 +104,9 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiimiiiiiiiimiii
-iimmiiiiiiiimmii
-imimiiddddiimimi
-iiimdd....ddmiii
+iimimiiiiiimimii
+imiiimddddmiiimi
+iiiidd....ddiiii
 miid........diim
 iid..........dii
 id............di
@@ -121,10 +121,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiiiimmmiiimiiim
-iiimmiimiiimiiim
-iimmiiimiiimdddd
-imimiiimdddd....
-miimiddd........
+iiimmmiiiiimiiim
+iimiiimiiiimdddd
+imiiiiimdddd....
+miiiiddd........
 iiidd...........
 iid.............
 id..............
@@ -138,10 +138,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 iiiiimmmiiimiiim
-iiimmiimiiimiiim
-iimmiiimiiimdddd
-imimiiimdddd....
-miimiddd........
+iiimmmiiiiimiiim
+iimiiimiiiimdddd
+imiiiiimdddd....
+miiiiddd........
 iiidd...........
 iid.............
 id..............
@@ -155,10 +155,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 miiimiiimmmiiiii
-miiimiiimiimmiii
-ddddmiiimiiimmii
-....ddddmiiimimi
-........dddimiim
+miiimiiiiimmmiii
+ddddmiiiimiiimii
+....ddddmiiiiimi
+........dddiiiim
 ...........ddiii
 .............dii
 ..............di
@@ -172,10 +172,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 miiimiiimmmiiiii
-miiimiiimiimmiii
-ddddmiiimiiimmii
-....ddddmiiimimi
-........dddimiim
+miiimiiiiimmmiii
+ddddmiiiimiiimii
+....ddddmiiiiimi
+........dddiiiim
 ...........ddiii
 .............dii
 ..............di
@@ -184,12 +184,12 @@ frame auto 10
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
 iiiiiiiiiiiiiiii
-iiiiiimmmmiiiiii
-mmmmmmmiimmmmmmm
-ddddddmiimdddddd
-iimiiimiimiiimii
-iimiiimiimiiimii
+mmmmmmmmmmmmmmmm
 dddddddddddddddd
 ................
 ................
@@ -201,12 +201,12 @@ frame auto 11
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
 iiiiiiiiiiiiiiii
-iiiiiimmmmiiiiii
-mmmmmmmiimmmmmmm
-ddddddmiimdddddd
-iimiiimiimiiimii
-iimiiimiimiiimii
+mmmmmmmmmmmmmmmm
 dddddddddddddddd
 ................
 ................
@@ -223,10 +223,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 miiimiiimmmiiiii
-miiimiiimiimmiii
-ddddmiiimiiimmii
-....ddddmiiimimi
-........dddimiim
+miiimiiiiimmmiii
+ddddmiiiimiiimii
+....ddddmiiiiimi
+........dddiiiim
 ...........ddiii
 .............dii
 ..............di
@@ -240,10 +240,10 @@ iiiiiiimiiiiiiii
 mmmmmmmmmmmmmmmm
 dddddddddddddddd
 miiimiiimmmiiiii
-miiimiiimiimmiii
-ddddmiiimiiimmii
-....ddddmiiimimi
-........dddimiim
+miiimiiiiimmmiii
+ddddmiiiimiiimii
+....ddddmiiiiimi
+........dddiiiim
 ...........ddiii
 .............dii
 ..............di
@@ -252,12 +252,12 @@ frame auto 14
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
 iiiiiiiiiiiiiiii
-iiiiiimmmmiiiiii
-mmmmmmmiimmmmmmm
-ddddddmiimdddddd
-iimiiimiimiiimii
-iimiiimiimiiimii
+mmmmmmmmmmmmmmmm
 dddddddddddddddd
 ................
 ................
@@ -269,12 +269,12 @@ frame auto 15
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
 iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+iiiiiiimiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
 iiiiiiiiiiiiiiii
-iiiiiimmmmiiiiii
-mmmmmmmiimmmmmmm
-ddddddmiimdddddd
-iimiiimiimiiimii
-iimiiimiimiiimii
+mmmmmmmmmmmmmmmm
 dddddddddddddddd
 ................
 ................
