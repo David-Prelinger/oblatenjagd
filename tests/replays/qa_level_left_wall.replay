@@ -1,0 +1,10 @@
+# QA (M0): left of the level is a solid wall (D-011) and the camera starts at
+# x=0: running and jumping left from the start stops at x=0, never outside.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=0
+---
+LB 60
+LBJ 40
+LB 60

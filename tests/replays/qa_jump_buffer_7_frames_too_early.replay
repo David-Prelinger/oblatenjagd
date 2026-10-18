@@ -1,0 +1,17 @@
+# QA (M0): a JUMP press 7 frames before the first grounded step (step 294)
+# is outside the 6-frame buffer: no jump on landing, JUMP stays held (no new
+# press), so the player runs into the 6-wide gap and falls out (step 325).
+level  = testbed
+seed   = 1
+source = handwritten
+expect = dies_at frames=325..325 deaths=1 state=dying
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 45
+RBJ 3     # short hop at 271, lands at 300
+RB 20     # steps 274-293
+RBJ 40    # press at step 294: too early
+RB 30

@@ -1,0 +1,27 @@
+# QA (M0): LEFT+RIGHT together cancel out, UP does nothing, DOWN alone on
+# solid ground does nothing. After 180 frames of such inputs the state is the
+# same as at the start, so the testbed route afterwards completes exactly 180
+# frames later than testbed_route (731 + 180 = 911).
+level  = testbed
+seed   = 1
+source = handwritten
+expect = complete frames=911..911 deaths=0 state=stage_clear no_event=Died
+---
+LR 60     # both directions: no movement
+UD 60     # up + down on solid ground: nothing
+LRUDB 60  # all directions + run: nothing
+RB 110    # testbed_route from here
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35
+RBJ 14
+RB 38
+RBJ 30
+RB 200
