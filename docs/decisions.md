@@ -42,3 +42,10 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-010 Atlas data is owned and built once at startup
 - The atlas types (`Atlas`, `AtlasSprite`, `AtlasAnim`) are plain owned data (`Vec`/`String`) shared by build time and runtime; `jnr_assets::atlas()` builds the atlas once via `OnceLock` from embedded RGBA bytes and generated metadata.
 - One type family instead of separate `&'static` statics; the cost is one pixel copy at startup.
+
+## D-011 Level semantics (jnr-core, M0)
+- `.` is always empty air and can't be redefined in the legend; tile names map to collision kinds in core.
+- Outside the grid: left/right are solid walls, solid tiles in row 0 extend upwards, below the level is empty and falling out kills.
+- A goal is a pole covering its whole column above the goal cell, so it can't be jumped over.
+- The player spawns grounded; `Dying` freezes the player; respawn resets the camera.
+- No air drag; turning in the air uses `air_accel`. On the ground, speed above the current max (RUN released) decays by `friction`.
