@@ -1,0 +1,285 @@
+# Bee hive box (Beute): dark wood O with an o lit left edge, l right edge and
+# bottom, a painted folk-art front panel (sky-blue S field with a w/Y flower and
+# g leaves; the right box of a pair gets a pink heart panel) and the entrance
+# slit l with its o landing board. Lidded (o/O/l roof board) only when nothing
+# is stacked on it, so a stack reads as single boxes, not a wall.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+# Drawn by the pixel-artist with a throwaway script; the grids below are the source.
+sprite = tile_beute
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 1
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 2
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 3
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 4
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 5
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 6
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 7
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 8
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlpppppppppplOl
+oOlppRRpRRppplOl
+oOlppRRRRRppplOl
+oOlpppRRRpgpplOl
+oOlggppRppggplOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 9
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlpppppppppplOl
+oOlppRRpRRppplOl
+oOlppRRRRRppplOl
+oOlpppRRRpgpplOl
+oOlggppRppggplOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 10
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 11
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 12
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlpppppppppplOl
+oOlppRRpRRppplOl
+oOlppRRRRRppplOl
+oOlpppRRRpgpplOl
+oOlggppRppggplOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 13
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlpppppppppplOl
+oOlppRRpRRppplOl
+oOlppRRRRRppplOl
+oOlpppRRRpgpplOl
+oOlggppRppggplOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 14
+oooooooooooooooo
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 15
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOlSSSSwSSSSSlOl
+oOlSSSwYwSSSSlOl
+oOlSSSSwSSgSSlOl
+oOlSSgSgSgggSlOl
+oOlSgggggggSSlOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOOOOOOOOOOOl
+oOOOOllllllOOOOl
+oOOOOooooooOOOOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll

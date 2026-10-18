@@ -1,0 +1,286 @@
+# Brunnwinkl village house wall as a SOLID block (the Kornmuehle, houses 2-5):
+# whitewash w with a green G shuttered window (m frame, b glass, s glint) and
+# an i stucco sill per tile. Exposed top = a timber upper storey (o lip,
+# O boards with l joints every 4 px, l shadow) over whitewash without window;
+# exposed left i, right i/m, bottom = i/m/d plinth: the light top lip and dark
+# edges set it apart from St. Gilgen's flat decorative wall_village_bg (art-style 8).
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+# Drawn by the pixel-artist with a throwaway script; the grids below are the source.
+sprite = tile_facade_village
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+.oooooooooooooo.
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmd
+.dddddddddddddd.
+frame auto 1
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+mmmmwwwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmd
+.dddddddddddddd.
+frame auto 2
+.ooooooooooooooo
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+.ddddddddddddddd
+frame auto 3
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+mmmmwwwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+.ddddddddddddddd
+frame auto 4
+.oooooooooooooo.
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+mmmmwwwwwwwwwwim
+frame auto 5
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+mmmmwwwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+miiiiiwwwwwwwwim
+mmmmmmwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+miiiwwwwwwwwwwim
+mmmmwwwwwwwwwwim
+frame auto 6
+.ooooooooooooooo
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+mmmmwwwwwwwwwwww
+frame auto 7
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+mmmmwwwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+miiiiiwwwwwwwwww
+mmmmmmwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+miiiwwwwwwwwwwww
+mmmmwwwwwwwwwwww
+frame auto 8
+ooooooooooooooo.
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmd
+ddddddddddddddd.
+frame auto 9
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwiiiiiiwwwim
+wwwwGmmmmmmGwwim
+wwwwGmssbbmGwwim
+wwwwGmsbbbmGwwim
+wwwwGmmmmmmGwwim
+wwwwGmbbbbmGwwim
+wwwwGmbbbbmGwwim
+wwwwGmmmmmmGwwim
+wwwwwiiiiiiiwwim
+iiiiiiiiiiiiiiim
+mmmmmmmmmmmmmmmd
+ddddddddddddddd.
+frame auto 10
+oooooooooooooooo
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 11
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwwGmmmmmmGwwww
+wwwwGmssbbmGwwww
+wwwwGmsbbbmGwwww
+wwwwGmmmmmmGwwww
+wwwwGmbbbbmGwwww
+wwwwGmbbbbmGwwww
+wwwwGmmmmmmGwwww
+wwwwwiiiiiiiwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 12
+ooooooooooooooo.
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+frame auto 13
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+wwwwwiiiiiiwwwim
+wwwwGmmmmmmGwwim
+wwwwGmssbbmGwwim
+wwwwGmsbbbmGwwim
+wwwwGmmmmmmGwwim
+wwwwGmbbbbmGwwim
+wwwwGmbbbbmGwwim
+wwwwGmmmmmmGwwim
+wwwwwiiiiiiiwwim
+wwwwwwmmmmmmwwim
+wwwwwwwwwwwwwwim
+wwwwwwwwwwwwwwim
+frame auto 14
+oooooooooooooooo
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+OOOlOOOlOOOlOOOl
+llllllllllllllll
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+frame auto 15
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwiiiiiiwwwww
+wwwwGmmmmmmGwwww
+wwwwGmssbbmGwwww
+wwwwGmsbbbmGwwww
+wwwwGmmmmmmGwwww
+wwwwGmbbbbmGwwww
+wwwwGmbbbbmGwwww
+wwwwGmmmmmmGwwww
+wwwwwiiiiiiiwwww
+wwwwwwmmmmmmwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
