@@ -38,6 +38,7 @@ Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 =
 1. Write the shortest possible replay that triggers the bug (often handwritten).
 2. Set `expect` to the **correct** behaviour, so the replay fails now and passes after the fix.
 3. Name it `bug_<short_description>.replay`.
+4. A failing replay breaks `cargo xtask check` (the replay unit test runs every file in `tests/replays/`), so **never commit a failing `bug_*.replay` on its own to the milestone branch**. The QA tester commits it on its own worktree branch; the engineer merges that branch, fixes the bug in the same branch, and renames the replay to `qa_<description>.replay` once it passes. Only then is it merged.
 
 ## After a physics or tuning change
 1. Run `cargo xtask verify`; expect solver replays to fail.

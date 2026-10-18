@@ -12,7 +12,7 @@ Follow the `replay-testing` skill.
 1. Run `cargo xtask verify` and read the report.
 2. For the feature under test, think of edge cases: hitting a block corner, jumping into a ceiling while running, stomping two enemies at once, dying exactly at the goal, the timer running out during a transition, pausing, taking a power-up while hurt, spawning at the screen edge.
 3. Write replays that exercise them (`tests/replays/`) and run them. Use filmstrips to see what happens.
-4. For each bug: a minimal replay that reproduces it (expectation = the correct behaviour, so it fails now) plus a short report: steps, expected, actual, filmstrip path.
+4. For each bug: a minimal replay that reproduces it (expectation = the correct behaviour, so it fails now) plus a short report: steps, expected, actual, filmstrip path. Commit bug replays only on your own worktree/branch: a failing replay breaks `cargo xtask check`, so it reaches the milestone branch together with its fix (see the `replay-testing` skill).
 
 ## Rules
 - Only write to `tests/replays/` and `target/`. Never edit source code, art or levels.
