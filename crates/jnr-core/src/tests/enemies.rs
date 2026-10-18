@@ -863,6 +863,67 @@ fn festungsbahn_waits_for_its_rider_then_travels_and_comes_back() {
 
 /// A car placed at the upper end of its track (`to` goes down) travels
 /// down first, then waits there for a rider and takes them back up.
+/// Jumping off the waiting car in the frame JUMP is pressed: she is in the
+/// air before the car looks for its rider, so it stays.
+#[test]
+fn a_jump_off_the_waiting_car_does_not_call_it() {
+    let mut g = game(&car_world());
+    park_player(&mut g);
+    hold(&mut g, "-", 10);
+    board(&mut g, 10);
+    let events = g.step(input("J")).to_vec();
+    assert!(events.contains(&Event::Jumped), "{events:?}");
+    let c = car(&g);
+    assert_eq!(c.state, crate::platform::car::WAIT_LOWER);
+    assert_eq!((c.x, c.y), (Fx::from_px(64), Fx::from_px(168)));
+    // She lands on it again: now it leaves.
+    until(&mut g, "-", 120, |g| {
+        car(g).state == crate::platform::car::UP
+    });
+    assert_eq!(g.player().y + g.player().h, car(&g).y);
+}
+
+/// Feet at the car's top height but only touching its left edge (her right
+/// edge on `car.x`): the waiting car isn't called, a moving car doesn't
+/// carry her.
+#[test]
+fn an_edge_only_touch_neither_calls_nor_carries() {
+    let mut g = game(&car_world());
+    park_player(&mut g);
+    hold(&mut g, "-", 10);
+    let place = |g: &mut Game| {
+        let c = car(g);
+        g.player.x = c.x - g.player.w;
+        g.player.y = c.y - g.player.h;
+        g.player.vx = Fx::ZERO;
+        g.player.vy = Fx::ZERO;
+        g.player.on_ground = true;
+    };
+    place(&mut g);
+    g.step(input("-"));
+    assert_eq!(
+        car(&g).state,
+        crate::platform::car::WAIT_LOWER,
+        "not called"
+    );
+    // A car that is already rising: she isn't carried along.
+    let i = g
+        .entities
+        .iter()
+        .position(|e| e.kind == EntityKind::Festungsbahn)
+        .unwrap();
+    g.entities[i].state = crate::platform::car::UP;
+    g.entities[i].count = 20;
+    g.step(input("-"));
+    place(&mut g);
+    let before = (g.player().x, g.player().y);
+    g.step(input("-"));
+    let c = car(&g);
+    assert!(c.vy < Fx::ZERO, "the car rose");
+    assert_eq!(g.player().x, before.0, "not carried sideways");
+    assert!(g.player().y >= before.1, "not lifted");
+}
+
 #[test]
 fn festungsbahn_spawned_at_its_upper_end_comes_down_first() {
     // Spawn cell (col 4, row 6): top 88; the lower end is [+8, +5] tiles

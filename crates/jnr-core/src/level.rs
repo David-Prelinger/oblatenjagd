@@ -770,7 +770,11 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
     if kind == SpawnKind::Prop {
         match t.get("dx") {
             None => {}
-            Some(toml::Value::Integer(n)) if n.abs() <= i64::from(MAX_PROP_DX_PX) => dx = *n as i32,
+            Some(toml::Value::Integer(n))
+                if (-i64::from(MAX_PROP_DX_PX)..=i64::from(MAX_PROP_DX_PX)).contains(n) =>
+            {
+                dx = *n as i32
+            }
             Some(_) => {
                 return Err(ParseError::new(format!(
                     "legend \"{key}\": a prop's dx must be a whole number of px within ±{MAX_PROP_DX_PX}"
@@ -1210,6 +1214,8 @@ P.sSC.tfG
         assert_eq!(prop(", sprite = \"sphaera\", dx = -64").0.dx, -64);
         for bad in [
             ", sprite = \"a\", dx = 65",
+            ", sprite = \"a\", dx = -65",
+            ", sprite = \"a\", dx = -9223372036854775808",
             ", sprite = \"a\", dx = true",
             ", sprite = \"a\", dx = \"8\"",
         ] {

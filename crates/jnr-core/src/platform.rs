@@ -420,6 +420,36 @@ mod tests {
     }
 
     #[test]
+    fn standing_on_needs_feet_on_the_top_and_a_real_overlap() {
+        let px = Fx::from_px;
+        let car = Aabb {
+            x: px(64),
+            y: px(168),
+            w: px(48),
+            h: px(24),
+        };
+        let p = |x: Fx, bottom: Fx| Aabb {
+            x,
+            y: bottom - px(22),
+            w: px(12),
+            h: px(22),
+        };
+        assert!(stands_on(&p(px(70), px(168)), &car));
+        // Edge-only touches on either side: not on it.
+        assert!(!stands_on(&p(px(52), px(168)), &car), "right edge == car.x");
+        assert!(
+            !stands_on(&p(px(112), px(168)), &car),
+            "left edge == car.right()"
+        );
+        // One subpixel of overlap is enough.
+        assert!(stands_on(&p(px(52) + Fx(1), px(168)), &car));
+        assert!(stands_on(&p(px(112) - Fx(1), px(168)), &car));
+        // Feet not exactly on the top.
+        assert!(!stands_on(&p(px(70), px(168) - Fx(1)), &car));
+        assert!(!stands_on(&p(px(70), px(168) + Fx(1)), &car));
+    }
+
+    #[test]
     fn the_lower_end_comes_from_the_track_direction() {
         let spawn = |to: [i32; 2]| EntitySpawn {
             kind: SpawnKind::Festungsbahn,

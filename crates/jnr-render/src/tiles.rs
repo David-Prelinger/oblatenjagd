@@ -65,7 +65,7 @@ pub const INVISIBLE_TILE: &str = "invisible";
 /// The autotile family of a tile name: names of one family count as the
 /// same neighbour for [`autotile_mask`] (in both directions). A small
 /// explicit table; every other name is its own family.
-pub fn autotile_family(name: &str) -> &str {
+pub(crate) fn autotile_family(name: &str) -> &str {
     match name {
         "arch_under" => "arch",
         other => other,
@@ -75,19 +75,19 @@ pub fn autotile_family(name: &str) -> &str {
 /// How each tile name of a level is drawn, indexed by
 /// [`jnr_core::Tile::name`] (resolved once, see [`crate::RenderContext`]).
 #[derive(Clone, Debug, Default)]
-pub struct TileLooks<'a> {
+pub(crate) struct TileLooks<'a> {
     /// The sprite look (`None`: grey-box by [`TileKind`], unless hidden).
-    pub looks: Vec<Option<TileLook<'a>>>,
+    pub(crate) looks: Vec<Option<TileLook<'a>>>,
     /// The name index of the first name of the same [`autotile_family`].
-    pub family: Vec<u16>,
+    pub(crate) family: Vec<u16>,
     /// Never drawn ([`INVISIBLE_TILE`]).
-    pub hidden: Vec<bool>,
+    pub(crate) hidden: Vec<bool>,
 }
 
 impl<'a> TileLooks<'a> {
     /// The looks of `names` (a level's `tile_names`; index 0 = no name):
     /// sprite `<prefix><name>` each.
-    pub fn resolve(atlas: &'a Atlas, names: &[String], prefix: &str) -> TileLooks<'a> {
+    pub(crate) fn resolve(atlas: &'a Atlas, names: &[String], prefix: &str) -> TileLooks<'a> {
         let looks = names
             .iter()
             .map(|n| {
@@ -142,7 +142,7 @@ pub fn autotile_mask(map: &TileMap, family: &[u16], col: i32, row: i32) -> u8 {
 }
 
 /// Tiles inside the camera view.
-pub fn draw_tiles(
+pub(crate) fn draw_tiles(
     fb: &mut Framebuffer,
     atlas: &Atlas,
     looks: &TileLooks,

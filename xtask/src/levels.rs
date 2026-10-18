@@ -310,14 +310,31 @@ mod tests {
             )];
             lint(&levels, &texts, &tuning(), None)
         };
-        let catalog = include_str!("../../docs/sprite-catalog.md");
         for name in PROP_SPRITES {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
-            assert!(
-                catalog.contains(&format!("| `{name}`")),
-                "`{name}` not in the catalog"
-            );
         }
+        // PROP_SPRITES == the rows of the catalog's "Props and goal" table
+        // that are props (not the checkpoint, Maibaum, signs or the car,
+        // which have entities of their own).
+        let catalog = include_str!("../../docs/sprite-catalog.md");
+        let start = catalog.find("## Props and goal").expect("props section");
+        let section = &catalog[start..];
+        let section = &section[..section[3..].find("\n## ").map_or(section.len(), |e| e + 3)];
+        let own_entity = |n: &str| {
+            n == "checkpoint"
+                || n == "festungsbahn"
+                || n.starts_with("maibaum_")
+                || n.starts_with("sign_")
+        };
+        let mut in_catalog: Vec<&str> = section
+            .lines()
+            .filter_map(|l| l.strip_prefix("| `")?.split('`').next())
+            .filter(|n| !own_entity(n))
+            .collect();
+        in_catalog.sort_unstable();
+        let mut listed = PROP_SPRITES.to_vec();
+        listed.sort_unstable();
+        assert_eq!(listed, in_catalog);
         let problems = check("sphere");
         assert_eq!(problems.len(), 1, "{problems:?}");
         assert!(
