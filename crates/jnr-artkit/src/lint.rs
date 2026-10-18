@@ -85,8 +85,8 @@ pub const SPRITE_RULES: &[SpriteRule] = &[
     },
     SpriteRule {
         id: "bounds",
-        severity: Severity::Warning,
-        summary: "origin and hitbox lie inside the sprite",
+        severity: Severity::Error,
+        summary: "origin and hitbox lie inside the sprite (hitbox non-empty)",
         check: bounds,
     },
     SpriteRule {
@@ -320,8 +320,8 @@ fn bounds(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
     if s.origin.x > s.width || s.origin.y > s.height {
         out.push(hit(
             &s.file,
-            s.origin_line,
-            0,
+            s.origin_pos.line,
+            s.origin_pos.col,
             format!(
                 "origin {},{} lies outside the {}x{} sprite",
                 s.origin.x, s.origin.y, s.width, s.height
@@ -329,11 +329,14 @@ fn bounds(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
         ));
     }
     let h = s.hitbox;
-    if h.w == 0 || h.h == 0 || h.x + h.w > s.width || h.y + h.h > s.height {
+    // u64: user-supplied values near u32::MAX must not overflow.
+    let right = u64::from(h.x) + u64::from(h.w);
+    let bottom = u64::from(h.y) + u64::from(h.h);
+    if h.w == 0 || h.h == 0 || right > u64::from(s.width) || bottom > u64::from(s.height) {
         out.push(hit(
             &s.file,
-            s.hitbox_line,
-            0,
+            s.hitbox_pos.line,
+            s.hitbox_pos.col,
             format!(
                 "hitbox {},{},{},{} is empty or exceeds the {}x{} sprite",
                 h.x, h.y, h.w, h.h, s.width, s.height
@@ -477,19 +480,44 @@ mod tests {
     }
 
     #[test]
-    fn bounds_and_file_name_are_warnings() {
+    fn bounds_rule_is_an_error() {
         let src = "sprite = b\nsize = 2x2\norigin = 3,1\nhitbox = 1,0,2,2\nanim = i frames=1\n---\nframe 0\nkk\nkk\n";
-        let s = parse_sprite("test/a.sprite", "test", src).unwrap();
-        let d = lint_sprite(&s, &pal());
-        let got: Vec<_> = d.iter().map(|d| (d.rule, d.line, d.severity)).collect();
+        let s = parse_sprite("test/b.sprite", "test", src).unwrap();
+        let got: Vec<_> = lint_sprite(&s, &pal())
+            .iter()
+            .map(|d| (d.rule, d.line, d.col, d.severity))
+            .collect();
         assert_eq!(
             got,
             [
-                ("bounds", 3, Severity::Warning),
-                ("bounds", 4, Severity::Warning),
-                ("file-name", 1, Severity::Warning),
+                ("bounds", 3, 10, Severity::Error),
+                ("bounds", 4, 10, Severity::Error),
             ]
         );
+    }
+
+    #[test]
+    fn bounds_rule_survives_huge_values() {
+        let src = "sprite = b\nsize = 2x2\norigin = 4294967295,4294967295\nhitbox = 4294967295,0,1,1\nanim = i frames=1\n---\nframe 0\nkk\nkk\n";
+        let s = parse_sprite("test/b.sprite", "test", src).unwrap();
+        let d = lint_sprite(&s, &pal());
+        let shown: Vec<String> = d.iter().map(|d| d.to_string()).collect();
+        assert_eq!(shown.len(), 2, "{shown:?}");
+        assert!(shown[1].starts_with("test/b.sprite:4:10: error[bounds]: hitbox 4294967295,0,1,1"));
+        let hw = "sprite = b\nsize = 2x2\nhitbox = 1,1,4294967295,4294967295\nanim = i frames=1\n---\nframe 0\nkk\nkk\n";
+        let s = parse_sprite("test/b.sprite", "test", hw).unwrap();
+        assert_eq!(lint_sprite(&s, &pal())[0].rule, "bounds");
+    }
+
+    #[test]
+    fn file_name_rule_is_a_warning() {
+        let src = "sprite = b\nsize = 2x2\nanim = i frames=1\n---\nframe 0\nkk\nkk\n";
+        let s = parse_sprite("test/a.sprite", "test", src).unwrap();
+        let got: Vec<_> = lint_sprite(&s, &pal())
+            .iter()
+            .map(|d| (d.rule, d.line, d.severity))
+            .collect();
+        assert_eq!(got, [("file-name", 1, Severity::Warning)]);
     }
 
     #[test]

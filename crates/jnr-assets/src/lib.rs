@@ -22,7 +22,7 @@ static ATLAS_RGBA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/atlas.rgba"
 /// The sprite atlas with every sprite from `art/sprites/` (built on first use).
 pub fn atlas() -> &'static Atlas {
     static ATLAS: OnceLock<Atlas> = OnceLock::new();
-    ATLAS.get_or_init(|| generated_atlas(ATLAS_RGBA.to_vec()))
+    ATLAS.get_or_init(|| generated_atlas(ATLAS_RGBA))
 }
 
 /// Looks up a sprite (or palette-swap variant) by name.

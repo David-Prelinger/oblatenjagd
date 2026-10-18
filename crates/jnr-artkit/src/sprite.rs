@@ -80,9 +80,11 @@ pub struct SpriteSource {
     pub height: u32,
     pub size_line: usize,
     pub origin: Point,
-    pub origin_line: usize,
+    /// Where `origin` was set (line 0 = defaulted).
+    pub origin_pos: Pos,
     pub hitbox: Rect,
-    pub hitbox_line: usize,
+    /// Where `hitbox` was set (line 0 = defaulted).
+    pub hitbox_pos: Pos,
     pub mirror: bool,
     pub anims: Vec<AnimDecl>,
     pub variants: Vec<VariantDecl>,
@@ -123,9 +125,9 @@ impl Parser<'_> {
 
         let mut name: Option<(String, usize)> = None;
         let mut size: Option<(u32, u32, usize)> = None;
-        let mut origin: Option<(Point, usize)> = None;
-        let mut hitbox: Option<(Rect, usize)> = None;
-        let mut mirror = false;
+        let mut origin: Option<(Point, Pos)> = None;
+        let mut hitbox: Option<(Rect, Pos)> = None;
+        let mut mirror: Option<bool> = None;
         let mut anims: Vec<AnimDecl> = Vec::new();
         let mut variants: Vec<VariantDecl> = Vec::new();
 
@@ -140,6 +142,7 @@ impl Parser<'_> {
                 return Err(self.err(line, col, "expected `key = value` in the header"));
             };
             let key = text[..eq].trim();
+            let key_col = text.chars().take_while(|c| c.is_whitespace()).count() + 1;
             let value_col = text[..eq + 1].chars().count() + 1;
             let value_toks: Vec<(usize, &str)> = tokens(&text[eq + 1..])
                 .into_iter()
@@ -158,7 +161,7 @@ impl Parser<'_> {
             };
             let once = |seen: bool| -> Result<(), Diagnostic> {
                 if seen {
-                    Err(self.err(line, 1, format!("`{key}` is set twice")))
+                    Err(self.err(line, key_col, format!("`{key}` is set twice")))
                 } else {
                     Ok(())
                 }
@@ -192,7 +195,7 @@ impl Parser<'_> {
                     once(origin.is_some())?;
                     single("origin")?;
                     let n = self.numbers(line, vcol, first, 2, "origin `x,y`")?;
-                    origin = Some((Point { x: n[0], y: n[1] }, line));
+                    origin = Some((Point { x: n[0], y: n[1] }, Pos { line, col: vcol }));
                 }
                 "hitbox" => {
                     once(hitbox.is_some())?;
@@ -205,14 +208,15 @@ impl Parser<'_> {
                             w: n[2],
                             h: n[3],
                         },
-                        line,
+                        Pos { line, col: vcol },
                     ));
                 }
                 "mirror" => {
+                    once(mirror.is_some())?;
                     single("mirror mode")?;
                     mirror = match first {
-                        "auto" => true,
-                        "none" => false,
+                        "auto" => Some(true),
+                        "none" => Some(false),
                         _ => {
                             return Err(self.err(
                                 line,
@@ -240,14 +244,14 @@ impl Parser<'_> {
                 "include" | "tileset" => {
                     return Err(self.err(
                         line,
-                        1,
+                        key_col,
                         format!("`{key}` is not supported yet (planned, see docs/art-pipeline.md)"),
                     ));
                 }
                 _ => {
                     return Err(self.err(
                         line,
-                        1,
+                        key_col,
                         format!(
                             "unknown header key `{key}` (expected sprite, size, origin, hitbox, mirror, anim, variant)"
                         ),
@@ -274,21 +278,21 @@ impl Parser<'_> {
                 "no `anim = <name> frames=N ...` declared before `---`",
             ));
         }
-        let (origin, origin_line) = origin.unwrap_or((
+        let (origin, origin_pos) = origin.unwrap_or((
             Point {
                 x: width / 2,
                 y: height,
             },
-            0,
+            Pos::default(),
         ));
-        let (hitbox, hitbox_line) = hitbox.unwrap_or((
+        let (hitbox, hitbox_pos) = hitbox.unwrap_or((
             Rect {
                 x: 0,
                 y: 0,
                 w: width,
                 h: height,
             },
-            0,
+            Pos::default(),
         ));
 
         let frames = self.frames(&lines, sep, &anims)?;
@@ -301,10 +305,10 @@ impl Parser<'_> {
             height,
             size_line,
             origin,
-            origin_line,
+            origin_pos,
             hitbox,
-            hitbox_line,
-            mirror,
+            hitbox_pos,
+            mirror: mirror.unwrap_or(false),
             anims,
             variants,
             frames,
@@ -665,6 +669,14 @@ kkkk
             (
                 "sprite = a\ncolour = red\n---\n",
                 "t.sprite:2:1: error[syntax]: unknown header key `colour`",
+            ),
+            (
+                "sprite = a\n  colour = red\n---\n",
+                "t.sprite:2:3: error[syntax]: unknown header key `colour`",
+            ),
+            (
+                "sprite = a\nmirror = auto\n   mirror = none\n---\n",
+                "t.sprite:3:4: error[syntax]: `mirror` is set twice",
             ),
             (
                 "sprite = a\ninclude = b\n---\n",

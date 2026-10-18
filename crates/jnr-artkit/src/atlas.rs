@@ -3,6 +3,8 @@
 //! The types here are plain data (no I/O) and are what `jnr-assets` embeds
 //! and `jnr-render` draws from. Pixels are RGBA8, row-major.
 
+use std::borrow::Cow;
+
 use crate::compile::CompiledSprite;
 use crate::image::Image;
 
@@ -35,7 +37,8 @@ pub struct Atlas {
     pub width: u32,
     pub height: u32,
     /// RGBA8, `width * height * 4` bytes.
-    pub pixels: Vec<u8>,
+    /// Borrowed from `include_bytes!` in `jnr-assets` (no copy), owned at build time.
+    pub pixels: Cow<'static, [u8]>,
     /// Sorted by name (use [`Atlas::sprite`]).
     pub sprites: Vec<AtlasSprite>,
 }
@@ -89,6 +92,13 @@ impl Atlas {
         ]
     }
 
+    /// RGBA bytes of row `y` (relative to `r`) of an atlas region:
+    /// `r.w * 4` bytes, for slice-based blitting.
+    pub fn row(&self, r: Rect, y: u32) -> &[u8] {
+        let start = (((r.y + y) * self.width + r.x) * 4) as usize;
+        &self.pixels[start..start + (r.w * 4) as usize]
+    }
+
     /// Copies one atlas region into a standalone image.
     pub fn region(&self, r: Rect) -> Image {
         let mut img = Image::new(r.w, r.h);
@@ -118,7 +128,8 @@ impl AtlasSprite {
         }
     }
 
-    /// Hitbox for the given facing.
+    /// Hitbox for the given facing. The `bounds` lint guarantees the hitbox
+    /// lies inside the sprite, so this cannot underflow.
     pub fn hitbox_facing(&self, left: bool) -> Rect {
         if left {
             Rect {
@@ -142,8 +153,9 @@ impl AtlasAnim {
         if self.looping { i % n } else { i.min(n - 1) }
     }
 
-    /// Atlas rect of frame `index`; left-facing falls back to the
-    /// authored frame if the sprite is not mirrored.
+    /// Atlas rect of frame `index` for the given facing. For sprites without
+    /// `mirror = auto` there are no flipped copies: `left = true` falls back
+    /// to the unflipped (authored) frame.
     pub fn frame(&self, index: usize, left: bool) -> Rect {
         if left && !self.mirrored_frames.is_empty() {
             self.mirrored_frames[index]
@@ -251,7 +263,7 @@ pub fn build_atlas(sprites: &[CompiledSprite]) -> Atlas {
     Atlas {
         width,
         height,
-        pixels: sheet.rgba,
+        pixels: Cow::Owned(sheet.rgba),
         sprites: out,
     }
 }
@@ -341,5 +353,64 @@ mod tests {
                 h: 16
             }
         );
+    }
+
+    fn sprite(name: &str, colour: u8, h: u32, mirror: bool) -> CompiledSprite {
+        let mut img = Image::new(3, h);
+        img.fill([colour, 0, 0, 255]);
+        img.set(0, 0, [0, colour, 0, 255]); // asymmetric, so mirroring shows
+        CompiledSprite {
+            name: name.into(),
+            width: 3,
+            height: h,
+            origin: Point { x: 1, y: h },
+            hitbox: Rect {
+                x: 0,
+                y: 0,
+                w: 3,
+                h,
+            },
+            mirror,
+            anims: vec![crate::compile::CompiledAnim {
+                name: "idle".into(),
+                ticks: 8,
+                looping: true,
+                frames: vec![img.clone(), img.flipped_h()],
+            }],
+        }
+    }
+
+    #[test]
+    fn build_atlas_is_independent_of_input_order() {
+        let a = vec![
+            sprite("c", 10, 4, true),
+            sprite("a", 20, 2, true),
+            sprite("b", 31, 5, false),
+        ];
+        let mut b = a.clone();
+        b.reverse();
+        let (x, y) = (build_atlas(&a), build_atlas(&b));
+        assert_eq!(x, y);
+        let names: Vec<&str> = x.sprites.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(names, ["a", "b", "c"]);
+    }
+
+    #[test]
+    fn rows_and_regions_read_packed_pixels() {
+        let atlas = build_atlas(&[sprite("a", 20, 2, true)]);
+        let anim = &atlas.sprite("a").unwrap().anims[0];
+        let r = anim.frame(0, false);
+        assert_eq!(
+            atlas.row(r, 0),
+            &[0, 20, 0, 255, 20, 0, 0, 255, 20, 0, 0, 255]
+        );
+        // The mirrored copy has the marker pixel on the right.
+        let l = anim.frame(0, true);
+        assert_eq!(atlas.row(l, 0)[8..12], [0, 20, 0, 255]);
+        assert_eq!(atlas.region(l), atlas.region(r).flipped_h());
+        // Not mirrored: left falls back to the authored frame.
+        let odd = build_atlas(&[sprite("b", 31, 2, false)]);
+        let anim = &odd.sprites[0].anims[0];
+        assert_eq!(anim.frame(1, true), anim.frame(1, false));
     }
 }

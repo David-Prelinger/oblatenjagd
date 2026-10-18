@@ -227,7 +227,8 @@ fn anim(root: &Path, name: &str, scale: u32) -> Result<(), String> {
 
     for a in &s.anims {
         let mut cmd = Command::new("convert");
-        // ImageMagick accepts `ticks x ticks-per-second`: exact 60 Hz timing.
+        // ImageMagick accepts `ticks x ticks-per-second`; the timing is
+        // approximate because GIF delays are stored in 1/100 s.
         // Held single frames (ticks = 0) are shown for one second.
         let ticks = if a.ticks == 0 { 60 } else { a.ticks };
         let delay = format!("{ticks}x60");

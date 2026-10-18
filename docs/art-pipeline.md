@@ -82,12 +82,14 @@ Generators are seeded and deterministic and only output palette colours, so thei
 
 ## Build and preview
 
+Note: the grey-box fixtures in `art/sprites/test/` (group `test`) are currently compiled into the game atlas like every other sprite. They will be excluded from release builds later.
+
 | Command | What it does |
 |---|---|
 | `cargo build` | `jnr-assets/build.rs` compiles all art into atlases; any error fails the build with `file:line` |
 | `cargo xtask sprites preview [filter] [--scale N]` | writes PNGs per sprite (all frames side by side, mirrored copies in a second row), scaled ×4, to `target/preview/sprites/` |
 | `cargo xtask sprites sheet` | one contact sheet of all sprites with names (`target/preview/contact_sheet.png`, ImageMagick `montage`) |
-| `cargo xtask sprites anim <name>` | filmstrip `target/preview/anim/<name>.png` (one row per animation) + one GIF per animation `target/preview/anim/<name>_<anim>.gif` (exact 60 Hz timing) |
+| `cargo xtask sprites anim <name>` | filmstrip `target/preview/anim/<name>.png` (one row per animation) + one GIF per animation `target/preview/anim/<name>_<anim>.gif` (timing approximate: GIF delays are in 1/100 s) |
 | `cargo xtask scene <level> --x <px>` | renders a real game scene at a position (`target/preview/scenes/`) |
 | `cargo xtask sprites lint` | runs the automatic art checks |
 
