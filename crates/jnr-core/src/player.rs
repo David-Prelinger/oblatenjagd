@@ -4,7 +4,7 @@ use crate::fx::Fx;
 use crate::game::Event;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
-use crate::level::TILE_PX;
+use crate::level::{TILE_PX, TileKind};
 use crate::physics::{Aabb, TileMap, YHit, tile_of};
 use crate::tuning::PlayerTuning;
 
@@ -115,6 +115,36 @@ impl Player {
         self.h = h;
         self.power = power;
         self.transform = t.transform_frames;
+    }
+
+    /// After growing (feet kept in place) the new head may be inside solid
+    /// tiles, e.g. when growing while rising just below a box. That counts
+    /// as a head bump: upward speed stops and the hitbox moves down until
+    /// its top is flush below the lowest solid tile it overlaps; it never
+    /// moves up through the tile. There is always room below: the tuning
+    /// keeps `hitbox_h_big` within the whole-tile gap any Normal hitbox
+    /// needs. Should moving down still put the feet into solid ground, the
+    /// hitbox stays where it is and [`TileMap::move_y`] keeps it from
+    /// rising through the tile.
+    /// Returns true if the head was inside a solid tile.
+    pub fn fit_head(&mut self, map: &TileMap) -> bool {
+        let b = self.hitbox();
+        let (c0, c1) = (tile_of(b.x), tile_of(b.right() - Fx(1)));
+        let (r0, r1) = (tile_of(b.y), tile_of(b.bottom() - Fx(1)));
+        let solid_row = |r: i32| (c0..=c1).any(|c| map.kind_at(c, r) == TileKind::Solid);
+        let Some(row) = (r0..=r1).rev().find(|&r| solid_row(r)) else {
+            return false;
+        };
+        let pushed = Aabb {
+            y: Fx::from_px(TILE_PX).mul_int(row + 1),
+            ..b
+        };
+        if !map.touches(&pushed, TileKind::Solid) {
+            self.y = pushed.y;
+        }
+        self.vy = self.vy.max(Fx::ZERO);
+        self.jump_rising = false;
+        true
     }
 
     /// Bounces off a stomped enemy: upward speed by whether JUMP is held

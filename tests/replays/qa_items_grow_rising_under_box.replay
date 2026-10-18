@@ -1,0 +1,25 @@
+# QA (E1, was bug_grow_rising_passes_through_box): Normal Resi jumps (JUMP
+# held) under the emptied Mozartkugel box at column 8 and catches the
+# Mozartkugel falling off it while still rising (frame 249, head 4 px below
+# the box). Growing keeps the feet, so the new head starts inside the box.
+# Before the fix she then rose *through* the box and stood on top of it
+# (y = 98). Now growing into a solid is a head bump (Player::fit_head): she
+# is pushed down flush below the box, stops rising and falls back to the
+# ground (y = 162 as Zuckerschock).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 player_y>=150 player_y<=162 lives=3
+---
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10
+- 15
+R 9
+- 20
+J 60
+- 60

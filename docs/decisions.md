@@ -130,3 +130,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Reaching 100 Oblaten shows the „+1 Leben" popup like the Zaunerstollen (unless at the lives cap).
 - Goal and time-up in the same frame: the goal wins.
 - Popups freeze during the 30-frame transformation freeze like everything else.
+
+## D-024 Growing into a solid is a head bump (engine, M1 QA fixes)
+- Growing keeps the feet (D-017). If the new Zuckerschock head then overlaps solid tiles (e.g. eating the Mozartkugel while rising just below a box), it counts as a head bump: upward speed stops and the hitbox is pushed down flush below the lowest overlapped solid tile (`Player::fit_head`). The block is not hit (no bump, no brick break).
+- Tuning guarantees there is always room below: `hitbox_h_big` must not exceed `hitbox_h` rounded up to whole tiles (16 px), so every gap a Normal Resi fits in also fits Zuckerschock (validated in `tuning.rs`; 22 → 32 ≥ 30). Growing on the ground therefore never overlaps a ceiling.
+- `TileMap::move_y` moving up never tunnels: a box whose top edge already is inside a solid row does not move up and reports `Ceiling`.
+- Score popups: breaking a brick shows „50"; the 100th Oblate shows „+1 Leben" (D-023, none at the lives cap).
