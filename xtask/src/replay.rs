@@ -154,7 +154,7 @@ pub fn write_png(path: &Path, img: &Image) -> Result<(), String> {
 }
 
 /// Writes `<dir>/<stem>.png` (1x) and `<dir>/<stem>_x4.png`; returns the 1x path.
-fn write_with_view_copy(dir: &Path, stem: &str, img: &Image) -> Result<PathBuf, String> {
+pub fn write_with_view_copy(dir: &Path, stem: &str, img: &Image) -> Result<PathBuf, String> {
     let path = dir.join(format!("{stem}.png"));
     write_png(&path, img)?;
     write_png(

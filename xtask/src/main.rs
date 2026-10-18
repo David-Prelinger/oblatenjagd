@@ -11,6 +11,7 @@ mod golden;
 mod levels;
 mod replay;
 mod report;
+mod solver;
 mod sprites;
 mod steps;
 mod vnc;
@@ -29,11 +30,13 @@ Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
             sprites lint, levels lint
   verify    full validation: check + solver, replays, goldens, wasm-smoke,
-            vnc-smoke (not implemented yet steps are skipped)
+            vnc-smoke
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
   levels    lint [id]
+  solve     <level-id|--all> [--write] [--shots]  solver bot + difficulty report
+            (see `cargo xtask solve help`)
   replay    <file|name|--all> [--shots]   run replays (expectations + determinism)
   filmstrip <file|name> [--every N]       contact sheet of every Nth frame
   scene     <level-id> --x <px>           render the level at camera x
@@ -58,6 +61,7 @@ fn main() -> ExitCode {
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("levels") => levels::run(&workspace_root(), &args[1..]),
+        Some("solve") => solver::run(&workspace_root(), &args[1..]),
         Some("replay") => replay::run_replay(&workspace_root(), &args[1..]),
         Some("filmstrip") => replay::run_filmstrip(&workspace_root(), &args[1..]),
         Some("scene") => replay::run_scene(&workspace_root(), &args[1..]),
@@ -86,10 +90,7 @@ fn run_suite(name: &str, suite: Vec<steps::StepFn>) -> ExitCode {
 
     for step_fn in suite {
         let step = step_fn(&root);
-        let status = match step.status {
-            Status::Skipped => format!("skipped ({})", step.note),
-            _ => step.status.as_str().to_owned(),
-        };
+        let status = step.status.as_str();
         println!(
             "xtask {name}: {:<12} {:<8} {:>7.1}s",
             step.name,

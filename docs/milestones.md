@@ -16,7 +16,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 - [x] Palette and `docs/art-style.md` written and approved by art-director
 - [x] `jnr-app`: macroquad window on `:1`, integer scaling, keyboard input, replay playback (`--replay`, `--record`), F12 screenshot
 - [x] Headless runner: replays, screenshots, filmstrips
-- [ ] Solver bot finishes the grey-box test level
+- [x] Solver bot finishes the grey-box test level
 - [x] Golden screenshot test working
 - [x] `vnc-smoke` working
 - [x] wasm build compiles and runs in a browser (automated: cargo xtask wasm-smoke)
@@ -38,7 +38,7 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - [ ] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
 - [ ] Replays + goldens for the key scenes
 - [ ] wasm build runs the stage in the browser
-- [ ] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left)
+- [x] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left; `Skipped` status removed in M0)
 - [ ] Stretch: Sound-of-Music tour group enemy
 
 **Acceptance:** see "Milestone acceptance" below.

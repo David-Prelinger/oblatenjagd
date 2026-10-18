@@ -1,0 +1,17 @@
+# Written by `cargo xtask solve testbed --write`; re-create it instead of editing.
+level  = testbed
+seed   = 1
+source = solver
+expect = complete frames=731..731 deaths=0
+---
+RB 108
+RBJ 36
+RB 75
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 152
+RBJ 36
+RB 136

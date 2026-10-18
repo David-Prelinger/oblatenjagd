@@ -12,7 +12,6 @@ pub const EXCERPT_LINES: usize = 20;
 pub enum Status {
     Pass,
     Fail,
-    Skipped,
 }
 
 impl Status {
@@ -20,7 +19,6 @@ impl Status {
         match self {
             Status::Pass => "pass",
             Status::Fail => "fail",
-            Status::Skipped => "skipped",
         }
     }
 }
@@ -33,24 +31,13 @@ pub struct Step {
     pub duration_ms: u64,
     /// Exact shell command that reproduces this step.
     pub command: String,
-    /// Free-form note, e.g. why a step was skipped.
+    /// Free-form note, e.g. a short result summary.
     pub note: String,
     /// First and last [`EXCERPT_LINES`] lines of output (only kept on failure).
     pub output_tail: String,
 }
 
 impl Step {
-    pub fn skipped(name: &str, command: &str) -> Step {
-        Step {
-            name: name.to_owned(),
-            status: Status::Skipped,
-            duration_ms: 0,
-            command: command.to_owned(),
-            note: "not implemented yet".to_owned(),
-            output_tail: String::new(),
-        }
-    }
-
     fn to_json(&self) -> Value {
         json!({
             "name": self.name,
@@ -106,10 +93,7 @@ impl Report {
             self.duration_ms as f64 / 1000.0
         );
         for s in &self.steps {
-            let status = match s.status {
-                Status::Skipped => format!("{} ({})", s.status.as_str(), s.note),
-                _ => s.status.as_str().to_owned(),
-            };
+            let status = s.status.as_str();
             md.push_str(&format!(
                 "| {} | {} | {:.1}s | `{}` |\n",
                 s.name,
@@ -173,7 +157,7 @@ mod tests {
             steps: vec![
                 step("fmt", Status::Pass),
                 step("clippy", Status::Fail),
-                Step::skipped("solver", "cargo xtask solve"),
+                step("solver", Status::Pass),
             ],
         };
         assert!(!report.passed());
@@ -181,23 +165,9 @@ mod tests {
         assert_eq!(json["status"], "fail");
         assert_eq!(json["steps"][1]["status"], "fail");
         assert_eq!(json["steps"][1]["command"], "cargo clippy");
-        assert_eq!(json["steps"][2]["status"], "skipped");
+        assert_eq!(json["steps"][2]["status"], "pass");
         let md = report.to_markdown();
         assert!(md.contains("## clippy failed"));
         assert!(md.contains("Reproduce: `cargo clippy`"));
-    }
-
-    #[test]
-    fn skipped_steps_do_not_fail_the_report() {
-        let report = Report {
-            command: "verify".to_owned(),
-            duration_ms: 10,
-            steps: vec![
-                step("fmt", Status::Pass),
-                Step::skipped("goldens", "cargo xtask golden"),
-            ],
-        };
-        assert!(report.passed());
-        assert_eq!(report.to_json()["status"], "pass");
     }
 }
