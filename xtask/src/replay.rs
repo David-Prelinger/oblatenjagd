@@ -497,6 +497,7 @@ fn exit(result: Result<(), String>) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jnr_core::InputFrame;
 
     fn root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -514,6 +515,42 @@ mod tests {
         assert_eq!(first_difference(&[1, 2, 3], &[1, 2, 3]), None);
         assert_eq!(first_difference(&[1, 2, 3], &[1, 9, 3]), Some(1));
         assert_eq!(first_difference(&[1, 2], &[1, 2, 3]), Some(2));
+    }
+
+    /// D-036: the Stage 1 tour is the title intro, then the solver route
+    /// unchanged, then 800 idle frames for the Maibaum sequence. A re-solve
+    /// that changes the route must be copied into the tour.
+    #[test]
+    fn salzburg_tour_replays_the_solver_route() {
+        let frames = |name: &str| -> Vec<u64> {
+            let path = root().join("tests/replays").join(name);
+            let replay = Replay::parse(&fs::read_to_string(&path).unwrap()).unwrap();
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let (none, start) = (0, u64::from(InputFrame::START.bits()));
+        let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
+        let route = frames("salzburg_solver.replay");
+        let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+        let tour = frames("salzburg_tour.replay");
+        if let Some(i) = first_difference(&tour, &expected) {
+            let part = if i < intro.len() {
+                "the title/intro prefix `- 20`, `S 1`, `- 150`"
+            } else if i < intro.len() + route.len() {
+                "the solver route"
+            } else {
+                "the Maibaum outro `- 800`"
+            };
+            panic!(
+                "tests/replays/salzburg_tour.replay differs at frame {i}, in {part} (tour {} \
+                 frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs of \
+                 tests/replays/salzburg_solver.replay unchanged, then `- 800` (D-036). If \
+                 `cargo xtask solve salzburg --write` changed the route, re-copy its inputs \
+                 into the tour, update its `expect` frames and re-pick the shot frames (new \
+                 goldens need an art-director verdict).",
+                tour.len(),
+                expected.len()
+            );
+        }
     }
 
     #[test]
