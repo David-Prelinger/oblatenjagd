@@ -30,10 +30,10 @@ const MAX_FRAMES_PER_ROW: u32 = 16;
 const MAX_PREVIEW_ROW_PX: u32 = 1600;
 /// The contact sheet's rows wrap before they get wider than this.
 const MAX_SHEET_W: u32 = 2000;
-/// Padding around each sheet cell (montage `-geometry +PAD+PAD`).
+/// Padding around each sheet cell.
 const SHEET_PAD: u32 = 12;
-/// Rough width of one label character at `-pointsize 14`.
-const LABEL_CHAR_PX: u32 = 8;
+/// Point size of the sheet labels.
+const LABEL_POINTSIZE: &str = "14";
 /// Palette colour behind sprites of [`DARK_GROUPS`] (white UI glyphs).
 const DARK_BACKGROUND: char = 'B';
 /// Sprite groups previewed on [`DARK_BACKGROUND`].
@@ -269,10 +269,31 @@ fn preview(
     Ok(written)
 }
 
-/// Width of a sheet cell: the preview or its label, whichever is wider,
-/// plus the padding on both sides.
-fn sheet_cell_w(preview_w: u32, name: &str) -> u32 {
-    preview_w.max(name.chars().count() as u32 * LABEL_CHAR_PX) + 2 * SHEET_PAD
+/// Writes one contact-sheet cell to `out`: the preview at its own size
+/// (no resampling of pixel art) above its name, centred, as wide as the
+/// wider of the two (ImageMagick sizes the `label:`, so long names are never
+/// cut), with [`SHEET_PAD`] around. Returns the cell's width.
+fn sheet_cell(preview: &Path, name: &str, out: &Path) -> Result<u32, String> {
+    let mut cmd = Command::new("convert");
+    cmd.args(["-background", SHEET_BACKGROUND])
+        .arg(preview)
+        .args(["-fill", "black", "-pointsize", LABEL_POINTSIZE])
+        .arg(format!("label:{name}"))
+        .args([
+            "-gravity",
+            "center",
+            "-append",
+            "-bordercolor",
+            SHEET_BACKGROUND,
+        ])
+        .args(["-border", &SHEET_PAD.to_string(), "+repage"])
+        .arg(out);
+    run_tool(cmd, "convert")?;
+    let file = fs::File::open(out).map_err(|e| format!("{}: {e}", out.display()))?;
+    let reader = png::Decoder::new(std::io::BufReader::new(file))
+        .read_info()
+        .map_err(|e| format!("{}: {e}", out.display()))?;
+    Ok(reader.info().width)
 }
 
 /// Flows cells (by width) into rows, in order: a new row starts before
@@ -305,28 +326,12 @@ fn sheet(root: &Path, group: Option<&str>) -> Result<(), String> {
     let cells_dir = preview_dir(root, "sheet_cells")?;
     // One labelled cell per sprite, at its own size.
     let mut cells = Vec::new();
+    let mut cell_ws = Vec::new();
     for p in &previews {
         let cell = cells_dir.join(format!("{}.png", p.name));
-        let mut cmd = Command::new("montage");
-        cmd.args([
-            "-background",
-            SHEET_BACKGROUND,
-            "-fill",
-            "black",
-            "-pointsize",
-            "14",
-        ]);
-        cmd.arg("-label").arg(&p.name).arg(&p.path);
-        // `1x1<` keeps the preview at its own size (no resampling of pixel art).
-        cmd.args(["-geometry", &format!("1x1<+{SHEET_PAD}+{SHEET_PAD}")])
-            .arg(&cell);
-        run_tool(cmd, "montage")?;
+        cell_ws.push(sheet_cell(&p.path, &p.name, &cell)?);
         cells.push(cell);
     }
-    let cell_ws: Vec<u32> = previews
-        .iter()
-        .map(|p| sheet_cell_w(p.width, &p.name))
-        .collect();
     // Cells side by side (top-aligned) per row, rows stacked (left-aligned).
     let mut cmd = Command::new("convert");
     cmd.args(["-background", SHEET_BACKGROUND, "-gravity", "NorthWest"]);
@@ -513,11 +518,36 @@ mod tests {
 
     #[test]
     fn sheet_cells_fit_preview_or_label() {
-        assert_eq!(sheet_cell_w(400, "font"), 400 + 2 * SHEET_PAD);
-        assert_eq!(
-            sheet_cell_w(10, "test_box"),
-            8 * LABEL_CHAR_PX + 2 * SHEET_PAD
-        );
+        let dir = crate::target_dir(&Path::new(env!("CARGO_MANIFEST_DIR")).join(".."))
+            .join("tmp/xtask-sheet-cell-test");
+        fs::create_dir_all(&dir).unwrap();
+        let png = |name: &str, w: u32| {
+            let path = dir.join(name);
+            fs::write(&path, Image::new(w, 8).encode_png()).unwrap();
+            path
+        };
+        let label_w = |name: &str| {
+            let out = Command::new("convert")
+                .args(["-pointsize", LABEL_POINTSIZE])
+                .arg(format!("label:{name}"))
+                .args(["-format", "%w", "info:"])
+                .output()
+                .unwrap();
+            String::from_utf8(out.stdout)
+                .unwrap()
+                .parse::<u32>()
+                .unwrap()
+        };
+        // A wide preview: the cell is the preview plus padding.
+        let wide = png("wide.png", 400);
+        let w = sheet_cell(&wide, "font", &dir.join("cell_font.png")).unwrap();
+        assert_eq!(w, 400 + 2 * SHEET_PAD);
+        // A long name under a small preview: the whole label fits.
+        let name = "zartkugel_thrown_long_name";
+        let small = png("small.png", 4);
+        let w = sheet_cell(&small, name, &dir.join("cell_long.png")).unwrap();
+        assert!(label_w(name) > 4 + 2 * SHEET_PAD, "the label is the wider");
+        assert_eq!(w, label_w(name) + 2 * SHEET_PAD);
     }
 
     #[test]
