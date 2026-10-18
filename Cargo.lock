@@ -500,6 +500,9 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "jnr-artkit",
+ "jnr-assets",
+ "jnr-core",
+ "jnr-render",
  "png",
  "serde_json",
 ]

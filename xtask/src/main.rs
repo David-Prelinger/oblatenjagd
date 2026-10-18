@@ -6,6 +6,10 @@
 //! placeholder steps in `steps.rs`.
 
 mod archlint;
+mod content;
+mod golden;
+mod levels;
+mod replay;
 mod report;
 mod sprites;
 mod steps;
@@ -22,12 +26,18 @@ cargo xtask <command>
 
 Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
-            sprites lint
-  verify    full validation: check + levels lint, solver, replays,
-            goldens, wasm-smoke, vnc-smoke (not implemented yet steps are skipped)
+            sprites lint, levels lint
+  verify    full validation: check + solver, replays, goldens, wasm-smoke,
+            vnc-smoke (not implemented yet steps are skipped)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
+  levels    lint [id]
+  replay    <file|name|--all> [--shots]   run replays (expectations + determinism)
+  filmstrip <file|name> [--every N]       contact sheet of every Nth frame
+  scene     <level-id> --x <px>           render the level at camera x
+  golden    [--accept <name>|--all]       compare / accept golden screenshots
+            (see `cargo xtask replay help`, `cargo xtask golden help`)
   wasm      [--debug] [--serve] [--port N]: build + assemble $CARGO_TARGET_DIR/web
   wasm-smoke  load the wasm build in headless Chromium, check the screenshot
   help      show this help (also -h, --help)
@@ -44,6 +54,11 @@ fn main() -> ExitCode {
         Some("verify") if args.len() == 1 => run_suite("verify", steps::verify_steps()),
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
+        Some("levels") => levels::run(&workspace_root(), &args[1..]),
+        Some("replay") => replay::run_replay(&workspace_root(), &args[1..]),
+        Some("filmstrip") => replay::run_filmstrip(&workspace_root(), &args[1..]),
+        Some("scene") => replay::run_scene(&workspace_root(), &args[1..]),
+        Some("golden") => golden::run(&workspace_root(), &args[1..]),
         Some("wasm") => wasm::run(&workspace_root(), &args[1..]),
         Some("wasm-smoke") => wasm::smoke(&workspace_root(), &args[1..]),
         Some("help" | "-h" | "--help") | None => {

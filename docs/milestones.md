@@ -15,9 +15,9 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 - [x] `jnr-artkit`: `.palette` + `.sprite` parser, atlas packing, lints, preview + contact sheet
 - [x] Palette and `docs/art-style.md` written and approved by art-director
 - [ ] `jnr-app`: macroquad window on `:1`, integer scaling, keyboard input, replay playback, F12 screenshot
-- [ ] Headless runner: replays, screenshots, filmstrips
+- [x] Headless runner: replays, screenshots, filmstrips
 - [ ] Solver bot finishes the grey-box test level
-- [ ] Golden screenshot test working
+- [x] Golden screenshot test working
 - [ ] `vnc-smoke` working
 - [x] wasm build compiles and runs in a browser (automated: cargo xtask wasm-smoke)
 

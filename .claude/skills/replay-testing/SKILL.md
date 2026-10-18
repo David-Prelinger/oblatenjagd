@@ -20,14 +20,18 @@ RB 30
 RBJ 18
 - 10
 ```
-Other expectations: `dies_at frames=..`, `player_x>=<px>`, `state=<mode>`, `no_event=<Event>`.
+Other expectations: `dies_at frames=a..b`, `deaths<=N`, `player_x>=<px>`, `state=<playing|dying|stage_clear>`, `no_event=<Event>` (`Jumped`, `Landed`, `Died`, `Respawned`, `LevelComplete`).
+`oblaten>=N` is not supported until M1 (parse error "not supported yet").
+
+Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 = before the first step), so `complete frames=731..731` means `LevelComplete` happened in step 731. Ranges are inclusive. The replay always runs to its last input; `state=`, `deaths`, `player_x` are checked at the end. `seed` defaults to 1; `level` is a `meta.id`. `expect` and `shots` may repeat. Shot names: `a-z 0-9 _`; frames ≤ the replay length.
 
 ## Commands
-- `cargo xtask replay <file>` – run it, check expectations, check determinism (runs twice, compares `state_hash`)
-- `cargo xtask replay <file> --shots` – also render the `shots` frames
+- `cargo xtask replay <file|name>` – run it, check expectations, check determinism (runs twice, compares `state_hash` every frame); `--all` runs every `tests/replays/*.replay`
+- `cargo xtask replay <file> --shots` – also render the `shots` frames → `$CARGO_TARGET_DIR/preview/replays/<replay>_<shot>.png` (+ `_x4`)
 - `cargo xtask solve <level>` – solver bot; writes `tests/replays/<level>_solver.replay` + report
-- `cargo xtask filmstrip <file>` – every 30th frame in one image
-- `cargo xtask golden --accept <name>` – accept new goldens (**only** after art-director APPROVED)
+- `cargo xtask filmstrip <file> [--every N]` – every 30th (Nth) frame plus the last in one image
+- `cargo xtask golden` – compare all shots with `tests/golden/<replay>_<shot>.png` (the `goldens` verify step)
+- `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` – accept new goldens (**only** after art-director APPROVED)
 - Human recording: see `play-in-vnc` (`--record <file>`)
 
 ## Bug reproduction

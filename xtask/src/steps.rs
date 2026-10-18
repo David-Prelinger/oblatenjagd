@@ -7,33 +7,32 @@ use std::path::Path;
 use std::process::Command;
 use std::time::Instant;
 
-use crate::archlint;
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
-use crate::sprites;
-use crate::wasm;
+use crate::{archlint, golden, levels, replay, sprites, wasm};
 
 pub type StepFn = fn(&Path) -> Step;
 
 /// Fast checks, run after every change (and by the Stop hook).
 pub fn check_steps() -> Vec<StepFn> {
-    vec![fmt, clippy, test, wasm_build, arch_lint, sprites_lint]
+    vec![
+        fmt,
+        clippy,
+        test,
+        wasm_build,
+        arch_lint,
+        sprites_lint,
+        levels_lint,
+    ]
 }
 
 /// Full validation: `check` plus the slower layers.
 pub fn verify_steps() -> Vec<StepFn> {
     let mut steps = check_steps();
-    steps.extend([
-        levels_lint as StepFn,
-        solver,
-        replays,
-        goldens,
-        wasm_smoke,
-        vnc_smoke,
-    ]);
+    steps.extend([solver as StepFn, replays, goldens, wasm_smoke, vnc_smoke]);
     steps
 }
 
-// ---------------------------------------------------------------- check (L1/L2)
+// ------------------------------------------------------------- check (L1-L3)
 
 fn fmt(root: &Path) -> Step {
     run_cargo(root, "fmt", &["fmt", "--all", "--check"])
@@ -93,22 +92,37 @@ fn sprites_lint(root: &Path) -> Step {
     )
 }
 
-// ------------------------------------------------- verify (L3-L8), placeholders
-
-fn levels_lint(_root: &Path) -> Step {
-    Step::skipped("levels-lint", "cargo xtask levels lint")
+fn levels_lint(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = levels::lint_report(root, None);
+    finish(
+        "levels-lint",
+        "cargo xtask levels lint",
+        started,
+        ok,
+        &output,
+    )
 }
+
+// ---------------------------------------------------------------- verify (L4-L8)
 
 fn solver(_root: &Path) -> Step {
     Step::skipped("solver", "cargo xtask solve <level>")
 }
 
-fn replays(_root: &Path) -> Step {
-    Step::skipped("replays", "cargo xtask replay tests/replays/*.replay")
+fn replays(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = match replay::all_replays(root) {
+        Ok(paths) => replay::run_replays(root, &paths, false),
+        Err(e) => (false, e),
+    };
+    finish("replays", "cargo xtask replay --all", started, ok, &output)
 }
 
-fn goldens(_root: &Path) -> Step {
-    Step::skipped("goldens", "cargo xtask golden")
+fn goldens(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = golden::check_report(root);
+    finish("goldens", "cargo xtask golden", started, ok, &output)
 }
 
 fn vnc_smoke(_root: &Path) -> Step {
