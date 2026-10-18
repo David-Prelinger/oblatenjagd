@@ -1,4 +1,4 @@
-# Regression (D-040, M1 acceptance): a Wurstkranz touch (salzburg_wurstkranz,
+# Smoke (D-040, M1 acceptance): a Wurstkranz touch (salzburg_wurstkranz,
 # touch at 1601) used to leave the camera at the touch height, so Resi slid out
 # of the bottom of the screen and hopped and walked off screen. The camera now
 # follows the slide down (the framing is asserted by the unit tests in
