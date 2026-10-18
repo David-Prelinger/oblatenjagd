@@ -2,7 +2,7 @@
 
 Status: **approved v1**. Agents tick boxes here as work is completed (definition of done: `validation.md`).
 
-## M0 – Foundations (no game content yet)
+## M0 – Foundations (no game content yet) — ✅ accepted (docs/reports/M0.md)
 
 Goal: the whole toolchain and validation loop work end-to-end on a grey-box test level.
 
@@ -23,7 +23,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 
 **Acceptance:** see "Milestone acceptance" below; plus the grey box moves on the noVNC desktop (`vnc-smoke`).
 
-## M1 – Stage 1: Salzburg (first playable)
+## M1 – Stage 1: Salzburg (first playable) — ✅ accepted 2026-10-18 (docs/reports/M1.md)
 
 Scope as in `game-design.md` → "Stage 1: Salzburg".
 
