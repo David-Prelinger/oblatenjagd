@@ -1,0 +1,27 @@
+# QA (E4): flow_title up to the title screen after the goal sequence
+# (1084), then START (1090): a fresh run of the stage - stage intro, then
+# play with score 0, 3 lives, 0 Oblaten, no `Respawned` (that is only for
+# deaths, D-025) - and the player can walk.
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=582..582 deaths=0 state=playing score=0 lives=3 oblaten=0 no_event=Respawned player_x>=50
+---
+- 20
+S 1       # START: stage intro
+- 150
+S 1       # pause
+- 30
+S 1       # resume
+RB 88
+RBJ 36
+RB 71
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+- 507     # goal sequence; title from 1084
+S 1       # 1090: START on the title
+- 151     # stage intro
+R 30

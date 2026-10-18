@@ -25,8 +25,8 @@
 use crate::entity::{Entity, EntityKind, UpdateCtx};
 use crate::fx::Fx;
 use crate::game::Event;
-use crate::level::{EntitySpawn, Level, SpawnKind, TileKind};
-use crate::physics::{Aabb, TILE, TileMap};
+use crate::level::{EntitySpawn, Level, SpawnKind, TILE_PX, TileKind};
+use crate::physics::{Aabb, TILE, TileMap, tile_of};
 use crate::player::Player;
 use crate::tuning::{PlayerTuning, Tuning};
 
@@ -211,6 +211,111 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
     problems
 }
 
+/// Highest step-up (tiles) the way back out of the pit under a track may
+/// need: a walking jump reaches 4 tiles, minus one tile of safety margin.
+pub const MAX_STEP_UP_TILES: i32 = 3;
+
+/// Problems of every Festungsbahn whose pit has no way back up (D-027:
+/// falling off means waiting for the car or climbing back, never a
+/// softlock). Empty if fine.
+///
+/// The check (cheap, deliberately simple): for each column the car passes
+/// over, the floor is the topmost solid or one-way tile at or below the
+/// highest point the car's top reaches over that column (anything higher
+/// would be a ceiling, which [`track_problems`] forbids anyway). The exit
+/// is the first column beyond the track at its upper end (for a level
+/// track: in the direction of `to`; a vertical track passes if either
+/// side works), its floor the topmost one whose top is at most
+/// [`TRACK_CLEARANCE_PX`] above the car's top there (a ledge a little
+/// above the car still counts as the step it is). Walking from the far
+/// end of the track to the exit, no step up from one floor to the next
+/// may exceed [`MAX_STEP_UP_TILES`]. Columns without a floor (bottomless
+/// or hazard pits: deaths, not softlocks) are skipped.
+///
+/// Limits: it does not check headroom above a step, jump distances across
+/// skipped columns, that the camera (which never scrolls back) leaves the
+/// stairs reachable when the climb leads left, enemies, or one-way tiles
+/// that need a drop-through. Platforms other than the Festungsbahn don't
+/// exist yet.
+pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
+    let map = TileMap::from_level(level);
+    let mut problems = Vec::new();
+    for (i, s) in level.entities.iter().enumerate() {
+        if s.kind != SpawnKind::Festungsbahn {
+            continue;
+        }
+        let Some(car) = Entity::from_spawn(s, i, t) else {
+            continue;
+        };
+        let delta = track_delta(s);
+        let travel = i32::from(t.platforms.festungsbahn_travel.max(1));
+        let c0 = tile_of(car.x.min(car.x + delta.0));
+        let c1 = tile_of(car.x.max(car.x + delta.0) + car.w - Fx(1));
+        // Highest car top (px) over each column c0..=c1.
+        let mut highest = vec![i32::MAX; (c1 - c0 + 1) as usize];
+        for k in 0..=travel {
+            let x = car.x + delta.0.mul_int(k).div_int(travel);
+            let y = (car.y + delta.1.mul_int(k).div_int(travel)).to_px();
+            for c in tile_of(x)..=tile_of(x + car.w - Fx(1)) {
+                let h = &mut highest[(c - c0) as usize];
+                *h = (*h).min(y);
+            }
+        }
+        let floor = |col: i32, y_px: i32| {
+            (0..map.height)
+                .filter(|&r| r * TILE_PX >= y_px)
+                .find(|&r| matches!(map.kind_at(col, r), TileKind::Solid | TileKind::OneWay))
+        };
+        let upper_top = (car.y + delta.1.min(Fx::ZERO)).to_px();
+        let at = format!("festungsbahn at row {}, column {}", s.row + 1, s.col + 1);
+        // The way out towards one side: `Err` describes why it fails.
+        let climb = |right: bool| -> Result<(), String> {
+            let exit = if right { c1 + 1 } else { c0 - 1 };
+            let Some(exit_floor) = floor(exit, upper_top - TRACK_CLEARANCE_PX) else {
+                return Err(format!(
+                    "{at}: no floor in column {} beyond the upper end of its track",
+                    exit + 1
+                ));
+            };
+            let mut cols: Vec<i32> = (c0..=c1).collect();
+            if !right {
+                cols.reverse();
+            }
+            let walk = cols
+                .into_iter()
+                .map(|c| (c, floor(c, highest[(c - c0) as usize])))
+                .chain([(exit, Some(exit_floor))]);
+            let mut prev: Option<i32> = None;
+            for (col, row) in walk {
+                let Some(row) = row else { continue };
+                if let Some(p) = prev
+                    && p - row > MAX_STEP_UP_TILES
+                {
+                    return Err(format!(
+                        "{at}: no way back up from the pit under its track: a {}-tile step up to column {} (max {MAX_STEP_UP_TILES}); add stair-stepped rock",
+                        p - row,
+                        col + 1
+                    ));
+                }
+                prev = Some(row);
+            }
+            Ok(())
+        };
+        let result = if delta.0 == Fx::ZERO {
+            // Vertical: either side will do.
+            climb(true).or_else(|e| climb(false).map_err(|_| e))
+        } else {
+            // The upper end is `to` unless the track goes down.
+            let to_is_upper = delta.1 <= Fx::ZERO;
+            climb((delta.0 > Fx::ZERO) == to_is_upper)
+        };
+        if let Err(p) = result {
+            problems.push(p);
+        }
+    }
+    problems
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -233,5 +338,193 @@ mod tests {
         assert_eq!(f(420), 0, "home after 420 frames");
         assert_eq!(f(421), 0, "the cycle repeats");
         assert_eq!(f(420 + 211), 150);
+    }
+
+    /// A 14-row level from `rows` (row 0 at the top), padded with air
+    /// above; `F` rises [8, -5] (or `to` as given).
+    fn track_level(to: &str, rows: &[&str]) -> Level {
+        let width = rows[0].len();
+        let mut grid: Vec<String> = vec![".".repeat(width); 14 - rows.len()];
+        grid.extend(rows.iter().map(|r| r.to_string()));
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"F\" = {{ entity = \"festungsbahn\", to = {to} }}\n[map]\ngrid = '''\n{}\n'''\n",
+            grid.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    #[test]
+    fn a_pit_under_a_track_needs_steps_of_at_most_3_tiles_back_up() {
+        let t = tuning();
+        // 00_enemies before D-027: the car rises from column 3 onto the
+        // plateau (columns 14-16, top row 8) over a pit with its floor at
+        // row 14: a 6-tile wall.
+        let wall = track_level(
+            "[8, -5]",
+            &[
+                ".............###", // row 7
+                ".............###",
+                ".............###",
+                ".............###",
+                "P............###",
+                "#.F..........###", // row 12
+                "################",
+            ],
+        );
+        let p = recovery_problems(&wall, &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with(
+                "festungsbahn at row 13, column 3: no way back up from the pit under its track: a 6-tile step up to column 14"
+            ),
+            "{}",
+            p[0]
+        );
+        // Stair-stepped rock under the track (as in 00_enemies): steps up
+        // of 1, 1, 1, 1 and 2 tiles.
+        let stairs = track_level(
+            "[8, -5]",
+            &[
+                ".............###", // row 7
+                ".............###",
+                "............####",
+                "..........######",
+                "P........#######",
+                "#.F....#########", // row 12
+                "################",
+            ],
+        );
+        assert_eq!(recovery_problems(&stairs, &t), Vec::<String>::new());
+        // A single 4-tile step is too high; one-way tiles count as floor.
+        let high = track_level(
+            "[8, -5]",
+            &[
+                ".............###", // row 7
+                ".............###",
+                "............-###",
+                ".............###",
+                "P............###",
+                "#.F..........###", // row 12
+                "################",
+            ],
+        );
+        let p = recovery_problems(&high, &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 4-tile step up to column 13"), "{}", p[0]);
+    }
+
+    #[test]
+    fn the_climb_leads_to_the_upper_end_on_either_side() {
+        let t = tuning();
+        let check = |to: &str, rows: &[&str]| recovery_problems(&track_level(to, rows), &t);
+        // Mirrored: the car starts at column 14 and rises to the left onto
+        // the plateau (columns 1-5): the climb leads left.
+        let wall = [
+            "#####.............", // row 7
+            "#####.............",
+            "#####.............",
+            "#####.............",
+            "#####............P",
+            "#####........F...#", // row 12
+            "##################",
+        ];
+        let p = check("[-8, -5]", &wall);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 6-tile step up to column 5"), "{}", p[0]);
+        let mut stairs = [
+            "#####.............", // row 7
+            "#####.............",
+            "######............",
+            "########..........",
+            "#########........P",
+            "###########..F...#", // row 12
+            "##################",
+        ];
+        assert_eq!(check("[-8, -5]", &stairs), Vec::<String>::new());
+        // The same track described from its upper end (spawned on the
+        // plateau's edge, going down to the right): the same exit.
+        stairs[0] = "#####F............";
+        stairs[5] = "###########......#";
+        assert_eq!(check("[8, 5]", &stairs), Vec::<String>::new());
+        let mut wall = wall;
+        wall[0] = "#####F............";
+        wall[5] = "#####............#";
+        let p = check("[8, 5]", &wall);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 6-tile step up to column 5"), "{}", p[0]);
+    }
+
+    #[test]
+    fn a_vertical_track_passes_if_either_side_leads_out() {
+        let t = tuning();
+        let check = |rows: &[&str]| recovery_problems(&track_level("[0, -5]", rows), &t);
+        // Car in columns 6-8; a 6-tile wall right, a 1-tile step left.
+        let open_left = [
+            "P...........", // row 6
+            "........####", // row 7
+            "........####",
+            "........####",
+            "........####",
+            "........####",
+            "####.F..####", // row 12
+            "############",
+        ];
+        assert_eq!(check(&open_left), Vec::<String>::new());
+        // Walls on both sides: reported for the right side.
+        let mut walled = open_left;
+        for r in &mut walled[1..7] {
+            *r = if r.contains('F') {
+                "#####F..####"
+            } else {
+                "#####...####"
+            };
+        }
+        let p = check(&walled);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 6-tile step up to column 9"), "{}", p[0]);
+    }
+
+    #[test]
+    fn the_upper_end_needs_a_floor_and_ledges_above_the_car_count() {
+        let t = tuning();
+        // Nothing at all in column 14, beyond the upper end.
+        let gap = track_level(
+            "[8, -5]",
+            &[
+                "................", // row 7
+                "................",
+                "............#...",
+                "..........###...",
+                "P........####...",
+                "#.F....######...", // row 12
+                "#############...",
+            ],
+        );
+        let p = recovery_problems(&gap, &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].ends_with("no floor in column 14 beyond the upper end of its track"),
+            "{}",
+            p[0]
+        );
+        // The ledge's top (row 6, y 96) is 8 px above the car's top at the
+        // upper end (y 104): it is still the step out, 4 tiles above the
+        // last stair (row 10), not the tile below it.
+        let ledge = track_level(
+            "[8, -5]",
+            &[
+                ".............###", // row 6
+                ".............###",
+                ".............###",
+                ".............###",
+                "..........######", // row 10
+                "P........#######",
+                "#.F....#########", // row 12
+                "################",
+            ],
+        );
+        let p = recovery_problems(&ledge, &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 4-tile step up to column 14"), "{}", p[0]);
     }
 }

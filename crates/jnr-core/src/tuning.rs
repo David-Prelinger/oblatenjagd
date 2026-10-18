@@ -279,6 +279,11 @@ pub struct EnemyTuning {
     pub squish_frames: u16,
     /// Upward speed of an enemy or item knocked by a bumped block.
     pub knock_speed: Fx,
+    /// Frames in which non-stompable enemies do no harm after a bounce off
+    /// one, when the player's feet could not be put on its top (a solid
+    /// or hazard tile was in the way, D-027 fallback). At least 2 (it is
+    /// counted down in the frame it is set).
+    pub bounce_grace_frames: u16,
 }
 
 impl Tuning {
@@ -476,6 +481,12 @@ impl Tuning {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
             }
         }
+        // Counted down in the frame it is set: 1 would protect no frame.
+        if e.bounce_grace_frames < 2 {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.bounce_grace_frames must be >= 2",
+            ));
+        }
         if e.tourist_selfie_frames >= e.tourist_selfie_period
             || e.tourist_flash_at.saturating_add(e.tourist_flash_frames) > e.tourist_selfie_frames
         {
@@ -646,6 +657,8 @@ mod tests {
             ("fiaker_speed", 0),
             ("thrown_gravity", 0),
             ("squish_frames", 0),
+            ("bounce_grace_frames", 0),
+            ("bounce_grace_frames", 1),
             ("festungsbahn_wait", 32700),
             ("hitbox_w", 3),
             ("hitbox_w", 17),

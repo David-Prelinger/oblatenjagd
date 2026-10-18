@@ -27,7 +27,7 @@ Both write a machine-readable report to `$CARGO_TARGET_DIR/reports/{check,verify
 
 ### L3 Asset lints (check)
 - `cargo xtask sprites lint` (see `art-pipeline.md`).
-- `cargo xtask levels lint [id]`: unknown legend chars, exactly one player start and at least one goal, entities inside bounds, all text keys exist in `de.toml`, all referenced sprites exist, time limit set.
+- `cargo xtask levels lint [id]`: unknown legend chars, exactly one player start and at least one goal, entities inside bounds, all text keys exist in `de.toml`, all referenced sprites exist, time limit set; Festungsbahn tracks: 3 free tiles above the car and a way back up (steps ≤ 3 tiles) from the pit under the track (D-028).
   - Implemented (M0): every `content/levels/*.level` parses (legend, grid, one player start via `Level::parse`), unique `meta.id`, `title_key` exists in `de.toml`, at least one goal, `time_limit` set. Sprite references and other text keys come with M1 (see `backlog.md`).
 
 ### L4 Level completability (verify)

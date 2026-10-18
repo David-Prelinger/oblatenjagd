@@ -410,6 +410,7 @@ impl Game {
         // `invulnerable_frames` frames without harm.
         if self.mode == Mode::Playing && self.player.transform == 0 {
             self.player.invulnerable = self.player.invulnerable.saturating_sub(1);
+            self.player.bounce_grace = self.player.bounce_grace.saturating_sub(1);
         }
         self.entities.retain(|e| !e.removed);
         if self.mode != Mode::Playing {
@@ -768,7 +769,10 @@ impl Game {
                     &mut self.events,
                 );
             }
-            if e.right() < despawn_x || e.y >= bottom {
+            // Moving platforms never despawn (D-027): a player who fell
+            // off must be able to wait for the car.
+            let platform = e.kind == EntityKind::Festungsbahn;
+            if !platform && (e.right() < despawn_x || e.y >= bottom) {
                 e.removed = true;
             }
         }
@@ -784,9 +788,18 @@ impl Game {
     /// that were touched but not stomped. A frame with any stomp bounces
     /// the player once and reports one `Stomped` event (however many
     /// enemies it hit).
+    ///
+    /// A bounce off a non-stompable enemy (the Fiaker) puts the player's
+    /// feet on its top, so the next frame (rising) can't be a side hit
+    /// (D-027). If a solid tile is in the way there, she stays where she is
+    /// and non-stompable enemies do no harm for `enemies.bounce_grace_frames`
+    /// instead. An enemy hit in the frame the goal is touched does nothing:
+    /// the goal wins (D-027).
     fn interact(&mut self, prev_bottom: Fx, input: InputFrame) {
         let mut bounced = false;
         let mut hurt = false;
+        // Top of the highest non-stompable enemy bounced off this frame.
+        let mut rest_on: Option<Fx> = None;
         let mut spawned = Vec::new();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
@@ -822,7 +835,9 @@ impl Game {
                     let middle = e.prev_y + e.h.div_int(2);
                     if self.player.vy > Fx::ZERO && prev_bottom <= middle {
                         bounced = true;
-                        if kind.stompable() {
+                        if !kind.stompable() {
+                            rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
+                        } else {
                             crate::enemies::defeat(
                                 &mut self.entities[i],
                                 kind,
@@ -831,7 +846,7 @@ impl Game {
                             );
                             spawned.extend(self.stomp_reward(kind, fx, e.y));
                         }
-                    } else {
+                    } else if kind.stompable() || self.player.bounce_grace == 0 {
                         hurt = true;
                     }
                 }
@@ -846,14 +861,41 @@ impl Game {
                 | EntityKind::Festungsbahn => {}
             }
         }
-        if hurt {
+        if hurt && !self.touches_goal() {
             self.hurt_player();
         }
         if bounced && self.mode == Mode::Playing {
             self.player.bounce(input.jump(), &self.tuning.player);
+            if let Some(top) = rest_on {
+                self.rest_feet_on(top);
+            }
             self.events.push(Event::Stomped);
         }
         self.entities.extend(spawned);
+    }
+
+    /// Puts the player's feet on `top` (a bounce off a non-stompable
+    /// enemy). The move is upwards and shorter than the hitbox, so checking
+    /// the new hitbox covers the whole way: if it overlaps a solid or a
+    /// hazard tile she stays and gets `bounce_grace_frames` without harm from
+    /// non-stompable enemies instead.
+    fn rest_feet_on(&mut self, top: Fx) {
+        let placed = Aabb {
+            y: top - self.player.h,
+            ..self.player.hitbox()
+        };
+        if self.map.touches(&placed, TileKind::Solid) || self.map.touches(&placed, TileKind::Hazard)
+        {
+            self.player.bounce_grace = self.tuning.enemies.bounce_grace_frames;
+        } else {
+            self.player.y = placed.y;
+        }
+    }
+
+    /// True if the player's hitbox overlaps a goal.
+    fn touches_goal(&self) -> bool {
+        let hb = self.player.hitbox();
+        self.goals.iter().any(|g| g.overlaps(&hb))
     }
 
     /// Points (or a life) for a stomp in the current chain; returns its

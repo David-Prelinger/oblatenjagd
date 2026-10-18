@@ -102,6 +102,8 @@ fiaker_telegraph = 40         # ... for 40 frames ...
 fiaker_speed = 512            # ... then charges left at 2.0 px/frame until it leaves the screen
 squish_frames = 30            # a stomped enemy stays visible (squished) this long
 knock_speed = 768             # 3 px/frame: upward speed of an enemy or item knocked by a bumped block
+bounce_grace_frames = 8       # a bounce off the Fiaker puts the feet on its top; if a solid or hazard tile is in the way,
+                              # non-stompable enemies do no harm for this many frames instead (>= 2, D-027)
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

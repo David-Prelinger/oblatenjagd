@@ -6,7 +6,10 @@
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
 //! least one goal (`time_limit` is required by `Level::parse`), and every
 //! Festungsbahn track has 3 tiles of free space above the car
-//! (`jnr_core::platform::track_problems`).
+//! (`jnr_core::platform::track_problems`) and a way back up out of the pit
+//! under it: stair-stepped floor with steps up of at most 3 tiles to the
+//! upper end (`jnr_core::platform::recovery_problems`, D-027; its doc
+//! comment lists what it does not check).
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -22,7 +25,8 @@ Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
               sign text keys exist, a goal, 3 free tiles above every
-              Festungsbahn track
+              Festungsbahn track, and a way back up (steps <= 3 tiles)
+              from the pit under it to its upper end
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -119,7 +123,10 @@ pub fn lint(
         if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
             problems.push(format!("{shown}: no goal (add a `goal` entity)"));
         }
-        for p in jnr_core::platform::track_problems(level, tuning) {
+        for p in jnr_core::platform::track_problems(level, tuning)
+            .into_iter()
+            .chain(jnr_core::platform::recovery_problems(level, tuning))
+        {
             problems.push(format!("{shown}: {p}"));
         }
         let test_level = path
