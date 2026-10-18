@@ -1,0 +1,38 @@
+# Stomping in the Getreidegasse (tourist #1's safe stomp is salzburg_intro):
+# the solver's route to the checkpoint, then a stomp chain on tourist pair A
+# (100, 200), a stomp on pair B, and a side hit that kills Normal Resi; she
+# respawns at the checkpoint.
+level  = salzburg
+source = handwritten
+expect = dies_at frames=1060..1070 deaths=1 lives=2 score>=5000 state=playing
+expect = player_x>=2040 no_event=Hurt
+---
+RB 64    # solver route, frames 0-849
+RBJ 20
+RB 27
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 36
+RB 22
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 67
+RJ 14      # off the street over the house steps
+R 8
+RJ 10      # stomp tourist pair A #1 (100) and bounce onto #2 (200, chain)
+L 60
+R 20
+RJ 16      # over the bench: stomps a pair-B tourist
+R 110       # walk into the next tourist: side hit as Normal = death
+- 120      # respawn at the checkpoint (col 128)
