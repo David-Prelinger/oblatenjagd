@@ -240,7 +240,7 @@ Starting layout (pixel-artist and engine may move dots and labels by a few px to
 | St. Wolfgang | 180, 84 | right |
 | Wolfgangsee (on the lake) | 196, 108 | below |
 | Strobl | 232, 118 | right |
-| Bad Ischl | 276, 98 | below |
+| Bad Ischl | 276, 98 | above (engine, E10: below touches the Strobl label) |
 | Café Zauner | 300, 76 | above, right-aligned to x 316 |
 
 **Timing** (60 Hz; numbers go to `tuning.toml`, names are the engine's choice)

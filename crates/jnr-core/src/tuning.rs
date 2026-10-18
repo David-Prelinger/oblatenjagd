@@ -29,6 +29,25 @@ pub struct Tuning {
     pub platforms: PlatformTuning,
     /// The Maibaum goal sequence.
     pub goal: GoalTuning,
+    /// The route map between stages (D-043).
+    pub map: MapTuning,
+}
+
+/// The route map between stages (`docs/game-design.md` → "Route map").
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapTuning {
+    /// Frames Resi stands on the cleared station before walking.
+    pub arrive_frames: u16,
+    /// Frame of the Arrive phase at which the cleared station's marker
+    /// turns `done` (renderer only).
+    pub done_frame: u16,
+    /// Walking speed along the route, whole px per frame.
+    pub walk_px: u16,
+    /// Frames of the Wait phase before the next stage starts on its own.
+    pub wait_frames: u16,
+    /// Frames of „Fortsetzung folgt …" before the title (teaser).
+    pub teaser_frames: u16,
 }
 
 /// The Maibaum goal sequence (`docs/game-design.md` → "Goal sequence").
@@ -482,6 +501,26 @@ impl Tuning {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
             }
         }
+        let m = &self.map;
+        for (name, v) in [
+            ("map.arrive_frames", m.arrive_frames),
+            ("map.wait_frames", m.wait_frames),
+            ("map.teaser_frames", m.teaser_frames),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if m.done_frame > m.arrive_frames {
+            return Err(ParseError::new(
+                "tuning.toml: map.done_frame must be <= map.arrive_frames",
+            ));
+        }
+        if !(1..=8).contains(&m.walk_px) {
+            return Err(ParseError::new(
+                "tuning.toml: map.walk_px must be 1..=8 px/frame",
+            ));
+        }
         // Counted down in the frame it is set: 1 would protect no frame.
         if e.bounce_grace_frames < 2 {
             return Err(ParseError::new(
@@ -668,6 +707,12 @@ mod tests {
             ("hitbox_h", 16),
             ("hitbox_h_big", 21),
             ("hitbox_h_big", 33),
+            ("arrive_frames", 0),
+            ("done_frame", 41),
+            ("walk_px", 0),
+            ("walk_px", 9),
+            ("wait_frames", 0),
+            ("teaser_frames", 0),
         ] {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");

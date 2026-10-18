@@ -118,3 +118,10 @@ slide_speed = 512         # 2 px/frame down the pole
 hop_speed = 512           # 2 px/frame up when hopping off at the base (gravity as the player's)
 clear_frames = 180        # stage-clear texts after the time-bonus tally
 to_be_continued_frames = 180  # „Fortsetzung folgt …", then the title screen (M1)
+
+[map]
+arrive_frames = 40        # route map: Resi idle on the cleared station (D-043)
+done_frame = 20           # ... whose marker turns `done` at this frame of the arrival
+walk_px = 1               # px/frame along the route to the next station
+wait_frames = 300         # on the next station: START or this many frames → next stage intro
+teaser_frames = 180       # next station has no level yet: „Fortsetzung folgt …", then the title

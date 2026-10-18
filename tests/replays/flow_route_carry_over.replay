@@ -1,0 +1,26 @@
+# Multi-stage flow (D-042, D-047) on the two test levels: route_a is
+# station 0 (Salzburg), route_b station 1 (St. Gilgen). Title → route_a:
+# eat the Mozartkugel, both Oblaten, clear → route map → START in Wait →
+# route_b's intro → play. Score, lives, Oblaten and Zuckerschock carry over
+# (player_y<=146: the 30 px Zuckerschock hitbox stands on the ground at 176).
+level  = route_a
+seed   = 1
+source = handwritten
+start  = title
+route  = route_a route_b
+expect = complete frames=481..481 deaths=0 event=PowerUp no_event=Respawned
+expect = state=playing stage=st_gilgen player_y<=146 oblaten=2 lives=3 score>=2000
+---
+- 20
+S 1       # frame 21: title → intro
+- 150
+R 36      # under the Mozartkugel box
+RJ 10     # bump it
+- 70      # it rises and rolls into Resi
+R 55
+RJ 30     # over the 2-tile wall
+R 120     # to the Maibaum (touch at 481), then the goal sequence
+- 450     # route map from frame ~760: Arrive 40, Walk 72, Wait
+S 1       # frame 943: START in Wait → route_b intro
+- 150
+R 30

@@ -8,12 +8,12 @@
 //! has the full `k` outline); lines are centred
 //! horizontally. Blinking texts are on for [`BLINK_FRAMES`], then off as long.
 
-use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
+use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup, Power};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
 use crate::palette::{DIRNDL_RED, MOZART_YELLOW, NAVY, OUTLINE, SILVER_LIGHT, SKY_BLUE, WHITE};
-use crate::scene::{self, RenderContext};
+use crate::scene::{self, PlayerAnim, RenderContext};
 use crate::{WIDTH, hud};
 
 /// Blinking texts: this many frames on, then as many off.
@@ -50,8 +50,8 @@ pub const TITLE_LOGO_SPRITE: &str = "title_logo";
 
 /// Every text key the engine uses by name (not counting level signs, which
 /// `cargo xtask levels lint` checks). Per-stage keys are listed for the
-/// fallback stage.
-pub const TEXT_KEYS: [&str; 20] = [
+/// fallback stage; the route map's keys are [`crate::map`]'s.
+pub const TEXT_KEYS: [&str; 31] = [
     TITLE_NAME_KEY,
     SUBTITLE_KEY,
     PRESS_START_KEY,
@@ -81,6 +81,17 @@ pub const TEXT_KEYS: [&str; 20] = [
         Some(k) => k,
         None => "",
     },
+    crate::map::NEXT_STOP_KEY,
+    crate::map::CONTINUE_KEY,
+    crate::map::STATION_KEYS[0],
+    crate::map::STATION_KEYS[1],
+    crate::map::STATION_KEYS[2],
+    crate::map::STATION_KEYS[3],
+    crate::map::STATION_KEYS[4],
+    crate::map::STATION_KEYS[5],
+    crate::map::STATION_KEYS[6],
+    crate::map::STATION_KEYS[7],
+    crate::map::STATION_KEYS[8],
 ];
 
 // Layout (y = top of the text line).
@@ -120,7 +131,7 @@ pub fn blink_on(frames: u32) -> bool {
 }
 
 /// Draws `text` centred horizontally with its top at `y`.
-fn centred(ctx: &RenderContext, fb: &mut Framebuffer, text: &str, y: i32, colour: u32) {
+pub(crate) fn centred(ctx: &RenderContext, fb: &mut Framebuffer, text: &str, y: i32, colour: u32) {
     let x = (WIDTH as i32 - ctx.font().measure(text)) / 2;
     ctx.font()
         .draw_text(fb, ctx.atlas(), text, x, y, colour, Some(OUTLINE));
@@ -181,7 +192,10 @@ pub fn draw_intro(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let times_w = font.measure("×");
     let total = 16 + GAP + times_w + GAP + font.measure(lives);
     let left = (WIDTH as i32 - total) / 2;
-    scene::draw_player_idle(ctx, fb, left + 8, INTRO_LIVES_Y + 12, game.frame());
+    // Zuckerschock carried into the stage: `player_big` (D-042).
+    let big = game.player().power == Power::Big;
+    let feet = (left + 8, INTRO_LIVES_Y + 12);
+    scene::draw_player_pose(ctx, fb, big, PlayerAnim::Idle, feet, game.frame(), false);
     let x = left + 16 + GAP;
     // The „×“ in `Y` like the number (art-director: a white × vanishes in haze).
     font.draw_text(
@@ -232,7 +246,7 @@ pub fn draw_pause(ctx: &RenderContext, fb: &mut Framebuffer) {
 
 /// An art-style §11 panel `(x, y, w, h)`: `B` fill, 1 px `k` border, 1 px
 /// `S` highlight inside the border on the top and left edges.
-fn draw_panel(fb: &mut Framebuffer, (x, y, w, h): (i32, i32, i32, i32)) {
+pub(crate) fn draw_panel(fb: &mut Framebuffer, (x, y, w, h): (i32, i32, i32, i32)) {
     fb.fill_rect(x, y, w, h, NAVY);
     fb.fill_rect(x + 1, y + 1, w - 2, 1, SKY_BLUE);
     fb.fill_rect(x + 1, y + 1, 1, h - 2, SKY_BLUE);

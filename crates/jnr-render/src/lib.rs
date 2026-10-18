@@ -19,6 +19,7 @@
 //! - [`entities`]: entities (items, props, enemies, popups) and block tile looks
 //! - [`signs`]: level signs (board by style, centred text, Ortsende bar)
 //! - [`hud`]: the HUD (score, Oblaten, lives, time)
+//! - [`map`]: the route map between stages
 //! - [`screens`]: title, stage intro, pause, game over, stage clear and the
 //!   other flow texts, plus the list of the engine's text keys
 //! - [`tiles`]: the tile grid, incl. autotiling (D-020)
@@ -29,6 +30,7 @@ pub mod blit;
 pub mod entities;
 pub mod font;
 pub mod hud;
+pub mod map;
 pub mod palette;
 pub mod scene;
 pub mod screens;

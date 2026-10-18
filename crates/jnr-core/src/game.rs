@@ -7,9 +7,13 @@
 //! score, Oblaten, lives and the checkpoint survive (design: "Checkpoint
 //! respawn"). Game over → `Mode::GameOver`; START restarts the stage.
 //!
-//! The screens around play (title, stage intro, pause) and the Maibaum goal
-//! sequence live in the child module [`flow`]; which of them a game has is
-//! set by its [`Start`] (D-025).
+//! The screens around play (title, stage intro, pause), the Maibaum goal
+//! sequence and the route map between stages live in the child module
+//! [`flow`]; which of them a game has is set by its [`Start`] (D-025).
+//!
+//! A game plays one level at a time. A game made with [`Game::new_run`]
+//! also has a [`Route`]: after a stage clear in the real flow it shows the
+//! route map and then plays the next stage's level (D-042, D-047).
 
 mod flow;
 
@@ -26,6 +30,7 @@ use crate::level::{Block, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
 use crate::player::{Player, Power};
 use crate::rng::Rng;
+use crate::route::{Route, RouteMap};
 use crate::tuning::Tuning;
 
 /// How many columns left and right [`Game::teleport_player`] searches for a floor.
@@ -143,10 +148,14 @@ pub enum Mode {
         timer: u16,
     },
     /// The goal was reached: the Maibaum sequence runs (slide, hop, walk
-    /// off, time bonus, texts, „Fortsetzung folgt …"), then the title
-    /// screen. Enemies and the timer stand still; [`Game::stage_clear`]
-    /// has the details.
+    /// off, time bonus, texts), then the route map (real flow with a
+    /// route) or „Fortsetzung folgt …" and the title screen. Enemies and
+    /// the timer stand still; [`Game::stage_clear`] has the details.
     StageClear,
+    /// The route map between two stages (only with [`Start::Title`] and a
+    /// route): Resi walks to the next station, then its stage intro (or
+    /// the teaser and the title). [`Game::route_map`] has the details.
+    RouteMap,
     /// No lives left. START (after `game.game_over_frames`) restarts the
     /// stage from its start with full lives, score 0 and Oblaten 0.
     GameOver {
@@ -217,8 +226,17 @@ pub struct Game {
     start: Start,
     /// The goal sequence while `Mode::StageClear`.
     clear: Option<StageClear>,
+    /// The levels of the run (`None`: a lone level, no route map).
+    route: Option<Arc<Route>>,
+    /// The current stage (index into the route = station index; 0 without
+    /// a route).
+    stage: u8,
+    /// The stage the run starts at (title → START, after the teaser).
+    first_stage: u8,
+    /// The route map while `Mode::RouteMap`.
+    route_map: Option<RouteMap>,
     /// Hash of everything that never changes during a game (start grid,
-    /// goals, spawns, tuning), computed once in `new`.
+    /// goals, spawns, tuning), computed per level (`level_parts`).
     static_hash: u64,
     events: Vec<Event>,
 }
@@ -241,47 +259,44 @@ impl Game {
     /// game (title screen, stage intros, pause), [`Start::Playing`] starts
     /// in play without those screens.
     pub fn new_at(level: &Level, tuning: &Tuning, seed: u64, start: Start) -> Game {
-        let map = Arc::new(TileMap::from_level(level));
-        let goals: Vec<Aabb> = level
-            .entities
-            .iter()
-            .filter(|e| e.kind == SpawnKind::Goal)
-            .map(|e| Aabb {
-                x: TILE.mul_int(e.col),
-                y: -TILE.mul_int(level.height),
-                w: TILE,
-                h: TILE.mul_int(level.height + e.row + 1),
-            })
-            .collect();
+        Game::build(Arc::new(level.clone()), None, 0, tuning, seed, start)
+    }
 
-        let mut h = Fnv::new();
-        map.hash(&mut h);
-        h.u32(goals.len() as u32);
-        for g in &goals {
-            for v in [g.x, g.y, g.w, g.h] {
-                h.i32(v.raw());
-            }
-        }
-        h.u32(level.entities.len() as u32);
-        for e in &level.entities {
-            h.bytes(e.kind.name().as_bytes());
-            h.i32(e.col);
-            h.i32(e.row);
-        }
-        // Debug formatting of plain integers is stable, and it covers every
-        // tuning field without a hand-written list.
-        h.bytes(format!("{tuning:?}").as_bytes());
+    /// Starts a run along `route` at stage `stage` (clamped to the route):
+    /// like [`Game::new_at`] with that stage's level, and with
+    /// [`Start::Title`] a stage clear leads over the route map to the next
+    /// stage (D-042). The title screen shows (and START starts) `stage`.
+    pub fn new_run(
+        route: Arc<Route>,
+        stage: usize,
+        tuning: &Tuning,
+        seed: u64,
+        start: Start,
+    ) -> Game {
+        let stage = stage.min(route.len().saturating_sub(1));
+        let level = Arc::clone(route.level(stage).expect("a route has at least one level"));
+        Game::build(level, Some(route), stage as u8, tuning, seed, start)
+    }
 
+    fn build(
+        level: Arc<Level>,
+        route: Option<Arc<Route>>,
+        stage: u8,
+        tuning: &Tuning,
+        seed: u64,
+        start: Start,
+    ) -> Game {
+        let (map, goals, static_hash) = level_parts(&level, tuning);
         let at = level.player_start();
         let player = Player::spawn(at.col, at.row, &tuning.player);
         let mut game = Game {
             frame: 0,
             mode: Mode::Playing,
-            level: Arc::new(level.clone()),
+            level,
             map: Arc::clone(&map),
             start_map: map,
             changed_cells: Vec::new(),
-            goals: goals.into(),
+            goals,
             player,
             camera: Camera { x: 0, y: 0 },
             rng: Rng::new(seed),
@@ -299,7 +314,11 @@ impl Game {
             start_held: false,
             start,
             clear: None,
-            static_hash: h.finish(),
+            route,
+            stage,
+            first_stage: stage,
+            route_map: None,
+            static_hash,
             events: Vec::new(),
         };
         game.reset_level();
@@ -361,6 +380,10 @@ impl Game {
             Mode::StageClear => {
                 self.player.jump_held = input.jump();
                 self.step_stage_clear();
+            }
+            Mode::RouteMap => {
+                self.player.jump_held = input.jump();
+                self.step_route_map(start_pressed);
             }
             Mode::GameOver { frames } => {
                 self.player.jump_held = input.jump();
@@ -534,6 +557,17 @@ impl Game {
     fn restart(&mut self) {
         self.reset_run();
         self.enter_stage();
+    }
+
+    /// Switches to another level (stage change): grid, goals and the
+    /// static hash; the caller resets the level state and the player.
+    fn set_level(&mut self, level: Arc<Level>) {
+        let (map, goals, static_hash) = level_parts(&level, &self.tuning);
+        self.level = level;
+        self.map = Arc::clone(&map);
+        self.start_map = map;
+        self.goals = goals;
+        self.static_hash = static_hash;
     }
 
     fn place_camera(&mut self) {
@@ -1056,6 +1090,20 @@ impl Game {
                 h.u16(timer);
             }
             Mode::Paused => h.u8(6),
+            Mode::RouteMap => h.u8(7),
+        }
+        // Only runs with a route have these (lone-level hashes stay as
+        // they were before routes existed).
+        if self.route.is_some() {
+            h.u8(self.stage);
+            h.u8(self.first_stage);
+            match &self.route_map {
+                None => h.u8(0),
+                Some(m) => {
+                    h.u8(1);
+                    m.hash(&mut h);
+                }
+            }
         }
         h.u8(match self.start {
             Start::Playing => 0,
@@ -1233,6 +1281,19 @@ impl Game {
     pub fn start(&self) -> Start {
         self.start
     }
+    /// The run's route (`None` for a lone level).
+    pub fn route(&self) -> Option<&Route> {
+        self.route.as_deref()
+    }
+    /// The current station (index into [`crate::route::STATIONS`]), if the
+    /// game has a route.
+    pub fn station(&self) -> Option<usize> {
+        self.route.as_ref().map(|_| usize::from(self.stage))
+    }
+    /// The route map (while `Mode::RouteMap`).
+    pub fn route_map(&self) -> Option<&RouteMap> {
+        self.route_map.as_ref()
+    }
     /// Events of the last step.
     pub fn events(&self) -> &[Event] {
         &self.events
@@ -1241,4 +1302,44 @@ impl Game {
     pub fn tuning(&self) -> &Tuning {
         &self.tuning
     }
+}
+
+/// The parts of a game derived from its level alone: the start grid, the
+/// goal boxes and the hash of everything that never changes while playing
+/// it (grid, goals, spawns, tuning).
+///
+/// A goal occupies its cell's column from one level height above the top
+/// of the level down to the cell's bottom edge.
+fn level_parts(level: &Level, tuning: &Tuning) -> (Arc<TileMap>, Arc<[Aabb]>, u64) {
+    let map = Arc::new(TileMap::from_level(level));
+    let goals: Vec<Aabb> = level
+        .entities
+        .iter()
+        .filter(|e| e.kind == SpawnKind::Goal)
+        .map(|e| Aabb {
+            x: TILE.mul_int(e.col),
+            y: -TILE.mul_int(level.height),
+            w: TILE,
+            h: TILE.mul_int(level.height + e.row + 1),
+        })
+        .collect();
+
+    let mut h = Fnv::new();
+    map.hash(&mut h);
+    h.u32(goals.len() as u32);
+    for g in &goals {
+        for v in [g.x, g.y, g.w, g.h] {
+            h.i32(v.raw());
+        }
+    }
+    h.u32(level.entities.len() as u32);
+    for e in &level.entities {
+        h.bytes(e.kind.name().as_bytes());
+        h.i32(e.col);
+        h.i32(e.row);
+    }
+    // Debug formatting of plain integers is stable, and it covers every
+    // tuning field without a hand-written list.
+    h.bytes(format!("{tuning:?}").as_bytes());
+    (map, goals.into(), h.finish())
 }
