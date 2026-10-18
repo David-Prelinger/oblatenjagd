@@ -49,3 +49,5 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - A goal is a pole covering its whole column above the goal cell, so it can't be jumped over.
 - The player spawns grounded; `Dying` freezes the player; respawn resets the camera.
 - No air drag; turning in the air uses `air_accel`. On the ground, speed above the current max (RUN released) decays by `friction`.
+- (added after review) One-way platforms are dropped through only with DOWN + JUMP on the ground; DOWN alone does nothing (so walking over Zunftschilder while ducking is safe).
+- The player hitbox size is a gameplay number in `content/tuning.toml`; sprite placement comes from the atlas origin, not from constants in core.
