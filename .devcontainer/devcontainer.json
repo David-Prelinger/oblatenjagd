@@ -1,0 +1,67 @@
+{
+  "name": "jumpnrun (Rust)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  "features": {
+    // Node wird von Claude Code benötigt
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    // Claude Code CLI im Container
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    // Virtueller Desktop (X11 + Fluxbox) – im Browser über noVNC erreichbar,
+    // damit das Spielfenster auf dem Mac sichtbar ist.
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "password": "noPassword",
+      "webPort": "6080",
+      "vncPort": "5901"
+    }
+  },
+
+  "forwardPorts": [6080, 5901],
+  "portsAttributes": {
+    "6080": { "label": "Spiel-Desktop (noVNC im Browser)", "onAutoForward": "notify" },
+    "5901": { "label": "VNC", "onAutoForward": "silent" }
+  },
+
+  "containerEnv": {
+    // Spielfenster landen auf dem virtuellen Desktop
+    "DISPLAY": ":1",
+    // wgpu/Bevy: Software-Vulkan (lavapipe) nutzen, da keine GPU im Container
+    "WGPU_BACKEND": "vulkan",
+    "CARGO_TARGET_DIR": "/workspaces/.cargo-target"
+  },
+
+  "mounts": [
+    // Build-Artefakte in einem Volume statt im (langsamen) macOS-Bind-Mount
+    "source=jumpnrun-cargo-target,target=/workspaces/.cargo-target,type=volume",
+    // Cargo-Registry-Cache überlebt Container-Rebuilds
+    "source=jumpnrun-cargo-registry,target=/usr/local/cargo/registry,type=volume",
+    // Claude-Code-Login & Einstellungen überleben Container-Rebuilds
+    "source=jumpnrun-claude-config,target=/home/vscode/.claude,type=volume"
+  ],
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "tamasfe.even-better-toml",
+        "fill-labs.dependi",
+        "anthropic.claude-code"
+      ],
+      "settings": {
+        "rust-analyzer.check.command": "clippy",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "remoteUser": "vscode",
+  // Genug Shared Memory für den virtuellen Desktop
+  "runArgs": ["--shm-size=1g"]
+}
