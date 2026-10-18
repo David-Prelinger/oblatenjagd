@@ -20,3 +20,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **scene clamp, odd hitbox widths**: use `(w + 1) / 2` for both bounds in `scene_game` (off by 0.5 px for odd `hitbox_w`; current w = 12 is unaffected).
 - **xtask sprites `compile()` duplicates `Project::compile`** to keep groups — expose the group from artkit (e.g. `group` on `CompiledSprite`).
 - **Enemy art polish (optional)**: Fiaker telegraph feather open at the frame top (drop hat 1 px); `k` seam between horse hindquarters and carriage; selfie flash lower ray reads as part of the hat (move to (10–11,0)).
+- **Golden coverage**: add testbed_route shots mid-run and falling so walk/run/fall animations are covered by goldens (art-director note).
