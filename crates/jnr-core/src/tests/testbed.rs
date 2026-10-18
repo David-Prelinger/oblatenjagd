@@ -1,52 +1,26 @@
 //! The grey-box testbed level is completable with a hand-written script.
 
 use super::*;
-use crate::Mode;
+use crate::{Mode, Replay};
 
 fn testbed() -> Level {
     Level::parse(include_str!("../../../../content/levels/00_testbed.level")).unwrap()
 }
 
-/// Hand-written route through `00_testbed.level`, in the replay body format
-/// (`<token> <frames>`, `#` comments).
-const ROUTE: &str = "
-RB 110    # run up to the steps
-RBJ 35    # running jump over the steps
-RB 60
-RBJ 20    # gap of 3
-RB 73
-RBJ 35    # gap of 6
-RB 38
-RBJ 40    # running jump onto the 5-tile ledge (rises against the wall)
-RB 29
-RBJ 1     # hop off the ledge onto the low one-way platform
-RB 35
-RBJ 14    # up through the high one-way platform from below
-RB 38
-RBJ 30    # off the high platform over the hazard pit
-RB 200    # to the goal
-";
-
-/// Parses replay body lines into one input per frame.
-fn parse_route(text: &str) -> Vec<InputFrame> {
-    let mut frames = Vec::new();
-    for line in text.lines() {
-        let line = line.split('#').next().unwrap().trim();
-        if line.is_empty() {
-            continue;
-        }
-        let (token, n) = line.split_once(' ').expect("<token> <frames>");
-        let n: usize = n.trim().parse().unwrap();
-        frames.extend(std::iter::repeat_n(input(token), n));
-    }
-    frames
+/// The hand-written route through `00_testbed.level`; the same file is run
+/// by `cargo xtask replay` (expectations, determinism, golden shots).
+fn route() -> Replay {
+    Replay::parse(include_str!(
+        "../../../../tests/replays/testbed_route.replay"
+    ))
+    .unwrap()
 }
 
 #[test]
 fn hand_written_route_reaches_the_goal() {
     let mut g = Game::new(&testbed(), &tuning(), 1);
     let mut events = Vec::new();
-    for i in parse_route(ROUTE) {
+    for i in route().frames() {
         events.extend_from_slice(g.step(i));
         if g.mode() != Mode::Playing {
             break;
@@ -77,9 +51,3 @@ fn hand_written_route_reaches_the_goal() {
 const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame.
 const FINISH_HASH: u64 = 0xfcac_268c_3aa5_3c25;
-
-#[test]
-fn route_parser() {
-    let r = parse_route("R 2 # comment\n\n- 1\nRBJ 1\n");
-    assert_eq!(r, vec![input("R"), input("R"), input("-"), input("RBJ")]);
-}

@@ -237,3 +237,37 @@ fn state_hash_sees_small_changes() {
     b.step(input("-"));
     assert_ne!(a.state_hash(), b.state_hash());
 }
+
+#[test]
+fn teleport_player_stands_on_the_topmost_floor() {
+    let t = tuning();
+    // Columns: 0-3 ground, 4-5 gap, 6-9 ground with a one-way over 8-9.
+    let lvl = level(&[
+        "..........",
+        "........--",
+        "..........",
+        ".P........",
+        "####..####",
+    ]);
+    let mut g = Game::new(&lvl, &t, 1);
+    hold(&mut g, "RB", 5);
+    let feet = |g: &Game| (g.player().y + g.player().h).to_px();
+    let centre = |g: &Game| g.player().center_px().0;
+
+    g.teleport_player(40);
+    assert_eq!((centre(&g), feet(&g)), (40, 64), "on the ground at x");
+    assert!(g.player().on_ground);
+    assert_eq!((g.player().vx, g.player().vy), (Fx::ZERO, Fx::ZERO));
+
+    g.teleport_player(8 * 16 + 3);
+    assert_eq!(
+        (centre(&g), feet(&g)),
+        (131, 16),
+        "topmost floor: the one-way"
+    );
+
+    // Over the gap (column 4): the nearest column with a floor (3), centred in it.
+    g.teleport_player(4 * 16 + 2);
+    assert_eq!((centre(&g), feet(&g)), (3 * 16 + 8, 64));
+    assert_eq!(g.mode(), Mode::Playing);
+}

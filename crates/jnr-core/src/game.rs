@@ -6,11 +6,14 @@ use crate::camera::Camera;
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
-use crate::level::{EntityKind, EntitySpawn, Level, TileKind};
+use crate::level::{EntityKind, EntitySpawn, Level, TILE_PX, TileKind};
 use crate::physics::{Aabb, TILE, TileMap};
 use crate::player::Player;
 use crate::rng::Rng;
 use crate::tuning::Tuning;
+
+/// How many columns left and right [`Game::teleport_player`] searches for a floor.
+pub const TELEPORT_SEARCH_COLS: i32 = 8;
 
 /// Something that happened during a step (for audio, effects, tests).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -25,6 +28,33 @@ pub enum Event {
     Respawned,
     /// The player touched the goal.
     LevelComplete,
+}
+
+impl Event {
+    /// Every event, in declaration order.
+    pub const ALL: [Event; 5] = [
+        Event::Jumped,
+        Event::Landed,
+        Event::Died,
+        Event::Respawned,
+        Event::LevelComplete,
+    ];
+
+    /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
+    pub const fn name(self) -> &'static str {
+        match self {
+            Event::Jumped => "Jumped",
+            Event::Landed => "Landed",
+            Event::Died => "Died",
+            Event::Respawned => "Respawned",
+            Event::LevelComplete => "LevelComplete",
+        }
+    }
+
+    /// The event with this variant name, if any.
+    pub fn from_name(name: &str) -> Option<Event> {
+        Event::ALL.into_iter().find(|e| e.name() == name)
+    }
 }
 
 /// The game's current mode.
@@ -183,6 +213,58 @@ impl Game {
         );
         self.mode = Mode::Playing;
         self.events.push(Event::Respawned);
+    }
+
+    /// **Tooling only** (`cargo xtask scene`); the game, replays and the
+    /// solver never call it, and it bypasses physics.
+    ///
+    /// Puts the player with its hitbox centre at level pixel `x_px`,
+    /// standing on the topmost floor (a solid or one-way tile with air
+    /// above it) of that column. Without a floor there, the nearest column
+    /// within [`TELEPORT_SEARCH_COLS`] that has one is used (player centred
+    /// in it); without any, the player keeps its height. Speeds are reset,
+    /// the mode becomes `Playing` and the camera is placed like on respawn.
+    pub fn teleport_player(&mut self, x_px: i32) {
+        let col = x_px.div_euclid(TILE_PX);
+        let floor_row = |c: i32| -> Option<i32> {
+            if c < 0 || c >= self.level.width {
+                return None;
+            }
+            (1..self.level.height).find(|&r| {
+                matches!(self.map.kind_at(c, r), TileKind::Solid | TileKind::OneWay)
+                    && self.map.kind_at(c, r - 1) == TileKind::Empty
+            })
+        };
+        let found = (0..=TELEPORT_SEARCH_COLS)
+            .flat_map(|d| [col + d, col - d])
+            .find_map(|c| floor_row(c).map(|r| (c, r)));
+        let t = &self.tuning.player;
+        let mut p = match found {
+            Some((c, r)) => Player::spawn(
+                EntitySpawn {
+                    kind: EntityKind::PlayerStart,
+                    col: c,
+                    row: r - 1,
+                },
+                t,
+            ),
+            None => Player::spawn(self.start, t),
+        };
+        if found.is_none_or(|(c, _)| c == col) {
+            p.x = Fx::from_px(x_px) - p.w.div_int(2);
+        }
+        if found.is_none() {
+            p.y = self.player.y;
+            p.on_ground = false;
+        }
+        self.player = p;
+        self.camera = Camera::new(
+            self.player.center_px(),
+            self.map.width_fx().to_px(),
+            self.map.height_fx().to_px(),
+            &self.tuning.camera,
+        );
+        self.mode = Mode::Playing;
     }
 
     /// FNV-1a hash over all simulation state, field by field (the static

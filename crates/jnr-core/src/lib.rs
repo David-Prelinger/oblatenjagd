@@ -15,6 +15,7 @@
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
+//! - [`replay`]: replay files (parse, format, run, check expectations)
 
 use std::fmt;
 
@@ -26,6 +27,7 @@ pub mod input;
 pub mod level;
 pub mod physics;
 pub mod player;
+pub mod replay;
 pub mod rng;
 pub mod text;
 pub mod tuning;
@@ -39,6 +41,7 @@ pub use game::{Event, Game, Mode};
 pub use input::InputFrame;
 pub use level::{EntityKind, EntitySpawn, Level, TileKind};
 pub use player::{Facing, Player};
+pub use replay::Replay;
 pub use text::Texts;
 pub use tuning::Tuning;
 
