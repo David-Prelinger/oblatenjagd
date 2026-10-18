@@ -4,10 +4,14 @@
 //! The replay gets an `expect` line derived from what happened, so it passes
 //! `cargo xtask replay` right away: `complete frames=N..N` if the stage was
 //! completed, else `state=<mode> player_x>=<x>`; always `deaths=<n>`.
+//!
+//! A recording stops at [`MAX_TOTAL_FRAMES`] steps (1 h), the most a replay
+//! file may hold, so every recording parses; the app warns once when that
+//! happens and writes the first hour on exit.
 
 use std::path::Path;
 
-use jnr_core::replay::{Expect, FrameRange, Outcome, Source};
+use jnr_core::replay::{Expect, FrameRange, MAX_TOTAL_FRAMES, Outcome, Source};
 use jnr_core::{Game, InputFrame, Replay, Start};
 
 /// Records one input per simulation step plus what happened.
@@ -18,6 +22,10 @@ pub struct Recorder {
     /// Run-length encoded: (input, frames held).
     inputs: Vec<(InputFrame, u32)>,
     outcome: Outcome,
+    /// Steps recorded so far.
+    frames: u32,
+    /// Most steps recorded ([`MAX_TOTAL_FRAMES`]; lower in tests).
+    limit: u32,
 }
 
 impl Recorder {
@@ -30,16 +38,29 @@ impl Recorder {
             start: game.start(),
             inputs: Vec::new(),
             outcome: Outcome::new(game),
+            frames: 0,
+            limit: MAX_TOTAL_FRAMES,
         }
     }
 
-    /// Records one step: `input` was fed to `game.step`, `game` is the state after it.
+    /// Records one step: `input` was fed to `game.step`, `game` is the state
+    /// after it. Once the recording is full, steps are ignored.
     pub fn record(&mut self, input: InputFrame, game: &Game) {
+        if self.is_full() {
+            return;
+        }
         match self.inputs.last_mut() {
             Some((last, n)) if *last == input => *n += 1,
             _ => self.inputs.push((input, 1)),
         }
         self.outcome.record(game, game.events());
+        self.frames += 1;
+    }
+
+    /// True once [`MAX_TOTAL_FRAMES`] steps are recorded: the recording has
+    /// stopped (a longer replay would not parse).
+    pub fn is_full(&self) -> bool {
+        self.frames >= self.limit
     }
 
     /// The recording as a replay (`source = human`, expectations derived).
@@ -181,6 +202,47 @@ mod tests {
         assert_eq!(replay.start, Start::Title);
         assert!(replay.format().contains("start  = title"));
         assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn recording_stops_at_the_replay_frame_limit() {
+        let opts = Options {
+            level: "testbed".to_owned(),
+            ..Options::default()
+        };
+        let mut game = crate::new_game(&opts);
+        let mut rec = Recorder::new(&game, opts.seed);
+        assert_eq!(rec.limit, MAX_TOTAL_FRAMES);
+        // A lower limit, so the game can really be played up to it.
+        rec.limit = 50;
+        let r = InputFrame::RIGHT;
+        for i in 0..80 {
+            assert_eq!(rec.is_full(), i >= 50, "step {i}");
+            game.step(r);
+            rec.record(r, &game);
+        }
+        let replay = rec.replay();
+        assert_eq!(replay.inputs, vec![(r, 50)]);
+        // The expectations describe the state at the cut, so it passes.
+        assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn a_full_length_recording_parses() {
+        // MAX_TOTAL_FRAMES steps and more (without stepping the game, which
+        // only matters for the expectations): the written file parses.
+        let game = crate::new_game(&Options {
+            level: "testbed".to_owned(),
+            ..Options::default()
+        });
+        let mut rec = Recorder::new(&game, 1);
+        let inputs = [InputFrame::RIGHT, InputFrame::NONE];
+        for i in 0..MAX_TOTAL_FRAMES + 100 {
+            rec.record(inputs[(i / 1000 % 2) as usize], &game);
+        }
+        assert!(rec.is_full());
+        let parsed = Replay::parse(&rec.replay().format()).expect("parses");
+        assert_eq!(parsed.frame_count(), MAX_TOTAL_FRAMES);
     }
 
     #[test]
