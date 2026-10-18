@@ -214,6 +214,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
   - **Runtime:** the fast path covers most shifts. Debug-build `solve` wall time: testbed 1.6 s, items 1.4 s, enemies 3.4 s, Salzburg 27 s (its search is 7.5 s).
   - **Routes:** unchanged, because the window metric doesn't steer the search.
 - `solver` verify step: fails when a level's narrowest jump window (route-limited windows excluded, as in the report) is below its `min_jump_window`, naming the jump frame and x (`solver::window_problem`).
+- Addendum (engine, M2 tooling): **a recovery may take a small detour.** The re-planning search only has to reach the checkpoint progress standing on the ground; it may take another path there than the route, e.g. skip an Oblate or an item box the original jump collected, wait for an enemy, or take a different platform. The window measures "a human can still get on with the stage", not "the same score".
+  - The fast path now also requires the player to stand on the ground at the checkpoint (like the re-planning goal), so a shifted run that passes the checkpoint x in mid-air (possibly into a pit) no longer counts by itself.
+  - Each shift starts from a snapshot of the original route at its earliest changed frame (press − 12) instead of frame 0; the jumps are measured in parallel (`jump_windows(…, threads)`, results in jump order, independent of the thread count) and `recovers` runs on one thread (its beam of 12 is too small to gain from threads). All four levels' windows are unchanged (Salzburg narrowest 7). Debug-build Salzburg `solve` wall time 25 s → 15 s (search 7.7 s).
 
 ## D-035 Stage 1 level rulings (orchestrator, M1)
 - The second flying Taube spawns at col 244 (not 250): from 250 it crossed the rising Festungsbahn rider; 244 keeps D-032's "no enemy reaches the track or rider".
