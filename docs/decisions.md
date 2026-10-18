@@ -167,3 +167,6 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Enemy hit and goal touch in the same frame: the goal wins (consistent with D-023 goal vs time-up).
 - A sitting Taube that rises and later hits a standing player is acceptable: the rise is the visible telegraph.
 - Moving platforms never despawn. Every pit under a moving platform must have a way back up (stair-stepped rock as in the Stage 1 spec) — "falling off means waiting for the car or climbing back, never a softlock". A bounce off a non-stompable enemy (Fiaker) puts the player's feet on its top, so the bounce can never be followed by a side hit.
+
+## D-029 Maibaum vs HUD (orchestrator, M1)
+- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 130–184), never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
