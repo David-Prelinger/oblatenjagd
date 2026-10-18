@@ -1,0 +1,24 @@
+# QA (M0): START has no function in M0 (no pause yet), so holding it for 30
+# frames, also while running, changes nothing: the route completes 30 frames
+# later than testbed_route (761). Update this replay when pause is added.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = complete frames=761..761 deaths=0 state=stage_clear
+---
+S 30
+RBS 110
+RBJS 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35
+RBJ 14
+RB 38
+RBJ 30
+RB 200

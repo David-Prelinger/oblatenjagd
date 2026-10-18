@@ -1,6 +1,40 @@
-[package]
-name = "hello_daniel"
+[workspace]
+resolver = "3"
+members = [
+    "crates/jnr-core",
+    "crates/jnr-render",
+    "crates/jnr-artkit",
+    "crates/jnr-assets",
+    "crates/jnr-app",
+    "xtask",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.87"
+publish = false
 
-[dependencies]
+[workspace.dependencies]
+# Workspace crates
+jnr-core = { path = "crates/jnr-core" }
+jnr-render = { path = "crates/jnr-render" }
+jnr-artkit = { path = "crates/jnr-artkit" }
+jnr-assets = { path = "crates/jnr-assets" }
+
+# External crates (permissive licences only, see docs/validation.md)
+# Only jnr-app may depend on macroquad (enforced by `cargo xtask check`).
+macroquad = { version = "0.4.16", default-features = false }
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = { version = "1", default-features = false, features = ["parse", "serde", "std"] }
+png = "0.17"
+
+# The solver bot (`cargo xtask solve`, verify step `solver`) steps the
+# simulation millions of times. Optimising jnr-core and xtask in dev builds
+# makes the testbed solve ~3x faster (2.0 s -> 0.6 s) at a small build cost.
+[profile.dev.package.jnr-core]
+opt-level = 2
+
+[profile.dev.package.xtask]
+opt-level = 2

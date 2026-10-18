@@ -1,0 +1,28 @@
+# QA (M0): on a one-way platform, DOWN held for a while does nothing; then a
+# JUMP press while DOWN is held drops through (no Jumped event at that step)
+# and the player lands on the ground (row 12). From the ground the following
+# walk-jump can't reach the high platform, so the walk ends at x~1400, safely
+# on column 87 beside the hazard pit. If DOWN+JUMP did nothing or jumped, the
+# same inputs end at x~1394.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=1400
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 35     # lands on the low one-way at 475
+L 12      # brake on the platform
+D 60      # DOWN alone: stays
+DJ 30     # press JUMP with DOWN held: drop through, land on the ground at 566
+RJ 30     # walk-jump from the ground (can't reach the high platform)
+R 91
+- 60

@@ -1,0 +1,49 @@
+# All player-visible German text, keyed. Code only references the keys
+# (e.g. "stage.clear"); see docs/architecture.md "Text" and the
+# german-satire-writing skill for tone. Tables flatten to dotted keys.
+# Limits: UI lines <= 24 characters; signs <= 2 lines of <= 12 characters
+# ("\n" separates the lines); only characters of the font charset (D-012).
+# The key list and where each text appears: docs/game-design.md "UI text".
+
+[title]
+name = "Oblatenjagd"
+subtitle = "Salzburg – Bad Ischl"
+press_start = "Drück START, oida"
+
+[hud]
+score = "PUNKTE"
+oblaten = "OBLATEN"
+lives = "LEBEN"
+time = "ZEIT"
+
+[ui]
+pause = "Jausenpause"
+game_over = "Aus is'! Spiel vorbei."
+continue = "Weiter? Drück START"
+time_up = "Zeit is' um!"
+to_be_continued = "Fortsetzung folgt …"
+
+[popup]
+extra_life = "+1 Leben"
+checkpoint = "Zwischenstopp"
+wurstkranz = "Wurstkranz!"
+
+[stage]
+clear = "Etappe geschafft!"
+time_bonus = "Zeitbonus"
+
+[stage.salzburg]
+title = "Etappe 1: Salzburg"
+tagline = "Bus 150? Voll. Zu Fuß!"
+next = "Weiter nach St. Gilgen."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\nleider voll"
+sign_mirabell = "Do-Re-Mi\nFotopunkt"
+sign_makartsteg = "Liebe max.\n2 Tonnen"
+sign_checkpoint = "Bus 150\nauch voll"
+sign_geburtshaus = "Mozarts\nGeburtshaus"
+sign_stand = "Ur-Original\nMozartkugeln"
+sign_jedermann = "Jedermann\nausverkauft"
+sign_sphaera = "Keine\nMozartkugel"
+sign_festungsbahn = "Festungsbahn\nseit 1892"
+sign_ortsende = "Salzburg"

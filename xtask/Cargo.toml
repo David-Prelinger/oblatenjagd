@@ -1,0 +1,16 @@
+[package]
+name = "xtask"
+description = "Developer tool: cargo xtask check | verify | ..."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+jnr-artkit = { workspace = true, features = ["png"] }
+jnr-core.workspace = true
+jnr-render.workspace = true
+jnr-assets.workspace = true
+# Decoding golden screenshots.
+png.workspace = true

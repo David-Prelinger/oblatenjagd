@@ -1,0 +1,23 @@
+# Hand-written route through content/levels/00_testbed.level (grey box).
+# Also run by jnr-core's testbed test, which pins the finish frame and hash.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = complete frames=731..731 deaths=0 state=stage_clear no_event=Died
+shots  = 0:start 315:gap_jump 490:oneway 750:stage_clear
+---
+RB 110    # run up to the steps
+RBJ 35    # running jump over the steps
+RB 60
+RBJ 20    # gap of 3
+RB 73
+RBJ 35    # gap of 6
+RB 38
+RBJ 40    # running jump onto the 5-tile ledge (rises against the wall)
+RB 29
+RBJ 1     # hop off the ledge onto the low one-way platform
+RB 35
+RBJ 14    # up through the high one-way platform from below
+RB 38
+RBJ 30    # off the high platform over the hazard pit
+RB 200    # to the goal

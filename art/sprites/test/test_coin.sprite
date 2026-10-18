@@ -1,0 +1,45 @@
+# Grey-box test fixture (not game art): a 4-frame spinning coin plus a
+# palette-swap variant (`test_coin_gold`), so remapping can be checked.
+sprite  = test_coin
+size    = 8x8
+origin  = 4,8
+hitbox  = 1,1,6,6
+anim    = spin frames=4 ticks=8 loop
+variant = test_coin_gold remap i->Y m->o d->O
+---
+frame spin 0
+..kkkk..
+.kiiimk.
+kiimmmdk
+kimmmmdk
+kimmmmdk
+kmmmmddk
+.kmdddk.
+..kkkk..
+frame spin 1
+...kk...
+..kimk..
+.kimmdk.
+.kimmdk.
+.kimmdk.
+.kmmddk.
+..kmdk..
+...kk...
+frame spin 2
+...kk...
+..kidk..
+..kmdk..
+..kmdk..
+..kmdk..
+..kmdk..
+..kddk..
+...kk...
+frame spin 3
+...kk...
+..kimk..
+.kimmdk.
+.kimmdk.
+.kimmdk.
+.kmmddk.
+..kmdk..
+...kk...

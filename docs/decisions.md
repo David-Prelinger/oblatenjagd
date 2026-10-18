@@ -34,3 +34,67 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 
 ## D-008 Game decisions (human, 2026-10-18)
 - Title „Oblatenjagd"; hero **Resi** in a Dirndl; real names of places, businesses and historical people may be used; difficulty **medium** (see `game-design.md`).
+
+## D-009 Parallel code tasks run in git worktrees
+- Two engineers editing the same tree break each other's `cargo xtask check` (and block the orchestrator's Stop hook).
+- Parallel code tasks therefore run in isolated git worktrees, each with its own `CARGO_TARGET_DIR` (`/workspaces/.cargo-target/wt-<task>`), and commit on their own branch; the orchestrator merges them into the milestone branch.
+
+## D-010 Atlas data is owned and built once at startup
+- The atlas types (`Atlas`, `AtlasSprite`, `AtlasAnim`) are plain owned data (`Vec`/`String`) shared by build time and runtime; `jnr_assets::atlas()` builds the atlas once via `OnceLock` from embedded RGBA bytes and generated metadata.
+- One type family instead of separate `&'static` statics; the cost is one pixel copy at startup.
+
+## D-011 Level semantics (jnr-core, M0)
+- `.` is always empty air and can't be redefined in the legend; tile names map to collision kinds in core.
+- Outside the grid: left/right are solid walls, solid tiles in row 0 extend upwards, below the level is empty and falling out kills.
+- A goal is a pole covering its whole column above the goal cell, so it can't be jumped over.
+- The player spawns grounded; `Dying` freezes the player; respawn resets the camera.
+- No air drag; turning in the air uses `air_accel`. On the ground, speed above the current max (RUN released) decays by `friction`.
+- (added after review) One-way platforms are dropped through only with DOWN + JUMP on the ground; DOWN alone does nothing (so walking over Zunftschilder while ducking is safe).
+- The player hitbox size is a gameplay number in `content/tuning.toml`; sprite placement comes from the atlas origin, not from constants in core.
+
+## D-012 Bitmap font convention
+- Sprite `font` in `art/sprites/ui/font.sprite`, 8×8 cells, one anim `glyphs`; frame i = i-th char of `jnr_render::font::CHARSET` (89 glyphs: ASCII subset, ÄÖÜäöüß„“–…×%+). New glyphs are only ever appended, so indices stay stable.
+- Glyphs are drawn in palette `w` only; the renderer tints them and draws the `k` shadow at (+1,+1).
+- Advance = rightmost opaque column + 2; space (frame 0, intentionally empty, lint-exempt) advances 3 px; line height 9.
+
+## D-013 Replay semantics and golden naming
+- Replay frame numbers are `Game::frame()` values: frame N is the state after N steps, frame 0 the state before the first step. Shots and `frames=a..b` ranges (inclusive) use this numbering.
+- A replay always runs all its inputs; end-state expectations (`state=`, `deaths`, `player_x>=`) are checked after the last input. Unknown expectation clauses are parse errors ("not supported yet"), so a replay never silently ignores a check.
+- Replay parsing and expectation checks live in `jnr_core::replay` (pure, unit-tested); loading files, rendering and determinism runs live in xtask.
+- Goldens are named after the replay, not the level: `tests/golden/<replay>_<shot>.png` (several replays may share a level). `golden --accept` re-renders instead of copying earlier actuals; rendering is deterministic, so the result equals the reviewed preview.
+- `levels lint` runs in `check` (L3), not only in `verify`.
+- (after review) A replay must have at least one expectation (runner failure, not a parse error); `replays` fails on an empty `tests/replays/`; goldens without a shot fail; goldens are only accepted from passing replays.
+- The hand-written testbed route exists once, as `tests/replays/testbed_route.replay`; jnr-core's testbed test includes that file.
+
+## D-014 Live smoke test and human recordings
+- `vnc-smoke` plays `tests/replays/testbed_route.replay` in the real native window and requires its `--screenshot-at` framebuffers to be pixel-identical to the existing goldens (no separate VNC goldens). The X root screenshot is only checked for a sizable sky area (±8 per channel, the desktop is 16-bit RGB565), never compared exactly.
+- `jnr-app --record` writes a replay with `source = human` and an `expect` line derived from the outcome (`complete frames=N..N` or `state=… player_x>=…`, plus `deaths=`), so every recording is a passing replay test the moment it is saved.
+- Native Escape and window close end the session cleanly (macroquad `prevent_quit`) so the recording is always written; wasm keeps running until the page closes.
+
+## D-015 Solver bot: search, jump window and solver replays
+- The solver (`cargo xtask solve`, L4) is a frame-synchronous beam search over the real `Game` with a small fixed macro-action set; ranking is furthest right, then fewer jumps, then a stable insertion order, so the same level + tuning always gives the same route (threads only split work). The wall-clock limit is checked only while no completion has been found, so it can never change a route; but whether a search passes or fails can depend on machine speed if it runs into the limit, so the limit (60 s) is generous on purpose (the testbed takes ~0.6 s). jnr-core and xtask are built with `opt-level = 2` in the dev profile for speed.
+- The jump window, the difficulty number level designers use (`game-design.md`: ≥ 6 frames in stages 1–3), is defined as: shift the whole held-JUMP segment by d ∈ [-12, +12], rest of the inputs unchanged; past the route's end the inputs are padded with the last input. Checkpoint = the first landing after the matching `Jumped` + 2 s; success = alive up to the next jump's checkpoint (or the end of the route) and at most 16 px behind the original at the own checkpoint (or finished). Window = contiguous successful shifts around 0, with the reason each side stopped: `fail` (the level), `route` (the shift would start before frame 0 or touch a neighbouring JUMP hold) or `max` (±12). Route-limited windows are only lower bounds and never count as the narrowest. It is measured on the cleaned route (no-op JUMP removed).
+- Solver replays are `tests/replays/<level>_solver.replay`, written only with `--write`, and carry no `shots` by default (shots need art-director-approved goldens; `--shots` opts in).
+- The `solver` verify step also requires the committed `tests/replays/<level>_solver.replay` for every level.
+- A per-level `min_jump_window` waits for an optional `LevelMeta` field (backlog, M1); until then the `solver` step only reports the narrowest window.
+
+## D-016 M0 movement tuning accepted unchanged (game-designer, M0 acceptance)
+- The measured M0 movement (walk 1.5 / run 2.5 px/frame, jumps ~25 / 65 / 81 px, max fall 4 px/frame, coyote and buffer 6 frames, running jump ~9 tiles) is close to Super Mario Bros. and fits medium difficulty, so `content/tuning.toml` keeps its values in M1 (no replay or golden churn).
+- The ~9-tile running jump is not "too far": it's a ceiling for optional routes. Required jumps in stages 1–3 follow the reach rules in `game-design.md` (gaps ≤ 4 tiles, step-ups ≤ 3; 5–6-tile gaps only with ≥ 8 tiles of run-up). The solver's ≥ 6-frame window stays the final check.
+- New feel targets for M1 (new keys, not changes): walking jump reach ~5 tiles, stomp bounce ~1 tile (tap) / ~3 tiles (held), hurt invulnerability 120 frames.
+
+## D-017 Stage 1 gameplay rules (game-designer, before M1)
+- No ducking: DOWN is only used for one-way drop-through (D-011). Zuckerschock hitbox 12×30 px with the same physics; required passages are ≥ 2 tiles high.
+- Stomp = falling and the feet above the enemy hitbox's middle on the previous frame. SMB-style stomp chain and scores (Oblate 200, power-up 1000, brick 50, time bonus 50/s). Maibaum scores by feet height in 2-tile zones up to 5000 for the Wurstkranz (≥ 8 tiles).
+- The Fiaker can't be stomped, but landing on it bounces without damage (medium difficulty: no punishment for the obvious "jump on it" idea).
+- A death resets the whole level (enemies, boxes, Oblaten) like SMB; checkpoint flag, score, Oblaten counter and lives survive; the timer is reset; the player is Normal again. Game over → „Weiter?" restarts from the stage start.
+- Thrown Mozartkugeln are unwrapped chocolate balls, visually distinct from the wrapped power-up.
+- Enemy patterns use frame counters from activation, never the RNG, so the solver and replays see fixed patterns.
+
+## D-018 Level signs (game-designer, before M1)
+- Signs are a decorative `sign` entity referencing a `de.toml` key, ≤ 2 lines of ≤ 12 characters each (`\n` separates the lines); this is how the skill's "signs ≤ 12 characters" applies to two-line boards. The level format for it (e.g. `{ entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }`) is the engine-engineer's choice.
+
+## D-019 Input across respawn, replay limits, scene clamp
+- While `Dying`, `Game::step` keeps updating `Player::jump_held` from the input, and `respawn` carries it into the new player. A JUMP held across a respawn is therefore not a new press (no auto-jump); presses during `Dying` never reach the jump buffer (it is not updated while dying and is reset on spawn).
+- Replay files hold at most `MAX_FRAMES_PER_LINE` frames per input line and `MAX_TOTAL_FRAMES` in total (both 216 000 = 1 h at 60 Hz); larger files are parse errors with a line number, so a malformed replay cannot exhaust memory or run for ever.
+- `cargo xtask scene` clamps the player's centre so its hitbox stays inside the level and prints a warning when it did; the camera clamps itself as before.

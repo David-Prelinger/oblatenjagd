@@ -1,0 +1,14 @@
+[package]
+name = "jnr-artkit"
+description = "Text-based pixel-art pipeline: .palette/.sprite parsing, generators, atlas packing, lints."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+png = { workspace = true, optional = true }
+
+[features]
+# PNG encoding for previews (xtask only); jnr-assets/wasm builds stay dependency-free.
+png = ["dep:png"]

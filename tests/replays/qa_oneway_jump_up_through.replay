@@ -1,0 +1,27 @@
+# QA (M0): one-way platforms don't block from below. A running jump off the
+# right edge of the low one-way passes up through the high one-way (row 6,
+# x 1280-1344; at step ~508 the hitbox overlaps the platform row while rising)
+# and lands on top of it (step 526). Then walk off its right edge and stop on
+# column 87 with only ~1 px of the hitbox on solid ground and the rest over the
+# hazard column: standing beside a hazard is safe.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=1400
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40
+RB 29
+RBJ 1
+RB 57     # run to the right edge of the low one-way
+RBJ 12    # jump at 499, up through the high one-way
+R 14
+L 12      # land on the high one-way (526) and brake
+R 40      # walk off its right edge, land at x~1388
+- 60      # stop at x~1406.9
