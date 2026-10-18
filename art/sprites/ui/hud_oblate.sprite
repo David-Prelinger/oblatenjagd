@@ -1,0 +1,16 @@
+# HUD icon before the OBLATEN counter: a mini Zauner Oblate (c body,
+# o waffle cross, O bottom-right shadow, k outline).
+sprite = hud_oblate
+size   = 8x8
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+..kkkk..
+.kcocck.
+kccoccOk
+koooooOk
+kccocOOk
+kccocOOk
+.kcoOOk.
+..kkkk..

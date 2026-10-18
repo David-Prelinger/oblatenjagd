@@ -1,0 +1,23 @@
+# Zaunerstollen 1-Up: a slice of the half-round chocolate log, seen from the
+# front-left. Left: the cut face (D shape) with a chocolate rim l and the
+# filling in layers (wafer c, nougat o/O). Right: the chocolate coat, lit
+# top O, body l, with a c glaze drizzle on top.
+sprite = zaunerstollen
+size   = 16x12
+origin = 8,12
+hitbox = 1,2,14,10
+anim   = idle frames=1
+---
+frame idle 0
+......kkkkkk....
+....kkOOccOOkk..
+..kkllllOOOOOOk.
+.kllccccllOOOOlk
+.klcccccclOOlllk
+kloooooooolOlllk
+klcccccccclllllk
+kloooooooolllllk
+klcccccccclllllk
+klOOOOOOOOllllk.
+kllllllllllllk..
+.kkkkkkkkkkkk...
