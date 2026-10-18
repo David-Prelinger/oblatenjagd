@@ -8,7 +8,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 state=title
-shots  = 0:title 60:intro 216:busbahnhof 600:mirabellgarten 880:makartsteg 1200:getreidegasse 1400:domplatz 1700:festungsbahn 1772:maibaum 2000:tally
+shots  = 0:title 60:intro 216:busbahnhof 620:mirabellgarten 880:makartsteg 1215:getreidegasse 1400:domplatz 1700:festungsbahn 1772:maibaum 2000:tally
 ---
 - 20
 S 1       # START: stage intro
