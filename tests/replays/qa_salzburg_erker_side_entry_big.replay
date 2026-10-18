@@ -1,0 +1,105 @@
+# QA (M1 Stage 1): the Erker as Zuckerschock, entered from the side. The
+# start of qa_salzburg_relaxed_explorer (Zuckerschock from the first M-box)
+# up to Z1; a running jump from Z1 towards the burger sign comes down with her
+# feet already below the sign's top, so she passes through the one-way sign
+# from the side, lands on the Erker's left wall (frame 2279) and walks into the
+# Erker (2 Oblaten). Not a trap: with 32 px inside she jumps up through the
+# sign and lands on it (frame 2390, y 98; 2 px under the house). There the
+# house ceiling stops any jump; one press right at the sign's end (her hitbox
+# clear of the house) carries her onto Z3 (frame 2523, y 98).
+level  = salzburg
+source = handwritten
+expect = deaths=0 lives=3 state=playing oblaten>=46
+expect = player_y<=98 player_y>=98 no_event=Died
+---
+R 130
+- 40
+J 20
+- 40
+L 25
+- 25
+RJ 40
+R 60
+RJ 12
+R 20
+J 10
+R 80
+R 80
+RJ 14
+R 48
+RJ 8
+R 10
+- 20
+J 15
+- 60
+R 40
+RJ 25
+R 40
+- 20
+R 12
+- 10
+J 8
+- 20
+R 16
+- 10
+J 8
+- 10
+R 30
+RJ 20
+R 10
+- 10
+RJ 16
+R 4
+- 16
+J 30
+- 20
+RJ 30
+R 40
+R 10
+RJ 12
+R 16
+RJ 24
+R 30
+R 34
+RJ 20
+R 30
+R 59
+RJ 30
+R 34
+RJ 30
+R 45
+RJ 30
+R 87
+RJ 30
+R 155
+L 34
+- 20
+J 12
+- 40
+R 10
+- 60
+R 16
+RJ 20
+R 6
+RJ 24
+R 40
+- 10
+L 14
+J 30
+- 4
+RB 16
+RBJ 30
+R 6
+- 20
+R 30
+- 30
+L 10
+- 10
+J 30
+- 20
+R 20
+- 20
+R 10
+RJ 30
+R 10
+- 30
