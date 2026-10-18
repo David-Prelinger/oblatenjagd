@@ -1,0 +1,61 @@
+# Regression (D-040, M1 acceptance): a Wurstkranz touch (salzburg_wurstkranz,
+# touch at 1601) used to leave the camera at the touch height, so Resi slid out
+# of the bottom of the screen and hopped and walked off screen. The camera now
+# follows the slide down (the framing is asserted by the unit tests in
+# jnr-core src/tests/goal.rs); this replay checks the whole sequence still
+# ends on the title screen.
+level  = salzburg
+source = handwritten
+expect = complete frames=1601..1601 deaths=0 state=title
+---
+# solver route, frames 0-1583
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 62
+RBJ 20
+RB 23
+RJ 30       # held jump off the rampart edge towards the pole
+R 40
+- 1200      # slide, hop, walk off, tally, texts, „Fortsetzung folgt …", title

@@ -224,3 +224,106 @@ fn title_flow_ends_on_the_title_screen_too() {
     }
     panic!("never back on the title screen");
 }
+
+/// One frame of [`moving_frames`]: the phase after the step, the camera and
+/// the player hitbox in screen px.
+struct CamFrame {
+    phase: ClearPhase,
+    camera: crate::Camera,
+    left: i32,
+    top: i32,
+    bottom: i32,
+}
+
+/// Steps through slide, hop and walk, recording every frame.
+fn moving_frames(g: &mut Game) -> Vec<CamFrame> {
+    let mut frames = Vec::new();
+    while matches!(
+        phase(g),
+        ClearPhase::Slide | ClearPhase::Hop | ClearPhase::Walk
+    ) {
+        g.step(input("-"));
+        let c = g.camera();
+        let p = g.player();
+        let top = p.y.to_px() - c.y;
+        frames.push(CamFrame {
+            phase: phase(g),
+            camera: c,
+            left: p.x.to_px() - c.x,
+            top,
+            bottom: top + p.h.to_px(),
+        });
+        assert!(frames.len() < 2000, "stuck");
+    }
+    frames
+}
+
+#[test]
+fn low_touch_keeps_the_camera_still() {
+    let mut g = Game::new(&goal_world(), &tuning(), 1);
+    walk_into_goal(&mut g, "R", 300);
+    let at_touch = g.camera();
+    for f in moving_frames(&mut g) {
+        assert_eq!(f.camera, at_touch, "the camera does not move (D-040)");
+    }
+}
+
+#[test]
+fn high_touch_camera_follows_the_slide_down_to_the_ground_framing() {
+    // The ground framing: the play camera after walking into the pole.
+    let mut low = Game::new(&goal_world(), &tuning(), 1);
+    walk_into_goal(&mut low, "R", 300);
+    let ground = low.camera();
+
+    let t = tuning();
+    let mut g = Game::new(&goal_world(), &t, 1);
+    // 9 tiles up just left of the pole, moving right, the camera at the
+    // top as after a high jump.
+    g.player.x = Fx::from_px(POLE_X - 8 - 12);
+    g.player.y = Fx::from_px(BASE_Y - 9 * 16) - g.player.h;
+    g.player.vx = t.player.walk_speed;
+    g.player.on_ground = false;
+    g.camera.y = 0;
+    walk_into_goal(&mut g, "R", 20);
+    assert!(
+        g.stage_clear().unwrap().height_px >= 112,
+        "a Wurstkranz touch"
+    );
+    let at_touch = g.camera();
+    assert!(at_touch.y < ground.y, "starts above the ground framing");
+
+    let frames = moving_frames(&mut g);
+    let mut prev_y = at_touch.y;
+    for (i, f) in frames.iter().enumerate() {
+        assert_eq!(f.camera.x, at_touch.x, "x stays (frame {i})");
+        assert!(f.camera.y >= prev_y, "only follows down (frame {i})");
+        prev_y = f.camera.y;
+        assert!(
+            f.top >= 0 && f.bottom <= crate::SCREEN_H,
+            "on screen vertically, frame {i}: {}..{}",
+            f.top,
+            f.bottom
+        );
+    }
+    let slide_end = frames
+        .iter()
+        .position(|f| f.phase != ClearPhase::Slide)
+        .expect("leaves the slide");
+    assert_eq!(
+        frames[slide_end].camera.y, ground.y,
+        "the slide ends at the ground framing"
+    );
+    // Hop and walk on that framing, on screen until she leaves to the right.
+    for f in &frames[slide_end..] {
+        assert_eq!(f.camera.y, ground.y);
+    }
+    let walk_on_screen = frames[slide_end..]
+        .iter()
+        .filter(|f| f.phase == ClearPhase::Walk && f.left < crate::SCREEN_W)
+        .count();
+    assert!(walk_on_screen > 0);
+    assert!(
+        frames.last().unwrap().left >= crate::SCREEN_W,
+        "left to the right"
+    );
+}

@@ -38,12 +38,18 @@ impl Camera {
         if fx - self.x > t.follow_x {
             self.x = fx - t.follow_x;
         }
+        self.x = self.x.clamp(0, (level_w - SCREEN_W).max(0));
+        self.follow_y(fy, level_h, t);
+    }
+
+    /// Only the vertical part of [`Camera::follow`]: keeps `fy` inside the
+    /// dead zone, clamped to the level; x stays (the goal sequence, D-040).
+    pub fn follow_y(&mut self, fy: i32, level_h: i32, t: &CameraTuning) {
         if fy - self.y < t.deadzone_top {
             self.y = fy - t.deadzone_top;
         } else if fy - self.y > t.deadzone_bottom {
             self.y = fy - t.deadzone_bottom;
         }
-        self.x = self.x.clamp(0, (level_w - SCREEN_W).max(0));
         self.y = self.y.clamp(0, (level_h - SCREEN_H).max(0));
     }
 
@@ -110,5 +116,14 @@ mod tests {
             Camera { x: 0, y: 0 },
             "level smaller than the screen"
         );
+    }
+
+    #[test]
+    fn follow_y_keeps_x() {
+        let mut c = Camera { x: 300, y: 0 };
+        c.follow_y(200, H, &T);
+        assert_eq!(c, Camera { x: 300, y: 44 });
+        c.follow_y(80, H, &T);
+        assert_eq!(c, Camera { x: 300, y: 16 });
     }
 }

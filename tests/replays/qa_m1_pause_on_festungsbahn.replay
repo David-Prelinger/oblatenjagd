@@ -1,0 +1,67 @@
+# QA (M1 acceptance): pausing on the moving Festungsbahn car (D-030/D-034)
+# changes nothing but the time. The salzburg_tour run (goal at 1772, 8600
+# points) with START pressed at frame 1700 while Resi rides the car up and
+# again at 1760: the pause step, 59 paused frames and the resume step run
+# no simulation, so she touches the Maibaum exactly 61 frames later with
+# the same score (the car keeps its rider through the pause).
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1833..1833 score=8600 deaths=0 state=stage_clear
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 49       # on the car, riding up
+RBS 1       # pause (1700)
+RB 59
+RBS 1       # resume (1760)
+RB 13
+RBJ 20      # off the car towards the pole
+RB 40
+- 20

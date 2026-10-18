@@ -195,7 +195,7 @@ pub struct Game {
     changed_cells: Vec<u32>,
     goals: Arc<[Aabb]>,
     pub(crate) player: Player,
-    camera: Camera,
+    pub(crate) camera: Camera,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
