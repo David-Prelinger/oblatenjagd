@@ -235,13 +235,13 @@ Starting layout (pixel-artist and engine may move dots and labels by a few px to
 |---|---|---|
 | Salzburg | 28, 36 | right of the dot |
 | St. Gilgen | 100, 70 | left |
-| Brunnwinkl | 124, 58 | above |
-| Falkenstein | 152, 68 | below |
+| Brunnwinkl | 124, 58 | above, label row at y 17–25 (clear of Resi's head, art-director M2) |
+| Falkenstein | 152, 68 | below, ending at x ≤ 172 (clear of the St. Wolfgang marker) |
 | St. Wolfgang | 180, 84 | right |
 | Wolfgangsee (on the lake) | 196, 108 | below |
 | Strobl | 232, 118 | right |
 | Bad Ischl | 276, 98 | below |
-| Café Zauner | 300, 76 | above, right-aligned to x 316 |
+| Café Zauner | 300, 76 | above, label row at y 34–42, right-aligned to x 312 (clear of Resi and the frame) |
 
 **Timing** (60 Hz; numbers go to `tuning.toml`, names are the engine's choice)
 
