@@ -1,0 +1,52 @@
+# QA (M1 Stage 1), fixed by D-038: the Residenzbrunnen prop is drawn as one
+# 5x3 block over cols 190-194 (top at y 192 across the whole width); the tiles
+# under it used to be stepped (only 191-193 3 high, the outer columns 190 and
+# 194 a 1-high rim), so Resi could drop "into" the drawn fountain at col 194
+# and the Fiaker ran her over. Now all five columns are solid at the drawn
+# height: she jumps up onto the fountain top, walks right until she stands
+# entirely over col 194 (x 3105-3117), brakes and stays on top at y 170 while
+# the Fiaker telegraphs and charges through underneath (game-design.md:
+# "Residenzbrunnen (3 tiles high) ... a safe place to let it pass").
+level  = salzburg
+source = handwritten
+expect = deaths=0 no_event=Died state=playing
+expect = player_y<=170 player_x>=3104
+---
+# an earlier solver route, frames 0-1150 (to the Residenzplatz)
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 2
+RBJ 36
+RB 29
+RBJ 36
+RB 24
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 36
+RB 6
+RBJ 20
+RB 72
+RBJ 36
+RB 18
+RBJ 33
+RB 74
+R 100       # walk up to the fountain's left side (col 190, 3 high)
+- 10
+RJ 16       # jump up onto the fountain top (y 170)
+R 10
+- 20
+R 50        # walk right towards its right end ...
+L 10        # ... brake above col 194 (formerly the 1-high rim: she dropped inside the drawn fountain)
+- 110       # the Fiaker telegraphs and charges underneath: she stays on top (y 170)
