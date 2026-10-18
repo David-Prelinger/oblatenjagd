@@ -74,19 +74,22 @@ xtask ──► everything (never the other way round)
 pub struct Game { /* all state: mode, level, player, entities, camera, rng, score, timer */ }
 
 impl Game {
-    pub fn new(content: &Content, seed: u64) -> Game;
+    pub fn new(level: &Level, tuning: &Tuning, seed: u64) -> Game;  // Level::parse(&str), Tuning::parse(&str)
     pub fn step(&mut self, input: InputFrame) -> &[Event];  // exactly one 1/60 s tick
-    pub fn state_hash(&self) -> u64;                         // for determinism checks
+    pub fn state_hash(&self) -> u64;                         // FNV-1a, for determinism checks
 }
 
 #[derive(Clone, Copy)] pub struct InputFrame(u8);  // bitflags: LEFT RIGHT UP DOWN JUMP RUN START
-pub enum Event { Jumped, Stomped, OblateCollected, PowerUp, Hurt, Died, LevelComplete, ... }
+pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
 ```
+
+Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, plus `hash` (FNV-1a) and `rng` (xorshift64*).
 
 - **Game modes** as a state machine inside core: `Title → StageIntro → Playing → (Dying | StageClear) → ...`. Menus are part of core so they are testable too.
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
 - **Entities**: a plain `Vec<Entity>` with an `EntityKind` enum and per-kind update functions. No ECS framework — the game is small and an enum is easier for agents to reason about.
 - **Collision**: AABB vs tile grid (solid, one-way, hazard, water/death), AABB vs AABB for entities. No slopes in M1.
+- **One-way platforms** block only from above; the player drops through by pressing DOWN + JUMP while standing on one (DOWN alone does nothing).
 - **Camera** lives in core (it affects enemy activation like in SMB and must be deterministic).
 - **Spawning**: enemies activate when they come within one screen of the camera; despawn when far behind.
 - **RNG**: own xorshift in state, seeded. No other randomness.
@@ -130,6 +133,8 @@ loop {
 
 TOML header + one ASCII grid. One char = one 16×16 tile or an entity spawn.
 
+The example below is the **M1 target** (`oblaten_box` with `contains`, `oblate`, `selfie_tourist`, … are not parsed yet). `jnr-core` currently supports the tile names `ground`/`brick`/`solid`, `oneway`/`oneway_sign`, `hazard`/`salzach_water` (and `empty`) and the entities `player_start` and `goal`/`goal_maibaum`; anything else is a parse error.
+
 ```toml
 [meta]
 id = "salzburg"
@@ -159,6 +164,8 @@ grid = '''
 ################################~~~~############
 '''
 ```
+
+`.` is always empty air and needs no legend entry; any other grid character missing from `[legend]` is a parse error with row and column. `jnr-core` maps tile names to a collision kind (empty, solid, one-way, hazard) in `TileKind::from_tile_name`; the grey-box names `solid`, `oneway`, `hazard` work in any level (see `content/levels/00_testbed.level`).
 
 Height: typically 14 rows (224 px, camera scrolls vertically a little). Width: ~200–320 columns for a full stage.
 
