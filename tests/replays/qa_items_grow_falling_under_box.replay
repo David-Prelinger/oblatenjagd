@@ -1,0 +1,25 @@
+# QA (E1): Normal Resi jumps under the emptied Mozartkugel box and catches
+# the Mozartkugel falling off it while she is falling just below the box
+# (frame 249): growing keeps the feet, so the head overlaps the box by
+# 6 px. She must fall out normally, not get stuck: she lands, walks left
+# and breaks the brick at column 6 (frame 336, +50).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 score>=1250 no_event=Hurt
+---
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10
+- 15
+R 9
+- 15
+J 3
+- 60
+L 30
+J 20
+- 40

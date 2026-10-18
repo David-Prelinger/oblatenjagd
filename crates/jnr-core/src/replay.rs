@@ -156,6 +156,11 @@ pub enum Expect {
     /// `player_x>=PX`: the player's hitbox left edge (whole level pixels)
     /// is at least PX at the end.
     PlayerXAtLeast(i32),
+    /// `player_y>=PX`: the player's hitbox top edge (whole level pixels,
+    /// y grows downwards) is at least PX at the end.
+    PlayerYAtLeast(i32),
+    /// `player_y<=PX`: the player's hitbox top edge is at most PX at the end.
+    PlayerYAtMost(i32),
     /// `state=<playing|dying|stage_clear|game_over>` at the end.
     State(EndState),
     /// `no_event=<Event>`: the event never happened.
@@ -163,16 +168,23 @@ pub enum Expect {
     /// `oblaten>=N`: the Oblaten counter (HUD value, 0..100) is at least N
     /// at the end.
     OblatenAtLeast(u32),
+    /// `oblaten=N`: the Oblaten counter is exactly N at the end.
+    Oblaten(u32),
     /// `score>=N`: the score is at least N at the end.
     ScoreAtLeast(u32),
+    /// `score=N`: the score is exactly N at the end.
+    Score(u32),
     /// `lives=N`: exactly N lives at the end.
     Lives(u32),
+    /// `lives>=N`: at least N lives at the end.
+    LivesAtLeast(u32),
 }
 
 /// What the expectation grammar supports (shown in "not supported yet" errors).
 const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at frames=a..b, \
-                         player_x>=PX, state=<playing|dying|stage_clear|game_over>, \
-                         no_event=<Event>, oblaten>=N, score>=N, lives=N";
+                         player_x>=PX, player_y>=PX, player_y<=PX, \
+                         state=<playing|dying|stage_clear|game_over>, no_event=<Event>, \
+                         oblaten>=N, oblaten=N, score>=N, score=N, lives=N, lives>=N";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -197,10 +209,11 @@ impl Expect {
             } else if let Some(n) = w.strip_prefix("deaths=") {
                 Expect::Deaths(parse_u32(n, "deaths")?)
             } else if let Some(n) = w.strip_prefix("player_x>=") {
-                Expect::PlayerXAtLeast(
-                    n.parse()
-                        .map_err(|_| format!("bad player_x `{n}` (expected whole pixels)"))?,
-                )
+                Expect::PlayerXAtLeast(parse_px(n, "player_x")?)
+            } else if let Some(n) = w.strip_prefix("player_y>=") {
+                Expect::PlayerYAtLeast(parse_px(n, "player_y")?)
+            } else if let Some(n) = w.strip_prefix("player_y<=") {
+                Expect::PlayerYAtMost(parse_px(n, "player_y")?)
             } else if let Some(s) = w.strip_prefix("state=") {
                 Expect::State(EndState::parse(s).ok_or_else(|| {
                     format!(
@@ -209,8 +222,14 @@ impl Expect {
                 })?)
             } else if let Some(n) = w.strip_prefix("oblaten>=") {
                 Expect::OblatenAtLeast(parse_u32(n, "oblaten")?)
+            } else if let Some(n) = w.strip_prefix("oblaten=") {
+                Expect::Oblaten(parse_u32(n, "oblaten")?)
             } else if let Some(n) = w.strip_prefix("score>=") {
                 Expect::ScoreAtLeast(parse_u32(n, "score")?)
+            } else if let Some(n) = w.strip_prefix("score=") {
+                Expect::Score(parse_u32(n, "score")?)
+            } else if let Some(n) = w.strip_prefix("lives>=") {
+                Expect::LivesAtLeast(parse_u32(n, "lives")?)
             } else if let Some(n) = w.strip_prefix("lives=") {
                 Expect::Lives(parse_u32(n, "lives")?)
             } else if let Some(name) = w.strip_prefix("no_event=") {
@@ -241,11 +260,16 @@ impl Expect {
             Expect::DeathsAtMost(n) => o.deaths <= n,
             Expect::DiesAt(r) => o.deaths_at.iter().any(|&f| r.contains(f)),
             Expect::PlayerXAtLeast(px) => o.player_x >= px,
+            Expect::PlayerYAtLeast(px) => o.player_y >= px,
+            Expect::PlayerYAtMost(px) => o.player_y <= px,
             Expect::State(s) => o.state == s,
             Expect::NoEvent(e) => !o.events.iter().any(|&(seen, _)| seen == e),
             Expect::OblatenAtLeast(n) => o.oblaten >= n,
+            Expect::Oblaten(n) => o.oblaten == n,
             Expect::ScoreAtLeast(n) => o.score >= n,
+            Expect::Score(n) => o.score == n,
             Expect::Lives(n) => o.lives == n,
+            Expect::LivesAtLeast(n) => o.lives >= n,
         };
         if ok {
             return Ok(());
@@ -264,16 +288,23 @@ impl Expect {
             Expect::PlayerXAtLeast(_) => {
                 format!("expected {self} at the end, got player_x={}", o.player_x)
             }
+            Expect::PlayerYAtLeast(_) | Expect::PlayerYAtMost(_) => {
+                format!("expected {self} at the end, got player_y={}", o.player_y)
+            }
             Expect::State(_) => format!("expected {self} at the end, got {}", o.state.name()),
             Expect::NoEvent(e) => {
                 let first = o.events.iter().find(|(seen, _)| *seen == e).map(|x| x.1);
                 format!("expected {self}, first at frame {}", first.unwrap_or(0))
             }
-            Expect::OblatenAtLeast(_) => {
+            Expect::OblatenAtLeast(_) | Expect::Oblaten(_) => {
                 format!("expected {self} at the end, got oblaten={}", o.oblaten)
             }
-            Expect::ScoreAtLeast(_) => format!("expected {self} at the end, got score={}", o.score),
-            Expect::Lives(_) => format!("expected {self} at the end, got lives={}", o.lives),
+            Expect::ScoreAtLeast(_) | Expect::Score(_) => {
+                format!("expected {self} at the end, got score={}", o.score)
+            }
+            Expect::Lives(_) | Expect::LivesAtLeast(_) => {
+                format!("expected {self} at the end, got lives={}", o.lives)
+            }
         })
     }
 }
@@ -287,11 +318,16 @@ impl fmt::Display for Expect {
             Expect::DeathsAtMost(n) => write!(f, "deaths<={n}"),
             Expect::DiesAt(r) => write!(f, "dies_at frames={r}"),
             Expect::PlayerXAtLeast(px) => write!(f, "player_x>={px}"),
+            Expect::PlayerYAtLeast(px) => write!(f, "player_y>={px}"),
+            Expect::PlayerYAtMost(px) => write!(f, "player_y<={px}"),
             Expect::State(s) => write!(f, "state={}", s.name()),
             Expect::NoEvent(e) => write!(f, "no_event={}", e.name()),
             Expect::OblatenAtLeast(n) => write!(f, "oblaten>={n}"),
+            Expect::Oblaten(n) => write!(f, "oblaten={n}"),
             Expect::ScoreAtLeast(n) => write!(f, "score>={n}"),
+            Expect::Score(n) => write!(f, "score={n}"),
             Expect::Lives(n) => write!(f, "lives={n}"),
+            Expect::LivesAtLeast(n) => write!(f, "lives>={n}"),
         }
     }
 }
@@ -542,6 +578,8 @@ pub struct Outcome {
     pub deaths: u32,
     /// Player hitbox left edge at the end, whole level pixels.
     pub player_x: i32,
+    /// Player hitbox top edge at the end, whole level pixels.
+    pub player_y: i32,
     /// Mode at the end.
     pub state: EndState,
     /// Oblaten counter at the end.
@@ -562,6 +600,7 @@ impl Outcome {
             events: Vec::new(),
             deaths: game.deaths(),
             player_x: game.player().x.to_px(),
+            player_y: game.player().y.to_px(),
             state: EndState::of(game.mode()),
             oblaten: u32::from(game.oblaten()),
             score: game.score(),
@@ -587,6 +626,7 @@ impl Outcome {
         self.frames = frame;
         self.deaths = game.deaths();
         self.player_x = game.player().x.to_px();
+        self.player_y = game.player().y.to_px();
         self.state = EndState::of(game.mode());
         self.oblaten = u32::from(game.oblaten());
         self.score = game.score();
@@ -601,6 +641,11 @@ impl Outcome {
         let frames: Vec<String> = self.deaths_at.iter().map(u32::to_string).collect();
         format!("(deaths at frames {})", frames.join(", "))
     }
+}
+
+fn parse_px(s: &str, what: &str) -> Result<i32, String> {
+    s.parse()
+        .map_err(|_| format!("bad {what} `{s}` (expected whole pixels)"))
 }
 
 fn parse_u32(s: &str, what: &str) -> Result<u32, String> {
@@ -699,10 +744,11 @@ RBJ 2
         ));
         let all = "level=x\nsource=solver\nexpect=complete dies_at frames=1..2 deaths<=3 \
                    player_x>=-4 state=dying state=playing state=game_over oblaten>=3 \
-                   score>=100 lives=0\n---\nLRUDBJS 1\n";
+                   score>=100 lives=0 player_y>=-3 player_y<=7 oblaten=4 score=50 \
+                   lives>=1\n---\nLRUDBJS 1\n";
         let r = Replay::parse(all).unwrap();
         assert_eq!(r.seed, 1, "default seed");
-        assert_eq!(r.expects.len(), 10);
+        assert_eq!(r.expects.len(), 15);
         assert_eq!(Replay::parse(&r.format()).unwrap(), r);
     }
 
@@ -798,6 +844,12 @@ RBJ 2
         assert!(e("oblaten>=-1").starts_with("line 3: bad oblaten `-1`"));
         assert!(e("score>=x").starts_with("line 3: bad score `x`"));
         assert!(e("lives=").starts_with("line 3: bad lives ``"));
+        assert!(e("lives>=x").starts_with("line 3: bad lives `x`"));
+        assert!(e("oblaten=x").starts_with("line 3: bad oblaten `x`"));
+        assert!(e("score=-5").starts_with("line 3: bad score `-5`"));
+        assert!(e("player_y>=1.5").starts_with("line 3: bad player_y `1.5`"));
+        assert!(e("player_y<=").starts_with("line 3: bad player_y ``"));
+        assert!(e("player_y=3").starts_with("line 3: not supported yet: `player_y=3`"));
 
         let s = |shots: &str| {
             err(&format!(
@@ -831,6 +883,7 @@ RBJ 2
             ],
             deaths: 2,
             player_x: 1850,
+            player_y: 98,
             state: EndState::StageClear,
             oblaten: 12,
             score: 4600,
@@ -860,6 +913,12 @@ RBJ 2
             "oblaten>=12",
             "score>=4600",
             "lives=2",
+            "player_y>=98",
+            "player_y<=98",
+            "oblaten=12",
+            "score=4600",
+            "lives>=2",
+            "lives>=0",
         ] {
             assert_eq!(check(c, &o), Ok(()), "{c}");
         }
@@ -906,6 +965,26 @@ RBJ 2
             "expected score>=5000 at the end, got score=4600"
         );
         assert_eq!(f("lives=3", &o), "expected lives=3 at the end, got lives=2");
+        assert_eq!(
+            f("player_y>=150", &o),
+            "expected player_y>=150 at the end, got player_y=98"
+        );
+        assert_eq!(
+            f("player_y<=97", &o),
+            "expected player_y<=97 at the end, got player_y=98"
+        );
+        assert_eq!(
+            f("oblaten=11", &o),
+            "expected oblaten=11 at the end, got oblaten=12"
+        );
+        assert_eq!(
+            f("score=4650", &o),
+            "expected score=4650 at the end, got score=4600"
+        );
+        assert_eq!(
+            f("lives>=3", &o),
+            "expected lives>=3 at the end, got lives=2"
+        );
         assert_eq!(
             f("state=game_over", &o),
             "expected state=game_over at the end, got stage_clear"
