@@ -1,0 +1,22 @@
+# QA (E1): stomp the tourist, reach the checkpoint (322), die in the
+# Salzach three times (384, 515, 646; respawns at the checkpoint), game
+# over at 706, START at 846: the stage restarts from its *start* (not the
+# checkpoint) with 3 lives, so walking right for 60 frames is safe (from
+# the checkpoint it would be the pit again).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=3 lives=3 state=playing
+---
+RB 70
+RBJ 20
+R 115
+R 40
+RJ 20
+R 120
+R 120
+R 120
+R 80
+- 140
+S 1
+R 60

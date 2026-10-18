@@ -1,0 +1,69 @@
+# QA (E1): qa_items_iframes_exact's death (no checkpoint yet), respawn
+# at the start at frame 1218, then the same route again. Everything
+# must be back: the Oblate box (Oblate 10), the Mozartkugel box
+# (PowerUp at 1663), the broken brick (BrickBroken 1745), the 5 Oblaten,
+# the oblaten_10 brick, the Zaunerstollen box (+1 life at 2198) and the
+# Selfie-Tourist (Hurt at 2225). Score/Oblaten/lives carried over:
+# 2 x 2850 points, 2 x 9 Oblaten, 4 - 1 + 1 = 4 lives.
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=1 lives=4 oblaten>=18 score>=5700 state=playing
+---
+R 28
+- 30
+J 10      # Oblatenkiste: Oblate
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+- 280     # the Mozartkugel rolls to the wall and back: Zuckerschock
+L 14
+- 30
+J 10      # break the brick
+- 20
+R 60
+RJ 30     # over the wall
+R 111     # through the Oblaten
+- 30
+J 10      # oblaten_10 brick, 3 times
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10      # Zaunerstollen box
+- 30
+RB 60     # catch the Zaunerstollen
+L 33
+- 166
+R 28
+- 30
+J 10      # Oblatenkiste: Oblate
+- 50
+R 30
+- 40
+J 10      # Mozartkugel box
+- 280     # the Mozartkugel rolls to the wall and back: Zuckerschock
+L 14
+- 30
+J 10      # break the brick
+- 20
+R 60
+RJ 30     # over the wall
+R 111     # through the Oblaten
+- 30
+J 10      # oblaten_10 brick, 3 times
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10      # Zaunerstollen box
+- 30
+RB 60     # catch the Zaunerstollen
+- 30
