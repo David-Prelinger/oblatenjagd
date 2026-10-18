@@ -35,3 +35,4 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Title subtitle outline**: give „Salzburg – Bad Ischl" the full `k` outline next time the title goldens change (art-director note).
 - **Stage 1 polish (art-director)**: back-layer façade continuation under the floating Getreidegasse house blocks (cols 125–128, 166–169, 175–178); a back-layer rail line under the Festungsbahn track; move the Do-Re-Mi sign one column left off the fountain plinth.
 - **Sound-of-Music tour group** (M1 stretch, deferred): guide with umbrella + 3 followers on her path 20 frames apart; stomping the guide turns followers into Selfie-Tourists (game-design.md).
+- **Jedermann sign gap**: move the sign to col 215 for a few px of daylight between it and the Dombögen pier (art-director note).
