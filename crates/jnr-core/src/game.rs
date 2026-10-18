@@ -165,6 +165,9 @@ impl Game {
         match self.mode {
             Mode::Playing => self.step_playing(input),
             Mode::Dying { timer } => {
+                // Keep tracking JUMP so a button held across the respawn
+                // is not a new press (and presses here never buffer).
+                self.player.jump_held = input.jump();
                 if timer <= 1 {
                     self.respawn();
                 } else {
@@ -210,7 +213,9 @@ impl Game {
     }
 
     fn respawn(&mut self) {
+        let jump_held = self.player.jump_held;
         self.player = Player::spawn(self.start, &self.tuning.player);
+        self.player.jump_held = jump_held;
         self.camera = Camera::new(
             self.player.center_px(),
             self.map.width_fx().to_px(),

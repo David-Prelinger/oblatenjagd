@@ -345,10 +345,16 @@ pub fn run_scene(root: &Path, args: &[String]) -> ExitCode {
 
 /// A game on `level` with the camera's left edge at `camera_x` (clamped by
 /// the camera) and the player standing where a following camera keeps it.
-pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> Game {
+/// The player's centre is clamped so its hitbox stays inside the level;
+/// the second value is true when that clamp changed it.
+pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> (Game, bool) {
+    let wanted = camera_x.saturating_add(tuning.camera.follow_x);
+    let half_w = tuning.player.hitbox_w / 2;
+    let max = level.width * jnr_core::level::TILE_PX - (tuning.player.hitbox_w - half_w);
+    let player_x = wanted.clamp(half_w, max);
     let mut game = Game::new(level, tuning, 1);
-    game.teleport_player(camera_x + tuning.camera.follow_x);
-    game
+    game.teleport_player(player_x);
+    (game, player_x != wanted)
 }
 
 fn scene(root: &Path, id: &str, x: i32) -> Result<(), String> {
@@ -356,7 +362,15 @@ fn scene(root: &Path, id: &str, x: i32) -> Result<(), String> {
     let tuning = content::tuning(root)?;
     let texts: Texts = content::texts(root)?;
     let ctx = RenderContext::new(jnr_assets::atlas(), &texts, &level);
-    let game = scene_game(&level, &tuning, x);
+    let (game, clamped) = scene_game(&level, &tuning, x);
+    if clamped {
+        eprintln!(
+            "warning: --x {x} puts the player outside the level ({} px wide); \
+             player clamped to x={}",
+            level.width * jnr_core::level::TILE_PX,
+            game.player().x.to_px()
+        );
+    }
     let dir = preview_dir(root, "scenes")?;
     let path = write_with_view_copy(&dir, &format!("{id}_{x}"), &render_image(&game, &ctx))?;
     println!(
@@ -492,10 +506,30 @@ mod tests {
         let root = root();
         let level = content::find_level(&root, "testbed").unwrap();
         let tuning = content::tuning(&root).unwrap();
-        let g = scene_game(&level, &tuning, 600);
+        let (g, clamped) = scene_game(&level, &tuning, 600);
+        assert!(!clamped);
         assert_eq!(g.camera().x, 600);
         assert!(g.player().on_ground);
         // Ground (row 12) under column (600 + follow_x) / 16.
         assert_eq!((g.player().y + g.player().h).to_px(), 12 * 16);
+    }
+
+    #[test]
+    fn scene_beyond_the_level_clamps_the_player_inside() {
+        let root = root();
+        let level = content::find_level(&root, "testbed").unwrap();
+        let tuning = content::tuning(&root).unwrap();
+        let level_px = level.width * jnr_core::level::TILE_PX;
+        for x in [5000, i32::MAX, -500, i32::MIN] {
+            let (g, clamped) = scene_game(&level, &tuning, x);
+            assert!(clamped, "x={x}");
+            let p = g.player();
+            assert!(p.x.to_px() >= 0, "x={x}: player x={}", p.x.to_px());
+            assert!(
+                (p.x + p.w).to_px() <= level_px,
+                "x={x}: player right edge {} > level width {level_px}",
+                (p.x + p.w).to_px()
+            );
+        }
     }
 }

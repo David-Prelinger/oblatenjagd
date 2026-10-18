@@ -1,0 +1,28 @@
+# QA (M0): DOWN alone on a one-way platform does nothing (D-011). Stand on the
+# low one-way (row 9) holding DOWN for 90 frames, then a standing walk-jump
+# reaches the high one-way (row 6), which is only possible from the low
+# platform (from the ground it is out of reach). Walking off the high platform
+# lands on column 87 right next to the hazard pit and stops with the hitbox
+# overhanging the hazard column by ~9 px (supported by solid, not touching the
+# hazard tile: no death). Had DOWN dropped the player, the same inputs end at
+# x~1380 instead.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=1400
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73
+RBJ 35
+RB 38
+RBJ 40    # onto the 5-tile ledge
+RB 29
+RBJ 1     # hop off the ledge
+RB 35     # lands on the low one-way at 475
+D 90      # DOWN alone: must stay on the platform
+RJ 30     # walk-jump up onto the high one-way (lands 607)
+R 78      # walk off its right edge, land at x~1388
+- 60      # slide to a stop at x~1404.9, next to the hazard pit

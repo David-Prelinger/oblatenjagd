@@ -1,0 +1,17 @@
+# QA (M0): jump buffer is 6 frames. Press JUMP at step 295, 6 frames before
+# step 301 (the first step that starts on the ground after the hop lands at 300).
+# The buffered jump must fire at 301 and clear the 6-wide gap.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=900
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20    # over the 3-wide gap, lands at 254
+RB 45
+RBJ 3     # short hop at 271, lands at 300
+RB 21     # steps 274-294 (JUMP released)
+RBJ 40    # press at step 295 -> buffered jump at 301
+RB 30

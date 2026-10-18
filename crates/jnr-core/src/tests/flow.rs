@@ -48,6 +48,58 @@ fn hazard_kills_and_player_respawns() {
     assert_eq!(*g.player(), start);
 }
 
+/// Runs right into the spikes of a small hazard level; returns the game
+/// right after `Died`.
+fn dead_on_spikes() -> Game {
+    let mut g = Game::new(
+        &level(&["..........", "..P.......", "####^^####"]),
+        &tuning(),
+        1,
+    );
+    for _ in 0..60 {
+        if g.step(input("R")).contains(&Event::Died) {
+            return g;
+        }
+    }
+    panic!("never died");
+}
+
+#[test]
+fn jump_held_through_respawn_is_not_a_new_press() {
+    let mut g = dead_on_spikes();
+    // Press during Dying and keep holding through the respawn.
+    let mut events = hold(&mut g, "J", tuning().game.death_frames as u32);
+    assert!(events.contains(&Event::Respawned), "{events:?}");
+    events = hold(&mut g, "J", 30);
+    assert!(!events.contains(&Event::Jumped), "auto-jump: {events:?}");
+    assert!(g.player().on_ground);
+    // Releasing and pressing again jumps.
+    hold(&mut g, "-", 1);
+    assert_eq!(g.step(input("J")), &[Event::Jumped]);
+}
+
+#[test]
+fn jump_tapped_during_dying_is_not_buffered() {
+    let mut g = dead_on_spikes();
+    let frames = tuning().game.death_frames as u32;
+    // Tap JUMP just before the respawn step, then release.
+    hold(&mut g, "-", frames - 2);
+    hold(&mut g, "J", 1);
+    let events = hold(&mut g, "-", 30);
+    assert!(events.contains(&Event::Respawned), "{events:?}");
+    assert!(!events.contains(&Event::Jumped), "buffered: {events:?}");
+}
+
+#[test]
+fn jump_released_during_dying_then_pressed_on_respawn_jumps() {
+    let mut g = dead_on_spikes();
+    let frames = tuning().game.death_frames as u32;
+    hold(&mut g, "J", 5);
+    hold(&mut g, "-", frames - 5);
+    assert_eq!(g.mode(), Mode::Playing);
+    assert_eq!(g.step(input("J")), &[Event::Jumped]);
+}
+
 #[test]
 fn falling_out_of_the_level_kills() {
     let mut g = Game::new(&level(&["..P...", "##....", "......"]), &tuning(), 1);

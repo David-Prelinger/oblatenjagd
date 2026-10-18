@@ -1,0 +1,18 @@
+# QA (M0): jump buffer, press 1 frame early. A short hop (step 271) lands at
+# step 300 just before the 6-wide gap; JUMP pressed in step 300 (still airborne
+# at its start) must fire in step 301 and clear the gap. Without the buffered
+# jump the player runs into the gap and dies (see qa_jump_buffer_7_frames_too_early).
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=900
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20    # over the 3-wide gap, lands at 254
+RB 45
+RBJ 3     # short hop at 271, lands at 300
+RB 26     # steps 274-299 (JUMP released)
+RBJ 40    # press at step 300 -> buffered jump at 301
+RB 30

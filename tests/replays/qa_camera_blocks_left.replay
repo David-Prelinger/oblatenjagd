@@ -1,0 +1,16 @@
+# QA (M0): the camera never scrolls left and its left edge blocks the player.
+# After scrolling to camera x=627, run left for 300 frames (including a jump):
+# the player stays at x=627 (camera edge), the camera stays put.
+level  = testbed
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing player_x>=627
+---
+RB 110
+RBJ 35
+RB 60
+RBJ 20
+RB 73     # camera now at x=627
+LB 200    # run left into the camera edge
+LBJ 40    # jump while pushing left
+LB 60
