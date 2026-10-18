@@ -43,7 +43,7 @@ impl TileKind {
                 Some(TileKind::Solid)
             }
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" => Some(TileKind::OneWay),
-            "hazard" | "salzach_water" => Some(TileKind::Hazard),
+            "hazard" | "salzach_water" | "salzach_water_deep" => Some(TileKind::Hazard),
             _ => None,
         }
     }
@@ -658,6 +658,18 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn salzburg_water_tiles_are_hazards() {
+        assert_eq!(
+            TileKind::from_tile_name("salzach_water"),
+            Some(TileKind::Hazard)
+        );
+        assert_eq!(
+            TileKind::from_tile_name("salzach_water_deep"),
+            Some(TileKind::Hazard)
+        );
+    }
 
     const SMALL: &str = r##"
 [meta]
