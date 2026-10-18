@@ -62,11 +62,15 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
 /// One rendered shot: golden name `<replay>_<shot>` and the image.
 struct Rendered {
     replay: String,
+    shot: String,
     name: String,
     image: Image,
+    /// Expectation/determinism failures of the replay (empty = it passes).
+    replay_failures: Vec<String>,
 }
 
-/// Renders the shots of every replay that has any.
+/// Renders the shots of every replay that has any. Two shots with the same
+/// golden name (`a_b` + `c` and `a` + `b_c`) are an error.
 fn render_all(root: &Path) -> Result<Vec<Rendered>, String> {
     let mut out = Vec::new();
     for path in all_replays(root)? {
@@ -79,12 +83,54 @@ fn render_all(root: &Path) -> Result<Vec<Rendered>, String> {
         for shot in &replay.shots {
             out.push(Rendered {
                 replay: played.name.clone(),
+                shot: shot.name.clone(),
                 name: format!("{}_{}", played.name, shot.name),
                 image: played.image(shot.frame).expect("shot rendered").clone(),
+                replay_failures: played.failures.clone(),
             });
         }
     }
-    Ok(out)
+    let pairs: Vec<(&str, &str)> = out
+        .iter()
+        .map(|r| (r.replay.as_str(), r.shot.as_str()))
+        .collect();
+    match duplicate_name(&pairs) {
+        Some(e) => Err(e),
+        None => Ok(out),
+    }
+}
+
+/// The first golden name `<replay>_<shot>` produced by two (replay, shot)
+/// pairs, as an error message.
+pub fn duplicate_name(pairs: &[(&str, &str)]) -> Option<String> {
+    for (i, (replay, shot)) in pairs.iter().enumerate() {
+        let name = format!("{replay}_{shot}");
+        if let Some((r2, s2)) = pairs[..i]
+            .iter()
+            .find(|(r2, s2)| format!("{r2}_{s2}") == name)
+        {
+            return Some(format!(
+                "golden name `{name}` comes from replay `{r2}` shot `{s2}` and from replay \
+                 `{replay}` shot `{shot}`; rename one of the shots"
+            ));
+        }
+    }
+    None
+}
+
+/// Golden files that no current shot uses.
+pub fn unused_goldens(golden_files: &[PathBuf], used_names: &[&str]) -> Vec<PathBuf> {
+    golden_files
+        .iter()
+        .filter(|p| {
+            let stem = p
+                .file_stem()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or_default();
+            !used_names.contains(&stem.as_ref())
+        })
+        .cloned()
+        .collect()
 }
 
 fn reports_golden_dir(root: &Path) -> PathBuf {
@@ -154,6 +200,15 @@ fn check(root: &Path) -> Result<(bool, String), String> {
             }
         }
     }
+    let golden_files = content::files_with_ext(&content::golden_dir(root), "png")?;
+    let used: Vec<&str> = shots.iter().map(|r| r.name.as_str()).collect();
+    for path in unused_goldens(&golden_files, &used) {
+        failed += 1;
+        text.push_str(&format!(
+            "FAIL unused golden {}; delete it or re-add the shot\n",
+            path.display()
+        ));
+    }
     text.push_str(&format!(
         "goldens: {} compared, {failed} failed\n",
         shots.len()
@@ -183,6 +238,7 @@ fn accept(root: &Path, which: Option<&str>) -> Result<(), String> {
             names.join(", ")
         ));
     }
+    refuse_failing(&chosen)?;
     let dir = content::golden_dir(root);
     fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     for r in chosen {
@@ -191,6 +247,19 @@ fn accept(root: &Path, which: Option<&str>) -> Result<(), String> {
         println!("accepted {}", path.display());
     }
     Ok(())
+}
+
+/// Goldens are only accepted from replays that pass (expectations and determinism).
+fn refuse_failing(chosen: &[&Rendered]) -> Result<(), String> {
+    match chosen.iter().find(|r| !r.replay_failures.is_empty()) {
+        None => Ok(()),
+        Some(r) => Err(format!(
+            "refusing to accept goldens of replay `{}`: it fails ({}); fix it first (`cargo xtask replay {}`)",
+            r.replay,
+            r.replay_failures.join("; "),
+            r.replay
+        )),
+    }
 }
 
 /// Result of a pixel-exact comparison.
@@ -323,6 +392,47 @@ mod tests {
         assert_eq!(diff.get(2, 0), DIFF_RED);
         assert_eq!(diff.get(1, 1), DIFF_RED);
         assert_eq!(diff.get(0, 0), [10, 20, 30, 255]);
+    }
+
+    #[test]
+    fn duplicate_golden_names_are_found() {
+        assert_eq!(duplicate_name(&[("a", "x"), ("a", "y"), ("b", "x")]), None);
+        assert_eq!(
+            duplicate_name(&[("a_b", "c"), ("a", "b_c")]).unwrap(),
+            "golden name `a_b_c` comes from replay `a_b` shot `c` and from replay `a` shot `b_c`; \
+             rename one of the shots"
+        );
+    }
+
+    #[test]
+    fn unused_goldens_are_listed() {
+        let files = [PathBuf::from("g/a_x.png"), PathBuf::from("g/old_y.png")];
+        assert_eq!(
+            unused_goldens(&files, &["a_x", "a_z"]),
+            vec![PathBuf::from("g/old_y.png")]
+        );
+        assert!(unused_goldens(&files, &["a_x", "old_y"]).is_empty());
+    }
+
+    #[test]
+    fn accept_refuses_failing_replays() {
+        let shot = |failures: Vec<String>| Rendered {
+            replay: "r".into(),
+            shot: "s".into(),
+            name: "r_s".into(),
+            image: Image::new(1, 1),
+            replay_failures: failures,
+        };
+        let good = shot(vec![]);
+        let bad = shot(vec!["not deterministic: …".into()]);
+        assert_eq!(refuse_failing(&[&good]), Ok(()));
+        let err = refuse_failing(&[&good, &bad]).unwrap_err();
+        assert!(
+            err.starts_with(
+                "refusing to accept goldens of replay `r`: it fails (not deterministic"
+            ),
+            "{err}"
+        );
     }
 
     #[test]

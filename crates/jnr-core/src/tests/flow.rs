@@ -5,6 +5,15 @@ use crate::rng::Rng;
 use crate::{Fx, Mode};
 
 #[test]
+fn event_names_round_trip() {
+    for (i, e) in Event::ALL.into_iter().enumerate() {
+        assert_eq!(Event::from_name(e.name()), Some(e), "{e:?}");
+        assert!(!Event::ALL[..i].contains(&e), "{e:?} listed twice in ALL");
+    }
+    assert_eq!(Event::from_name("died"), None, "names are case-sensitive");
+}
+
+#[test]
 fn jump_and_land_events() {
     let mut g = Game::new(&flat(20), &tuning(), 1);
     assert!(hold(&mut g, "-", 3).is_empty(), "standing still is quiet");
@@ -269,5 +278,20 @@ fn teleport_player_stands_on_the_topmost_floor() {
     // Over the gap (column 4): the nearest column with a floor (3), centred in it.
     g.teleport_player(4 * 16 + 2);
     assert_eq!((centre(&g), feet(&g)), (3 * 16 + 8, 64));
+    assert_eq!(g.mode(), Mode::Playing);
+}
+
+#[test]
+fn teleport_player_without_a_floor_keeps_its_height() {
+    // Ground only in columns 0-3; column 20 has no floor within 8 columns.
+    let air = ".".repeat(30);
+    let start = format!(".P{}", ".".repeat(28));
+    let ground = format!("####{}", ".".repeat(26));
+    let mut g = Game::new(&level(&[&air, &start, &ground]), &tuning(), 1);
+    let y = g.player().y;
+    g.teleport_player(20 * 16 + 5);
+    assert_eq!(g.player().center_px().0, 20 * 16 + 5, "x as asked");
+    assert_eq!(g.player().y, y, "height kept");
+    assert!(!g.player().on_ground, "nothing to stand on");
     assert_eq!(g.mode(), Mode::Playing);
 }

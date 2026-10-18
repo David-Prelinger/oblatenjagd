@@ -16,6 +16,10 @@ use crate::tuning::Tuning;
 pub const TELEPORT_SEARCH_COLS: i32 = 8;
 
 /// Something that happened during a step (for audio, effects, tests).
+///
+/// Adding a variant: also add it to [`Event::ALL`] and [`Event::name`]
+/// (replay files name events, `no_event=Died`); the `event_names_round_trip`
+/// test checks that every variant in `ALL` round-trips.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Event {
     /// The player started a jump.
@@ -31,7 +35,9 @@ pub enum Event {
 }
 
 impl Event {
-    /// Every event, in declaration order.
+    /// Every event, in declaration order. Keep in sync with the enum: a new
+    /// variant fails the build in [`Event::name`] (exhaustive `match`), which
+    /// is the reminder to list it here too.
     pub const ALL: [Event; 5] = [
         Event::Jumped,
         Event::Landed,

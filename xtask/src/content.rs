@@ -70,11 +70,19 @@ pub fn all_levels(root: &Path) -> Result<Vec<LevelFile>, String> {
 /// The level whose `meta.id` is `id`. Levels that fail to parse are skipped
 /// here (`levels lint` reports them).
 pub fn find_level(root: &Path, id: &str) -> Result<Level, String> {
-    let levels: Vec<Level> = all_levels(root)?
-        .into_iter()
-        .filter_map(|(_, l)| l.ok())
-        .collect();
-    find_by_id(levels, id)
+    let files = all_levels(root)?;
+    let broken = files.iter().filter(|(_, l)| l.is_err()).count();
+    let levels: Vec<Level> = files.into_iter().filter_map(|(_, l)| l.ok()).collect();
+    find_by_id(levels, id).map_err(|e| with_broken_hint(e, broken))
+}
+
+/// Adds a hint about unparsable level files (one of them may be the one asked for).
+pub fn with_broken_hint(msg: String, broken: usize) -> String {
+    if broken == 0 {
+        msg
+    } else {
+        format!("{msg} ({broken} level file(s) failed to parse; run `cargo xtask levels lint`)")
+    }
 }
 
 /// Picks the level with `meta.id == id`; the error lists the known ids.
@@ -136,6 +144,15 @@ mod tests {
         assert_eq!(
             find_by_id(vec![level("a"), level("b")], "c").unwrap_err(),
             "no level with id `c` in content/levels (known: a, b)"
+        );
+    }
+
+    #[test]
+    fn broken_level_hint() {
+        assert_eq!(with_broken_hint("x".into(), 0), "x");
+        assert_eq!(
+            with_broken_hint("x".into(), 2),
+            "x (2 level file(s) failed to parse; run `cargo xtask levels lint`)"
         );
     }
 

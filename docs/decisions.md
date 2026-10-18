@@ -63,5 +63,6 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Replay parsing and expectation checks live in `jnr_core::replay` (pure, unit-tested); loading files, rendering and determinism runs live in xtask.
 - Goldens are named after the replay, not the level: `tests/golden/<replay>_<shot>.png` (several replays may share a level). `golden --accept` re-renders instead of copying earlier actuals; rendering is deterministic, so the result equals the reviewed preview.
 - `levels lint` runs in `check` (L3), not only in `verify`.
+- (after review) A replay must have at least one expectation (runner failure, not a parse error); `replays` fails on an empty `tests/replays/`; goldens without a shot fail; goldens are only accepted from passing replays.
 - The hand-written testbed route exists once, as `tests/replays/testbed_route.replay`; jnr-core's testbed test includes that file.
 

@@ -15,6 +15,10 @@
 //!    d. no `use std::…;`/`use core::…;` statement (also multi-line and
 //!    grouped, e.g. `use std::{fs, time::Instant};`) naming the modules
 //!    `time`, `fs`, `thread`, `env`, `io`, `net`, `process` or `sync` (except `sync::Arc`).
+//! 3. Tooling-only functions ([`TOOLING_ONLY_FNS`], e.g. `Game::teleport_player`)
+//!    are called only from `xtask/` and test code: every `crates/*/src` file
+//!    is scanned (outside test code) for `name(` calls; the definition
+//!    (`fn name(`) is allowed.
 //!
 //! Remaining limits of the source scan (deliberately simple, line-based):
 //! - `//` comments are stripped by cutting at the first `//` on a line, so a
@@ -57,6 +61,9 @@ const NO_DEPENDENTS: [&str; 1] = ["xtask"];
 const FORBIDDEN_IDENTS: [&str; 6] = ["f32", "f64", "HashMap", "HashSet", "Instant", "SystemTime"];
 /// Paths forbidden in `jnr-core` (matched as substrings).
 const FORBIDDEN_PATHS: [&str; 4] = ["std::time", "std::fs", "std::thread", "core::time"];
+/// Functions only xtask and tests may call (rule 3).
+const TOOLING_ONLY_FNS: [&str; 1] = ["teleport_player"];
+
 /// Module names forbidden in `use std::…`/`use core::…` statements.
 const FORBIDDEN_USE_MODULES: [&str; 8] = [
     "time", "fs", "thread", "env", "io", "net", "process", "sync",
@@ -94,6 +101,8 @@ pub fn run(root: &Path) -> Result<(), Vec<String>> {
         }
         Err(e) => problems.push(format!("{}: cannot list: {e}", core_src.display())),
     }
+
+    problems.extend(tooling_only_violations(root));
 
     if problems.is_empty() {
         Ok(())
@@ -257,6 +266,61 @@ pub fn dependency_violations(meta: &Value) -> Vec<String> {
     problems
 }
 
+// ------------------------------------------------------- tooling-only calls
+
+/// Rule 3 over every `crates/*/src` file (test files and test items skipped).
+fn tooling_only_violations(root: &Path) -> Vec<String> {
+    let mut problems = Vec::new();
+    let crates = root.join("crates");
+    let mut dirs: Vec<PathBuf> = match fs::read_dir(&crates) {
+        Ok(entries) => entries.filter_map(|e| e.ok().map(|e| e.path())).collect(),
+        Err(e) => return vec![format!("{}: cannot list: {e}", crates.display())],
+    };
+    dirs.sort();
+    for src in dirs.iter().map(|d| d.join("src")).filter(|s| s.is_dir()) {
+        let files = match rust_files(&src) {
+            Ok(f) => f,
+            Err(e) => {
+                problems.push(format!("{}: cannot list: {e}", src.display()));
+                continue;
+            }
+        };
+        for file in files {
+            if is_test_file(file.strip_prefix(&src).unwrap_or(&file)) {
+                continue;
+            }
+            let rel = file.strip_prefix(root).unwrap_or(&file).display();
+            match fs::read_to_string(&file) {
+                Ok(text) => {
+                    for (line, name) in tooling_only_calls(&text) {
+                        problems.push(format!(
+                            "{rel}:{line}: `{name}` is tooling-only (callable from xtask/ and tests only)"
+                        ));
+                    }
+                }
+                Err(e) => problems.push(format!("{rel}: cannot read: {e}")),
+            }
+        }
+    }
+    problems
+}
+
+/// Calls of [`TOOLING_ONLY_FNS`] outside test code: (line, function name).
+/// The definition `fn name(` is not a call.
+pub fn tooling_only_calls(text: &str) -> Vec<(usize, &'static str)> {
+    let mut found = Vec::new();
+    for (lineno, line) in code_lines(text) {
+        for name in TOOLING_ONLY_FNS {
+            let call = format!("{name}(");
+            let def = format!("fn {name}(");
+            if line.replace(&def, "").contains(&call) {
+                found.push((lineno, name));
+            }
+        }
+    }
+    found
+}
+
 // ----------------------------------------------------------------- source scan
 
 /// All `.rs` files below `dir`, sorted.
@@ -329,14 +393,11 @@ impl Skip {
     }
 }
 
-/// Scans Rust source for forbidden constructs outside `#[cfg(test)]` items.
-/// Returns (1-based line number, description) pairs.
-pub fn scan_source(text: &str) -> Vec<(usize, String)> {
-    let mut found = Vec::new();
+/// The code lines of Rust source outside `#[cfg(test)]` items, with `//`
+/// comments cut off: (1-based line number, code).
+fn code_lines(text: &str) -> Vec<(usize, &str)> {
+    let mut out = Vec::new();
     let mut skip: Option<Skip> = None;
-    // A `use std::…`/`use core::…` statement being collected: (start line, text).
-    let mut pending_use: Option<(usize, String)> = None;
-
     for (idx, raw) in text.lines().enumerate() {
         let lineno = idx + 1;
         let mut line = raw.split("//").next().unwrap_or("");
@@ -373,7 +434,19 @@ pub fn scan_source(text: &str) -> Vec<(usize, String)> {
                 SkipResult::Ended | SkipResult::LeftBlock => line = &line[..pos],
             }
         }
+        out.push((lineno, line));
+    }
+    out
+}
 
+/// Scans Rust source for forbidden constructs outside `#[cfg(test)]` items.
+/// Returns (1-based line number, description) pairs.
+pub fn scan_source(text: &str) -> Vec<(usize, String)> {
+    let mut found = Vec::new();
+    // A `use std::…`/`use core::…` statement being collected: (start line, text).
+    let mut pending_use: Option<(usize, String)> = None;
+
+    for (lineno, line) in code_lines(text) {
         scan_line(line, lineno, &mut found);
 
         if pending_use.is_none() && starts_std_use(line) {
@@ -538,6 +611,28 @@ mod tests {
                 f(4, "`f64`"),
             ]
         );
+    }
+
+    #[test]
+    fn tooling_only_fns_are_flagged_outside_tests() {
+        let src = "\
+pub fn teleport_player(&mut self, x: i32) {}
+fn play(g: &mut Game) {
+    g.teleport_player(10); // a call in normal code
+    // g.teleport_player(1) in a comment is fine
+}
+#[cfg(test)]
+mod tests {
+    fn t(g: &mut Game) { g.teleport_player(3); }
+}
+";
+        assert_eq!(tooling_only_calls(src), vec![(3, "teleport_player")]);
+    }
+
+    #[test]
+    fn real_crates_call_tooling_only_fns_only_from_tests() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        assert_eq!(tooling_only_violations(&root), Vec::<String>::new());
     }
 
     #[test]

@@ -19,7 +19,7 @@ Both write a machine-readable report to `$CARGO_TARGET_DIR/reports/{check,verify
 - `cargo fmt --check`
 - `cargo clippy --workspace --all-targets -- -D warnings`
 - Native build + `cargo build -p jnr-app --target wasm32-unknown-unknown`
-- **Architecture lint**: `jnr-core` and `jnr-render` must not depend on macroquad; no `f32`/`f64` in `jnr-core` (except in tests); no `HashMap` in `jnr-core`; no `std::time`/`std::fs` in core. Implemented as a simple dependency-tree + grep check in xtask.
+- **Architecture lint**: `jnr-core` and `jnr-render` must not depend on macroquad; no `f32`/`f64` in `jnr-core` (except in tests); no `HashMap` in `jnr-core`; no `std::time`/`std::fs` in core; tooling-only functions (`Game::teleport_player`) are called only from xtask and tests. Implemented as a simple dependency-tree + grep check in xtask.
 
 ### L2 Unit tests (check)
 - `cargo test --workspace`: physics, collision, entity behaviour, level parsing, sprite parsing.
@@ -53,15 +53,15 @@ R 40
 
 - Running a replay asserts the expected outcome.
 - Every replay runs twice and compares `state_hash()` → determinism.
-- Implemented (M0): `jnr_core::replay` parses/formats the format and checks expectations; `cargo xtask replay <file|name|--all> [--shots]` runs replays on the real content (level by `meta.id`). Supported expectations: `complete [frames=a..b]`, `deaths=N`, `deaths<=N`, `dies_at frames=a..b`, `player_x>=PX`, `state=<playing|dying|stage_clear>`, `no_event=<Event>`; anything else (e.g. `oblaten>=30` until M1) is a parse error "not supported yet". Frame numbers are `Game::frame()` (frame 0 = before the first step), ranges are inclusive, and every replay runs to its last input before end-state expectations are checked (D-013).
+- Implemented (M0): `jnr_core::replay` parses/formats the format and checks expectations; `cargo xtask replay <file|name|--all> [--shots]` runs replays on the real content (level by `meta.id`). Supported expectations: `complete [frames=a..b]`, `deaths=N`, `deaths<=N`, `dies_at frames=a..b`, `player_x>=PX`, `state=<playing|dying|stage_clear>`, `no_event=<Event>`; anything else (e.g. `oblaten>=30` until M1) is a parse error "not supported yet". A replay without any `expect` fails in the runner ("no expectations"), and the `replays` step fails if `tests/replays/` has no replay files. Frame numbers are `Game::frame()` (frame 0 = before the first step), ranges are inclusive, and every replay runs to its last input before end-state expectations are checked (D-013).
 - Later: the headless runner is also built for `wasm32-wasip1` and run with `wasmtime`, and its hash is compared to the native one → native/web determinism.
 - Physics changes may break replays on purpose; then `cargo xtask solve` re-creates the solver replays, and the change must be explained in the commit message. Human-recorded replays (recorded in VNC with `--record`) are kept as "feel" references.
 
 ### L6 Golden screenshots (verify)
 - The `shots` frames of each replay are rendered headlessly and compared **pixel-exactly** to `tests/golden/<replay>_<shot>.png` (`cargo xtask golden`; the `goldens` verify step).
-- On mismatch: `$CARGO_TARGET_DIR/reports/golden/<name>_{actual,expected,diff}.png` (diff: changed pixels red over the darkened expected image). A missing golden fails too and writes the actual.
+- On mismatch: `$CARGO_TARGET_DIR/reports/golden/<name>_{actual,expected,diff}.png` (diff: changed pixels red over the darkened expected image). A missing golden fails too and writes the actual; so does a file in `tests/golden/` that no current shot uses, and two shots with the same golden name (`a_b` + `c` vs `a` + `b_c`).
 - Review images before accepting: `cargo xtask replay <file> --shots` → `$CARGO_TARGET_DIR/preview/replays/<replay>_<shot>.png` (+ `_x4` copy).
-- `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` re-renders the shots (deterministic, so identical to the reviewed previews) and writes them into `tests/golden/`.
+- `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` re-renders the shots (deterministic, so identical to the reviewed previews) and writes them into `tests/golden/`; it refuses replays that fail their expectations or are not deterministic.
 - Updating goldens: `cargo xtask golden --accept <name>` is allowed only after an `art-director` APPROVED verdict for that change, and the commit message must state it.
 
 ### L7 Visual review (per visual change)

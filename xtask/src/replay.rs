@@ -42,6 +42,9 @@ const FILMSTRIP_EVERY: u32 = 30;
 /// Frames per row of a filmstrip.
 const FILMSTRIP_COLUMNS: u32 = 6;
 
+/// Failure of a replay without any `expect` clause.
+pub const NO_EXPECTATIONS: &str = "no expectations (add an `expect` line)";
+
 /// A replay that was played (once for the outcome, once more for determinism).
 pub struct Played {
     pub name: String,
@@ -101,6 +104,10 @@ pub fn play(root: &Path, path: &Path, render_frames: &[u32]) -> Result<Played, S
     replay.run(&level, &tuning, |g| again.push(g.state_hash()));
 
     let mut failures = replay.check(&outcome);
+    if replay.expects.is_empty() {
+        // `Replay::parse` accepts it, but a replay that checks nothing proves nothing.
+        failures.push(NO_EXPECTATIONS.to_owned());
+    }
     if let Some(f) = first_difference(&hashes, &again) {
         failures.push(format!(
             "not deterministic: state_hash differs between two runs first at frame {f}"
@@ -190,7 +197,14 @@ pub fn run_replay(root: &Path, args: &[String]) -> ExitCode {
 }
 
 /// Runs the replays; returns (all passed, one line per replay plus written shots).
+/// No replay files at all is a failure (the verify step would prove nothing).
 pub fn run_replays(root: &Path, paths: &[PathBuf], shots: bool) -> (bool, String) {
+    if paths.is_empty() {
+        return (
+            false,
+            "FAIL: no replay files in tests/replays (expected at least one *.replay)\n".to_owned(),
+        );
+    }
     let mut ok = true;
     let mut text = String::new();
     for path in paths {
@@ -452,6 +466,28 @@ mod tests {
     }
 
     #[test]
+    fn replay_without_expectations_fails() {
+        let root = root();
+        let dir = crate::target_dir(&root).join("tmp/xtask-replay-test");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("no_expect.replay");
+        fs::write(&path, "level = testbed\nsource = handwritten\n---\nR 10\n").unwrap();
+        let played = play(&root, &path, &[]).unwrap();
+        assert_eq!(played.failures, vec![NO_EXPECTATIONS.to_owned()]);
+        assert_eq!(
+            played.summary(),
+            "FAIL no_expect: no expectations (add an `expect` line)"
+        );
+    }
+
+    #[test]
+    fn no_replay_files_fails() {
+        let (ok, text) = run_replays(&root(), &[], false);
+        assert!(!ok);
+        assert!(text.contains("no replay files"), "{text}");
+    }
+
+    #[test]
     fn scene_puts_camera_at_x_and_player_on_the_ground() {
         let root = root();
         let level = content::find_level(&root, "testbed").unwrap();
@@ -459,7 +495,7 @@ mod tests {
         let g = scene_game(&level, &tuning, 600);
         assert_eq!(g.camera().x, 600);
         assert!(g.player().on_ground);
-        // Ground (row 12) under column (400 + follow_x) / 16.
+        // Ground (row 12) under column (600 + follow_x) / 16.
         assert_eq!((g.player().y + g.player().h).to_px(), 12 * 16);
     }
 }

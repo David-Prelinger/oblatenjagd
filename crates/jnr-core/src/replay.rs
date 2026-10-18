@@ -286,7 +286,8 @@ impl Replay {
         let mut source: Option<Source> = None;
         let mut expects = Vec::new();
         let mut shots: Vec<Shot> = Vec::new();
-        let mut shots_line = 0;
+        // Line of each shot (parallel to `shots`) for errors found after the body.
+        let mut shot_lines: Vec<usize> = Vec::new();
         let mut inputs = Vec::new();
         let mut in_body = false;
 
@@ -356,13 +357,13 @@ impl Replay {
                 }
                 "expect" => expects.extend(Expect::parse_clauses(value).map_err(err)?),
                 "shots" => {
-                    shots_line = line_no;
                     for item in value.split_whitespace() {
                         let shot = parse_shot(item).map_err(err)?;
                         if shots.iter().any(|s| s.name == shot.name) {
                             return Err(err(format!("shot name `{}` used twice", shot.name)));
                         }
                         shots.push(shot);
+                        shot_lines.push(line_no);
                     }
                 }
                 _ => {
@@ -389,9 +390,14 @@ impl Replay {
             inputs,
         };
         let total = replay.frame_count();
-        if let Some(s) = replay.shots.iter().find(|s| s.frame > total) {
+        if let Some((s, line)) = replay
+            .shots
+            .iter()
+            .zip(&shot_lines)
+            .find(|(s, _)| s.frame > total)
+        {
             return Err(ParseError::new(format!(
-                "line {shots_line}: shot `{}` at frame {} is after the last frame ({total})",
+                "line {line}: shot `{}` at frame {} is after the last frame ({total})",
                 s.name, s.frame
             )));
         }
@@ -713,6 +719,11 @@ RBJ 2
             "line 3: shot `late` at frame 11 is after the last frame (10)"
         );
         assert!(Replay::parse("level = a\nsource = solver\nshots = 10:end\n---\nR 10\n").is_ok());
+        // The error names the `shots` line of the late shot, not the last `shots` line.
+        assert_eq!(
+            err("level = a\nsource = solver\nshots = 11:late\nshots = 1:early\n---\nR 10\n"),
+            "line 3: shot `late` at frame 11 is after the last frame (10)"
+        );
     }
 
     fn outcome() -> Outcome {
