@@ -6,22 +6,24 @@
 //! exists. Draw order follows `docs/architecture.md` (backgrounds → tiles →
 //! entities → player → text).
 //!
-//! All lookups (font, texts, tile/player/goal sprites) are resolved once in
-//! a [`RenderContext`]; drawing a frame allocates nothing (the debug overlay
-//! formats its one line of text).
+//! All lookups (font, texts, tile/player/goal sprites, background layers)
+//! are resolved once in a [`RenderContext`]; drawing a frame allocates
+//! nothing (the debug overlay formats its one line of text). Backgrounds
+//! live in [`crate::background`], tiles (incl. autotiling) in
+//! [`crate::tiles`].
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::level::TILE_PX;
 use jnr_core::physics::Aabb;
 use jnr_core::tuning::PlayerTuning;
-use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Level, Mode, Player, Texts, TileKind};
+use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Level, Mode, Player, Texts};
 
-use crate::Framebuffer;
-use crate::blit::{blit_frame, draw_sprite};
+use crate::background::{self, BackgroundLayer};
+use crate::blit::draw_sprite;
 use crate::font::Font;
-use crate::palette::{
-    DIRNDL_RED, LEATHER_DARK, MEADOW, MOZART_YELLOW, OUTLINE, SKY_LIGHT, STONE_GREY, WHITE,
-};
+use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
+use crate::tiles::{self, TileLook};
+use crate::{Framebuffer, HEIGHT};
 
 /// Text key shown centred on the screen in `StageClear` (`content/text/de.toml`).
 pub const STAGE_CLEAR_KEY: &str = "stage.clear";
@@ -37,24 +39,6 @@ pub const TILE_SPRITE_PREFIX: &str = "tile_";
 const DYING_FLASH_FRAMES: u32 = 4;
 /// Height of the grey-box goal pole in pixels.
 const GOAL_POLE_PX: i32 = 8 * TILE_PX;
-/// Height of a grey-box one-way platform in pixels (from the tile top).
-const ONEWAY_PX: i32 = 4;
-
-/// One background layer, far to near.
-///
-/// The hook for parallax: M0 only has the flat sky. Later variants (one per
-/// id in `level.meta.background`, scrolled by a fraction of the camera) are
-/// added here and to [`background_layers`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Layer {
-    /// Flat fill in palette `s`.
-    Sky,
-}
-
-/// The background layers of a game, far to near.
-pub fn background_layers(_game: &Game) -> &'static [Layer] {
-    &[Layer::Sky]
-}
 
 /// Which player animation a state shows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -129,18 +113,23 @@ struct PlayerLook<'a> {
 }
 
 /// Everything the renderer looks up, resolved once: the atlas, the font,
-/// the texts and the tile/player/goal sprites. Build it at startup (and
-/// again when the level changes: tile sprites are indexed by the level's
-/// `tile_names`) and pass it to [`render`] and [`render_debug`].
+/// the texts, the tile/player/goal sprites and the background layers.
+/// Build it at startup (and again when the level changes: tile sprites are
+/// indexed by the level's `tile_names`) and pass it to [`render`] and
+/// [`render_debug`].
 #[derive(Clone, Debug)]
 pub struct RenderContext<'a> {
     atlas: &'a Atlas,
     texts: &'a Texts,
     font: Font,
-    /// `tile_<name>` sprite per [`Level::tile_names`] index (index 0 = no name).
-    tiles: Vec<Option<&'a AtlasSprite>>,
+    /// `tile_<name>` look per [`Level::tile_names`] index (index 0 = no name).
+    tiles: Vec<Option<TileLook<'a>>>,
     player: Option<PlayerLook<'a>>,
     goal: Option<&'a AtlasSprite>,
+    /// Parallax layers, back to front (empty = flat sky only).
+    background: Vec<BackgroundLayer<'a>>,
+    /// True if the first layer hides the whole screen (no flat sky fill).
+    background_covers: bool,
 }
 
 impl<'a> RenderContext<'a> {
@@ -155,7 +144,7 @@ impl<'a> RenderContext<'a> {
                 if n.is_empty() {
                     None
                 } else {
-                    with_anims(&format!("{TILE_SPRITE_PREFIX}{n}"))
+                    TileLook::resolve(atlas, &format!("{TILE_SPRITE_PREFIX}{n}"))
                 }
             })
             .collect();
@@ -177,7 +166,27 @@ impl<'a> RenderContext<'a> {
             tiles,
             player,
             goal: with_anims(GOAL_SPRITE),
+            background: Vec::new(),
+            background_covers: false,
         }
+    }
+
+    /// Sets the parallax background: `(sprite name, scroll factor in
+    /// sixteenths)` pairs, back to front (e.g. `[("bg_sky_salzburg", 0),
+    /// ("bg_untersberg", 3)]`). Sprites the atlas lacks are skipped; without
+    /// layers the flat sky is drawn. See [`crate::background`] for placement.
+    pub fn with_background(mut self, layers: &[(&str, u32)]) -> RenderContext<'a> {
+        self.background = background::resolve(self.atlas, layers);
+        self.background_covers = self
+            .background
+            .first()
+            .is_some_and(|l| background::covers_screen(self.atlas, l, HEIGHT as u32));
+        self
+    }
+
+    /// The resolved background layers, back to front.
+    pub fn background(&self) -> &[BackgroundLayer<'a>] {
+        &self.background
     }
 
     /// The atlas everything is drawn from.
@@ -205,10 +214,16 @@ impl<'a> RenderContext<'a> {
 /// context give identical pixels.
 pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let cam = game.camera();
-    for &layer in background_layers(game) {
-        draw_layer(layer, fb);
-    }
-    draw_tiles(game, ctx, fb, cam);
+    let (atlas, tick) = (ctx.atlas, game.frame());
+    background::draw(
+        fb,
+        atlas,
+        &ctx.background,
+        ctx.background_covers,
+        cam.x,
+        tick,
+    );
+    tiles::draw_tiles(fb, atlas, &ctx.tiles, game.level(), cam, tick);
     draw_goals(game, ctx, fb, cam);
     draw_player(game, ctx, fb, cam);
     if game.mode() == Mode::StageClear {
@@ -234,48 +249,6 @@ pub fn render_debug(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let text = format!("F:{} X:{} Y:{}", game.frame(), p.x.to_px(), p.y.to_px());
     ctx.font
         .draw_text(fb, ctx.atlas, &text, 2, 2, WHITE, Some(OUTLINE));
-}
-
-fn draw_layer(layer: Layer, fb: &mut Framebuffer) {
-    match layer {
-        Layer::Sky => fb.clear(SKY_LIGHT),
-    }
-}
-
-/// Tiles inside the camera view: the `tile_<name>` sprite if the atlas has
-/// it, else a grey-box shape per [`TileKind`].
-fn draw_tiles(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
-    let level = game.level();
-    let col0 = cam.x.div_euclid(TILE_PX).max(0);
-    let col1 = (cam.x + fb.w as i32 - 1)
-        .div_euclid(TILE_PX)
-        .min(level.width - 1);
-    let row0 = cam.y.div_euclid(TILE_PX).max(0);
-    let row1 = (cam.y + fb.h as i32 - 1)
-        .div_euclid(TILE_PX)
-        .min(level.height - 1);
-    for row in row0..=row1 {
-        for col in col0..=col1 {
-            let Some(tile) = level.tile(col, row) else {
-                continue;
-            };
-            let x = col * TILE_PX - cam.x;
-            let y = row * TILE_PX - cam.y;
-            match ctx.tiles.get(tile.name as usize).copied().flatten() {
-                Some(s) => {
-                    let anim = &s.anims[0];
-                    let rect = anim.frame(anim.frame_index_at(game.frame()), false);
-                    blit_frame(fb, ctx.atlas, rect, x, y, false);
-                }
-                None => match tile.kind {
-                    TileKind::Empty => {}
-                    TileKind::Solid => fb.fill_rect(x, y, TILE_PX, TILE_PX, STONE_GREY),
-                    TileKind::OneWay => fb.fill_rect(x, y, TILE_PX, ONEWAY_PX, LEATHER_DARK),
-                    TileKind::Hazard => fb.fill_rect(x, y, TILE_PX, TILE_PX, DIRNDL_RED),
-                },
-            }
-        }
-    }
 }
 
 /// Goals: sprite `goal` with its origin at the bottom centre of the goal
@@ -345,7 +318,8 @@ fn outline_aabb(fb: &mut Framebuffer, b: &Aabb, cam: Camera, rgba: u32) {
 mod tests {
     use super::*;
     use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
-    use crate::testutil::{self, A, B, image};
+    use crate::palette::{LEATHER_DARK, SKY_LIGHT, STONE_GREY};
+    use crate::testutil::{self, A, B, C, image};
     use jnr_core::{InputFrame, Tuning};
 
     fn tuning() -> Tuning {
@@ -447,6 +421,55 @@ mod tests {
         assert_eq!(fb.get(0, 150), Some(B));
         // Hazards have no sprite here and stay grey-box.
         assert_eq!(fb.get(8 * 16 + 5, 150), Some(DIRNDL_RED));
+    }
+
+    #[test]
+    fn background_layers_replace_the_flat_sky_behind_the_tiles() {
+        // 8x180 opaque sky column `c`, a 4x2 strip `ab..` on top of it.
+        let sky: Vec<&str> = vec!["cccccccc"; HEIGHT];
+        let atlas = testutil::atlas(&[
+            testutil::sprite(
+                "bg_sky",
+                (0, 0),
+                false,
+                vec![("idle", 0, vec![image(&sky)])],
+            ),
+            testutil::sprite(
+                "bg_hills",
+                (0, 0),
+                false,
+                vec![("idle", 0, vec![image(&["ab..", "ab.."])])],
+            ),
+        ]);
+        let texts = texts();
+        let game = tiny_game();
+        let ctx = RenderContext::new(&atlas, &texts, game.level()).with_background(&[
+            ("bg_sky", 0),
+            ("bg_missing", 2),
+            ("bg_hills", 8),
+        ]);
+        assert_eq!(ctx.background().len(), 2);
+        assert!(ctx.background_covers);
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(fb.get(0, 0), Some(C), "sky layer instead of the flat sky");
+        assert!(!fb.pixels.contains(&SKY_LIGHT));
+        // The strip is bottom-aligned (rows 178, 179) and below the level's
+        // 160 px, so it shows; its transparent columns show the sky layer.
+        assert_eq!(fb.get(4, 179), Some(A));
+        assert_eq!(fb.get(5, 178), Some(B));
+        assert_eq!(fb.get(6, 179), Some(C));
+        // Tiles are drawn over the background (solid ground row y 144..160).
+        assert_eq!(fb.get(0, 150), Some(STONE_GREY));
+
+        // Only a partial layer: the flat sky stays behind it.
+        let ctx =
+            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8)]);
+        assert!(!ctx.background_covers);
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(fb.get(0, 0), Some(SKY_LIGHT));
+        assert_eq!(fb.get(0, 179), Some(A));
     }
 
     #[test]

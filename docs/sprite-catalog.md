@@ -63,6 +63,6 @@ Hurt/invulnerability and the 30-frame transformation are drawn by the engine (bl
 
 ## Backgrounds (group `bg`, produced by generators or hand-made)
 
-Parallax layers, each tileable horizontally (left and right edges match), ≤ 640 px wide, ≤ 180 px high, origin 0,0. The level's `[meta].background` lists them back to front with a scroll factor (engine format).
+Parallax layers, each tileable horizontally (left and right edges match; lint `bg-tileable`), ≤ 640 px wide, ≤ 180 px high (lint `bg-size`), origin 0,0, first animation used. The level's `[meta].background` lists them back to front with a scroll factor in sixteenths (engine: `RenderContext::with_background`). Layers are drawn **bottom-aligned to the screen bottom** and do not move vertically, so a layer's interesting part must sit high enough above the playfield ground (≈ 32–48 px at the bottom are usually hidden by ground tiles). Drafts: `art/generators/salzburg_*.toml`.
 
 `bg_sky_salzburg` (factor 0) · `bg_untersberg` (far mountains) · `bg_festung` (Hohensalzburg on its hill, mid) · `bg_rooftops` (old-town roofs and domes, near).

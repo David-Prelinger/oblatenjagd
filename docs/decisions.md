@@ -102,3 +102,10 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-020 Sprite catalog and autotiling (M1)
 - `docs/sprite-catalog.md` is the contract between art and engine: sprite names, sizes, origins, animation names. The engine falls back to grey boxes for missing sprites, so art and code proceed in parallel.
 - Autotiling without a new artkit header: a tile sprite with a 16-frame animation `auto` is drawn with frame = 4-neighbour mask (N=1, E=2, S=4, W=8; level edge counts as same). The `tileset` header stays unsupported.
+
+## D-021 Parallax layers and procedural backgrounds (M1, engine)
+- Background layers are `(sprite, factor in sixteenths)` pairs, back to front, set on the `RenderContext` (`with_background`); the level format provides the list later. Each layer is tiled horizontally from `-((camera.x * factor / 16) mod width)` and **bottom-aligned to the screen bottom**, with no vertical parallax for now (simple and predictable for art; revisit if levels scroll a lot vertically). Integer sixteenths keep the renderer free of floats.
+- The flat sky fill stays behind the layers unless the first layer is fully opaque and at least screen-tall (precomputed once), so a partial layer list never shows stale framebuffer pixels.
+- Generators live in `jnr-artkit::generators` (the requested `gen` name is a reserved keyword in Rust 2024) and turn `art/generators/*.toml` entries into ordinary `SpriteSource`s, so lints, compile, atlas and previews treat generated and hand-made sprites the same. Params are parsed with `serde` + `toml` (`Spanned` values give `file:line:col` errors); this makes `serde`/`toml` default dependencies of `jnr-artkit` (pure, wasm-safe, already used by `jnr-core`).
+- Generated sprites are compiled into the game atlas like all art (the four Stage 1 layers add ~0.9 MB of raw RGBA to the embedded atlas).
+- Autotile masks are computed from the live level while drawing (4 lookups per visible tile), not cached in the `RenderContext`, so tiles that change during play (bricks) stay correct; only the per-tile-name look is precomputed.
