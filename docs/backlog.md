@@ -29,7 +29,6 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Popup overlap**: „+1 Leben" and the popped Oblate's score popup can overlap at the same x when the 100th Oblate comes from a box — check in a shot.
 - **Getreidegasse block sizes**: keep façade blocks ~4–5 storeys × 3–4 windows, or break tall ones with an Erker/guild sign (art-director note for the level).
 - **Geburtshaus vs Resi**: include a Stage 1 shot of Resi in front of the plain `Y` wall (her blond hair vs the yellow façade) in the level art review.
-- **wasm-smoke frozen-frame check**: compare two screenshots at different virtual times (prompt blink) so a frozen frame can't pass (E6 code review).
 - **Title subtitle outline**: give „Salzburg – Bad Ischl" the full `k` outline next time the title goldens change (art-director note).
 - **Stage 1 polish (art-director)**: back-layer façade continuation under the floating Getreidegasse house blocks (cols 125–128, 166–169, 175–178); a back-layer rail line under the Festungsbahn track; move the Do-Re-Mi sign one column left off the fountain plinth.
 - **Sound-of-Music tour group** (M1 stretch, deferred): guide with umbrella + 3 followers on her path 20 frames apart; stomping the guide turns followers into Selfie-Tourists (game-design.md).

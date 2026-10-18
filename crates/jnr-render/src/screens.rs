@@ -87,7 +87,8 @@ pub const TEXT_KEYS: [&str; 20] = [
 const LOGO_Y: i32 = 24;
 const TITLE_NAME_Y: i32 = 20;
 const SUBTITLE_Y: i32 = 84;
-const PRESS_START_Y: i32 = 128;
+/// Top of the title prompt line (also the band `cargo xtask wasm-smoke` watches).
+pub const PRESS_START_Y: i32 = 128;
 const INTRO_TITLE_Y: i32 = 64;
 const INTRO_TAGLINE_Y: i32 = 80;
 const INTRO_LIVES_Y: i32 = 112;
