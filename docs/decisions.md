@@ -191,3 +191,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Salzburg landmarks get prop sprites instead of plain stone blocks: `pegasus` (Pegasus statue on the Mirabell fountain plinth), `fountain_water` (decorative basin water surface, not a hazard), `zwerg` (Zwergerlgarten dwarf statue, 16×16), `residenzbrunnen` (Residenzbrunnen tiers), `geburtshaus` (yellow `Y` façade of Mozart's birthplace, Getreidegasse 9). Collision stays with tiles.
 - Props take an optional `layer = "back"` (drawn after the parallax, before tiles — for façades behind the street) or the default front layer (after tiles, behind the player).
 - Stage 1 shrinks to 262 columns so the camera clamps at the goal and the Maibaum crown sits clear of the HUD (D-029).
+
+## D-032 Stage 1 review: Tauben away from the Festungsbahn ride (game-designer, M1)
+- Section 5's two Tauben no longer sit or fly "on the ramparts": one `taube_sitting` sits on the head of the Sphaera statue (Kapitelplatz), one `taube` flies in at grandstand head height (spawn ~col 250, row 9). Reason: Tauben activate a screen ahead and drift left at 0.75 px/frame, so rampart pigeons arrive exactly at the car's top station and hit the rider (a Normal Resi dies on the ride that is meant to introduce the moving platform with "no death possible"). Rule: no enemy may reach the Festungsbahn track or the jump to the Maibaum.
+- Taube placement rule for all stages: a walking or running player meets a Taube ~7–11 columns left of its spawn; levels place first encounters by that meeting point, not by the spawn column.
+- Two Mozartkugel-Verkäufer in one stretch keep ≥ 10 columns apart so their landing zones don't overlap into a crossfire.
+- The Wurstkranz stays reachable with any held jump off the rampart or the car (first stage, medium difficulty: the finale is a celebration, not a skill wall); walking off scores 2000.
