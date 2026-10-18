@@ -177,7 +177,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - The stairs under a Festungsbahn make the car optional: it's the comfortable ride, climbing is a valid alternative (accepted).
 
 ## D-029 Maibaum vs HUD (orchestrator, M1)
-- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 130–184), never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
+- The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 139–182, measured: the OBLATEN shadow ends at 138, LEBEN starts at 184) and must not touch any HUD pixel, never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
 
 ## D-030 Salzburg level follow-ups (orchestrator, M1)
 - **Festungsbahn waits for its rider**: the car waits at its lower end until the player stands on it, then travels up, waits at the top, travels back down and waits again for the next rider. (Replaces the free-running cycle from activation; makes boarding a calm, readable moment and removes the 2-frame boarding window the solver measured.)
@@ -186,3 +186,8 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - `min_jump_window` in level meta is enforced by the `solver` verify step.
 - Stage 1 is 264 × 17 tiles (3 extra empty rows on top so the camera can follow the Wurstkranz popup clear of the HUD, D-029). A good run is ~30–60 s; explorers take longer — game-design.md's "90–150 s" was too high for the level length.
 - The checkpoint's own board text replaces a separate checkpoint sign (no duplicate „Bus 150 / auch voll").
+
+## D-031 Landmark props and back-layer props (orchestrator, M1)
+- Salzburg landmarks get prop sprites instead of plain stone blocks: `pegasus` (Pegasus statue on the Mirabell fountain plinth), `fountain_water` (decorative basin water surface, not a hazard), `zwerg` (Zwergerlgarten dwarf statue, 16×16), `residenzbrunnen` (Residenzbrunnen tiers), `geburtshaus` (yellow `Y` façade of Mozart's birthplace, Getreidegasse 9). Collision stays with tiles.
+- Props take an optional `layer = "back"` (drawn after the parallax, before tiles — for façades behind the street) or the default front layer (after tiles, behind the player).
+- Stage 1 shrinks to 262 columns so the camera clamps at the goal and the Maibaum crown sits clear of the HUD (D-029).

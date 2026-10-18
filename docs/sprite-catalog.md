@@ -55,6 +55,11 @@ Hurt/invulnerability and the 30-frame transformation are drawn by the engine (bl
 | `sign_ortsende` | ≤ 80×28 | bottom centre | `idle` held — white board; the engine draws the text, then the red diagonal bar sprite `sign_ortsende_bar` (same size) over it |
 | `festungsbahn` (funicular car) | 48×24 | 24,24 | `idle` held |
 | `sphaera` (Kapitelplatz gold ball with the man on top) | ≤ 32×48 | bottom centre | `idle` held — drawn as a `prop` over 2×2 solid `stone` tiles; the statue on top stands on a 1×1 tile |
+| `pegasus` (Mirabell Pegasus statue) | ≤ 32×40 | bottom centre | `idle` held — stands on the fountain plinth |
+| `fountain_water` (basin water surface) | 48×8 | bottom centre | `idle` 4f/12t loop — decorative, not a hazard |
+| `zwerg` (Zwergerlgarten dwarf statue) | 16×16 | bottom centre | `idle` held — stands on a 1×1 stone |
+| `residenzbrunnen` (Residenzbrunnen tiers) | ≤ 80×64 | bottom centre | `idle` 2f/12t loop (water) — over the 5-wide fountain tiles |
+| `geburtshaus` (Mozart's birthplace façade, yellow) | ≤ 80×112 | bottom centre | `idle` held — `layer = "back"` prop behind the street (only playfield set piece with a `Y` façade, art-style §7) |
 
 ## UI (group `ui`)
 
