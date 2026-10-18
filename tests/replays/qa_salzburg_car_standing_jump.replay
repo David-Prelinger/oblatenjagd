@@ -1,0 +1,58 @@
+# A standing/walking held jump off the Festungsbahn car does NOT reach the
+# Wurstkranz (D-038, correcting D-032/D-035). Ride the car up, stand on it
+# at the top station (x 3946, feet y 152), then hold RIGHT + JUMP: she
+# touches the pole at frame 1739 with her feet 74 px above its base ->
+# 800 (4-6 tiles). 8700 before the touch + 800; the replay ends during the
+# slide, before the time-bonus tally. (Was bug_salzburg_wurstkranz_from_car;
+# the running jump is qa_salzburg_wurstkranz_running_jump.)
+level  = salzburg
+source = handwritten
+expect = event=LevelComplete deaths=0 state=stage_clear
+expect = score=9500
+---
+# solver route, frames 0-1479
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 2
+RBJ 36
+RB 29
+RBJ 36
+RB 24
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 36
+RB 6
+RBJ 20
+RB 72
+RBJ 36
+RB 18
+RBJ 33
+RB 91
+RBJ 36
+RB 40
+RBJ 36
+RB 68
+RBJ 6
+RB 18
+RBJ 36
+RB 18
+RBJ 34
+RB 8
+RBJ 12
+RB 42       # boards the car at the lower station
+L 6
+- 152       # standing on the car at the top station (x 3946)
+RJ 30       # held jump towards the Maibaum, no run
+R 60        # touch at 1739 at 74 px: 800

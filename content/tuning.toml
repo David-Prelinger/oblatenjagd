@@ -111,8 +111,8 @@ festungsbahn_travel = 150       # frames from one end point to the other (straig
 festungsbahn_wait = 60          # frames standing at the upper end (at the lower end it waits for its rider, D-030)
 
 [goal]
-zone_heights = [32, 64, 96, 128]          # px of the feet above the Maibaum base at the touch: 2/4/6/8 tiles
-zone_scores = [100, 400, 800, 2000, 5000] # per zone; the last one (>= 8 tiles) is the Wurstkranz
+zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)
+zone_scores = [100, 400, 800, 2000, 5000] # per zone; the last one (>= 7 tiles) is the Wurstkranz
 pole_offset = 2           # px: Resi's hitbox edge to the pole centre while sliding / hopping off
 slide_speed = 512         # 2 px/frame down the pole
 hop_speed = 512           # 2 px/frame up when hopping off at the base (gravity as the player's)

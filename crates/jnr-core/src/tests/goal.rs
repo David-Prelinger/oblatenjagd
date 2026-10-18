@@ -48,7 +48,8 @@ fn frames_in(g: &mut Game, p: ClearPhase) -> u32 {
 }
 
 #[test]
-fn height_zones_every_two_tiles_up_to_the_wurstkranz() {
+fn height_zones_up_to_the_wurstkranz_at_seven_tiles() {
+    // 2/4/6 tiles, then the Wurstkranz at 7 tiles (D-038).
     let t = tuning().goal;
     let cases = [
         (0, 100, false),
@@ -58,8 +59,9 @@ fn height_zones_every_two_tiles_up_to_the_wurstkranz() {
         (64, 800, false),
         (95, 800, false),
         (96, 2000, false),
-        (127, 2000, false),
-        (128, 5000, true),
+        (111, 2000, false),
+        (112, 5000, true),
+        (127, 5000, true),
         (500, 5000, true),
     ];
     for (h, points, wurst) in cases {
