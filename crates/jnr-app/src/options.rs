@@ -5,6 +5,8 @@
 
 use std::path::{Path, PathBuf};
 
+use jnr_core::InputFrame;
+
 /// The levels embedded in the binary (so wasm needs no file access), as
 /// `(id, source)`. The id must equal the level's `[meta] id`.
 /// To add a level: append a line here.
@@ -37,6 +39,36 @@ pub struct Options {
     pub exit_after: Option<u32>,
     /// `(frame, path)`: write the framebuffer as PNG after that simulation frame.
     pub screenshots: Vec<(u32, PathBuf)>,
+    /// Where the inputs come from (keyboard, or a replay via `--replay`).
+    pub input: InputSource,
+    /// `--record`: write the played inputs as a replay to this file on exit.
+    pub record: Option<PathBuf>,
+}
+
+/// Where the per-frame input comes from.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum InputSource {
+    /// The keys held right now.
+    Keyboard,
+    /// One input per step, from a replay file; after the last one, nothing
+    /// is held. The keyboard is ignored (except Escape, which quits).
+    /// Native only (`--replay`); wasm has no command line.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+    Replay(Vec<InputFrame>),
+}
+
+impl InputSource {
+    /// The input for the step that turns frame `frame` into `frame + 1`;
+    /// `keyboard` is what the keyboard holds right now.
+    pub fn input_for(&self, frame: u32, keyboard: InputFrame) -> InputFrame {
+        match self {
+            InputSource::Keyboard => keyboard,
+            InputSource::Replay(frames) => frames
+                .get(frame as usize)
+                .copied()
+                .unwrap_or(InputFrame::NONE),
+        }
+    }
 }
 
 impl Default for Options {
@@ -47,6 +79,8 @@ impl Default for Options {
             scale: 4,
             exit_after: None,
             screenshots: Vec::new(),
+            input: InputSource::Keyboard,
+            record: None,
         }
     }
 }
@@ -125,6 +159,22 @@ mod tests {
         );
         assert!(!opts.actions_after(119).exit);
         assert!(opts.actions_after(120).exit);
+    }
+
+    #[test]
+    fn keyboard_source_passes_the_keys_through() {
+        let src = InputSource::Keyboard;
+        assert_eq!(src.input_for(0, InputFrame::JUMP), InputFrame::JUMP);
+        assert_eq!(src.input_for(999, InputFrame::NONE), InputFrame::NONE);
+    }
+
+    #[test]
+    fn replay_source_ignores_the_keyboard_and_ends_empty() {
+        let src = InputSource::Replay(vec![InputFrame::RIGHT, InputFrame::JUMP]);
+        assert_eq!(src.input_for(0, InputFrame::LEFT), InputFrame::RIGHT);
+        assert_eq!(src.input_for(1, InputFrame::LEFT), InputFrame::JUMP);
+        assert_eq!(src.input_for(2, InputFrame::LEFT), InputFrame::NONE);
+        assert_eq!(src.input_for(u32::MAX, InputFrame::LEFT), InputFrame::NONE);
     }
 
     #[test]

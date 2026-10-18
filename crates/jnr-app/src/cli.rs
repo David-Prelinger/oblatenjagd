@@ -3,9 +3,10 @@
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
+use jnr_core::Replay;
 use jnr_render::Framebuffer;
 
-use crate::options::{LEVELS, Options, level_source};
+use crate::options::{InputSource, LEVELS, Options, level_source};
 
 pub const HELP: &str = "\
 jnr-app: Oblatenjagd
@@ -19,10 +20,16 @@ Options:
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
   --screenshot-at <frame>:<png> write the 320x180 framebuffer after that simulation
                                 frame (0 = start); repeatable
+  --replay <file>               play a replay file: its level and seed are used,
+                                the keyboard is ignored (Escape quits); after the
+                                last input nothing is held
+  --record <file>               on exit (window close, Escape, --exit-after) write
+                                the played inputs as a replay with expectations
+                                (directories are created); not with --replay
   -h, --help                    show this help
 
-Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, F1 debug overlay,
-F12 (debug builds) save the framebuffer to $CARGO_TARGET_DIR/preview/f12_<frame>.png.
+Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, Escape quit,
+F1 debug overlay, F12 (debug builds) save the framebuffer to $CARGO_TARGET_DIR/preview/f12_<frame>.png.
 ";
 
 /// Largest accepted `--scale`.
@@ -35,9 +42,22 @@ pub enum Command {
     Help,
 }
 
-/// Parses the arguments (without the program name).
+/// Parses the arguments (without the program name); reads the `--replay` file.
 pub fn parse_args(args: &[String]) -> Result<Command, String> {
+    parse_args_with(args, |path| {
+        std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))
+    })
+}
+
+/// [`parse_args`] with the file reader passed in (for tests).
+pub fn parse_args_with(
+    args: &[String],
+    read: impl Fn(&Path) -> Result<String, String>,
+) -> Result<Command, String> {
     let mut opts = Options::default();
+    let mut level_given = false;
+    let mut seed_given = false;
+    let mut replay_path: Option<PathBuf> = None;
     let mut it = args.iter();
     while let Some(flag) = it.next() {
         let mut value = || {
@@ -56,8 +76,14 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
                     ));
                 }
                 opts.level = id.to_owned();
+                level_given = true;
             }
-            "--seed" => opts.seed = number(flag, value()?)?,
+            "--seed" => {
+                opts.seed = number(flag, value()?)?;
+                seed_given = true;
+            }
+            "--replay" => replay_path = Some(PathBuf::from(value()?)),
+            "--record" => opts.record = Some(PathBuf::from(value()?)),
             "--scale" => {
                 let scale: u32 = number(flag, value()?)?;
                 if !(1..=MAX_SCALE).contains(&scale) {
@@ -79,6 +105,36 @@ pub fn parse_args(args: &[String]) -> Result<Command, String> {
             }
             other => return Err(format!("unknown argument `{other}` (see --help)")),
         }
+    }
+    if let Some(path) = replay_path {
+        if opts.record.is_some() {
+            return Err("--replay and --record cannot be combined".to_owned());
+        }
+        let replay =
+            Replay::parse(&read(&path)?).map_err(|e| format!("replay {}: {e}", path.display()))?;
+        if level_source(&replay.level).is_none() {
+            return Err(format!(
+                "replay {}: level `{}` is not embedded (embedded levels: {})",
+                path.display(),
+                replay.level,
+                level_ids()
+            ));
+        }
+        if level_given && opts.level != replay.level {
+            return Err(format!(
+                "--level {} conflicts with the replay's level `{}`",
+                opts.level, replay.level
+            ));
+        }
+        if seed_given && opts.seed != replay.seed {
+            return Err(format!(
+                "--seed {} conflicts with the replay's seed {}",
+                opts.seed, replay.seed
+            ));
+        }
+        opts.level = replay.level.clone();
+        opts.seed = replay.seed;
+        opts.input = InputSource::Replay(replay.frames().collect());
     }
     if let Some(exit) = opts.exit_after {
         if let Some((frame, path)) = opts.screenshots.iter().find(|(f, _)| *f > exit) {
@@ -141,10 +197,25 @@ pub fn save_png(fb: &Framebuffer, path: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jnr_core::InputFrame;
+
+    /// A small replay file as `--replay` reads it (any path).
+    const REPLAY: &str =
+        "level = testbed\nseed = 7\nsource = human\nexpect = deaths=0\n---\nR 2\nRJ 1\n";
 
     fn parse(args: &[&str]) -> Result<Command, String> {
+        parse_with(args, REPLAY)
+    }
+
+    fn parse_with(args: &[&str], replay_text: &str) -> Result<Command, String> {
         let args: Vec<String> = args.iter().map(|s| (*s).to_owned()).collect();
-        parse_args(&args)
+        parse_args_with(&args, |path| {
+            if path == Path::new("missing.replay") {
+                Err("missing.replay: not found".to_owned())
+            } else {
+                Ok(replay_text.to_owned())
+            }
+        })
     }
 
     fn run(args: &[&str]) -> Options {
@@ -190,6 +261,8 @@ mod tests {
                 scale: 2,
                 exit_after: Some(120),
                 screenshots: vec![(60, "/tmp/a.png".into()), (0, "b.png".into())],
+                input: InputSource::Keyboard,
+                record: None,
             }
         );
     }
@@ -215,6 +288,52 @@ mod tests {
             error(&["--exit-after", "10", "--screenshot-at", "11:a.png"])
                 .contains("never be taken")
         );
+    }
+
+    #[test]
+    fn replay_supplies_level_seed_and_inputs() {
+        let opts = run(&["--replay", "r.replay", "--exit-after", "5"]);
+        assert_eq!(opts.level, "testbed");
+        assert_eq!(opts.seed, 7);
+        let (r, rj) = (InputFrame::RIGHT, InputFrame::RIGHT.with(InputFrame::JUMP));
+        assert_eq!(opts.input, InputSource::Replay(vec![r, r, rj]));
+        assert_eq!(opts.exit_after, Some(5));
+        // Matching --level/--seed are fine.
+        let same = run(&["--level", "testbed", "--seed", "7", "--replay", "r.replay"]);
+        assert_eq!(same.input, opts.input);
+    }
+
+    #[test]
+    fn replay_errors_are_reported() {
+        assert!(error(&["--replay", "missing.replay"]).contains("not found"));
+        let unknown = "level = atlantis\nsource = human\n---\n";
+        let e = match parse_with(&["--replay", "x.replay"], unknown) {
+            Err(e) => e,
+            other => panic!("{other:?}"),
+        };
+        assert!(e.contains("`atlantis` is not embedded"), "{e}");
+        let e = match parse_with(&["--replay", "x.replay"], "level = testbed\n") {
+            Err(e) => e,
+            other => panic!("{other:?}"),
+        };
+        assert!(e.starts_with("replay x.replay:"), "{e}");
+        assert!(error(&["--seed", "1", "--replay", "r.replay"]).contains("conflicts"));
+        assert!(
+            error(&["--replay", "r.replay", "--record", "out.replay"])
+                .contains("cannot be combined")
+        );
+        assert!(
+            error(&["--record", "out.replay", "--replay", "r.replay"])
+                .contains("cannot be combined")
+        );
+    }
+
+    #[test]
+    fn record_takes_a_path_and_keeps_the_keyboard() {
+        let opts = run(&["--record", "/tmp/x/run.replay"]);
+        assert_eq!(opts.record, Some(PathBuf::from("/tmp/x/run.replay")));
+        assert_eq!(opts.input, InputSource::Keyboard);
+        assert!(error(&["--record"]).contains("needs a value"));
     }
 
     #[test]
