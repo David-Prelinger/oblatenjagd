@@ -89,7 +89,7 @@ mod tests {
         Tuning::parse(crate::TUNING_SRC).expect("parses")
     }
 
-    /// Plays `inputs` like the app does (starting in play, as a `--replay`
+    /// Plays `inputs` on the testbed like the app does (starting in play, as a `--replay`
     /// without `start` would) and returns the recorded replay.
     fn record(inputs: &[InputFrame]) -> Replay {
         record_from(Start::Playing, inputs)
@@ -97,6 +97,7 @@ mod tests {
 
     fn record_from(start: Start, inputs: &[InputFrame]) -> Replay {
         let opts = Options {
+            level: "testbed".to_owned(),
             start,
             ..Options::default()
         };

@@ -8,15 +8,30 @@ use std::path::{Path, PathBuf};
 use jnr_core::{InputFrame, Start};
 
 /// The levels embedded in the binary (so wasm needs no file access), as
-/// `(id, source)`. The id must equal the level's `[meta] id`.
-/// To add a level: append a line here.
-pub const LEVELS: &[(&str, &str)] = &[(
-    "testbed",
-    include_str!("../../../content/levels/00_testbed.level"),
-)];
+/// `(id, source)`: every file in `content/levels/`, in file name order.
+/// The id must equal the level's `[meta] id`. To add a level: append a line
+/// here (a test checks that this list matches the directory).
+pub const LEVELS: &[(&str, &str)] = &[
+    (
+        "enemies",
+        include_str!("../../../content/levels/00_enemies.level"),
+    ),
+    (
+        "items",
+        include_str!("../../../content/levels/00_items.level"),
+    ),
+    (
+        "testbed",
+        include_str!("../../../content/levels/00_testbed.level"),
+    ),
+    (
+        "salzburg",
+        include_str!("../../../content/levels/01_salzburg.level"),
+    ),
+];
 
-/// The level played when none is given.
-pub const DEFAULT_LEVEL: &str = "testbed";
+/// The level played when none is given: Stage 1.
+pub const DEFAULT_LEVEL: &str = "salzburg";
 
 /// The `.level` source of the embedded level `id`.
 pub fn level_source(id: &str) -> Option<&'static str> {
@@ -127,6 +142,29 @@ mod tests {
         }
         assert!(level_source(DEFAULT_LEVEL).is_some());
         assert!(level_source("atlantis").is_none());
+    }
+
+    #[test]
+    fn embedded_levels_match_the_content_directory() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/levels");
+        let mut files: Vec<String> = std::fs::read_dir(&dir)
+            .expect("content/levels")
+            .map(|e| e.expect("dir entry").path())
+            .filter(|p| p.extension().is_some_and(|ext| ext == "level"))
+            .map(|p| std::fs::read_to_string(p).expect("level file"))
+            .collect();
+        files.sort();
+        let mut embedded: Vec<String> = LEVELS.iter().map(|(_, s)| (*s).to_owned()).collect();
+        embedded.sort();
+        assert_eq!(
+            files.len(),
+            embedded.len(),
+            "every content/levels/*.level must be in LEVELS (and nothing else)"
+        );
+        assert!(
+            files == embedded,
+            "LEVELS does not embed exactly the files in content/levels/"
+        );
     }
 
     #[test]

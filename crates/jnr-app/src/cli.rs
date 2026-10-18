@@ -14,7 +14,9 @@ jnr-app: Oblatenjagd
 Usage: jnr-app [options]
 
 Options:
-  --level <id>                  embedded level to play (default: testbed)
+  --level <id>                  embedded level to play: salzburg (Stage 1, the
+                                default), or the test levels testbed, items,
+                                enemies
   --seed <n>                    seed of the game RNG (default: 1)
   --scale <n>                   initial window size 320n x 180n, 1..=16 (default: 4)
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
@@ -280,7 +282,10 @@ mod tests {
 
     #[test]
     fn bad_input_is_reported() {
-        assert!(error(&["--level", "atlantis"]).contains("embedded levels: testbed"));
+        assert!(
+            error(&["--level", "atlantis"])
+                .contains("embedded levels: enemies, items, testbed, salzburg")
+        );
         assert!(error(&["--seed"]).contains("needs a value"));
         assert!(error(&["--seed", "-1"]).contains("not a valid"));
         assert!(error(&["--scale", "0"]).contains("1..=16"));

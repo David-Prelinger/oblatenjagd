@@ -220,3 +220,9 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Walking off the rampart edge scores 100 (she lands on the meadow before the pole column); any held jump off the rampart or car reaches the Wurstkranz. This corrects the "walking off scores 2000" note in D-032.
 - The Fiaker stands at col 200 so that standing on the Residenzbrunnen triggers it (it charges through underneath).
 - The title prompt crosses the cream Dom façade of `bg_rooftops`: the prompt gets the full `k` outline (art-style §11 allows it) — polish task.
+
+## D-036 The app ships every level and starts on Stage 1 (engine, M1 task E6)
+- `jnr-app` embeds every `content/levels/*.level` through an explicit `include_str!` list (`options::LEVELS`) with a unit test that it matches the directory (no build script). `DEFAULT_LEVEL = "salzburg"`: native without flags and wasm start on the Salzburg title. Test levels stay reachable with `--level` and `--replay`.
+- `vnc-smoke` keeps the testbed route (its replay names the level); `wasm-smoke` now checks the Salzburg title: `s` + `S` sky ≥ 25 % and the parallax-only `S` band ≥ 5 % (measured 36.4 % / 16.0 %).
+- The title prompt `title.press_start` is drawn with the full 1 px `k` outline (all 8 neighbours, `Font::draw_text_outlined`) instead of the drop shadow (D-035); every other text keeps the shadow.
+- `tests/replays/salzburg_tour.replay` is the Stage 1 golden tour: `start = title`, START at frame 21, the intro, then the `salzburg_solver.replay` inputs unchanged from frame 171. After `cargo xtask solve salzburg --write` changes the route, copy its inputs into the tour and re-pick the shot frames.

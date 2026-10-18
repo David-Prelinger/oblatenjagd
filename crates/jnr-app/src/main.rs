@@ -337,7 +337,7 @@ mod tests {
     #[test]
     fn embedded_content_parses() {
         let game = new_game(&Options::default());
-        assert_eq!(game.level().meta.id, "testbed");
+        assert_eq!(game.level().meta.id, "salzburg");
         assert_eq!(game.frame(), 0);
         assert_eq!(
             game.mode(),
