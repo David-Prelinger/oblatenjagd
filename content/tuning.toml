@@ -77,6 +77,11 @@ taube_hitbox = [12, 10]
 mozartkugel_verkaeufer_hitbox = [12, 22]
 fiaker_hitbox = [44, 28]
 thrown_hitbox = [6, 6]                    # the thrown (unwrapped) Mozartkugel
+nordic_walker_hitbox = [12, 22]
+blasmusiker_hitbox = [12, 22]             # sprite 24x24, the tuba sticks out
+note_hitbox = [6, 6]
+e_biker_hitbox = [26, 20]
+bienenschwarm_hitbox = [14, 14]           # centred on its path
 # Distances to the player are measured horizontally, centre to centre, in whole px.
 # All patterns are frame counters from activation (D-017), never the RNG.
 tourist_speed = 128           # 0.5 px/frame; gravity and max fall speed are the player's
@@ -100,6 +105,24 @@ thrown_gravity = 32           # ... 0.125 px/frame²: apex ~36 px, ~4 tiles rang
 fiaker_trigger = 128          # px (8 tiles): the parked Fiaker telegraphs ...
 fiaker_telegraph = 40         # ... for 40 frames ...
 fiaker_speed = 512            # ... then charges left at 2.0 px/frame until it leaves the screen
+walker_speed = 192            # Nordic-Walker: 0.75 px/frame; turns at walls, enemies on foot and ledges (D-046)
+blasmusiker_range = 160       # px (10 tiles): the bar counter runs while the player is this close (pauses outside)
+blasmusiker_bar = 180         # frames per bar ...
+blasmusiker_inhale = 30       # ... frames 0-29 inhale (the telegraph) ...
+blasmusiker_notes = [30, 54, 78]  # ... notes at these bar frames („Hum-ta-ta") ...
+blasmusiker_blow_pose = 8     # ... each showing the blow pose for 8 frames
+note_speed = 256              # 1.0 px/frame straight towards his facing side ...
+note_range = 160              # ... for at most 160 px; vanishes on solid tiles, passes one-way tiles and enemies
+note_height = 10              # px: note centre above the musician's feet ...
+note_ahead = 10               # ... and in front of his centre
+e_biker_trigger = 144         # px (< 145, 9 tiles): the parked E-Biker telegraphs ...
+e_biker_telegraph = 40        # ... for 40 frames ...
+e_biker_speed = 512           # ... then rides left at 2.0 px/frame with the player's gravity; a wall makes it crash
+e_biker_crash_frames = 30     # crash pose with „Hoppala!", then removed (no points)
+swarm_return_frames = 64      # Bienenschwarm: half-circle return to its anchor; the run is 1 px/frame,
+                              # so the period is 2 × (len × 16 + 64) frames
+swarm_shake = 2               # renderer only: ±2 px across the run ...
+swarm_shake_frames = 4        # ... switching every 4 frames
 squish_frames = 30            # a stomped enemy stays visible (squished) this long
 knock_speed = 768             # 3 px/frame: upward speed of an enemy or item knocked by a bumped block
 bounce_grace_frames = 8       # a bounce off the Fiaker puts the feet on its top; if a solid or hazard tile is in the way,
@@ -109,6 +132,9 @@ bounce_grace_frames = 8       # a bounce off the Fiaker puts the feet on its top
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
 festungsbahn_travel = 150       # frames from one end point to the other (straight line)
 festungsbahn_wait = 60          # frames standing at the upper end (at the lower end it waits for its rider, D-030)
+gondel_size = [32, 24]          # px [w, h]: the cabin; its roof carries the player (the 28 px hanger is drawn above)
+gondel_wait = 30                # frames at each end; it never waits for a rider (D-044)
+gondel_frames_per_tile = 16     # 1 px/frame along the major axis: travel = max(|dx|, |dy|) × 16 frames
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)

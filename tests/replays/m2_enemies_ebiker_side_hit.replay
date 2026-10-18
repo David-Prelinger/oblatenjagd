@@ -1,0 +1,18 @@
+# Lands on the boulder too fast, slides off its far side as the E-Biker
+# telegraphs, and the riding E-Biker hits her from the side (frame 327).
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=327..327 deaths=1 score=300
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+- 50
+R 12
+- 56

@@ -1,0 +1,19 @@
+# Jumps off the boulder onto the riding E-Biker: a stomp worth 200 as
+# the first stomp of a chain (D-046).
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=500 deaths=0 no_event=Hurt state=playing
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 20
+RB 24
+RBJ 36

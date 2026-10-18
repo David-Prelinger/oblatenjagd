@@ -9,8 +9,9 @@
 //! Draw passes (called from `scene::render`):
 //! 1. [`draw_behind_tiles`]: power-ups still rising out of their box
 //! 2. tiles (scene), raised by `Game::tile_bump_px` while bumped
-//! 3. [`draw_entities`]: items, props, enemies (animation by
-//!    `Entity::pose`, facing by `Entity::dir`), the Festungsbahn
+//! 3. [`draw_entities`]: Gondel cables first, then items, props, enemies
+//!    (animation by `Entity::pose`, facing by `Entity::dir`, the swarm's
+//!    shake by `Entity::shake_px`), the Festungsbahn and the Gondel cabins
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris and popups
 
@@ -50,6 +51,22 @@ pub const PINE_SHADOW: u32 = 0x1b4640ff;
 pub const LAKE_TEAL: u32 = 0x1e8e9cff;
 /// `r` dirndl_red: the Ortsende bar.
 pub const DIRNDL_RED: u32 = 0xcf3a3eff;
+/// `v` mid_sage: Nordic-Walker.
+pub const MID_SAGE: u32 = 0x7aa294ff;
+/// `E` skin_shade: Blasmusiker.
+pub const SKIN_SHADE: u32 = 0xdc9068ff;
+/// `d` slate_dark: Blasmusik notes and the Gondel cable.
+pub const SLATE_DARK: u32 = 0x343a50ff;
+/// `t` lake_turquoise: E-Biker.
+pub const LAKE_TURQUOISE: u32 = 0x46cabeff;
+/// `y` meadow_light: Bienenschwarm.
+pub const MEADOW_LIGHT: u32 = 0xb0d65aff;
+/// `e` skin_light: Gondel cabin.
+pub const SKIN_LIGHT: u32 = 0xf9cfa6ff;
+
+/// The Gondel's cable grip above its feet (sprite-catalog: the cable
+/// meets the 32×52 sprite at (16, 0), origin (16, 52)).
+pub const GONDEL_GRIP_PX: i32 = 52;
 
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
@@ -65,6 +82,12 @@ pub struct EntityLooks<'a> {
     verkaeufer: Option<&'a AtlasSprite>,
     fiaker: Option<&'a AtlasSprite>,
     thrown: Option<&'a AtlasSprite>,
+    nordic_walker: Option<&'a AtlasSprite>,
+    blasmusiker: Option<&'a AtlasSprite>,
+    e_biker: Option<&'a AtlasSprite>,
+    bienenschwarm: Option<&'a AtlasSprite>,
+    note: Option<&'a AtlasSprite>,
+    gondel: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -87,6 +110,12 @@ impl<'a> EntityLooks<'a> {
             verkaeufer: s(EnemyKind::MozartkugelVerkaeufer.sprite()),
             fiaker: s(EnemyKind::Fiaker.sprite()),
             thrown: s("mozartkugel_thrown"),
+            nordic_walker: s(EnemyKind::NordicWalker.sprite()),
+            blasmusiker: s(EnemyKind::Blasmusiker.sprite()),
+            e_biker: s(EnemyKind::EBiker.sprite()),
+            bienenschwarm: s(EnemyKind::Bienenschwarm.sprite()),
+            note: s("note"),
+            gondel: s("gondel"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -106,8 +135,14 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Taube | EnemyKind::TaubeSitting => self.taube,
                 EnemyKind::MozartkugelVerkaeufer => self.verkaeufer,
                 EnemyKind::Fiaker => self.fiaker,
+                EnemyKind::NordicWalker => self.nordic_walker,
+                EnemyKind::Blasmusiker => self.blasmusiker,
+                EnemyKind::EBiker => self.e_biker,
+                EnemyKind::Bienenschwarm => self.bienenschwarm,
             },
             EntityKind::Thrown => self.thrown,
+            EntityKind::Note => self.note,
+            EntityKind::Gondel => self.gondel,
             EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
         }
     }
@@ -127,9 +162,15 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Taube | EnemyKind::TaubeSitting => SILVER_LIGHT,
             EnemyKind::MozartkugelVerkaeufer => WINE_DARK,
             EnemyKind::Fiaker => PINE_SHADOW,
+            EnemyKind::NordicWalker => MID_SAGE,
+            EnemyKind::Blasmusiker => SKIN_SHADE,
+            EnemyKind::EBiker => LAKE_TURQUOISE,
+            EnemyKind::Bienenschwarm => MEADOW_LIGHT,
         },
         EntityKind::Thrown => LEATHER_DARK,
+        EntityKind::Note => SLATE_DARK,
         EntityKind::Festungsbahn => LAKE_TEAL,
+        EntityKind::Gondel => SKIN_LIGHT,
         EntityKind::Popup(_) | EntityKind::Bump => WHITE,
     }
 }
@@ -166,15 +207,23 @@ pub fn draw_entities(
     fb: &mut Framebuffer,
 ) {
     let cam = game.camera();
+    // Cables behind every cabin.
+    for e in game.entities() {
+        if e.kind == EntityKind::Gondel {
+            draw_cable(game, fb, cam, e);
+        }
+    }
     for e in game.entities() {
         match e.kind {
             EntityKind::Debris | EntityKind::Popup(_) | EntityKind::Bump => {}
             EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
-            EntityKind::Enemy(_) | EntityKind::Defeated(_) | EntityKind::Thrown => {
-                draw_enemy(game, looks, atlas, fb, cam, e)
-            }
+            EntityKind::Enemy(_)
+            | EntityKind::Defeated(_)
+            | EntityKind::Thrown
+            | EntityKind::Note => draw_enemy(game, looks, atlas, fb, cam, e),
             EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
+            EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
             _ if e.rising(game.tuning()) => {}
             _ => draw_body(game, looks, atlas, fb, cam, e),
         }
@@ -198,6 +247,77 @@ fn draw_festungsbahn(
             draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
         }
         None => draw_body(game, looks, atlas, fb, cam, e),
+    }
+}
+
+/// A Gondel cabin: sprite `gondel` (anim `idle`) at its feet, never
+/// mirrored; else the cabin as a grey box with a 1 px hanger up to the
+/// cable grip.
+fn draw_gondel(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let (x, y) = feet_on_screen(e, cam);
+    match looks.gondel {
+        Some(s) => {
+            let anim = s.anim("idle").unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            let top = e.y.to_px() - cam.y;
+            fb.fill_rect(
+                x,
+                y - GONDEL_GRIP_PX,
+                1,
+                top - (y - GONDEL_GRIP_PX),
+                OUTLINE,
+            );
+            draw_body(game, looks, atlas, fb, cam, e);
+        }
+    }
+}
+
+/// The Gondel's cable (the telegraph of its path, D-044): a 1 px `d` line
+/// through the cable grips at both ends of its track, extended one tile
+/// (along the major axis) beyond each end.
+fn draw_cable(game: &Game, fb: &mut Framebuffer, cam: Camera, e: &Entity) {
+    let Some([a, b]) = jnr_core::platform::track_ends(e, game.level()) else {
+        return;
+    };
+    let grip = |(x, y): (jnr_core::Fx, jnr_core::Fx)| {
+        (x.to_px() - cam.x, y.to_px() - GONDEL_GRIP_PX - cam.y)
+    };
+    let ((x0, y0), (x1, y1)) = (grip(a), grip(b));
+    let (dx, dy) = (x1 - x0, y1 - y0);
+    let major = dx.abs().max(dy.abs()).max(1);
+    let tile = jnr_core::level::TILE_PX;
+    let (ex, ey) = (dx * tile / major, dy * tile / major);
+    draw_line(fb, x0 - ex, y0 - ey, x1 + ex, y1 + ey, SLATE_DARK);
+}
+
+/// A 1 px line from (x0, y0) to (x1, y1), both ends included (Bresenham).
+fn draw_line(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, rgba: u32) {
+    let (dx, dy) = ((x1 - x0).abs(), -(y1 - y0).abs());
+    let (sx, sy) = ((x1 - x0).signum(), (y1 - y0).signum());
+    let (mut x, mut y, mut err) = (x0, y0, dx + dy);
+    loop {
+        fb.set(x, y, rgba);
+        if x == x1 && y == y1 {
+            break;
+        }
+        let e2 = 2 * err;
+        if e2 >= dy {
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y += sy;
+        }
     }
 }
 
@@ -266,13 +386,21 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Telegraph => ("telegraph", None),
         Pose::Charge => ("charge", None),
         Pose::Spin => ("spin", None),
+        Pose::Inhale => ("inhale", None),
+        Pose::Blow => ("blow", None),
+        Pose::Ride => ("ride", None),
+        Pose::Crash => ("crash", None),
+        Pose::Buzz => ("buzz", None),
+        Pose::Waggle => ("waggle", None),
     }
 }
 
-/// An enemy, a defeated enemy or a thrown Mozartkugel: the animation of
-/// its pose (missing anims fall back to the first one), facing `dir`
-/// (the Fiaker art faces left and is never mirrored). Without a sprite:
-/// the hitbox as a grey box, flattened to its bottom quarter when squished.
+/// An enemy, a defeated enemy or a projectile (thrown Mozartkugel, note):
+/// the animation of its pose (missing anims fall back to the first one),
+/// facing `dir` (the Fiaker and E-Biker art faces left and is never
+/// mirrored), shifted by `Entity::shake_px` (the swarm's waggle). Without
+/// a sprite: the hitbox as a grey box, flattened to its bottom quarter
+/// when squished.
 fn draw_enemy(
     game: &Game,
     looks: &EntityLooks,
@@ -282,7 +410,9 @@ fn draw_enemy(
     e: &Entity,
 ) {
     let pose = e.pose(game.tuning()).unwrap_or(Pose::Idle);
+    let (sx, sy) = e.shake_px(game.tuning());
     let (x, y) = feet_on_screen(e, cam);
+    let (x, y) = (x + sx, y + sy);
     match looks.sprite(e.kind) {
         Some(s) => {
             let (name, frame) = pose_anim(pose);
@@ -291,11 +421,12 @@ fn draw_enemy(
                 Some(i) => i as u32 * anim.ticks,
                 None => game.frame(),
             };
-            let fiaker = matches!(
+            let fixed = matches!(
                 e.kind,
-                EntityKind::Enemy(EnemyKind::Fiaker) | EntityKind::Defeated(EnemyKind::Fiaker)
+                EntityKind::Enemy(EnemyKind::Fiaker | EnemyKind::EBiker)
+                    | EntityKind::Defeated(EnemyKind::Fiaker | EnemyKind::EBiker)
             );
-            let left = e.facing_left() && !fiaker;
+            let left = e.facing_left() && !fixed;
             draw_sprite(fb, atlas, s, anim, tick, x, y, left);
         }
         None => {
@@ -305,8 +436,8 @@ fn draw_enemy(
             } else {
                 full
             };
-            let bx = e.x.to_px() - cam.x;
-            let by = e.y.to_px() - cam.y + full - h;
+            let bx = e.x.to_px() - cam.x + sx;
+            let by = e.y.to_px() - cam.y + full - h + sy;
             fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
             fb.outline_rect(bx, by, w, h, OUTLINE);
         }
@@ -558,6 +689,12 @@ mod tests {
             ('j', PINE_SHADOW),
             ('T', LAKE_TEAL),
             ('r', DIRNDL_RED),
+            ('v', MID_SAGE),
+            ('E', SKIN_SHADE),
+            ('d', SLATE_DARK),
+            ('t', LAKE_TURQUOISE),
+            ('y', MEADOW_LIGHT),
+            ('e', SKIN_LIGHT),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }
@@ -685,6 +822,12 @@ mod tests {
             Pose::Telegraph,
             Pose::Charge,
             Pose::Spin,
+            Pose::Inhale,
+            Pose::Blow,
+            Pose::Ride,
+            Pose::Crash,
+            Pose::Buzz,
+            Pose::Waggle,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -703,6 +846,92 @@ mod tests {
         );
     }
 
+    /// A grey-box level with `marks` (row, col, legend char) on a 20x10
+    /// map with ground in row 9 and the player at column 2.
+    fn m2_game(marks: &[(usize, usize, char)]) -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 20])
+            .collect();
+        rows[8][2] = 'P';
+        for &(r, c, ch) in marks {
+            rows[r][c] = ch;
+        }
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"g\" = {{ entity = \"gondel\", to = [4, -2] }}\n\
+             \"s\" = {{ entity = \"bienenschwarm\", dir = 0, len = 2 }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    /// The cable runs through both grips (52 px above the cabin's feet at
+    /// each end of the track), one tile beyond each end; the grey-box
+    /// cabin hangs from it on a 1 px hanger.
+    #[test]
+    fn the_gondel_cable_shows_the_whole_track() {
+        // Cabin at column 6, row 7 (x 96..128, feet (112, 128)); the other
+        // end is [4, -2] tiles away: feet (176, 96).
+        let g = m2_game(&[(7, 6, 'g')]);
+        let fb = rendered(&g);
+        let (gx0, gy0) = (112, 128 - GONDEL_GRIP_PX);
+        let (gx1, gy1) = (176, 96 - GONDEL_GRIP_PX);
+        assert_eq!(fb.get(gx1, gy1), Some(SLATE_DARK), "far grip");
+        assert_eq!(fb.get(gx1 + 16, gy1 - 8), Some(SLATE_DARK), "a tile beyond");
+        assert_eq!(fb.get(gx0 - 16, gy0 + 8), Some(SLATE_DARK), "a tile before");
+        assert_eq!(fb.get(gx0 + 32, gy0 - 16), Some(SLATE_DARK), "middle");
+        assert_ne!(
+            fb.get(gx1 + 18, gy1 - 9),
+            Some(SLATE_DARK),
+            "and no further"
+        );
+        assert_eq!(fb.get(gx0, gy0 + 10), Some(OUTLINE), "hanger");
+        assert_eq!(fb.get(gx0, 128 - 12), Some(SKIN_LIGHT), "cabin");
+    }
+
+    /// The swarm's grey box shakes across its run (renderer only).
+    #[test]
+    fn the_swarm_grey_box_shakes_on_its_run() {
+        let mut g = m2_game(&[(4, 6, 's')]);
+        let shown_top = |g: &Game| {
+            let fb = rendered(g);
+            let e = g
+                .entities()
+                .iter()
+                .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Bienenschwarm))
+                .unwrap();
+            let cx = (e.x + e.w.div_int(2)).to_px();
+            (0..80)
+                .find(|&y| fb.get(cx, y) == Some(MEADOW_LIGHT))
+                .map(|y| y - 1 - e.y.to_px())
+        };
+        g.step(InputFrame::NONE);
+        // Frames 1-3 of the run: 2 px up (the run's left side), then down.
+        assert_eq!(shown_top(&g), Some(-2));
+        for _ in 0..3 {
+            g.step(InputFrame::NONE);
+        }
+        assert_eq!(shown_top(&g), Some(2));
+    }
+
+    #[test]
+    fn every_popup_text_key_exists() {
+        let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
+        for p in [
+            Popup::ExtraLife,
+            Popup::Checkpoint,
+            Popup::Wurstkranz,
+            Popup::Hoppala,
+        ] {
+            let key = p.text_key().unwrap();
+            assert!(texts.contains(key), "{key}");
+        }
+    }
+
     #[test]
     fn every_kind_has_a_distinct_grey_box_colour() {
         let kinds = [
@@ -717,6 +946,12 @@ mod tests {
             EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer),
             EntityKind::Enemy(EnemyKind::Fiaker),
             EntityKind::Festungsbahn,
+            EntityKind::Enemy(EnemyKind::NordicWalker),
+            EntityKind::Enemy(EnemyKind::Blasmusiker),
+            EntityKind::Enemy(EnemyKind::EBiker),
+            EntityKind::Enemy(EnemyKind::Bienenschwarm),
+            EntityKind::Note,
+            EntityKind::Gondel,
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {

@@ -1,0 +1,22 @@
+# Brakes on the boulder and waits: the E-Biker triggers, telegraphs,
+# rides left and crashes into the boulder below her („Hoppala!", no
+# points); after it is gone she walks on.
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = score=300 deaths=0 no_event=Died state=playing player_x>=720
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+- 16
+L 10
+- 20
+R 6
+- 160
+R 80

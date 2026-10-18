@@ -1,0 +1,12 @@
+# Stomps the Nordic-Walker pacing the planter (100) with a running jump;
+# the held JUMP gives the high bounce.
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=100 deaths=0 no_event=Hurt state=playing
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+R 30

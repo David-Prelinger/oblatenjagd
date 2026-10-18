@@ -6,6 +6,7 @@ mod feel;
 mod flow;
 mod goal;
 mod items;
+mod m2;
 mod modes;
 mod route;
 mod testbed;

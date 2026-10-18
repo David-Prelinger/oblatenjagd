@@ -6,11 +6,11 @@
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
 //! least one goal (`time_limit` is required by `Level::parse`), every
 //! `prop` names a catalog prop sprite (`jnr_core::PROP_SPRITES`), and every
-//! Festungsbahn track has 3 tiles of free space above the car
-//! (`jnr_core::platform::track_problems`) and a way back up out of the pit
-//! under it: stair-stepped floor with steps up of at most 3 tiles to the
-//! upper end (`jnr_core::platform::recovery_problems`, D-027; its doc
-//! comment lists what it does not check).
+//! moving platform track (Festungsbahn, Gondel) has 3 tiles of free space
+//! above the car (`jnr_core::platform::track_problems`) and a way back up
+//! out of the pit under it: stair-stepped floor with steps up of at most 3
+//! tiles to the upper end (`jnr_core::platform::recovery_problems`, D-027,
+//! D-044; its doc comment lists what it does not check).
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -26,9 +26,9 @@ Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
               sign text keys exist, a goal, prop sprites are catalog props,
-              3 free tiles above every
-              Festungsbahn track, and a way back up (steps <= 3 tiles)
-              from the pit under it to its upper end
+              3 free tiles above every Festungsbahn and Gondel track, and
+              a way back up (steps <= 3 tiles) from the pit under it to its
+              upper end
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -314,23 +314,30 @@ mod tests {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table
-        // that are props (not the checkpoint, Maibaum, signs or the car,
-        // which have entities of their own).
+        // and the M2 "Items and props" table that are props (not the
+        // checkpoint, Maibaum, signs or the car, which have entities of
+        // their own).
         let catalog = include_str!("../../docs/sprite-catalog.md");
-        let start = catalog.find("## Props and goal").expect("props section");
-        let section = &catalog[start..];
-        let section = &section[..section[3..].find("\n## ").map_or(section.len(), |e| e + 3)];
+        let section = |heading: &str, end: &str| {
+            let start = catalog.find(heading).expect(heading);
+            let s = &catalog[start..];
+            &s[..s[3..].find(end).map_or(s.len(), |e| e + 3)]
+        };
         let own_entity = |n: &str| {
             n == "checkpoint"
                 || n == "festungsbahn"
                 || n.starts_with("maibaum_")
                 || n.starts_with("sign_")
         };
-        let mut in_catalog: Vec<&str> = section
-            .lines()
-            .filter_map(|l| l.strip_prefix("| `")?.split('`').next())
-            .filter(|n| !own_entity(n))
-            .collect();
+        let mut in_catalog: Vec<&str> = [
+            section("## Props and goal", "\n## "),
+            section("### Items and props (group `props`)", "\n### "),
+        ]
+        .into_iter()
+        .flat_map(str::lines)
+        .filter_map(|l| l.strip_prefix("| `")?.split('`').next())
+        .filter(|n| !own_entity(n))
+        .collect();
         in_catalog.sort_unstable();
         let mut listed = PROP_SPRITES.to_vec();
         listed.sort_unstable();

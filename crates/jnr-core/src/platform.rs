@@ -1,5 +1,16 @@
-//! The Festungsbahn car: a moving one-way platform (`docs/game-design.md`
-//! → "Festungsbahn car", D-026).
+//! Moving one-way platforms: the Festungsbahn car (`docs/game-design.md`
+//! → "Festungsbahn car", D-026) and the Zwölferhorn Gondel (D-044).
+//!
+//! The Gondel (`{ entity = "gondel", to = [dx, dy], phase = N }`) is placed
+//! like the car (left-aligned in its spawn cell, bottom on the cell's
+//! bottom edge; `|dx|` ≤ 8) and free-running: it never waits for a rider
+//! ([`gondel_progress`]: wait `gondel_wait` frames at the spawn end, travel
+//! to the other end at 1 px/frame along the major axis, wait, travel back,
+//! repeat; `count` = frame in that cycle, starting at `phase`). Landing,
+//! carrying and the crush rule below are the same code for both
+//! ([`crate::entity::EntityKind::is_platform`]); so are the lints.
+//!
+//! The Festungsbahn car:
 //!
 //! - Level syntax: `{ entity = "festungsbahn", to = [dx, dy] }`; the car
 //!   starts left-aligned in its spawn cell with its bottom on the cell's
@@ -27,7 +38,7 @@
 //!   crushed. Levels keep [`TRACK_CLEARANCE_PX`] free above the track
 //!   (checked by `cargo xtask levels lint` via [`track_problems`]).
 
-use crate::entity::{Entity, EntityKind, UpdateCtx};
+use crate::entity::{Entity, UpdateCtx};
 use crate::fx::Fx;
 use crate::game::Event;
 use crate::level::{EntitySpawn, Level, SpawnKind, TILE_PX, TileKind};
@@ -110,6 +121,75 @@ pub fn track_delta(spawn: &EntitySpawn) -> (Fx, Fx) {
     (TILE.mul_int(dx), TILE.mul_int(dy))
 }
 
+/// Travel frames of a Gondel from one end to the other: max(|dx|, |dy|)
+/// tiles × `gondel_frames_per_tile` (at least 1).
+pub fn gondel_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
+    let [dx, dy] = spawn.to.unwrap_or([0, 0]);
+    let tiles = dx.unsigned_abs().max(dy.unsigned_abs()) as u16;
+    (tiles * t.platforms.gondel_frames_per_tile).max(1)
+}
+
+/// Frames of a Gondel's whole cycle: 2 × (wait + travel).
+pub fn gondel_period(spawn: &EntitySpawn, t: &Tuning) -> u16 {
+    2 * (t.platforms.gondel_wait + gondel_travel(spawn, t))
+}
+
+/// How far along its track (frames of travel from the spawn end, 0..=
+/// `travel`) a Gondel is `k` frames into its cycle: frames 0..wait at the
+/// spawn end, then one frame of travel per frame up to `travel` (arriving
+/// on frame wait + travel − 1), wait frames at the other end, then back;
+/// it arrives at the spawn end on the cycle's last frame. So each end
+/// shows for wait + 1 frames, like the Festungsbahn's upper end.
+pub fn gondel_progress(k: u16, travel: u16, wait: u16) -> u16 {
+    let travel = travel.max(1);
+    if k < wait {
+        0
+    } else if k < wait + travel {
+        k - wait + 1
+    } else if k < 2 * wait + travel {
+        travel
+    } else {
+        travel.saturating_sub(k - 2 * wait - travel + 1)
+    }
+}
+
+/// Puts a Gondel where its `count` says, recomputed from the spawn end
+/// (`base_x`/`base_y`), so it never drifts; `vx`/`vy` hold the movement.
+pub(crate) fn place_gondel(e: &mut Entity, spawn: &EntitySpawn, t: &Tuning) {
+    let travel = gondel_travel(spawn, t);
+    let k = i32::from(gondel_progress(e.count, travel, t.platforms.gondel_wait));
+    let n = i32::from(travel);
+    let (dx, dy) = track_delta(spawn);
+    let x = e.base_x + dx.mul_int(k).div_int(n);
+    let y = e.base_y + dy.mul_int(k).div_int(n);
+    e.vx = x - e.x;
+    e.vy = y - e.y;
+    e.x = x;
+    e.y = y;
+}
+
+/// One frame of a Gondel (called from `Entity::update`).
+pub(crate) fn update_gondel(e: &mut Entity, ctx: &UpdateCtx) {
+    let Some(spawn) = e.spawn.and_then(|i| ctx.level.entities.get(usize::from(i))) else {
+        return;
+    };
+    e.count = (e.count + 1) % gondel_period(spawn, ctx.tuning);
+    place_gondel(e, spawn, ctx.tuning);
+}
+
+/// Both end points of a moving platform's track as the feet (bottom centre
+/// of the hitbox) in subpixels: the spawn end first. `None` for other
+/// entities. The renderer draws the Gondel's cable from them.
+pub fn track_ends(e: &Entity, level: &Level) -> Option<[(Fx, Fx); 2]> {
+    if !e.kind.is_platform() {
+        return None;
+    }
+    let spawn = level.entities.get(usize::from(e.spawn?))?;
+    let (dx, dy) = track_delta(spawn);
+    let start = (e.base_x + e.w.div_int(2), e.base_y + e.h);
+    Some([start, (start.0 + dx, start.1 + dy)])
+}
+
 /// One frame of the car (called from `Entity::update`).
 pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
     let spawn = e.spawn.and_then(|i| ctx.level.entities.get(usize::from(i)));
@@ -172,7 +252,7 @@ pub(crate) fn land(
     }
     let hb = p.hitbox();
     let car = entities.iter().find(|c| {
-        c.kind == EntityKind::Festungsbahn
+        c.kind.is_platform()
             && c.active
             && !c.removed
             && prev_bottom <= c.y
@@ -220,21 +300,35 @@ pub(crate) fn carry(
     }
 }
 
-/// Problems of every Festungsbahn's track in `level`: the car's top must
-/// have [`TRACK_CLEARANCE_PX`] free of solid tiles above it at every
-/// frame of its travel. Empty if fine.
+/// A moving platform's track for the lints: its hitbox at the spawn end,
+/// the delta to the other end and the travel frames. `None` for other
+/// spawns.
+fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)> {
+    let travel = match s.kind {
+        SpawnKind::Festungsbahn => t.platforms.festungsbahn_travel.max(1),
+        SpawnKind::Gondel => gondel_travel(s, t),
+        _ => return None,
+    };
+    let car = Entity::from_spawn(s, i, t)?;
+    let start = Aabb {
+        x: car.base_x,
+        y: car.base_y,
+        w: car.w,
+        h: car.h,
+    };
+    Some((start, track_delta(s), i32::from(travel)))
+}
+
+/// Problems of every moving platform's track in `level` (Festungsbahn,
+/// Gondel): its top must have [`TRACK_CLEARANCE_PX`] free of solid tiles
+/// above it at every frame of its travel. Empty if fine.
 pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let map = TileMap::from_level(level);
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
-        if s.kind != SpawnKind::Festungsbahn {
-            continue;
-        }
-        let Some(car) = Entity::from_spawn(s, i, t) else {
+        let Some((car, delta, travel)) = track(s, i, t) else {
             continue;
         };
-        let delta = track_delta(s);
-        let travel = i32::from(t.platforms.festungsbahn_travel.max(1));
         for k in 0..=travel {
             let x = car.x + delta.0.mul_int(k).div_int(travel);
             let y = car.y + delta.1.mul_int(k).div_int(travel);
@@ -246,7 +340,8 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
             };
             if map.touches(&above, TileKind::Solid) {
                 problems.push(format!(
-                    "festungsbahn at row {}, column {}: less than {} px free above the car at ({}, {}) px ({} of {} frames along the track); keep 3 tiles above the whole track free",
+                    "{} at row {}, column {}: less than {} px free above the car at ({}, {}) px ({} of {} frames along the track); keep 3 tiles above the whole track free",
+                    s.kind.name(),
                     s.row + 1,
                     s.col + 1,
                     TRACK_CLEARANCE_PX,
@@ -266,9 +361,9 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
 /// need: a walking jump reaches 4 tiles, minus one tile of safety margin.
 pub const MAX_STEP_UP_TILES: i32 = 3;
 
-/// Problems of every Festungsbahn whose pit has no way back up (D-027:
-/// falling off means waiting for the car or climbing back, never a
-/// softlock). Empty if fine.
+/// Problems of every moving platform (Festungsbahn, Gondel) whose pit has
+/// no way back up (D-027, D-044: falling off means waiting for the car or
+/// climbing back, never a softlock). Empty if fine.
 ///
 /// The check (cheap, deliberately simple): for each column the car passes
 /// over, the floor is the topmost solid or one-way tile at or below the
@@ -286,20 +381,14 @@ pub const MAX_STEP_UP_TILES: i32 = 3;
 /// Limits: it does not check headroom above a step, jump distances across
 /// skipped columns, that the camera (which never scrolls back) leaves the
 /// stairs reachable when the climb leads left, enemies, or one-way tiles
-/// that need a drop-through. Platforms other than the Festungsbahn don't
-/// exist yet.
+/// that need a drop-through.
 pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let map = TileMap::from_level(level);
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
-        if s.kind != SpawnKind::Festungsbahn {
-            continue;
-        }
-        let Some(car) = Entity::from_spawn(s, i, t) else {
+        let Some((car, delta, travel)) = track(s, i, t) else {
             continue;
         };
-        let delta = track_delta(s);
-        let travel = i32::from(t.platforms.festungsbahn_travel.max(1));
         let c0 = tile_of(car.x.min(car.x + delta.0));
         let c1 = tile_of(car.x.max(car.x + delta.0) + car.w - Fx(1));
         // Highest car top (px) over each column c0..=c1.
@@ -318,7 +407,12 @@ pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
                 .find(|&r| matches!(map.kind_at(col, r), TileKind::Solid | TileKind::OneWay))
         };
         let upper_top = (car.y + delta.1.min(Fx::ZERO)).to_px();
-        let at = format!("festungsbahn at row {}, column {}", s.row + 1, s.col + 1);
+        let at = format!(
+            "{} at row {}, column {}",
+            s.kind.name(),
+            s.row + 1,
+            s.col + 1
+        );
         // The way out towards one side: `Err` describes why it fails.
         let climb = |right: bool| -> Result<(), String> {
             let exit = if right { c1 + 1 } else { c0 - 1 };
@@ -462,6 +556,9 @@ mod tests {
             sprite: None,
             layer: Default::default(),
             dx: 0,
+            phase: 0,
+            dir: 0,
+            len: crate::level::DEFAULT_SWARM_LEN,
         };
         assert_eq!(initial_state(&spawn([8, -5])), car::WAIT_LOWER);
         assert_eq!(initial_state(&spawn([8, 0])), car::WAIT_LOWER);
@@ -540,6 +637,71 @@ mod tests {
         let p = recovery_problems(&high, &t);
         assert_eq!(p.len(), 1, "{p:?}");
         assert!(p[0].contains("a 4-tile step up to column 13"), "{}", p[0]);
+    }
+
+    /// [`track_level`] with the `F` spawn as a `gondel` instead.
+    fn gondel_level(to: &str, rows: &[&str]) -> Level {
+        let mut level = track_level(to, rows);
+        for e in &mut level.entities {
+            if e.kind == SpawnKind::Festungsbahn {
+                e.kind = SpawnKind::Gondel;
+            }
+        }
+        level
+    }
+
+    #[test]
+    fn gondel_tracks_get_the_clearance_and_recovery_lints() {
+        let t = tuning();
+        // The intro cabin over a 2-deep trench with stairs at both ends:
+        // rises 1 tile over 6 to a knoll (columns 10-13, top row 9).
+        let trench = [
+            "..........####", // row 9: the knoll
+            "P.F.......####", // row 10: the cabin's spawn cell
+            "##.......#####", // row 11
+            "###.....######", // row 12 (2 deep)
+            "##############",
+        ];
+        let lvl = gondel_level("[6, -1]", &trench[..]);
+        assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
+        assert_eq!(track_problems(&lvl, &t), Vec::<String>::new());
+        // A 5-tile wall at the upper end: no way back up.
+        let wall = [
+            "..........####", // row 8
+            "..........####",
+            "..........####",
+            "P.F.......####", // row 11
+            "##........####",
+            "##############",
+        ];
+        let p = recovery_problems(&gondel_level("[6, -1]", &wall[..]), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with("gondel at row 12, column 3: no way back up"),
+            "{}",
+            p[0]
+        );
+        // A ceiling 2 tiles above the roof somewhere along the track.
+        let mut low = trench.to_vec();
+        low.insert(0, "......#.......");
+        low.insert(1, "..............");
+        let p = track_problems(&gondel_level("[6, -1]", &low), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with("gondel at row 11, column 3: less than 48 px free"),
+            "{}",
+            p[0]
+        );
+        // Over a death ravine (no floor at all) recovery is skipped.
+        let ravine = [
+            "..........####", // row 9
+            "P.F.......####",
+            "##........####",
+            "##........####",
+            "##........####",
+        ];
+        let lvl = gondel_level("[6, -1]", &ravine[..]);
+        assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
     }
 
     #[test]
