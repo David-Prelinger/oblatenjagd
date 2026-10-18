@@ -263,6 +263,9 @@ pub struct BackgroundLayer {
     pub sprite: String,
     /// Scroll speed in 1/16 of the camera speed (0 = fixed, 16 = like the tiles).
     pub factor: u32,
+    /// Offset in px above the screen bottom (default 0: bottom-aligned).
+    #[serde(default)]
+    pub y: u32,
 }
 
 /// The `[meta]` table.
@@ -291,6 +294,8 @@ pub struct LevelMeta {
 pub const MAX_TIME_LIMIT: u32 = 999;
 /// Largest background `factor` (2× camera speed, for foreground layers).
 pub const MAX_BACKGROUND_FACTOR: u32 = 32;
+/// Largest background `y` offset in px (one screen height).
+pub const MAX_BACKGROUND_Y: u32 = 180;
 
 /// A parsed level.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -490,6 +495,12 @@ fn validate_meta(meta: &LevelMeta) -> Result<(), ParseError> {
         if layer.sprite.is_empty() {
             return Err(ParseError::new(format!(
                 "meta.background[{i}]: sprite is empty"
+            )));
+        }
+        if layer.y > MAX_BACKGROUND_Y {
+            return Err(ParseError::new(format!(
+                "meta.background[{i}] ({}): y must be 0..={MAX_BACKGROUND_Y} px, got {}",
+                layer.sprite, layer.y
             )));
         }
         if layer.factor > MAX_BACKGROUND_FACTOR {
@@ -706,7 +717,7 @@ grid = '''
 id = "v2"
 time_limit = 300
 min_jump_window = 6
-background = [{ sprite = "bg_sky_salzburg", factor = 0 }, { sprite = "bg_rooftops", factor = 8 }]
+background = [{ sprite = "bg_sky_salzburg", factor = 0 }, { sprite = "bg_rooftops", factor = 8, y = 24 }]
 
 [legend]
 "#" = "ground"
@@ -742,11 +753,13 @@ P.sSC.tfG
             vec![
                 BackgroundLayer {
                     sprite: "bg_sky_salzburg".into(),
-                    factor: 0
+                    factor: 0,
+                    y: 0
                 },
                 BackgroundLayer {
                     sprite: "bg_rooftops".into(),
-                    factor: 8
+                    factor: 8,
+                    y: 24
                 },
             ]
         );
@@ -884,6 +897,8 @@ P.sSC.tfG
         let long_time = SMALL.replace("time_limit = 100", "time_limit = 1000");
         assert!(err(&long_time).contains("1..=999"));
 
+        let bad_y = V2.replace("y = 24", "y = 181");
+        assert!(err(&bad_y).contains("y must be"), "{}", err(&bad_y));
         let bad_factor = V2.replace("factor = 8", "factor = 33");
         assert!(
             err(&bad_factor).contains("bg_rooftops"),
@@ -891,7 +906,7 @@ P.sSC.tfG
             err(&bad_factor)
         );
         let old_background = V2.replace(
-            "background = [{ sprite = \"bg_sky_salzburg\", factor = 0 }, { sprite = \"bg_rooftops\", factor = 8 }]",
+            "background = [{ sprite = \"bg_sky_salzburg\", factor = 0 }, { sprite = \"bg_rooftops\", factor = 8, y = 24 }]",
             "background = [\"sky\"]",
         );
         assert!(Level::parse(&old_background).is_err(), "v1 string list");

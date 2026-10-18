@@ -131,8 +131,8 @@ pub fn draw_tiles(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jnr_core::Level;
     use crate::testutil::{self, A, B, image};
+    use jnr_core::Level;
 
     fn game(l: &Level) -> Game {
         let t = jnr_core::Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap();
@@ -154,22 +154,41 @@ mod tests {
             "P...\n.##.\n.#B.\n",
         );
         // (1,1): N empty, E ground, S ground, W empty.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 1, 1), MASK_E | MASK_S);
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&l), 1, 1),
+            MASK_E | MASK_S
+        );
         // (2,1): N empty, E empty, S brick (other name), W ground.
         assert_eq!(autotile_mask(&TileMap::from_level(&l), 2, 1), MASK_W);
         // (1,2): N ground, E brick, S level edge (same), W empty.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 1, 2), MASK_N | MASK_S);
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&l), 1, 2),
+            MASK_N | MASK_S
+        );
         // (2,2) brick: N ground, E empty, S edge, W ground.
         assert_eq!(autotile_mask(&TileMap::from_level(&l), 2, 2), MASK_S);
         // Corner cell (0,0), the player start, is empty (name 0) like its
         // neighbours (1,0) and (0,1); the outside counts as same.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 0, 0), MASK_N | MASK_E | MASK_S | MASK_W);
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&l), 0, 0),
+            MASK_N | MASK_E | MASK_S | MASK_W
+        );
         // (3,1) empty: N, S empty, E outside, W ground.
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), 3, 1), MASK_N | MASK_E | MASK_S);
-        assert_eq!(autotile_mask(&TileMap::from_level(&l), -1, 0), 0, "outside the level");
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&l), 3, 1),
+            MASK_N | MASK_E | MASK_S
+        );
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&l), -1, 0),
+            0,
+            "outside the level"
+        );
         // The player start above is an empty cell, not ground.
         let full = level("\"#\" = \"ground\"\n", "P\n#\n");
-        assert_eq!(autotile_mask(&TileMap::from_level(&full), 0, 1), MASK_E | MASK_S | MASK_W);
+        assert_eq!(
+            autotile_mask(&TileMap::from_level(&full), 0, 1),
+            MASK_E | MASK_S | MASK_W
+        );
     }
 
     /// 16x16 frame: all `b`, with an `a` marker at (marker, 0).
@@ -229,7 +248,14 @@ mod tests {
         let looks = vec![None, Some(water)];
         let draw = |tick| {
             let mut fb = testutil::fb();
-            draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, tick);
+            draw_tiles(
+                &mut fb,
+                &atlas,
+                &looks,
+                &game(&l),
+                Camera { x: 0, y: 0 },
+                tick,
+            );
             (fb.get(0, 16), fb.get(5, 16))
         };
         assert_eq!(draw(0), (Some(A), Some(B)));

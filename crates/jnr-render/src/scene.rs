@@ -57,16 +57,19 @@ pub enum PlayerAnim {
     Jump,
     /// In the air, moving down.
     Fall,
+    /// On the ground, braking against the motion (holding the other way).
+    Skid,
 }
 
 impl PlayerAnim {
     /// Every state, in the order of [`PlayerAnim::index`].
-    pub const ALL: [PlayerAnim; 5] = [
+    pub const ALL: [PlayerAnim; 6] = [
         PlayerAnim::Idle,
         PlayerAnim::Walk,
         PlayerAnim::Run,
         PlayerAnim::Jump,
         PlayerAnim::Fall,
+        PlayerAnim::Skid,
     ];
 
     /// The state of a player.
@@ -79,6 +82,8 @@ impl PlayerAnim {
             }
         } else if p.vx == Fx::ZERO {
             PlayerAnim::Idle
+        } else if p.skidding {
+            PlayerAnim::Skid
         } else if p.vx.abs() > t.walk_speed {
             PlayerAnim::Run
         } else {
@@ -94,6 +99,7 @@ impl PlayerAnim {
             PlayerAnim::Run => 2,
             PlayerAnim::Jump => 3,
             PlayerAnim::Fall => 4,
+            PlayerAnim::Skid => 5,
         }
     }
 
@@ -105,7 +111,19 @@ impl PlayerAnim {
             PlayerAnim::Run => &["run", "walk"],
             PlayerAnim::Jump => &["jump", "fall"],
             PlayerAnim::Fall => &["fall", "jump"],
+            PlayerAnim::Skid => &["skid", "walk"],
         }
+    }
+}
+
+/// Whether the player sprite is drawn mirrored (facing left): the look
+/// direction, except while skidding, when Resi still faces the direction
+/// she slides in (sprite catalog: `skid` faces the motion).
+pub fn player_faces_left(p: &Player, t: &PlayerTuning) -> bool {
+    if PlayerAnim::of(p, t) == PlayerAnim::Skid {
+        p.vx < Fx::ZERO
+    } else {
+        p.facing == Facing::Left
     }
 }
 
@@ -113,7 +131,7 @@ impl PlayerAnim {
 #[derive(Clone, Debug)]
 struct PlayerLook<'a> {
     sprite: &'a AtlasSprite,
-    anims: [&'a AtlasAnim; 5],
+    anims: [&'a AtlasAnim; 6],
 }
 
 /// Everything the renderer looks up, resolved once: the atlas, the font,
@@ -181,11 +199,23 @@ impl<'a> RenderContext<'a> {
         }
     }
 
+    /// [`RenderContext::new`] plus the level's `[meta].background` layers.
+    pub fn for_level(atlas: &'a Atlas, texts: &'a Texts, level: &Level) -> RenderContext<'a> {
+        let layers: Vec<(&str, u32, u32)> = level
+            .meta
+            .background
+            .iter()
+            .map(|l| (l.sprite.as_str(), l.factor, l.y))
+            .collect();
+        RenderContext::new(atlas, texts, level).with_background(&layers)
+    }
+
     /// Sets the parallax background: `(sprite name, scroll factor in
-    /// sixteenths)` pairs, back to front (e.g. `[("bg_sky_salzburg", 0),
-    /// ("bg_untersberg", 3)]`). Sprites the atlas lacks are skipped; without
-    /// layers the flat sky is drawn. See [`crate::background`] for placement.
-    pub fn with_background(mut self, layers: &[(&str, u32)]) -> RenderContext<'a> {
+    /// sixteenths, y offset in px above the screen bottom)` triples, back
+    /// to front (e.g. `[("bg_sky_salzburg", 0, 0), ("bg_untersberg", 3, 32)]`).
+    /// Sprites the atlas lacks are skipped; without layers the flat sky is
+    /// drawn. See [`crate::background`] for placement.
+    pub fn with_background(mut self, layers: &[(&str, u32, u32)]) -> RenderContext<'a> {
         self.background = background::resolve(self.atlas, layers);
         self.background_covers = self
             .background
@@ -329,7 +359,7 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
     match look {
         Some(look) => {
             let anim = look.anims[PlayerAnim::of(p, t).index()];
-            let left = p.facing == Facing::Left;
+            let left = player_faces_left(p, t);
             let (atlas, tick) = (ctx.atlas, game.frame());
             draw_sprite(fb, atlas, look.sprite, anim, tick, feet_x, feet_y, left);
         }
@@ -484,9 +514,9 @@ mod tests {
         let texts = texts();
         let game = tiny_game();
         let ctx = RenderContext::new(&atlas, &texts, game.level()).with_background(&[
-            ("bg_sky", 0),
-            ("bg_missing", 2),
-            ("bg_hills", 8),
+            ("bg_sky", 0, 0),
+            ("bg_missing", 2, 0),
+            ("bg_hills", 8, 0),
         ]);
         assert_eq!(ctx.background().len(), 2);
         assert!(ctx.background_covers);
@@ -504,12 +534,29 @@ mod tests {
 
         // Only a partial layer: the flat sky stays behind it.
         let ctx =
-            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8)]);
+            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8, 0)]);
         assert!(!ctx.background_covers);
         let mut fb = Framebuffer::new();
         render(&game, &ctx, &mut fb);
         assert_eq!(fb.get(0, 0), Some(SKY_LIGHT));
         assert_eq!(fb.get(0, 179), Some(A));
+
+        // From the level: `[meta].background` with a `y` offset.
+        let text = "[meta]\nid = \"bg\"\ntime_limit = 300\n\
+                    background = [{ sprite = \"bg_hills\", factor = 8, y = 5 }]\n\
+                    [legend]\n\"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\nP\n'''\n";
+        let level = Level::parse(text).unwrap();
+        let ctx = RenderContext::for_level(&atlas, &texts, &level);
+        assert_eq!(ctx.background().len(), 1);
+        assert_eq!(
+            (ctx.background()[0].factor16, ctx.background()[0].y_offset),
+            (8, 5)
+        );
+        let game = Game::new(&level, &tuning(), 1);
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(fb.get(0, 179 - 5), Some(A), "raised by y = 5");
+        assert_eq!(fb.get(0, 179), Some(SKY_LIGHT));
     }
 
     #[test]
@@ -581,6 +628,29 @@ mod tests {
             ..p
         };
         assert_eq!(PlayerAnim::of(&falling, &t), PlayerAnim::Fall);
+        assert!(!player_faces_left(&running, &t), "facing stays right");
+        // Running right, holding left: skids, facing the motion (right).
+        let skidding = Player {
+            vx: t.run_speed,
+            skidding: true,
+            facing: Facing::Left,
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&skidding, &t), PlayerAnim::Skid);
+        assert!(!player_faces_left(&skidding, &t), "skid faces the motion");
+        let skid_left = Player {
+            vx: -t.walk_speed,
+            facing: Facing::Right,
+            ..skidding
+        };
+        assert!(player_faces_left(&skid_left, &t));
+        // Once stopped it is idle again and faces the input direction.
+        let stopped = Player {
+            vx: Fx::ZERO,
+            ..skidding
+        };
+        assert_eq!(PlayerAnim::of(&stopped, &t), PlayerAnim::Idle);
+        assert!(player_faces_left(&stopped, &t));
         for (i, s) in PlayerAnim::ALL.iter().enumerate() {
             assert_eq!(s.index(), i);
         }

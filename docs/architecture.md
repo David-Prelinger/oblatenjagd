@@ -165,7 +165,7 @@ time_limit = 300                     # required, 1..=999 seconds
 min_jump_window = 6                  # optional, frames (checked by the solver)
 background = [                       # far to near; factor in 1/16 of the camera speed (0..=32)
   { sprite = "bg_sky_salzburg", factor = 0 },
-  { sprite = "bg_untersberg", factor = 2 },
+  { sprite = "bg_untersberg", factor = 2, y = 24 },   # y: px above the screen bottom (default 0)
   { sprite = "bg_festung", factor = 4 },
   { sprite = "bg_rooftops", factor = 8 },
 ]

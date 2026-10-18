@@ -214,7 +214,7 @@ async fn run(opts: Options) {
     let mut game = new_game(&opts);
     let texts = texts();
     // All renderer lookups are resolved once here (rebuild on level change).
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, game.level());
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, game.level());
     let mut fb = Framebuffer::new();
     let mut bytes = Vec::with_capacity(WIDTH * HEIGHT * 4);
     let mut accumulator = 0.0;

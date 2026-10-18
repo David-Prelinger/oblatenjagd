@@ -1083,7 +1083,7 @@ fn solve_and_report(
     let mut files = Files::default();
 
     let texts = content::texts(root)?;
-    let ctx = RenderContext::new(jnr_assets::atlas(), &texts, level);
+    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, level);
     let dir = &out.preview;
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     if sol.search.complete() {
