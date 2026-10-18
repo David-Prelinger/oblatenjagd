@@ -56,9 +56,13 @@ jumpnrun/
 ```
 jnr-app ──► jnr-render ──► jnr-core
    │            │
-   └──► jnr-assets ◄── (build.rs) jnr-artkit
+   └──► jnr-assets ──► jnr-artkit   (runtime: atlas data types only)
+            ▲              │
+            └─ (build.rs) ◄┘          (build time: parse, lint, pack, codegen)
 xtask ──► everything (never the other way round)
 ```
+
+- `jnr-artkit` has no dependencies by default and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
 
 - `jnr-core` depends on **nothing** except tiny pure crates (e.g. `serde`/`toml` for parsing tuning, if needed). Never on macroquad, std::time, rand, threads, filesystem.
 - `jnr-render` depends only on `jnr-core` and asset data types. Pure Rust, no GPU.
@@ -118,7 +122,7 @@ loop {
 ## jnr-artkit + jnr-assets: asset pipeline
 
 - `jnr-artkit` is a library: parses `.palette` and `.sprite`, runs procedural generators, packs atlases, runs art lints. Details in `art-pipeline.md`.
-- `jnr-assets/build.rs` calls `jnr-artkit` to compile all art into packed RGBA atlases + metadata and embeds them as Rust statics. A broken sprite = a **build error** with file/line.
+- `jnr-assets/build.rs` calls `jnr-artkit` to compile all art into one packed RGBA atlas: raw pixels (`include_bytes!`, borrowed without copying) plus generated Rust code for the metadata. At runtime `jnr_assets::atlas()` builds the `jnr_artkit::atlas::Atlas` once via `OnceLock` (D-010), so `jnr-assets` depends on `jnr-artkit` at runtime for these data types. A broken sprite = a **build error** with file:line:col.
 - Levels and text are embedded as strings and parsed by `jnr-core` (`Level::parse(&str)`), so tests and tools can load them directly.
 - Generated files are **not committed**; sources are the single truth. Previews go to `target/preview/`.
 

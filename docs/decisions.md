@@ -38,3 +38,16 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-009 Parallel code tasks run in git worktrees
 - Two engineers editing the same tree break each other's `cargo xtask check` (and block the orchestrator's Stop hook).
 - Parallel code tasks therefore run in isolated git worktrees, each with its own `CARGO_TARGET_DIR` (`/workspaces/.cargo-target/wt-<task>`), and commit on their own branch; the orchestrator merges them into the milestone branch.
+
+## D-010 Atlas data is owned and built once at startup
+- The atlas types (`Atlas`, `AtlasSprite`, `AtlasAnim`) are plain owned data (`Vec`/`String`) shared by build time and runtime; `jnr_assets::atlas()` builds the atlas once via `OnceLock` from embedded RGBA bytes and generated metadata.
+- One type family instead of separate `&'static` statics; the cost is one pixel copy at startup.
+
+## D-011 Level semantics (jnr-core, M0)
+- `.` is always empty air and can't be redefined in the legend; tile names map to collision kinds in core.
+- Outside the grid: left/right are solid walls, solid tiles in row 0 extend upwards, below the level is empty and falling out kills.
+- A goal is a pole covering its whole column above the goal cell, so it can't be jumped over.
+- The player spawns grounded; `Dying` freezes the player; respawn resets the camera.
+- No air drag; turning in the air uses `air_accel`. On the ground, speed above the current max (RUN released) decays by `friction`.
+- (added after review) One-way platforms are dropped through only with DOWN + JUMP on the ground; DOWN alone does nothing (so walking over Zunftschilder while ducking is safe).
+- The player hitbox size is a gameplay number in `content/tuning.toml`; sprite placement comes from the atlas origin, not from constants in core.

@@ -15,8 +15,10 @@ Status: approved v1. Format spec in `docs/architecture.md` → "Level".
 ## Jump reach (check `content/tuning.toml`; update this table when tuning changes)
 | Situation | Max height | Max gap |
 |---|---|---|
-| walking jump | 4 tiles | ~4 tiles |
-| running jump | 5 tiles | ~7 tiles |
+| walking jump | 4 tiles (65 px) | ~5 tiles (82 px airborne distance) |
+| running jump | 5 tiles (81 px) | ~9 tiles (157 px airborne distance) |
+
+Measured in M0 by `crates/jnr-core/tests/feel.rs`. Gaps "max" means flat ground to flat ground; leave a safety margin of 1 tile in Stage 1.
 
 ## Pacing per section
 1. **Introduce** a mechanic where failing is harmless (no pit under it).
