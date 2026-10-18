@@ -3,52 +3,55 @@
 # above its base): 5000 points and the Wurstkranz popup (D-032).
 level  = salzburg
 source = handwritten
-expect = complete frames=1601..1601 deaths=0 score>=14100
+expect = complete frames=1601..1601 deaths=0 score>=13600
 ---
-RB 64    # solver route, frames 0-1583
+# solver route, frames 0-1583
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
 RBJ 20
-RB 27
+RB 10
 RBJ 36
-RB 102
-RBJ 36
+RB 2
+RBJ 20
 RB 24
 RBJ 36
 RB 10
-RBJ 20
-RB 40
+RBJ 35
+RB 57
 RBJ 36
-RB 22
-RBJ 36
-RB 86
+RB 94
 RBJ 36
 RB 40
 RBJ 36
 RB 40
 RBJ 36
 RB 72
-RBJ 36
-RB 6
 RBJ 20
-RB 72
+RB 24
 RBJ 36
-RB 10
+RB 98
 RBJ 36
 RB 120
 RBJ 36
-RB 22
-RBJ 20
-RB 2
-RBJ 20
-RB 56
-RBJ 6
+RB 8
+RBJ 1
 RB 18
 RBJ 36
-RB 18
-RBJ 34
-RB 8
-RBJ 12
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
 RB 62
 RBJ 20
 RB 23
-RJ 30      # held jump off the rampart edge towards the pole
+RJ 30       # held jump off the rampart edge towards the pole
 R 40

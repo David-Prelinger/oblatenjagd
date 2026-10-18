@@ -2,7 +2,7 @@
 # M-box at col 132 after it (PowerUp; the house steps turn the Mozartkugel back),
 # up over Z1 and the burger sign, a coyote jump from the sign's edge onto Z4,
 # drop through it to the street and wait 4 tiles left of Verkaeufer #1: his
-# fixed arc lands there (Hurt at frame 1335): she shrinks and survives.
+# fixed arc lands there (Hurt at frame 1342): she shrinks and survives.
 level  = salzburg
 source = handwritten
 expect = deaths=0 lives=3 oblaten>=28 state=playing
@@ -42,10 +42,8 @@ J 12
 RJ 18
 R 12
 - 6
-RJ 14       # on_burger_sign
-R 10
-- 20
-RB 34
+- 40        # on_burger_sign (lands on it directly now that the house above is raised; waits)
+RB 36
 RBJ 20      # coyote_jump
 RB 4
 L 12

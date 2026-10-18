@@ -4,9 +4,9 @@
 # feet already below the sign's top, so she passes through the one-way sign
 # from the side, lands on the Erker's left wall (frame 2279) and walks into the
 # Erker (2 Oblaten). Not a trap: with 32 px inside she jumps up through the
-# sign and lands on it (frame 2390, y 98; 2 px under the house). There the
-# house ceiling stops any jump; one press right at the sign's end (her hitbox
-# clear of the house) carries her onto Z3 (frame 2523, y 98).
+# sign and lands on it (frame 2411, y 98). Since D-038 the house above the
+# sign is raised (4 tiles of air over the sign), so a normal jump from the
+# sign carries her onto Z3 (frame 2523, y 98).
 level  = salzburg
 source = handwritten
 expect = deaths=0 lives=3 state=playing oblaten>=46
@@ -29,24 +29,26 @@ RJ 14
 R 48
 RJ 8
 R 10
-- 20
-J 15
-- 60
-R 40
-RJ 25
-R 40
-- 20
+- 10
+- 6
+R 14
+- 4
+J 14        # bump the M-box
+- 86        # the hedge wall turns the Mozartkugel back: PowerUp
+RJ 24       # stomp tourist #2 on the walled hedge top
 R 12
-- 10
-J 8
-- 20
-R 16
-- 10
-J 8
-- 10
-R 30
-RJ 20
+RJ 10
 R 10
+- 6
+RJ 12       # out of the hedge top, down to the street
+R 20
+- 10
+R 40        # under the planter
+- 4
+J 10        # break a planter brick (tourist #3 knocked out)
+R 14
+J 8         # and another one
+R 60        # to the Pegasus basin
 - 10
 RJ 16
 R 4
