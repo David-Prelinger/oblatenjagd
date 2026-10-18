@@ -3,12 +3,13 @@
 //!
 //! Checks: the file parses (legend, grid, exactly one player start — all
 //! enforced by `Level::parse`), `meta.id` is unique, `meta.title_key` (if
-//! set) exists in `content/text/de.toml`, at least one goal, `time_limit` set.
+//! set) and every sign's `text` key exist in `content/text/de.toml`, at
+//! least one goal (`time_limit` is required by `Level::parse`).
 
 use std::path::Path;
 use std::process::ExitCode;
 
-use jnr_core::{EntityKind, Texts};
+use jnr_core::{SpawnKind, Texts};
 
 use crate::content::{self, LevelFile};
 
@@ -17,7 +18,8 @@ cargo xtask levels <command>
 
 Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
-              meta.id): parses, unique id, title_key exists, a goal, time_limit
+              meta.id): parses (incl. time_limit), unique id, title_key and
+              sign text keys exist, a goal
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -90,11 +92,19 @@ pub fn lint(levels: &[LevelFile], texts: &Texts, only: Option<&str>) -> Vec<Stri
                 "{shown}: title_key `{key}` is missing in content/text/de.toml"
             ));
         }
-        if !level.entities.iter().any(|e| e.kind == EntityKind::Goal) {
-            problems.push(format!("{shown}: no goal (add a `goal` entity)"));
+        for e in &level.entities {
+            if let Some(key) = &e.text
+                && !texts.contains(key)
+            {
+                problems.push(format!(
+                    "{shown}: sign at row {}, column {}: text key `{key}` is missing in content/text/de.toml",
+                    e.row + 1,
+                    e.col + 1
+                ));
+            }
         }
-        if level.meta.time_limit.is_none() {
-            problems.push(format!("{shown}: meta.time_limit is not set"));
+        if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
+            problems.push(format!("{shown}: no goal (add a `goal` entity)"));
         }
     }
     if let Some(id) = only
@@ -115,13 +125,13 @@ mod tests {
 
     fn level(meta: &str, grid: &str) -> Result<Level, String> {
         let text = format!(
-            "[meta]\n{meta}\n[legend]\n\"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
+            "[meta]\n{meta}\n[legend]\n\"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"s\" = {{ entity = \"sign\", text = \"stage.a.sign\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
         );
         Level::parse(&text).map_err(|e| e.to_string())
     }
 
     fn texts() -> Texts {
-        Texts::parse("[stage.a]\ntitle = \"A\"\n").unwrap()
+        Texts::parse("[stage.a]\ntitle = \"A\"\nsign = \"Servus\"\n").unwrap()
     }
 
     #[test]
@@ -131,7 +141,7 @@ mod tests {
                 PathBuf::from("a.level"),
                 level(
                     "id = \"a\"\ntitle_key = \"stage.a.title\"\ntime_limit = 300",
-                    "P.G\n###",
+                    "PsG\n###",
                 ),
             ),
             (
@@ -151,26 +161,36 @@ mod tests {
             ),
             (
                 PathBuf::from("b.level"),
-                level("id = \"a\"\ntitle_key = \"stage.nope\"", "P.."),
+                level(
+                    "id = \"a\"\ntime_limit = 5\ntitle_key = \"stage.nope\"",
+                    "P.s",
+                ),
             ),
-            (PathBuf::from("c.level"), level("id = \"c\"", "P?")),
+            (
+                PathBuf::from("c.level"),
+                level("id = \"c\"\ntime_limit = 1", "P?"),
+            ),
+            (PathBuf::from("d.level"), level("id = \"d\"", "PG")),
         ];
-        let problems = lint(&levels, &texts(), None);
+        let texts = Texts::parse("[stage.a]\ntitle = \"A\"\n").unwrap();
+        let problems = lint(&levels, &texts, None);
+        assert_eq!(problems.len(), 6, "{problems:?}");
         assert_eq!(
-            problems,
-            vec![
+            problems[..5],
+            [
                 "b.level: meta.id `a` is also used by a.level",
                 "b.level: title_key `stage.nope` is missing in content/text/de.toml",
+                "b.level: sign at row 1, column 3: text key `stage.a.sign` is missing in content/text/de.toml",
                 "b.level: no goal (add a `goal` entity)",
-                "b.level: meta.time_limit is not set",
                 "c.level: unknown grid character '?' at row 1, column 2 (not in [legend])",
             ]
         );
+        assert!(problems[5].starts_with("d.level: level: ") && problems[5].contains("time_limit"));
         // Only one level: the others' problems (except parse errors) are left out.
-        let only_a = lint(&levels, &texts(), Some("a"));
-        assert_eq!(only_a.len(), 5, "{only_a:?}");
+        let only_a = lint(&levels, &texts, Some("a"));
+        assert_eq!(only_a.len(), 6, "{only_a:?}");
         assert_eq!(
-            lint(&levels[..1], &texts(), Some("zz")),
+            lint(&levels[..1], &texts, Some("zz")),
             vec!["no level with id `zz` in content/levels"]
         );
     }
