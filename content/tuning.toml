@@ -36,6 +36,7 @@ deadzone_bottom = 120
 [game]
 death_frames = 60         # 1 s from death to respawn
 game_over_frames = 60     # GameOver: START restarts the stage after this many frames
+intro_frames = 150        # stage intro screen (title flow: at the start and after every death)
 lives_start = 3
 lives_max = 99
 oblaten_per_life = 100    # 100 Oblaten -> +1 life, counter back to 0
@@ -65,6 +66,7 @@ oblate = 200
 power_up = 1000
 brick = 50
 stomp_chain = [100, 200, 400, 800, 1000, 2000, 4000, 8000]  # then +1 life per stomp
+time_bonus = 50           # per second left at the goal, tallied 1 s per frame
 popup_frames = 30         # score popups float up 16 px over 30 frames
 popup_rise = 16
 
@@ -76,3 +78,12 @@ fiaker_hitbox = [44, 28]
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
+
+[goal]
+zone_heights = [32, 64, 96, 128]          # px of the feet above the Maibaum base at the touch: 2/4/6/8 tiles
+zone_scores = [100, 400, 800, 2000, 5000] # per zone; the last one (>= 8 tiles) is the Wurstkranz
+pole_offset = 2           # px: Resi's hitbox edge to the pole centre while sliding / hopping off
+slide_speed = 512         # 2 px/frame down the pole
+hop_speed = 512           # 2 px/frame up when hopping off at the base (gravity as the player's)
+clear_frames = 180        # stage-clear texts after the time-bonus tally
+to_be_continued_frames = 180  # „Fortsetzung folgt …", then the title screen (M1)

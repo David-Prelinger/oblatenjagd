@@ -1,0 +1,18 @@
+# The solver route through 00_items, then the whole Maibaum sequence: touch on
+# the ground at 379 (100 points), slide (1 frame), hop, walk off screen, tally
+# of the 94 seconds left (4700 points, frames 427..520), stage-clear texts
+# (521..700), „Fortsetzung folgt …" (701..880) and the title screen at 881,
+# where the run is reset (score 0). The tally itself: items_goal_tally.
+level  = items
+seed   = 1
+source = handwritten
+expect = complete frames=379..379 deaths=0 state=title lives=3
+---
+RB 88
+RBJ 36
+RB 71
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+- 520

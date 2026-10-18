@@ -119,11 +119,15 @@ fn goal_completes_the_stage() {
         1
     );
     assert_eq!(g.mode(), Mode::StageClear);
-    let x = g.player().x;
-    let h = g.state_hash();
+    // The goal sequence ignores the input (tests/goal.rs has the details).
+    let mut other = g.clone();
     hold(&mut g, "RJ", 10);
-    assert_eq!(g.player().x, x, "simulation stands still");
-    assert_ne!(g.state_hash(), h, "the frame counter still advances");
+    hold(&mut other, "L", 10);
+    // (Only JUMP is tracked, so a held button is no new press afterwards.)
+    hold(&mut g, "-", 1);
+    hold(&mut other, "-", 1);
+    assert_eq!(g.state_hash(), other.state_hash(), "input is ignored");
+    assert_eq!(g.mode(), Mode::StageClear);
 }
 
 #[test]

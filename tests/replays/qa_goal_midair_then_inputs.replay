@@ -1,6 +1,6 @@
 # QA (M0): touching the goal pole in mid-air completes the stage (step 731,
-# hitbox ~80 px above the ground); in StageClear the simulation stands still,
-# so running/jumping left afterwards must not move the player.
+# hitbox ~80 px above the ground). Since E4 the Maibaum sequence runs on its
+# own (slide, hop, walk off), so inputs afterwards are ignored.
 level  = testbed
 seed   = 1
 source = handwritten

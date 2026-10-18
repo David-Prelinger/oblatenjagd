@@ -5,7 +5,7 @@
 
 use std::path::{Path, PathBuf};
 
-use jnr_core::InputFrame;
+use jnr_core::{InputFrame, Start};
 
 /// The levels embedded in the binary (so wasm needs no file access), as
 /// `(id, source)`. The id must equal the level's `[meta] id`.
@@ -43,6 +43,9 @@ pub struct Options {
     pub input: InputSource,
     /// `--record`: write the played inputs as a replay to this file on exit.
     pub record: Option<PathBuf>,
+    /// How the game starts: the title screen, unless a `--replay` says
+    /// otherwise (its `start`, default `playing`, D-023).
+    pub start: Start,
 }
 
 /// Where the per-frame input comes from.
@@ -82,6 +85,7 @@ impl Default for Options {
             screenshots: Vec::new(),
             input: InputSource::Keyboard,
             record: None,
+            start: Start::Title,
         }
     }
 }

@@ -665,7 +665,11 @@ fn timer_stops_while_dying_and_at_the_goal() {
     let mut g = game(&world_with(20, 100, &[(11, 4, 'G')]));
     until(&mut g, "R", 120, |g| g.mode() == Mode::StageClear);
     let t = g.time_left();
-    hold(&mut g, "-", 300);
+    // It stands still while sliding, hopping and walking off; only the
+    // time-bonus tally counts it down (tests/goal.rs).
+    until(&mut g, "-", 400, |g| {
+        g.stage_clear().unwrap().phase == crate::ClearPhase::Tally
+    });
     assert_eq!(g.time_left(), t);
 }
 
