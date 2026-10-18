@@ -12,7 +12,7 @@ Status: approved v1.
 |---|---|---|
 | all sprites at a glance | `cargo xtask sprites sheet` | `target/preview/contact_sheet.png` |
 | one sprite, scaled | `cargo xtask sprites preview <name>` | `target/preview/sprites/<name>.png` |
-| animation | `cargo xtask sprites anim <name>` | `target/preview/anim/<name>.png` (+ `.gif`) |
+| animation | `cargo xtask sprites anim <name>` | `target/preview/anim/<name>.png` (+ one `<name>_<anim>.gif` per animation) |
 | in context | `cargo xtask scene <level> --x <px>` | `target/preview/scenes/<level>_<px>.png` |
 | motion over time | `cargo xtask filmstrip <replay>` | `target/preview/filmstrips/<replay>.png` |
 | golden mismatch | (from verify) | `target/reports/golden/<name>_{actual,expected,diff}.png` |

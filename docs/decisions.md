@@ -38,3 +38,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-009 Parallel code tasks run in git worktrees
 - Two engineers editing the same tree break each other's `cargo xtask check` (and block the orchestrator's Stop hook).
 - Parallel code tasks therefore run in isolated git worktrees, each with its own `CARGO_TARGET_DIR` (`/workspaces/.cargo-target/wt-<task>`), and commit on their own branch; the orchestrator merges them into the milestone branch.
+
+## D-010 Atlas data is owned and built once at startup
+- The atlas types (`Atlas`, `AtlasSprite`, `AtlasAnim`) are plain owned data (`Vec`/`String`) shared by build time and runtime; `jnr_assets::atlas()` builds the atlas once via `OnceLock` from embedded RGBA bytes and generated metadata.
+- One type family instead of separate `&'static` statics; the cost is one pixel copy at startup.
