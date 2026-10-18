@@ -178,3 +178,11 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 
 ## D-029 Maibaum vs HUD (orchestrator, M1)
 - The Maibaum is 176 px tall (128 px pole + 48 px top) and can't fit fully below the HUD rows on a 180 px screen. Rule: the goal stands on the lowest ground of its screen, and at the goal-touch camera position the `maibaum_top` sprite may reach into the HUD rows (y 0–21) only in the gap between the OBLATEN and LEBEN columns (screen x 130–184), never behind HUD text. With the camera's follow position the pole naturally lands there; the level-designer verifies it with a shot at the touch. Test levels are exempt.
+
+## D-030 Salzburg level follow-ups (orchestrator, M1)
+- **Festungsbahn waits for its rider**: the car waits at its lower end until the player stands on it, then travels up, waits at the top, travels back down and waits again for the next rider. (Replaces the free-running cycle from activation; makes boarding a calm, readable moment and removes the 2-frame boarding window the solver measured.)
+- **Decorative props**: a generic `{ entity = "prop", sprite = "<name>" }` draws a catalog sprite (bottom-centre at the cell) with no collision; collision stays with tiles. Used for the Sphaera (gold ball statue) and other landmarks.
+- New solid tile names `facade` (house wall with windows, autotiled, for Erker/house blocks) and `arch_under` (arch underside, autotiled left/right).
+- `min_jump_window` in level meta is enforced by the `solver` verify step.
+- Stage 1 is 264 × 17 tiles (3 extra empty rows on top so the camera can follow the Wurstkranz popup clear of the HUD, D-029). A good run is ~30–60 s; explorers take longer — game-design.md's "90–150 s" was too high for the level length.
+- The checkpoint's own board text replaces a separate checkpoint sign (no duplicate „Bus 150 / auch voll").

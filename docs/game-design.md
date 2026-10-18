@@ -96,7 +96,7 @@ One stage per station for now; more stages per station can be added later. An il
 
 ## Stage 1: Salzburg (Milestone 1 scope)
 
-Length **~260 columns** (~4160 px, roughly 90–150 s for a good run), 14 rows high (ground top at row 12, rows 12–13 ground or water). `time_limit = 300` (generous on purpose for the first stage). The route follows the real walk from the main station through the old town: Südtiroler Platz (Postbus stops) → Mirabellgarten → Makartsteg → Hanuschplatz (big bus hub) → Getreidegasse → Residenzplatz → Domplatz → Kapitelplatz → Festungsbahn.
+Length **~264 columns** (~4220 px, roughly 30–60 s for a good run, longer for explorers), 17 rows high (3 empty rows on top for the goal camera, D-030). `time_limit = 300` (generous on purpose for the first stage). The route follows the real walk from the main station through the old town: Südtiroler Platz (Postbus stops) → Mirabellgarten → Makartsteg → Hanuschplatz (big bus hub) → Getreidegasse → Residenzplatz → Domplatz → Kapitelplatz → Festungsbahn.
 
 ### Sections
 
