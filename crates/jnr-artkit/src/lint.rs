@@ -11,6 +11,9 @@ use crate::sprite::SpriteSource;
 /// Sprite groups (directories below `art/sprites/`) that are characters or
 /// interactive objects and therefore need a dark outline (`k`).
 pub const OUTLINE_GROUPS: [&str; 3] = ["player", "enemies", "items"];
+/// Frames that are intentionally fully transparent: (sprite, anim, frame index).
+/// The font's space glyph is the only one so far.
+pub const EMPTY_FRAME_ALLOWED: [(&str, &str, u32); 1] = [("font", "glyphs", 0)];
 /// The outline palette char.
 pub const OUTLINE_CHAR: char = 'k';
 
@@ -277,6 +280,7 @@ fn frame_count(s: &SpriteSource, _: &Palette) -> Vec<Hit> {
 fn empty_frame(s: &SpriteSource, p: &Palette) -> Vec<Hit> {
     s.frames
         .iter()
+        .filter(|f| !EMPTY_FRAME_ALLOWED.contains(&(s.name.as_str(), f.anim.as_str(), f.index)))
         .filter(|f| {
             f.rows
                 .iter()
@@ -468,6 +472,15 @@ mod tests {
     #[test]
     fn empty_frame_rule() {
         let s = sprite("test", &GOOD.replace("kwk\nkkk", "...\n..."));
+        assert_eq!(rules(&s), [("empty-frame", 8, 0)]);
+    }
+
+    #[test]
+    fn empty_frame_allowed_only_for_font_space() {
+        let src = "sprite = font\nsize = 3x2\nanim = glyphs frames=2 ticks=1\n---\n\
+                   frame glyphs 0\n...\n...\nframe glyphs 1\n...\n...\n";
+        let s = parse_sprite("ui/font.sprite", "ui", src).unwrap();
+        // Frame 0 (space) is allowed; frame 1 (line 8) is still reported.
         assert_eq!(rules(&s), [("empty-frame", 8, 0)]);
     }
 
