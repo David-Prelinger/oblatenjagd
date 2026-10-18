@@ -10,7 +10,7 @@ anim   = auto frames=16 ticks=1
 frame auto 0
 .iiiiiiiiiiiiii.
 ddmmmmmmmmmmmmmd
-dddddddddddddddd
+mdd...dmd.d...md
 md.d.d.md..d.dmd
 md..d..md...dimd
 md.i.d.md..dppmd
@@ -27,7 +27,7 @@ mdddddddddddddmd
 frame auto 1
 .iiiiiiiiiiiiii.
 ddmmmmmmmmmmmmmd
-dddddddddddddddd
+mdd...dmd.d...md
 md.d.d.md..d.dmd
 md..d..md...dimd
 md.i.d.md..dppmd
@@ -44,7 +44,7 @@ mdddddddddddddmd
 frame auto 2
 .iiiiiiiiiiiiiii
 ddmmmmmmmmmmmmmm
-dddddddddddddddd
+mdd...dmd.d...d.
 md.d.d.md..d.d..
 md..d..md...di..
 md.i.d.md..dpp..
@@ -61,7 +61,7 @@ mddddddddddddddd
 frame auto 3
 .iiiiiiiiiiiiiii
 ddmmmmmmmmmmmmmm
-dddddddddddddddd
+mdd...dmd.d...d.
 md.d.d.md..d.d..
 md..d..md...di..
 md.i.d.md..dpp..
@@ -78,7 +78,7 @@ mddddddddddddddd
 frame auto 4
 .iiiiiiiiiiiiii.
 ddmmmmmmmmmmmmmd
-dddddddddddddddd
+mdd...dmd.d...md
 md.d.d.md..d.dmd
 md..d..md...dimd
 md.i.d.md..dppmd
@@ -95,7 +95,7 @@ mdddddddddddddmd
 frame auto 5
 .iiiiiiiiiiiiii.
 ddmmmmmmmmmmmmmd
-dddddddddddddddd
+mdd...dmd.d...md
 md.d.d.md..d.dmd
 md..d..md...dimd
 md.i.d.md..dppmd
@@ -112,7 +112,7 @@ mdddddddddddddmd
 frame auto 6
 .iiiiiiiiiiiiiii
 ddmmmmmmmmmmmmmm
-dddddddddddddddd
+mdd...dmd.d...d.
 md.d.d.md..d.d..
 md..d..md...di..
 md.i.d.md..dpp..
@@ -129,7 +129,7 @@ mddddddddddddddd
 frame auto 7
 .iiiiiiiiiiiiiii
 ddmmmmmmmmmmmmmm
-dddddddddddddddd
+mdd...dmd.d...d.
 md.d.d.md..d.d..
 md..d..md...di..
 md.i.d.md..dpp..
@@ -146,7 +146,7 @@ mddddddddddddddd
 frame auto 8
 iiiiiiiiiiiiiii.
 mmmmmmmmmmmmmmmd
-dddddddddddddddd
+..d...dmd.d...md
 ...d.d.md..d.dmd
 ....d..md...dimd
 ...i.d.md..dppmd
@@ -163,7 +163,7 @@ ddddddddddddddmd
 frame auto 9
 iiiiiiiiiiiiiii.
 mmmmmmmmmmmmmmmd
-dddddddddddddddd
+..d...dmd.d...md
 ...d.d.md..d.dmd
 ....d..md...dimd
 ...i.d.md..dppmd
@@ -180,7 +180,7 @@ ddddddddddddddmd
 frame auto 10
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-dddddddddddddddd
+..d...dmd.d...d.
 ...d.d.md..d.d..
 ....d..md...di..
 ...i.d.md..dpp..
@@ -197,7 +197,7 @@ dddddddddddddddd
 frame auto 11
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-dddddddddddddddd
+..d...dmd.d...d.
 ...d.d.md..d.d..
 ....d..md...di..
 ...i.d.md..dpp..
@@ -214,7 +214,7 @@ dddddddddddddddd
 frame auto 12
 iiiiiiiiiiiiiii.
 mmmmmmmmmmmmmmmd
-dddddddddddddddd
+..d...dmd.d...md
 ...d.d.md..d.dmd
 ....d..md...dimd
 ...i.d.md..dppmd
@@ -231,7 +231,7 @@ ddddddddddddddmd
 frame auto 13
 iiiiiiiiiiiiiii.
 mmmmmmmmmmmmmmmd
-dddddddddddddddd
+..d...dmd.d...md
 ...d.d.md..d.dmd
 ....d..md...dimd
 ...i.d.md..dppmd
@@ -248,7 +248,7 @@ ddddddddddddddmd
 frame auto 14
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-dddddddddddddddd
+..d...dmd.d...d.
 ...d.d.md..d.d..
 ....d..md...di..
 ...i.d.md..dpp..
@@ -265,7 +265,7 @@ dddddddddddddddd
 frame auto 15
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-dddddddddddddddd
+..d...dmd.d...d.
 ...d.d.md..d.d..
 ....d..md...di..
 ...i.d.md..dpp..

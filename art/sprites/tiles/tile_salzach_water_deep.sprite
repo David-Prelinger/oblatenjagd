@@ -1,16 +1,16 @@
-# Salzach below the surface row: flat b / B with drifting streaks.
+# Salzach below the surface row: flat B with two drifting b streaks.
 sprite = tile_salzach_water_deep
 size   = 16x16
 origin = 0,0
 anim   = idle frames=4 ticks=12 loop
 ---
 frame idle 0
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbTTTbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBbbbBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
@@ -22,12 +22,12 @@ BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 frame idle 1
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbTTTbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBbbbBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
@@ -39,12 +39,12 @@ BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 frame idle 2
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbTTTbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBbbbBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
@@ -56,12 +56,12 @@ BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 frame idle 3
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-TbbbbbbbbbbbbbTT
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
-bbbbbbbbbbbbbbbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+bBBBBBBBBBBBBBbb
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
+BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
 BBBBBBBBBBBBBBBB
