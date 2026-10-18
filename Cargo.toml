@@ -1,6 +1,28 @@
-[package]
-name = "hello_daniel"
+[workspace]
+resolver = "3"
+members = [
+    "crates/jnr-core",
+    "crates/jnr-render",
+    "crates/jnr-artkit",
+    "crates/jnr-assets",
+    "crates/jnr-app",
+    "xtask",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.87"
+publish = false
 
-[dependencies]
+[workspace.dependencies]
+# Workspace crates
+jnr-core = { path = "crates/jnr-core" }
+jnr-render = { path = "crates/jnr-render" }
+jnr-artkit = { path = "crates/jnr-artkit" }
+jnr-assets = { path = "crates/jnr-assets" }
+
+# External crates (permissive licences only, see docs/validation.md)
+# Only jnr-app may depend on macroquad (enforced by `cargo xtask check`).
+macroquad = { version = "0.4.16", default-features = false }
+serde_json = "1.0"

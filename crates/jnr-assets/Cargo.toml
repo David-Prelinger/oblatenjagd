@@ -1,0 +1,12 @@
+[package]
+name = "jnr-assets"
+description = "Compiles art/ and content/ at build time into embedded data."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[build-dependencies]
+jnr-artkit.workspace = true

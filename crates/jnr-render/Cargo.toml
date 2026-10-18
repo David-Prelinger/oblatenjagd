@@ -1,0 +1,10 @@
+[package]
+name = "jnr-render"
+description = "Software renderer: game state + assets -> 320x180 RGBA framebuffer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+jnr-core.workspace = true

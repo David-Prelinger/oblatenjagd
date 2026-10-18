@@ -1,0 +1,13 @@
+[package]
+name = "jnr-app"
+description = "Oblatenjagd game binary: thin macroquad shell, native + wasm."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+jnr-core.workspace = true
+jnr-render.workspace = true
+jnr-assets.workspace = true
+macroquad.workspace = true
