@@ -24,3 +24,5 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Sky generator quirk**: `checker` dither on a transition starting at an odd row produces no dither (row_mix thresholds 12/4 vs a 4/16 mix) in `crates/jnr-artkit/src/generators/sky.rs`; Salzburg sky works around it with `until = 45`.
 - **bg_untersberg seam polish**: column 0 rows 41–44 → `f` so the lit face continues across the wrap (art-director note).
 - **HUD × before counters**: the `×` in `w` nearly vanishes on `h` haze — draw it in `Y` like the numbers or drop it (art-director note; for the HUD task).
+- **Maibaum ribbon polish**: frame 1 inner white ribbons end in 3 px `k` blocks at rows 26–27; carry a 1 px `w` (col 6 / col 25) down rows 26–28.
+- **Debris vs brick**: check the `debris` colours match the merged brick tile.
