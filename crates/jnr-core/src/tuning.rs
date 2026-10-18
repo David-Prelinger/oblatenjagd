@@ -25,6 +25,17 @@ pub struct Tuning {
     pub score: ScoreTuning,
     /// Enemy hitboxes (behaviour comes with the enemy task).
     pub enemies: EnemyTuning,
+    /// Moving platforms.
+    pub platforms: PlatformTuning,
+}
+
+/// Moving platforms (the Festungsbahn is inert until its own task).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PlatformTuning {
+    /// Festungsbahn car `[w, h]` in whole pixels (feet at the bottom
+    /// centre, left-aligned in its spawn cell).
+    pub festungsbahn_size: [i32; 2],
 }
 
 /// Player movement constants (SMB-style).
@@ -300,6 +311,10 @@ impl Tuning {
                 e.mozartkugel_verkaeufer_hitbox,
             ),
             ("enemies.fiaker_hitbox", e.fiaker_hitbox),
+            (
+                "platforms.festungsbahn_size",
+                self.platforms.festungsbahn_size,
+            ),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -329,6 +344,24 @@ impl Tuning {
         if i.multi_oblaten == 0 {
             return Err(ParseError::new(
                 "tuning.toml: items.multi_oblaten must be >= 1",
+            ));
+        }
+        // Frame counts where 0 would break behaviour (a power-up that never
+        // starts rolling, an Oblate that never pops, a window that is over
+        // before it starts, a death without a dying phase).
+        for (name, v) in [
+            ("items.rise_frames", i.rise_frames),
+            ("items.pop_frames", i.pop_frames),
+            ("items.multi_frames", i.multi_frames),
+            ("game.death_frames", g.death_frames),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if !(0..=TILE_PX * 4).contains(&self.score.popup_rise) {
+            return Err(ParseError::new(
+                "tuning.toml: score.popup_rise must be 0..=64 px",
             ));
         }
         if self.score.popup_frames == 0 {
@@ -402,6 +435,15 @@ mod tests {
             assert!(Tuning::parse(&overflow).is_err(), "{field} = 255");
         }
         for (field, bad) in [
+            ("rise_frames", 0),
+            ("pop_frames", 0),
+            ("multi_frames", 0),
+            ("death_frames", 0),
+            ("bump_frames", 1),
+            ("multi_oblaten", 0),
+            ("popup_frames", 0),
+            ("lives_start", 0),
+            ("festungsbahn_size", -1),
             ("hitbox_w", 3),
             ("hitbox_w", 17),
             ("hitbox_h", 3),

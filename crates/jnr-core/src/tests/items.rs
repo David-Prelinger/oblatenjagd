@@ -446,7 +446,9 @@ fn stomp_chain_scores_double_then_lives() {
             Fx::ZERO,
             [12, 20],
         );
-        let p = g.stomp_reward(EnemyKind::SelfieTourist, e.x, e.y);
+        let p = g
+            .stomp_reward(EnemyKind::SelfieTourist, e.x, e.y)
+            .expect("a popup below the lives cap");
         match t.score.stomp_chain.get(usize::from(i)) {
             Some(&points) => {
                 assert_eq!(g.score(), before.0 + points);
@@ -459,6 +461,128 @@ fn stomp_chain_scores_double_then_lives() {
         }
     }
     assert_eq!(g.score(), 100 + 200 + 400 + 800 + 1000 + 2000 + 4000 + 8000);
+    // At the lives cap a chain life gives nothing: no event, no popup.
+    g.lives = t.game.lives_max;
+    let seen = g.events().len();
+    assert!(
+        g.stomp_reward(EnemyKind::SelfieTourist, Fx::ZERO, Fx::ZERO)
+            .is_none()
+    );
+    assert_eq!(g.lives(), t.game.lives_max);
+    assert!(!g.events()[seen..].contains(&Event::ExtraLife));
+}
+
+/// Falls (from row 3) onto two Selfie-Tourists in columns 2 and 3; the
+/// player's hitbox (x 42..54) overlaps both (x 34..46 and 50..62).
+#[test]
+fn two_enemies_stomped_in_the_same_frame() {
+    let t = tuning();
+    let mut g = game(&world(20, &[(3, 2, 'P'), (11, 2, 't'), (11, 3, 't')]));
+    g.player.x = Fx::from_px(42);
+    let tourists = |g: &Game| count(g, EntityKind::Enemy(EnemyKind::SelfieTourist));
+    assert_eq!(tourists(&g), 2);
+    let events = until(&mut g, "-", 120, |g| g.events().contains(&Event::Stomped));
+    assert!(!events.contains(&Event::Hurt) && !events.contains(&Event::Died));
+    assert_eq!(tourists(&g), 0, "both stomped");
+    assert_eq!(g.score(), 100 + 200, "chain: 100, then 200");
+    assert_eq!(g.player().stomp_chain, 2);
+    // One bounce and one `Stomped` event per frame, however many enemies.
+    let stomped = g.events().iter().filter(|e| **e == Event::Stomped).count();
+    assert_eq!(stomped, 1);
+    assert_eq!(g.player().vy, -t.player.stomp_bounce);
+    let popups: Vec<EntityKind> = g
+        .entities()
+        .iter()
+        .map(|e| e.kind)
+        .filter(|k| matches!(k, EntityKind::Popup(_)))
+        .collect();
+    assert_eq!(
+        popups,
+        vec![
+            EntityKind::Popup(Popup::Score(100)),
+            EntityKind::Popup(Popup::Score(200))
+        ]
+    );
+}
+
+/// A Selfie-Tourist on the ground (hitbox y 172..192, middle 182) and a
+/// player falling onto it with its feet at `feet` on the previous frame.
+fn fall_onto_tourist_from(feet: Fx) -> Vec<Event> {
+    let mut g = game(&world(20, &[(11, 6, 't')]));
+    g.player.x = Fx::from_px(6 * 16 + 2);
+    g.player.y = feet - g.player.h;
+    g.player.vy = Fx::from_px(1);
+    g.player.on_ground = false;
+    g.step(input("-")).to_vec()
+}
+
+#[test]
+fn stomp_needs_the_previous_feet_above_the_enemy_middle() {
+    let middle = Fx::from_px(182);
+    // Exactly at the middle: stomp.
+    let events = fall_onto_tourist_from(middle);
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    // One subpixel below the middle on the previous frame: hurt (death as
+    // Normal), not a stomp.
+    let events = fall_onto_tourist_from(middle + Fx(1));
+    assert!(!events.contains(&Event::Stomped), "{events:?}");
+    assert!(events.contains(&Event::Died), "{events:?}");
+}
+
+/// One frame with a stomp on tourist A (on the ground, middle 182) and a
+/// side touch of tourist B (y 150..170, middle 160, so the previous feet at
+/// 180 are below it): A is stomped, B hurts (Big: shrink), whichever comes
+/// first in the entity list.
+fn stomp_and_side_touch(b_first: bool) -> (Game, Vec<Event>) {
+    let t = tuning();
+    let mut g = game(&world(20, &[(3, 10, 'P'), (8, 5, 't'), (11, 2, 't')]));
+    // entities: [B (row 8), A (row 11)]; move B next to A.
+    let b = &mut g.entities[0];
+    b.x = Fx::from_px(44);
+    b.y = Fx::from_px(150);
+    if !b_first {
+        g.entities.swap(0, 1);
+    }
+    g.player.set_power(Power::Big, &t.player);
+    g.player.transform = 0;
+    g.player.x = Fx::from_px(36);
+    g.player.y = Fx::from_px(180) - g.player.h;
+    g.player.vy = Fx::from_px(1);
+    g.player.on_ground = false;
+    let events = g.step(input("-")).to_vec();
+    (g, events)
+}
+
+#[test]
+fn stomps_and_hurts_do_not_depend_on_entity_order() {
+    let (a, a_events) = stomp_and_side_touch(true);
+    let (b, b_events) = stomp_and_side_touch(false);
+    for (g, events) in [(&a, &a_events), (&b, &b_events)] {
+        assert!(events.contains(&Event::Stomped), "{events:?}");
+        assert!(events.contains(&Event::Hurt), "{events:?}");
+        assert_eq!(g.score(), 100);
+        assert_eq!(g.player().power, Power::Normal);
+        assert_eq!(count(g, EntityKind::Enemy(EnemyKind::SelfieTourist)), 1);
+    }
+    assert_eq!(a.player(), b.player(), "same player state in both orders");
+    let sorted = |e: &Vec<Event>| {
+        let mut n: Vec<&str> = e.iter().map(|e| e.name()).collect();
+        n.sort();
+        n
+    };
+    assert_eq!(sorted(&a_events), sorted(&b_events));
+}
+
+/// The per-kind fields the enemy task builds on; `prev_y` is the
+/// position the stomp rule uses (snapshot before the entity moves).
+#[test]
+fn enemies_have_per_kind_state_and_a_previous_position() {
+    let mut g = game(&world(20, &[(3, 2, 'P'), (11, 2, 't')]));
+    let e = &mut g.entities[0];
+    assert_eq!(e.prev_y, e.y);
+    assert_eq!(e.dir, -1, "enemies face the player");
+    assert_eq!(e.base_y, e.y);
+    until(&mut g, "-", 120, |g| g.events().contains(&Event::Stomped));
 }
 
 #[test]
@@ -491,9 +615,29 @@ fn lives_and_score_are_capped() {
     g.lives = 99;
     g.oblaten = 99;
     g.score = crate::game::MAX_SCORE - 100;
-    hold(&mut g, "R", 60);
+    let events = hold(&mut g, "R", 60);
     assert_eq!(g.lives(), 99);
+    assert_eq!(g.oblaten(), 0, "the counter still restarts");
+    assert!(!events.contains(&Event::ExtraLife), "no life at the cap");
     assert_eq!(g.score(), crate::game::MAX_SCORE);
+}
+
+#[test]
+fn zaunerstollen_at_the_lives_cap_shows_no_popup() {
+    let mut g = game(&world(20, &[(9, 2, 'Z'), (10, 8, '#'), (11, 8, '#')]));
+    g.lives = tuning().game.lives_max;
+    until(&mut g, "J", 30, |g| {
+        g.events().contains(&Event::BlockBumped)
+    });
+    let events = until(&mut g, "-", 400, |g| {
+        count(g, EntityKind::Zaunerstollen) == 0
+    });
+    assert!(!events.contains(&Event::ExtraLife));
+    assert!(
+        !g.entities()
+            .iter()
+            .any(|e| e.kind == EntityKind::Popup(Popup::ExtraLife))
+    );
 }
 
 // ------------------------------------------------------------ timer

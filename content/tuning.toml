@@ -73,3 +73,6 @@ selfie_tourist_hitbox = [12, 20]          # px [w, h]
 taube_hitbox = [12, 10]
 mozartkugel_verkaeufer_hitbox = [12, 22]
 fiaker_hitbox = [44, 28]
+
+[platforms]
+festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

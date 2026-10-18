@@ -610,6 +610,8 @@ impl Game {
         let bottom = self.map.height_fx();
         let mut spawned = Vec::new();
         for e in &mut self.entities {
+            // Snapshot for the stomp rule (previous-frame position).
+            e.prev_y = e.y;
             if !e.active && e.x < activate_x {
                 e.active = true;
                 e.timer = 0;
@@ -628,8 +630,16 @@ impl Game {
     }
 
     /// The player against every active entity, in order.
+    ///
+    /// Two passes, so the result does not depend on the entity order:
+    /// first items and stomps (every enemy whose stomp rule holds is
+    /// stomped, the chain counts each one), then hurts from the enemies
+    /// that were touched but not stomped. A frame with any stomp bounces
+    /// the player once and reports one `Stomped` event (however many
+    /// enemies it hit).
     fn interact(&mut self, prev_bottom: Fx, input: InputFrame) {
         let mut bounced = false;
+        let mut hurt = false;
         let mut spawned = Vec::new();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
@@ -653,22 +663,23 @@ impl Game {
                 }
                 EntityKind::Zaunerstollen => {
                     self.entities[i].removed = true;
-                    self.add_life();
-                    spawned.push(popup(Popup::ExtraLife, fx, e.y));
+                    if self.add_life() {
+                        spawned.push(popup(Popup::ExtraLife, fx, e.y));
+                    }
                 }
                 EntityKind::Enemy(kind) => {
-                    let stomp = self.player.vy > Fx::ZERO && prev_bottom <= e.y + e.h.div_int(2);
-                    if stomp {
+                    // Stomp: falling, and the feet were above the enemy's
+                    // middle on the previous frame (both positions from
+                    // before this frame's movement).
+                    let middle = e.prev_y + e.h.div_int(2);
+                    if self.player.vy > Fx::ZERO && prev_bottom <= middle {
                         bounced = true;
                         if kind.stompable() {
                             self.entities[i].removed = true;
-                            spawned.push(self.stomp_reward(kind, fx, e.y));
+                            spawned.extend(self.stomp_reward(kind, fx, e.y));
                         }
                     } else {
-                        self.hurt_player();
-                        if self.mode != Mode::Playing {
-                            break;
-                        }
+                        hurt = true;
                     }
                 }
                 EntityKind::PoppedOblate
@@ -680,6 +691,9 @@ impl Game {
                 | EntityKind::Festungsbahn => {}
             }
         }
+        if hurt {
+            self.hurt_player();
+        }
         if bounced && self.mode == Mode::Playing {
             self.player.bounce(input.jump(), &self.tuning.player);
             self.events.push(Event::Stomped);
@@ -687,8 +701,9 @@ impl Game {
         self.entities.extend(spawned);
     }
 
-    /// Points (or a life) for a stomp in the current chain; returns its popup.
-    pub(crate) fn stomp_reward(&mut self, kind: EnemyKind, x: Fx, y: Fx) -> Entity {
+    /// Points (or a life) for a stomp in the current chain; returns its
+    /// popup (none for a life at the lives cap).
+    pub(crate) fn stomp_reward(&mut self, kind: EnemyKind, x: Fx, y: Fx) -> Option<Entity> {
         let chain = &self.tuning.score.stomp_chain;
         let mut idx = usize::from(self.player.stomp_chain);
         if idx == 0 && kind == EnemyKind::MozartkugelVerkaeufer {
@@ -698,12 +713,9 @@ impl Game {
         match chain.get(idx) {
             Some(&points) => {
                 self.add_score(points);
-                popup(Popup::Score(points), x, y)
+                Some(popup(Popup::Score(points), x, y))
             }
-            None => {
-                self.add_life();
-                popup(Popup::ExtraLife, x, y)
-            }
+            None => self.add_life().then(|| popup(Popup::ExtraLife, x, y)),
         }
     }
 
@@ -733,9 +745,15 @@ impl Game {
         }
     }
 
-    fn add_life(&mut self) {
-        self.lives = (self.lives.saturating_add(1)).min(self.tuning.game.lives_max);
+    /// +1 life with an `ExtraLife` event; at the cap nothing happens and
+    /// it returns false (callers then show no „+1 Leben" popup).
+    fn add_life(&mut self) -> bool {
+        if self.lives >= self.tuning.game.lives_max {
+            return false;
+        }
+        self.lives += 1;
         self.events.push(Event::ExtraLife);
+        true
     }
 
     fn add_score(&mut self, points: u32) {

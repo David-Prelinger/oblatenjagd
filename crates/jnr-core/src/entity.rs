@@ -193,6 +193,18 @@ pub struct Entity {
     pub spawn: Option<u16>,
     /// Marked for removal at the end of the step.
     pub removed: bool,
+    /// Hitbox top at the start of the current step (before its own
+    /// movement): the stomp rule compares against this middle.
+    pub prev_y: Fx,
+    /// Per-kind state machine value (e.g. walking / selfie / wind-up);
+    /// 0 = the kind's initial state. Free for the enemy task.
+    pub state: u8,
+    /// Per-kind direction: -1 left, 1 right, 0 none (enemies start
+    /// facing left, towards the player).
+    pub dir: i8,
+    /// Per-kind reference height (e.g. the centre line of a flying Taube's
+    /// sine wave); the spawn y by default.
+    pub base_y: Fx,
 }
 
 impl Entity {
@@ -210,6 +222,10 @@ impl Entity {
             active: true,
             spawn: None,
             removed: false,
+            prev_y: y,
+            state: 0,
+            dir: 0,
+            base_y: y,
         }
     }
 
@@ -279,13 +295,21 @@ impl Entity {
             ),
             SpawnKind::Festungsbahn => {
                 // Left-aligned in its cell: the car is 3 tiles wide.
-                let mut car = Entity::at_feet(EntityKind::Festungsbahn, feet_x, feet_y, [48, 24]);
+                let mut car = Entity::at_feet(
+                    EntityKind::Festungsbahn,
+                    feet_x,
+                    feet_y,
+                    t.platforms.festungsbahn_size,
+                );
                 car.x = cell_x;
                 car
             }
         };
         entity.active = false;
         entity.spawn = Some(index as u16);
+        if matches!(entity.kind, EntityKind::Enemy(_)) {
+            entity.dir = -1;
+        }
         Some(entity)
     }
 
@@ -423,6 +447,10 @@ impl Entity {
         h.bool(self.active);
         h.u16(self.spawn.unwrap_or(u16::MAX));
         h.bool(self.removed);
+        h.i32(self.prev_y.raw());
+        h.u8(self.state);
+        h.u8(self.dir as u8);
+        h.i32(self.base_y.raw());
     }
 }
 

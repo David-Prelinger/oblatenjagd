@@ -294,6 +294,8 @@ pub struct LevelMeta {
 pub const MAX_TIME_LIMIT: u32 = 999;
 /// Largest background `factor` (2× camera speed, for foreground layers).
 pub const MAX_BACKGROUND_FACTOR: u32 = 32;
+/// Most entity spawns in one level (entities refer to their spawn by `u16`).
+pub const MAX_SPAWNS: usize = u16::MAX as usize;
 /// Largest background `y` offset in px (one screen height).
 pub const MAX_BACKGROUND_Y: u32 = 180;
 
@@ -428,6 +430,12 @@ impl Level {
             }
         }
 
+        if entities.len() > MAX_SPAWNS {
+            return Err(ParseError::new(format!(
+                "level has {} entity spawns, at most {MAX_SPAWNS} are allowed",
+                entities.len()
+            )));
+        }
         let starts: Vec<&EntitySpawn> = entities
             .iter()
             .filter(|e| e.kind == SpawnKind::PlayerStart)
@@ -924,6 +932,23 @@ P.sSC.tfG
         assert!(err(&bad_style).contains("neon"));
         let window = V2.replace("min_jump_window = 6", "min_jump_window = -1");
         assert!(Level::parse(&window).is_err());
+    }
+
+    #[test]
+    fn too_many_spawns_is_an_error() {
+        let row = "o".repeat(MAX_SPAWNS / 2 + 1);
+        let grid = format!("P{row}\n.{row}\n");
+        let text = format!(
+            "[meta]\nid = \"many\"\ntime_limit = 1\n[legend]\n\"o\" = {{ entity = \"oblate\" }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        let e = err(&text);
+        assert!(
+            e.contains("65537 entity spawns") && e.contains("65535"),
+            "{e}"
+        );
+        let ok = text.replacen(".o", "..", 1).replacen(".o", "..", 1);
+        assert!(Level::parse(&ok).is_ok(), "exactly 65535");
     }
 
     #[test]

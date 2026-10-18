@@ -8,7 +8,6 @@
 
 [meta]
 id = "items"
-title_key = "stage.clear"
 time_limit = 100
 
 [legend]
