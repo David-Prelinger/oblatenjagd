@@ -790,6 +790,11 @@ impl Game {
     /// the player once and reports one `Stomped` event (however many
     /// enemies it hit).
     ///
+    /// Every contact of the frame uses the player's hitbox from before the
+    /// pass: a Mozartkugel grows her (feet kept) at once, but the new head is
+    /// fitted under the tiles (`Player::fit_head`) only after the pass, and
+    /// later entities in the list still meet the old hitbox.
+    ///
     /// A bounce off a non-stompable enemy (the Fiaker) puts the player's
     /// feet on its top, so the next frame (rising) can't be a side hit
     /// (D-027). If a solid tile is in the way there, she stays where she is
@@ -802,9 +807,11 @@ impl Game {
         // Top of the highest non-stompable enemy bounced off this frame.
         let mut rest_on: Option<Fx> = None;
         let mut spawned = Vec::new();
+        let mut grew = false;
+        let hitbox = self.player.hitbox();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
-            if !e.active || e.removed || !e.hitbox().overlaps(&self.player.hitbox()) {
+            if !e.active || e.removed || !e.hitbox().overlaps(&hitbox) {
                 continue;
             }
             let (fx, _) = e.feet();
@@ -817,7 +824,7 @@ impl Game {
                     self.entities[i].removed = true;
                     if self.player.power == Power::Normal {
                         self.player.set_power(Power::Big, &self.tuning.player);
-                        self.player.fit_head(&self.map);
+                        grew = true;
                         self.events.push(Event::PowerUp);
                     }
                     self.add_score(self.tuning.score.power_up);
@@ -861,6 +868,9 @@ impl Game {
                 | EntityKind::Sign
                 | EntityKind::Festungsbahn => {}
             }
+        }
+        if grew {
+            self.player.fit_head(&self.map);
         }
         if hurt && !self.touches_goal() {
             self.hurt_player();
