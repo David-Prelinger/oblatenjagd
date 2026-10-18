@@ -1,0 +1,58 @@
+# Oblatenkiste: Zauner-gold box (Y o O) with an Oblate emblem, k outline;
+# shimmer streak.
+sprite = tile_oblaten_box
+size   = 16x16
+origin = 0,0
+anim   = idle frames=3 ticks=10 loop
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOooooOk
+kYooocccocOoooOk
+kYooccocccoOooOk
+kYoocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 1
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYoooYYYooooooOk
+kYoOYYYoooooOoOk
+kYoYYYOccOooooOk
+kYYYYcccocOoooOk
+kYYYccocccoOooOk
+kYYocccccccOooOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOooooooooOoOk
+kYooooooooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
+frame idle 2
+kkkkkkkkkkkkkkkk
+kYYYYYYYYYYYYYok
+kYooooooooooooOk
+kYoOooooooooOoOk
+kYooooOccOoooYOk
+kYooocccocOoYYOk
+kYooccocccoOYYOk
+kYoocccccccOYoOk
+kYoococcocOOooOk
+kYooccccccOOooOk
+kYooocOcOOOoooOk
+kYooooOOOOooooOk
+kYoOoYYYooooOoOk
+kYooYYYoooooooOk
+koOOOOOOOOOOOOOk
+kkkkkkkkkkkkkkkk
