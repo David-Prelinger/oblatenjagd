@@ -39,7 +39,7 @@ jumpnrun/
 │  ├─ palettes/main.palette
 │  ├─ sprites/**/*.sprite
 │  ├─ generators/*.toml       # parameters for procedural art (parallax, water, tiles)
-│  └─ fonts/*.sprite          # bitmap font incl. ÄÖÜäöüß„“–
+│  └─ sprites/ui/font.sprite  # bitmap font incl. ÄÖÜäöüß„“– (see jnr-render)
 ├─ content/
 │  ├─ levels/01_salzburg.level
 │  ├─ text/de.toml            # all player-visible German text, keyed
@@ -55,7 +55,7 @@ jumpnrun/
 
 ```
 jnr-app ──► jnr-render ──► jnr-core
-   │            │
+   │            └──────────► jnr-artkit   (atlas data types; the atlas is passed in as &Atlas)
    └──► jnr-assets ──► jnr-artkit   (runtime: atlas data types only)
             ▲              │
             └─ (build.rs) ◄┘          (build time: parse, lint, pack, codegen)
@@ -103,6 +103,12 @@ Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes +
 - Pure pixel ops: blit with transparency, horizontal flip, palette swap, bitmap text. No rotation/scaling (pixel-art purity).
 - The **same renderer** is used by the real game and by headless screenshots, so a golden screenshot is exactly what the player sees.
 - Cost: 320×180 = 57 600 pixels, trivially fast on CPU, also in wasm.
+
+Implemented (M0):
+- `jnr-render` never depends on `jnr-assets` (only as a dev-dependency for a sanity test): every draw call takes `&Atlas`, so tests use small hand-built atlases.
+- `Framebuffer` (`fill_rect`, `outline_rect`, `get`/`set`, `to_rgba_bytes`/`write_rgba_bytes`); `blit_frame` and `draw_sprite` (origin placement via `origin_facing`, mirrored frames or flip fallback, optional tint). Atlas alpha 0 is skipped, everything else drawn opaque; all blits clip at every edge.
+- Font: sprite `font`, 8×8 frames, one anim `glyphs`, one frame per character of `jnr_render::CHARSET` (89 glyphs, order fixed). Advance = rightmost opaque column + 2, space = 3 px, line height 9, unknown characters draw as `?`. No `font` sprite → text is a no-op.
+- `render(&Game, &Atlas, &mut Framebuffer)`: sky (`Layer` list as the parallax hook) → tiles (`tile_<name>` sprite, else grey-box per `TileKind`) → goal (`goal` sprite, else a pole) → player (`player` sprite at the feet, anim idle/walk/run/jump/fall with fallbacks, else the hitbox box; blinks every 4 frames while dying) → stage-clear text. `render_debug` is the opt-in F1 overlay (hitboxes, frame, position).
 
 ## jnr-app: macroquad shell
 

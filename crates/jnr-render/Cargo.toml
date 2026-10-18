@@ -8,3 +8,10 @@ publish.workspace = true
 
 [dependencies]
 jnr-core.workspace = true
+# Atlas data types only (default features: no dependencies, wasm-safe).
+# The atlas itself is passed in as `&Atlas`, so tests can use hand-built ones.
+jnr-artkit.workspace = true
+
+[dev-dependencies]
+# Sanity test: `render` works with the real embedded atlas.
+jnr-assets.workspace = true
