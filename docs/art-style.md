@@ -193,6 +193,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 ## 11. UI and font
 
 - Bitmap font, **8 px line height**: rows 0 accents/umlaut dots, rows 1–6 cap height, row 6 baseline, row 7 descenders. x-height 4 px (rows 3–6). Variable width, glyphs ≤5 px wide + 1 px spacing.
+- Source: `art/sprites/ui/font.sprite`, one anim `glyphs` (87 frames, frame order = the character string in the file header). Capital umlaut dots sit in row 0; lowercase umlaut dots and the i/j dots sit in row 1 (one row gap above the x-height). Ascenders reach row 1. `g p q y j ß` and the low quote `„` use row 7. Digits are 5 px wide so HUD numbers keep a fixed advance; `0` has a diagonal stroke to tell it apart from `O`. The space glyph is empty; its advance is the engine's job.
 - Required glyphs: A–Z, a–z, 0–9, `ÄÖÜäöüß`, `„“`, `.,:;!?'-–/()%+×`. Capital umlauts keep the full cap height; the dots go in row 0. `ß` is a real ß, never "ss". German quotes are low `„` (rows 6–7) and high `“` (rows 1–2).
 - HUD text: `w` with a 1 px `k` shadow to the bottom right (or a full `k` outline), numbers in `Y`. Must stay readable over every background, including `h` sky and `w` clouds.
 - Panels: `B` fill with a `k` border and a 1 px `S` or `i` inner highlight on top/left.
