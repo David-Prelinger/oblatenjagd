@@ -60,10 +60,11 @@ Features:
 - Several animations per file (`anim = walk frames=4 ticks=6 loop`; illustrative values, the real frame counts and ticks are in `docs/art-style.md` §9).
 - `mirror = auto` creates left-facing versions.
 - `variant = tourist_b remap r->b l->g` creates palette-swapped copies.
-- `include = ...` reuses frames (e.g. same legs, different head).
+- `include = ...` reuses frames (e.g. same legs, different head). *(Not implemented yet: the parser rejects it with a clear error.)*
+- `frame <anim> <index>` starts a frame; plain `frame <index>` is allowed when the sprite has a single animation. Single-frame animations may omit `ticks` (held).
 - Hitboxes are defined next to the art so gameplay and visuals stay in sync.
 
-Tiles use the same format, with `tileset = salzburg` and a 16×16 size; autotiling rules (edges, corners) are declared in a tileset header.
+Tiles use the same format, with `tileset = salzburg` and a 16×16 size; autotiling rules (edges, corners) are declared in a tileset header. *(`tileset` is not implemented yet; until then tiles are plain 16×16 sprites.)*
 
 ## Procedural generators (`crates/jnr-artkit/src/gen/`, params in `art/generators/*.toml`)
 
@@ -84,9 +85,9 @@ Generators are seeded and deterministic and only output palette colours, so thei
 | Command | What it does |
 |---|---|
 | `cargo build` | `jnr-assets/build.rs` compiles all art into atlases; any error fails the build with `file:line` |
-| `cargo xtask sprites preview [filter]` | writes PNGs per sprite, scaled ×4, to `target/preview/sprites/` |
+| `cargo xtask sprites preview [filter] [--scale N]` | writes PNGs per sprite (all frames side by side, mirrored copies in a second row), scaled ×4, to `target/preview/sprites/` |
 | `cargo xtask sprites sheet` | one contact sheet of all sprites with names (`target/preview/contact_sheet.png`, ImageMagick `montage`) |
-| `cargo xtask sprites anim <name>` | animation filmstrip + GIF |
+| `cargo xtask sprites anim <name>` | filmstrip `target/preview/anim/<name>.png` (one row per animation) + one GIF per animation `target/preview/anim/<name>_<anim>.gif` (exact 60 Hz timing) |
 | `cargo xtask scene <level> --x <px>` | renders a real game scene at a position (`target/preview/scenes/`) |
 | `cargo xtask sprites lint` | runs the automatic art checks |
 

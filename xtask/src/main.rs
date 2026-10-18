@@ -7,6 +7,7 @@
 
 mod archlint;
 mod report;
+mod sprites;
 mod steps;
 
 use std::path::{Path, PathBuf};
@@ -19,10 +20,13 @@ const HELP: &str = "\
 cargo xtask <command>
 
 Commands:
-  check     fast validation: fmt, clippy, tests, wasm build, architecture lint
-  verify    full validation: check + sprites/levels lint, solver, replays,
+  check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
+            sprites lint
+  verify    full validation: check + levels lint, solver, replays,
             goldens, vnc-smoke (not implemented yet steps are skipped)
   arch-lint only the architecture lint (part of check)
+  sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
+            (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
   help      show this help (also -h, --help)
 
 Reports are written to $CARGO_TARGET_DIR/reports/{check,verify}.{json,md}
@@ -36,6 +40,7 @@ fn main() -> ExitCode {
         Some("check") if args.len() == 1 => run_suite("check", steps::check_steps()),
         Some("verify") if args.len() == 1 => run_suite("verify", steps::verify_steps()),
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
+        Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("help" | "-h" | "--help") | None => {
             print!("{HELP}");
             ExitCode::SUCCESS
@@ -113,9 +118,9 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// `$CARGO_TARGET_DIR/reports`, or `<root>/target/reports`.
-fn reports_dir(root: &Path) -> PathBuf {
-    let target = match std::env::var_os("CARGO_TARGET_DIR") {
+/// `$CARGO_TARGET_DIR`, or `<root>/target`.
+pub fn target_dir(root: &Path) -> PathBuf {
+    match std::env::var_os("CARGO_TARGET_DIR") {
         Some(dir) if !dir.is_empty() => {
             let dir = PathBuf::from(dir);
             if dir.is_absolute() {
@@ -125,6 +130,10 @@ fn reports_dir(root: &Path) -> PathBuf {
             }
         }
         _ => root.join("target"),
-    };
-    target.join("reports")
+    }
+}
+
+/// `$CARGO_TARGET_DIR/reports`, or `<root>/target/reports`.
+fn reports_dir(root: &Path) -> PathBuf {
+    target_dir(root).join("reports")
 }

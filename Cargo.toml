@@ -26,3 +26,4 @@ jnr-assets = { path = "crates/jnr-assets" }
 # Only jnr-app may depend on macroquad (enforced by `cargo xtask check`).
 macroquad = { version = "0.4.16", default-features = false }
 serde_json = "1.0"
+png = "0.17"

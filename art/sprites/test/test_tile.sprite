@@ -1,0 +1,24 @@
+# Grey-box test fixture (not game art): a 16x16 stone tile, one frame,
+# no outline (tiles are not in an outline group).
+sprite = test_tile
+size   = 16x16
+origin = 0,0
+anim   = tile frames=1
+---
+frame 0
+iiiiiiidiiiiiiid
+immmmmmdimmmmmmd
+immmmmmdimmmmmmd
+dddddddddddddddd
+iiidiiiiiiidiiii
+mmmdimmmmmmdimmm
+mmmdimmmmmmdimmm
+dddddddddddddddd
+iiiiiiidiiiiiiid
+immmmmmdimmmmmmd
+immmmmmdimmmmmmd
+dddddddddddddddd
+iiidiiiiiiidiiii
+mmmdimmmmmmdimmm
+mmmdimmmmmmdimmm
+dddddddddddddddd

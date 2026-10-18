@@ -9,25 +9,19 @@ use std::time::Instant;
 
 use crate::archlint;
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
+use crate::sprites;
 
 pub type StepFn = fn(&Path) -> Step;
 
 /// Fast checks, run after every change (and by the Stop hook).
 pub fn check_steps() -> Vec<StepFn> {
-    vec![fmt, clippy, test, wasm_build, arch_lint]
+    vec![fmt, clippy, test, wasm_build, arch_lint, sprites_lint]
 }
 
 /// Full validation: `check` plus the slower layers.
 pub fn verify_steps() -> Vec<StepFn> {
     let mut steps = check_steps();
-    steps.extend([
-        sprites_lint as StepFn,
-        levels_lint,
-        solver,
-        replays,
-        goldens,
-        vnc_smoke,
-    ]);
+    steps.extend([levels_lint as StepFn, solver, replays, goldens, vnc_smoke]);
     steps
 }
 
@@ -79,11 +73,19 @@ pub fn arch_lint(root: &Path) -> Step {
     finish("arch-lint", "cargo xtask arch-lint", started, ok, &output)
 }
 
-// ------------------------------------------------- verify (L3-L8), placeholders
-
-fn sprites_lint(_root: &Path) -> Step {
-    Step::skipped("sprites-lint", "cargo xtask sprites lint")
+fn sprites_lint(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = sprites::lint_report(root);
+    finish(
+        "sprites-lint",
+        "cargo xtask sprites lint",
+        started,
+        ok,
+        &output,
+    )
 }
+
+// ------------------------------------------------- verify (L3-L8), placeholders
 
 fn levels_lint(_root: &Path) -> Step {
     Step::skipped("levels-lint", "cargo xtask levels lint")
