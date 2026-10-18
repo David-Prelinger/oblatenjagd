@@ -1168,9 +1168,31 @@ fn write_report(dir: &Path, sol: &Solution, files: &Files) -> Result<(PathBuf, P
     Ok((json_path, md_path))
 }
 
-/// The `solver` verify step: every level must be solved and have its
-/// committed `tests/replays/<id>_solver.replay`. Returns (ok, output, note
-/// with the narrowest jump window per level).
+/// Why a solved route breaks the level's `min_jump_window` (D-030): its
+/// narrowest jump window (see [`narrowest`]) is smaller. `None` if fine,
+/// the level sets no minimum, or the search failed (reported elsewhere).
+pub fn window_problem(level: &Level, sol: &Solution) -> Option<String> {
+    let min = level.meta.min_jump_window?;
+    if !sol.search.complete() {
+        return None;
+    }
+    let w = narrowest(&sol.windows).filter(|w| w.size() < min)?;
+    Some(format!(
+        "FAIL {}: narrowest jump window {} frames < min_jump_window {min} (jump at frame {}, x={}, bounds {}/{}; see the {}_narrowest image)",
+        level.meta.id,
+        w.size(),
+        w.frame(),
+        w.x,
+        w.lo_bound.as_str(),
+        w.hi_bound.as_str(),
+        level.meta.id
+    ))
+}
+
+/// The `solver` verify step: every level must be solved, have its
+/// committed `tests/replays/<id>_solver.replay`, and keep its narrowest
+/// jump window at least `min_jump_window` (if set, [`window_problem`]).
+/// Returns (ok, output, note with the narrowest jump window per level).
 pub fn verify(root: &Path) -> (bool, String, String) {
     verify_into(root, &OutDirs::of(root))
 }
@@ -1197,6 +1219,10 @@ fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
                 ok &= sol.search.complete();
                 out.push_str(&text);
                 notes.push(sol.note());
+                if let Some(p) = window_problem(level, &sol) {
+                    ok = false;
+                    out.push_str(&format!("{p}\n"));
+                }
                 let id = &level.meta.id;
                 let replay = dirs.replays.join(format!("{id}_solver.replay"));
                 if !replay.is_file() {
@@ -1651,18 +1677,55 @@ mod tests {
     #[test]
     fn verify_fails_without_the_committed_solver_replay() {
         let dirs = tmp_dirs("verify_missing_replay");
+        // Every level in content/levels, whatever they are.
+        let ids: Vec<String> = all_levels(&root())
+            .unwrap()
+            .into_iter()
+            .map(|l| l.meta.id)
+            .collect();
+        assert!(ids.contains(&"testbed".to_owned()), "{ids:?}");
         let (ok, out, note) = verify_into(&root(), &dirs);
         assert!(!ok, "{out}");
         assert!(out.contains("missing solver replay"), "{out}");
-        assert!(out.contains("`cargo xtask solve testbed --write`"), "{out}");
-        assert!(out.contains("`cargo xtask solve items --write`"), "{out}");
-        assert!(note.contains("testbed: "), "{note}");
+        for id in &ids {
+            assert!(
+                out.contains(&format!("`cargo xtask solve {id} --write`")),
+                "{id}: {out}"
+            );
+            assert!(note.contains(&format!("{id}: ")), "{note}");
+        }
         // With the replays present (any content: the `replays` step checks them).
-        fs::write(dirs.replays.join("testbed_solver.replay"), "").unwrap();
-        fs::write(dirs.replays.join("items_solver.replay"), "").unwrap();
-        fs::write(dirs.replays.join("enemies_solver.replay"), "").unwrap();
+        for id in &ids {
+            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
+        }
         let (ok, out, _) = verify_into(&root(), &dirs);
         assert!(ok, "{out}");
+    }
+
+    #[test]
+    fn a_window_below_min_jump_window_fails() {
+        let mut level = gap_level(3);
+        let t = tuning();
+        let sol = solve(&level, &t, &opts(&level, 4));
+        let w = narrowest(&sol.windows)
+            .expect("one jump over the gap")
+            .clone();
+        assert_eq!(window_problem(&level, &sol), None, "no minimum set");
+        level.meta.min_jump_window = Some(w.size());
+        assert_eq!(window_problem(&level, &sol), None, "exactly the minimum");
+        level.meta.min_jump_window = Some(w.size() + 1);
+        let p = window_problem(&level, &sol).expect("too narrow");
+        let id = &level.meta.id;
+        assert!(
+            p.starts_with(&format!(
+                "FAIL {id}: narrowest jump window {} frames < min_jump_window {} (jump at frame {}, x={}, ",
+                w.size(),
+                w.size() + 1,
+                w.frame(),
+                w.x
+            )),
+            "{p}"
+        );
     }
 
     #[test]
