@@ -89,6 +89,7 @@ Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes +
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
 - **Entities**: a plain `Vec<Entity>` with an `EntityKind` enum and per-kind update functions. No ECS framework — the game is small and an enum is easier for agents to reason about.
 - **Collision**: AABB vs tile grid (solid, one-way, hazard, water/death), AABB vs AABB for entities. No slopes in M1.
+- **One-way platforms** block only from above; the player drops through by pressing DOWN + JUMP while standing on one (DOWN alone does nothing).
 - **Camera** lives in core (it affects enemy activation like in SMB and must be deterministic).
 - **Spawning**: enemies activate when they come within one screen of the camera; despawn when far behind.
 - **RNG**: own xorshift in state, seeded. No other randomness.
@@ -131,6 +132,8 @@ loop {
 ### Level (`content/levels/*.level`)
 
 TOML header + one ASCII grid. One char = one 16×16 tile or an entity spawn.
+
+The example below is the **M1 target** (`oblaten_box` with `contains`, `oblate`, `selfie_tourist`, … are not parsed yet). `jnr-core` currently supports the tile names `ground`/`brick`/`solid`, `oneway`/`oneway_sign`, `hazard`/`salzach_water` (and `empty`) and the entities `player_start` and `goal`/`goal_maibaum`; anything else is a parse error.
 
 ```toml
 [meta]

@@ -125,15 +125,51 @@ fn one_way_platform_jump_through_and_drop_down() {
     g.step(input("J"));
     let landed_on_top = (0..60).any(|_| {
         g.step(input("J"));
-        g.player().on_ground && g.player().y + crate::player::PLAYER_H == platform_top
+        g.player().on_ground && feet(&g) == platform_top
     });
     assert!(landed_on_top, "jumped through from below and landed on top");
     // Standing still keeps the player on the platform.
     hold(&mut g, "-", 30);
-    assert_eq!(g.player().y + crate::player::PLAYER_H, platform_top);
-    // Holding DOWN drops through.
-    hold(&mut g, "D", 40);
-    assert_eq!(g.player().y + crate::player::PLAYER_H, Fx::from_px(8 * 16));
+    assert_eq!(feet(&g), platform_top);
+    // DOWN alone does nothing.
+    let events = hold(&mut g, "D", 30);
+    assert!(events.is_empty(), "{events:?}");
+    assert_eq!(feet(&g), platform_top);
+    // DOWN + JUMP drops through (no jump) and lands on the ground.
+    assert!(g.step(input("DJ")).is_empty(), "no Jumped event");
+    let events = hold(&mut g, "DJ", 40);
+    assert_eq!(events, vec![Event::Landed]);
+    assert_eq!(feet(&g), Fx::from_px(8 * 16));
+    // On solid ground, DOWN + JUMP is a normal jump.
+    hold(&mut g, "-", 2);
+    assert_eq!(g.step(input("DJ")), &[Event::Jumped]);
+}
+
+fn feet(g: &Game) -> Fx {
+    g.player().y + g.player().h
+}
+
+#[test]
+fn game_is_send_and_sync_and_exposes_the_level() {
+    fn assert_send<T: Send + Sync>() {}
+    assert_send::<Game>();
+    let level = flat(30);
+    let g = Game::new(&level, &tuning(), 1);
+    assert_eq!(*g.level(), level);
+    assert_eq!(g.goals().len(), 0);
+}
+
+#[test]
+fn hitbox_size_comes_from_tuning() {
+    let mut t = tuning();
+    assert_eq!((t.player.hitbox_w, t.player.hitbox_h), (12, 22));
+    t.player.hitbox_w = 8;
+    t.player.hitbox_h = 30;
+    let g = Game::new(&flat(30), &t, 1);
+    let p = g.player();
+    assert_eq!((p.w, p.h), (Fx::from_px(8), Fx::from_px(30)));
+    assert_eq!(feet(&g), Fx::from_px(12 * 16), "feet on the ground");
+    assert_eq!(p.x, Fx::from_px(2 * 16 + 4), "centred in the start cell");
 }
 
 /// Pseudo-random inputs from a fixed seed (biased to the right).
@@ -143,7 +179,7 @@ fn noisy_inputs(n: usize) -> Vec<InputFrame> {
     (0..n)
         .map(|_| {
             if r.below(8) == 0 {
-                held = InputFrame((r.next_u64() & 0x3f) as u8).with(InputFrame::RIGHT);
+                held = InputFrame::from_bits((r.next_u64() & 0x3f) as u8).with(InputFrame::RIGHT);
                 if r.below(3) == 0 {
                     held = held.without(InputFrame::RIGHT);
                 }

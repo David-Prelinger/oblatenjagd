@@ -6,7 +6,7 @@
 //! coyote time and jump buffer exact.
 
 use super::*;
-use crate::{Fx, Player};
+use crate::Fx;
 
 const TILE_PX: i32 = 16;
 
@@ -270,11 +270,12 @@ fn head_bump_stops_the_jump() {
     // Falls back down even though JUMP is still held.
     hold(&mut g, "J", 30);
     assert!(g.player().on_ground);
-    let _: &Player = g.player();
 }
 
-/// Not an assertion: prints the measured numbers (`cargo test -- --nocapture`).
+/// Not an assertion: prints the measured numbers
+/// (`cargo test -p jnr-core print_measured -- --ignored --nocapture`).
 #[test]
+#[ignore]
 fn print_measured_feel() {
     let px = |f: Fx| format!("{}.{:03}", f.to_px(), (f.raw() & 255) * 1000 / 256);
     let (walk, _) = top_speed("R");

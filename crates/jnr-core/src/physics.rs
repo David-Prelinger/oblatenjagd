@@ -1,9 +1,9 @@
 //! Axis-aligned boxes and collision against the tile grid.
 //!
 //! Boxes are half-open in subpixels: a box covers `[x, x + w)` × `[y, y + h)`.
-//! Movement is resolved one axis at a time (X, then Y, done by the caller);
-//! per call a box may move less than one tile, so only the tiles newly
-//! entered by the leading edge are checked.
+//! Movement is resolved one axis at a time (X, then Y, done by the caller).
+//! A move checks every tile column/row the leading edge newly enters, in
+//! order, so moves of any length stop at the first blocking tile.
 
 use crate::fx::Fx;
 use crate::hash::Fnv;
@@ -56,31 +56,25 @@ pub struct TileMap {
     /// Height in tiles.
     pub height: i32,
     kinds: Vec<TileKind>,
-    /// FNV-1a hash of the grid, computed once (the grid is immutable for now).
-    content_hash: u64,
 }
 
 impl TileMap {
     /// Builds the collision grid of a level.
     pub fn from_level(level: &Level) -> TileMap {
-        let kinds: Vec<TileKind> = level.tiles.iter().map(|t| t.kind).collect();
-        let mut h = Fnv::new();
-        h.i32(level.width);
-        h.i32(level.height);
-        for k in &kinds {
-            h.u8(k.id());
-        }
         TileMap {
             width: level.width,
             height: level.height,
-            kinds,
-            content_hash: h.finish(),
+            kinds: level.tiles.iter().map(|t| t.kind).collect(),
         }
     }
 
-    /// Hash of the grid contents (for `Game::state_hash`).
-    pub fn content_hash(&self) -> u64 {
-        self.content_hash
+    /// Feeds the grid into a state hash.
+    pub(crate) fn hash(&self, h: &mut Fnv) {
+        h.i32(self.width);
+        h.i32(self.height);
+        for k in &self.kinds {
+            h.u8(k.id());
+        }
     }
 
     /// Level width in subpixels.
@@ -120,7 +114,24 @@ impl TileMap {
         (r0..=r1).any(|r| (c0..=c1).any(|c| self.kind_at(c, r) == kind))
     }
 
-    /// Moves `b` horizontally by `dx` (|dx| < one tile) and stops it at solid
+    /// True if `b` stands on at least one one-way tile and no solid tile
+    /// (the row directly below its bottom edge); it may then drop through.
+    pub fn on_one_way_only(&self, b: &Aabb) -> bool {
+        let (c0, c1) = (tile_of(b.x), tile_of(b.right() - Fx(1)));
+        let row = tile_of(b.bottom());
+        let kinds = (c0..=c1).map(|c| self.kind_at(c, row));
+        let mut one_way = false;
+        for k in kinds {
+            match k {
+                TileKind::Solid => return false,
+                TileKind::OneWay => one_way = true,
+                TileKind::Empty | TileKind::Hazard => {}
+            }
+        }
+        one_way
+    }
+
+    /// Moves `b` horizontally by `dx` and stops it at solid
     /// tiles. Returns true if a wall was hit (`b.x` is then flush with it).
     pub fn move_x(&self, b: &mut Aabb, dx: Fx) -> bool {
         let (r0, r1) = (tile_of(b.y), tile_of(b.bottom() - Fx(1)));
@@ -148,7 +159,7 @@ impl TileMap {
         false
     }
 
-    /// Moves `b` vertically by `dy` (|dy| < one tile) and stops it at tiles.
+    /// Moves `b` vertically by `dy` and stops it at tiles.
     /// Moving down, solid tiles and one-way tiles (unless `drop_through`)
     /// stop it, but only rows the bottom edge newly enters, so one-way tiles
     /// block from above only. Moving up, only solid tiles stop it.
@@ -256,6 +267,33 @@ mod tests {
         let mut b = bx(66, 42);
         assert!(!m.move_x(&mut b, Fx::from_px(2)));
         assert_eq!(b.x, Fx::from_px(68));
+    }
+
+    #[test]
+    fn long_moves_stop_at_the_first_blocking_tile() {
+        let m = map(&["......", "...#..", "...#..", "...#..", "######"]);
+        let mut b = bx(2, 42);
+        assert!(m.move_x(&mut b, Fx::from_px(60)));
+        assert_eq!(b.right(), Fx::from_px(48));
+        let mut b = bx(66, 0);
+        assert_eq!(m.move_y(&mut b, Fx::from_px(50), false), YHit::Floor);
+        assert_eq!(b.bottom(), Fx::from_px(64));
+    }
+
+    #[test]
+    fn on_one_way_only() {
+        // One-way at columns 2-3, solid at columns 4-5, all in row 2 (top y = 32).
+        let m = map(&["......", "......", "..--##", "......", "......"]);
+        assert!(
+            m.on_one_way_only(&bx(30, 10)),
+            "half on air, half on one-way"
+        );
+        assert!(
+            !m.on_one_way_only(&bx(54, 10)),
+            "straddling one-way and solid"
+        );
+        assert!(!m.on_one_way_only(&bx(70, 10)), "on solid");
+        assert!(!m.on_one_way_only(&bx(2, 10)), "in the air");
     }
 
     #[test]

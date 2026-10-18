@@ -8,17 +8,6 @@ use crate::level::{EntitySpawn, TILE_PX};
 use crate::physics::{Aabb, TileMap, YHit};
 use crate::tuning::PlayerTuning;
 
-/// Hitbox width (smaller than the sprite, forgiving per "Difficulty: medium").
-pub const PLAYER_W: Fx = Fx::from_px(12);
-/// Hitbox height.
-pub const PLAYER_H: Fx = Fx::from_px(22);
-/// Sprite size in pixels; the hitbox sits bottom-centred in it.
-pub const SPRITE_W: i32 = 16;
-/// Sprite height in pixels.
-pub const SPRITE_H: i32 = 24;
-/// Sprite top-left relative to the hitbox top-left, in pixels.
-pub const SPRITE_OFFSET: (i32, i32) = (-2, -2);
-
 /// Which way the player looks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Facing {
@@ -28,13 +17,18 @@ pub enum Facing {
     Right,
 }
 
-/// The player's simulation state.
+/// The player's simulation state. The renderer places the sprite with its
+/// feet at the bottom centre of the hitbox.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Player {
     /// Hitbox left edge.
     pub x: Fx,
     /// Hitbox top edge.
     pub y: Fx,
+    /// Hitbox width (`player.hitbox_w` from the tuning).
+    pub w: Fx,
+    /// Hitbox height (`player.hitbox_h` from the tuning).
+    pub h: Fx,
     /// Horizontal speed per frame (+ = right).
     pub vx: Fx,
     /// Vertical speed per frame (+ = down).
@@ -55,24 +49,19 @@ pub struct Player {
     pub jump_buffer: u8,
 }
 
-/// What happened to the player in one step (besides events).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct PlayerStep {
-    /// A wall stopped horizontal motion.
-    pub hit_wall: bool,
-    /// The head hit a ceiling.
-    pub hit_ceiling: bool,
-}
-
 impl Player {
     /// A player standing at a spawn cell: hitbox bottom on the cell's
     /// bottom edge, horizontally centred in the cell. Starts as grounded so
     /// the first step does not report `Landed`.
-    pub fn spawn(at: EntitySpawn) -> Player {
+    pub fn spawn(at: EntitySpawn, t: &PlayerTuning) -> Player {
         let tile = Fx::from_px(TILE_PX);
+        let w = Fx::from_px(t.hitbox_w);
+        let h = Fx::from_px(t.hitbox_h);
         Player {
-            x: tile.mul_int(at.col) + (tile - PLAYER_W).div_int(2),
-            y: tile.mul_int(at.row + 1) - PLAYER_H,
+            x: tile.mul_int(at.col) + (tile - w).div_int(2),
+            y: tile.mul_int(at.row + 1) - h,
+            w,
+            h,
             vx: Fx::ZERO,
             vy: Fx::ZERO,
             on_ground: true,
@@ -90,16 +79,16 @@ impl Player {
         Aabb {
             x: self.x,
             y: self.y,
-            w: PLAYER_W,
-            h: PLAYER_H,
+            w: self.w,
+            h: self.h,
         }
     }
 
     /// Centre of the hitbox in whole pixels (camera focus).
     pub fn center_px(&self) -> (i32, i32) {
         (
-            (self.x + PLAYER_W.div_int(2)).to_px(),
-            (self.y + PLAYER_H.div_int(2)).to_px(),
+            (self.x + self.w.div_int(2)).to_px(),
+            (self.y + self.h.div_int(2)).to_px(),
         )
     }
 
@@ -113,9 +102,9 @@ impl Player {
         t: &PlayerTuning,
         min_x: Fx,
         events: &mut Vec<Event>,
-    ) -> PlayerStep {
+    ) {
         self.update_horizontal_speed(input, t);
-        self.update_jump(input, t, events);
+        let drop_through = self.update_jump(input, map, t, events);
 
         // Gravity: lighter while rising with JUMP held (variable jump height).
         if !input.jump() || self.vy >= Fx::ZERO {
@@ -129,18 +118,16 @@ impl Player {
         self.vy = (self.vy + g).min(t.max_fall_speed);
 
         // Move X, then Y.
-        let mut step = PlayerStep::default();
         let mut b = self.hitbox();
         if map.move_x(&mut b, self.vx) {
             self.vx = Fx::ZERO;
-            step.hit_wall = true;
         }
         if b.x < min_x {
             b.x = min_x;
             self.vx = self.vx.max(Fx::ZERO);
         }
         let was_on_ground = self.on_ground;
-        match map.move_y(&mut b, self.vy, input.down()) {
+        match map.move_y(&mut b, self.vy, drop_through) {
             YHit::Floor => {
                 self.vy = Fx::ZERO;
                 self.on_ground = true;
@@ -154,13 +141,11 @@ impl Player {
                 self.vy = Fx::ZERO;
                 self.on_ground = false;
                 self.jump_rising = false;
-                step.hit_ceiling = true;
             }
             YHit::None => self.on_ground = false,
         }
         self.x = b.x;
         self.y = b.y;
-        step
     }
 
     fn update_horizontal_speed(&mut self, input: InputFrame, t: &PlayerTuning) {
@@ -194,11 +179,26 @@ impl Player {
         }
     }
 
-    fn update_jump(&mut self, input: InputFrame, t: &PlayerTuning, events: &mut Vec<Event>) {
+    /// Handles JUMP presses: jump buffer, coyote time, and DOWN + JUMP on a
+    /// one-way platform, which drops through instead of jumping. Returns
+    /// true if the player drops through this step.
+    fn update_jump(
+        &mut self,
+        input: InputFrame,
+        map: &TileMap,
+        t: &PlayerTuning,
+        events: &mut Vec<Event>,
+    ) -> bool {
         let pressed = input.jump() && !self.jump_held;
         self.jump_held = input.jump();
+        if pressed && input.down() && self.on_ground && map.on_one_way_only(&self.hitbox()) {
+            self.on_ground = false;
+            self.jump_buffer = 0;
+            self.coyote = 0;
+            return true;
+        }
         if pressed {
-            self.jump_buffer = t.jump_buffer_frames + 1;
+            self.jump_buffer = t.jump_buffer_frames.saturating_add(1);
         } else {
             self.jump_buffer = self.jump_buffer.saturating_sub(1);
         }
@@ -213,6 +213,7 @@ impl Player {
         } else if !self.on_ground {
             self.coyote = self.coyote.saturating_sub(1);
         }
+        false
     }
 
     /// Jump speed for the current horizontal speed: `jump_speed_walk` up to
@@ -230,6 +231,8 @@ impl Player {
     pub(crate) fn hash(&self, h: &mut Fnv) {
         h.i32(self.x.raw());
         h.i32(self.y.raw());
+        h.i32(self.w.raw());
+        h.i32(self.h.raw());
         h.i32(self.vx.raw());
         h.i32(self.vy.raw());
         h.bool(self.on_ground);

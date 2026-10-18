@@ -15,6 +15,8 @@
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 
+extern crate alloc;
+
 use std::fmt;
 
 pub mod camera;

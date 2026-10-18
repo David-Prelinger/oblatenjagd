@@ -2,7 +2,7 @@
 #
 # Units: speeds in subpixels per frame, accelerations in subpixels per frame²
 # (1 px = 256 subpixels, 60 frames per second), durations in frames.
-# Integers only. The px equivalents in the comments are for humans.
+# Integers only (hitbox sizes are whole pixels). The px equivalents in the comments are for humans.
 # Targets: docs/game-design.md "Movement feel"; they are asserted by the
 # game-feel tests in crates/jnr-core/src/tests/feel.rs.
 
@@ -20,6 +20,8 @@ gravity = 88              # ~0.344 px/frame² otherwise
 max_fall_speed = 1024     # 4.0 px/frame
 coyote_frames = 6         # 0.1 s
 jump_buffer_frames = 6    # 0.1 s
+hitbox_w = 12             # px (whole pixels): smaller than the 16x24 sprite, forgiving
+hitbox_h = 22             # px; the feet are at the hitbox's bottom centre
 
 [camera]
 follow_x = 144            # px: camera scrolls right once the player's centre passes this screen x

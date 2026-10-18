@@ -10,7 +10,7 @@ use crate::ParseError;
 /// `L R U D B J S` (left, right, up, down, run, jump, start), or `-` when
 /// nothing is held. Examples: `R`, `RB`, `RBJ`, `-`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct InputFrame(pub u8);
+pub struct InputFrame(u8);
 
 impl InputFrame {
     /// Nothing held.
@@ -40,6 +40,14 @@ impl InputFrame {
         ('J', InputFrame::JUMP),
         ('S', InputFrame::START),
     ];
+
+    /// All defined buttons.
+    pub const ALL: InputFrame = InputFrame(0x7f);
+
+    /// From raw bits; bits without a button are dropped.
+    pub const fn from_bits(bits: u8) -> InputFrame {
+        InputFrame(bits & InputFrame::ALL.0)
+    }
 
     /// The raw bits.
     pub const fn bits(self) -> u8 {
@@ -168,8 +176,13 @@ mod tests {
 
     #[test]
     fn round_trip_all_256_values() {
+        assert_eq!(
+            InputFrame::from_bits(0xff),
+            InputFrame::ALL,
+            "unknown bits masked"
+        );
         for bits in 0..=0x7f_u8 {
-            let f = InputFrame(bits);
+            let f = InputFrame::from_bits(bits);
             let token = f.to_token();
             assert_eq!(InputFrame::parse_token(&token).unwrap(), f, "token {token}");
         }

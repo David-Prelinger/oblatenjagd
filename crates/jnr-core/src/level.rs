@@ -151,7 +151,7 @@ impl Level {
     /// character must be in `[legend]`.
     pub fn parse(text: &str) -> Result<Level, ParseError> {
         let raw: RawLevel = toml::from_str(text)
-            .map_err(|e| ParseError::new(format!("level: {}", e.message().trim())))?;
+            .map_err(|e| ParseError::new(format!("level: {}", e.to_string().trim())))?;
 
         let mut tile_names = vec![String::new()];
         let mut legend: Vec<(char, LegendEntry)> = Vec::new();
@@ -449,6 +449,14 @@ grid = '''
 
         let no_meta = SMALL.replace("[meta]\nid = \"small\"", "");
         assert!(Level::parse(&no_meta).is_err());
+
+        // TOML errors keep line, column and the snippet.
+        let syntax = SMALL.replace("time_limit = 100", "time_limit = ");
+        let err = Level::parse(&syntax).unwrap_err().to_string();
+        assert!(err.contains("line") && err.contains("time_limit"), "{err}");
+        let unknown_meta = SMALL.replace("time_limit = 100", "time_limt = 100");
+        let err = Level::parse(&unknown_meta).unwrap_err().to_string();
+        assert!(err.contains("line") && err.contains("time_limt"), "{err}");
     }
 
     #[test]

@@ -1,12 +1,11 @@
 //! The game state machine and the per-tick `step`.
 
-use std::rc::Rc;
+use alloc::sync::Arc;
 
 use crate::camera::Camera;
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
-
 use crate::level::{EntityKind, EntitySpawn, Level, TileKind};
 use crate::physics::{Aabb, TILE, TileMap};
 use crate::player::Player;
@@ -42,20 +41,26 @@ pub enum Mode {
     StageClear,
 }
 
-/// The complete simulation state. Cheap to clone (the static level data is
-/// shared via `Rc`).
+/// The complete simulation state. Cheap to clone: the static level data
+/// (level, collision grid, goals) is shared via `Arc`, so `Game` is also
+/// `Send + Sync` (the solver may search on several threads).
 #[derive(Clone, Debug)]
 pub struct Game {
     frame: u32,
     mode: Mode,
-    map: Rc<TileMap>,
-    goals: Rc<[Aabb]>,
+    level: Arc<Level>,
+    map: Arc<TileMap>,
+    goals: Arc<[Aabb]>,
     start: EntitySpawn,
     player: Player,
     camera: Camera,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
+    /// Hash of everything above that never changes during a game (level
+    /// grid, goals, start, tuning), computed once in `new`. Anything that
+    /// becomes mutable later (e.g. breakable tiles) must move out of it.
+    static_hash: u64,
     events: Vec<Event>,
 }
 
@@ -80,17 +85,31 @@ impl Game {
             })
             .collect();
         let start = level.player_start();
-        let player = Player::spawn(start);
+        let player = Player::spawn(start, &tuning.player);
         let camera = Camera::new(
             player.center_px(),
             map.width_fx().to_px(),
             map.height_fx().to_px(),
             &tuning.camera,
         );
+
+        let mut h = Fnv::new();
+        map.hash(&mut h);
+        h.u32(goals.len() as u32);
+        for g in &goals {
+            for v in [g.x, g.y, g.w, g.h] {
+                h.i32(v.raw());
+            }
+        }
+        h.i32(start.col);
+        h.i32(start.row);
+        hash_tuning(tuning, &mut h);
+
         Game {
             frame: 0,
             mode: Mode::Playing,
-            map: Rc::new(map),
+            level: Arc::new(level.clone()),
+            map: Arc::new(map),
             goals: goals.into(),
             start,
             player,
@@ -98,6 +117,7 @@ impl Game {
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
+            static_hash: h.finish(),
             events: Vec::new(),
         }
     }
@@ -154,7 +174,7 @@ impl Game {
     }
 
     fn respawn(&mut self) {
-        self.player = Player::spawn(self.start);
+        self.player = Player::spawn(self.start, &self.tuning.player);
         self.camera = Camera::new(
             self.player.center_px(),
             self.map.width_fx().to_px(),
@@ -165,10 +185,12 @@ impl Game {
         self.events.push(Event::Respawned);
     }
 
-    /// FNV-1a hash over all simulation state, field by field. Equal hashes
-    /// after equal inputs prove determinism.
+    /// FNV-1a hash over all simulation state, field by field (the static
+    /// part is precomputed in `new`). Equal hashes after equal inputs prove
+    /// determinism.
     pub fn state_hash(&self) -> u64 {
         let mut h = Fnv::new();
+        h.u64(self.static_hash);
         h.u32(self.frame);
         match self.mode {
             Mode::Playing => h.u8(0),
@@ -178,20 +200,10 @@ impl Game {
             }
             Mode::StageClear => h.u8(2),
         }
-        h.u64(self.map.content_hash());
-        h.u32(self.goals.len() as u32);
-        for g in self.goals.iter() {
-            for v in [g.x, g.y, g.w, g.h] {
-                h.i32(v.raw());
-            }
-        }
-        h.i32(self.start.col);
-        h.i32(self.start.row);
         self.player.hash(&mut h);
         self.camera.hash(&mut h);
         h.u64(self.rng.state());
         h.u32(self.deaths);
-        hash_tuning(&self.tuning, &mut h);
         h.finish()
     }
 
@@ -202,6 +214,10 @@ impl Game {
     /// The current mode.
     pub fn mode(&self) -> Mode {
         self.mode
+    }
+    /// The level being played (tile names, entity spawns, meta).
+    pub fn level(&self) -> &Level {
+        &self.level
     }
     /// The player.
     pub fn player(&self) -> &Player {
@@ -214,6 +230,10 @@ impl Game {
     /// The collision grid.
     pub fn map(&self) -> &TileMap {
         &self.map
+    }
+    /// Goal trigger boxes.
+    pub fn goals(&self) -> &[Aabb] {
+        &self.goals
     }
     /// How often the player died so far.
     pub fn deaths(&self) -> u32 {
@@ -248,6 +268,8 @@ fn hash_tuning(t: &Tuning, h: &mut Fnv) {
     }
     h.u8(p.coyote_frames);
     h.u8(p.jump_buffer_frames);
+    h.i32(p.hitbox_w);
+    h.i32(p.hitbox_h);
     h.i32(t.camera.follow_x);
     h.i32(t.camera.deadzone_top);
     h.i32(t.camera.deadzone_bottom);

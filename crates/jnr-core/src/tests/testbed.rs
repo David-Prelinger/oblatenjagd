@@ -46,19 +46,8 @@ fn parse_route(text: &str) -> Vec<InputFrame> {
 fn hand_written_route_reaches_the_goal() {
     let mut g = Game::new(&testbed(), &tuning(), 1);
     let mut events = Vec::new();
-    let trace = std::env::var_os("TRACE").is_some();
-    for (n, i) in parse_route(ROUTE).into_iter().enumerate() {
+    for i in parse_route(ROUTE) {
         events.extend_from_slice(g.step(i));
-        if trace {
-            println!(
-                "{n:4} {:5} x={} y={} vx={} cam={}",
-                i.to_token(),
-                g.player().x.to_px(),
-                g.player().y.to_px(),
-                g.player().vx.raw(),
-                g.camera().x
-            );
-        }
         if g.mode() != Mode::Playing {
             break;
         }
@@ -72,7 +61,22 @@ fn hand_written_route_reaches_the_goal() {
     );
     assert!(events.contains(&Event::LevelComplete));
     assert!(events.contains(&Event::Landed));
+    // Pinned on purpose: any change to physics, tuning, the testbed level or
+    // the hash layout changes this value. Update it deliberately (and say so
+    // in the commit message) after checking the route still makes sense.
+    assert_eq!(g.frame(), FINISH_FRAME, "finish frame");
+    assert_eq!(
+        g.state_hash(),
+        FINISH_HASH,
+        "state hash at the goal: {:#018x}",
+        g.state_hash()
+    );
 }
+
+/// Frame on which the route touches the goal.
+const FINISH_FRAME: u32 = 731;
+/// `state_hash` at that frame.
+const FINISH_HASH: u64 = 0xfcac_268c_3aa5_3c25;
 
 #[test]
 fn route_parser() {
