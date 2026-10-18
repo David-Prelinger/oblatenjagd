@@ -10,7 +10,7 @@ Goal: the whole toolchain and validation loop work end-to-end on a grey-box test
 - [x] Cargo workspace with all crates (rename package `hello_daniel` away)
 - [x] `xtask` with `check` and `verify` skeletons and JSON/Markdown reports
 - [x] Hooks in `.claude/settings.json` (rustfmt, Stop → check, golden guard)
-- [ ] `jnr-core`: fixed-point types, `InputFrame`, `Game::step`, `state_hash`, tile collision, a player box that runs and jumps
+- [x] `jnr-core`: fixed-point types, `InputFrame`, `Game::step`, `state_hash`, tile collision, a player box that runs and jumps
 - [ ] `jnr-render`: framebuffer, blit, bitmap font with German characters
 - [x] `jnr-artkit`: `.palette` + `.sprite` parser, atlas packing, lints, preview + contact sheet
 - [x] Palette and `docs/art-style.md` written and approved by art-director

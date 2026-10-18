@@ -14,7 +14,7 @@
 //!    c. no float literals (`0.35`, `256.0`, `1e5`, `2.5E-3`);
 //!    d. no `use std::…;`/`use core::…;` statement (also multi-line and
 //!    grouped, e.g. `use std::{fs, time::Instant};`) naming the modules
-//!    `time`, `fs`, `thread`, `env`, `io`, `net`, `process` or `sync`.
+//!    `time`, `fs`, `thread`, `env`, `io`, `net`, `process` or `sync` (except `sync::Arc`).
 //!
 //! Remaining limits of the source scan (deliberately simple, line-based):
 //! - `//` comments are stripped by cutting at the first `//` on a line, so a
@@ -426,7 +426,10 @@ fn starts_std_use(line: &str) -> bool {
 }
 
 /// Forbidden module names mentioned in a complete `use std::…;` statement.
+/// `sync::Arc` is allowed (immutable sharing, no global state); any other
+/// `sync` item (Mutex, atomics, …) is still reported.
 fn forbidden_use_modules(statement: &str) -> Vec<&'static str> {
+    let statement = without_allowed_arc(statement);
     let words: BTreeSet<&str> = statement
         .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
         .collect();
@@ -434,6 +437,23 @@ fn forbidden_use_modules(statement: &str) -> Vec<&'static str> {
         .into_iter()
         .filter(|m| words.contains(m))
         .collect()
+}
+
+/// Removes `sync::Arc` items (not e.g. `sync::ArcSwap`) from a `use` statement.
+fn without_allowed_arc(statement: &str) -> String {
+    let mut out = String::new();
+    let mut rest = statement;
+    while let Some(i) = rest.find("sync::Arc") {
+        let end = i + "sync::Arc".len();
+        let next = rest[end..].chars().next();
+        out.push_str(&rest[..i]);
+        if next.is_some_and(|c| c.is_ascii_alphanumeric() || c == '_') {
+            out.push_str("sync::Arc");
+        }
+        rest = &rest[end..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// True if `word` occurs in `line` not preceded by a letter and not followed by
@@ -634,6 +654,21 @@ match x {
         ] {
             assert_eq!(find_float_literal(ok), None, "{ok}");
         }
+    }
+
+    #[test]
+    fn allows_only_arc_from_sync() {
+        assert!(forbidden_use_modules("use std::sync::Arc;").is_empty());
+        assert!(forbidden_use_modules("use std::{fmt, sync::Arc};").is_empty());
+        assert_eq!(
+            forbidden_use_modules("use std::sync::{Arc, Mutex};"),
+            ["sync"]
+        );
+        assert_eq!(forbidden_use_modules("use std::sync::ArcSwap;"), ["sync"]);
+        assert_eq!(
+            forbidden_use_modules("use core::sync::atomic::AtomicU32;"),
+            ["sync"]
+        );
     }
 
     #[test]

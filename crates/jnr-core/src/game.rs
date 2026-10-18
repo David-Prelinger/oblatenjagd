@@ -1,6 +1,6 @@
 //! The game state machine and the per-tick `step`.
 
-use alloc::sync::Arc;
+use std::sync::Arc;
 
 use crate::camera::Camera;
 use crate::fx::Fx;
