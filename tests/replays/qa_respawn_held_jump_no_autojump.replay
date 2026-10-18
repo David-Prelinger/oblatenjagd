@@ -1,12 +1,11 @@
-# BUG (QA M0): holding JUMP through the death and respawn makes the player
-# jump in the first step after the respawn without a new press.
+# Regression (QA M0): holding JUMP through the death and respawn must not
+# make the player jump without a new press.
 # Steps: fall into the 3-wide gap (Died at 235), press and hold JUMP from step
 # 236 (during Dying) with RIGHT+RUN; respawn at 295.
-# Expected: a jump needs a new press (Player::update edge-detects JUMP), so the
+# Expected: Game tracks jump_held while Dying and keeps it on respawn, so the
 # player just runs along the ground: x~76.9 at step 325 (same as without JUMP).
-# Actual: Jumped at step 296 (Player::spawn resets jump_held to false, so the
-# held button counts as a fresh press); in the air the player accelerates
-# with air_accel and is at x=64 at step 325.
+# Was: Jumped at step 296 (Player::spawn reset jump_held, so the held button
+# counted as a fresh press) and x=64 at step 325.
 level  = testbed
 seed   = 1
 source = handwritten

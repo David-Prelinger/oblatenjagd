@@ -77,3 +77,8 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Solver replays are `tests/replays/<level>_solver.replay`, written only with `--write`, and carry no `shots` by default (shots need art-director-approved goldens; `--shots` opts in).
 - The `solver` verify step also requires the committed `tests/replays/<level>_solver.replay` for every level.
 - A per-level `min_jump_window` waits for an optional `LevelMeta` field (backlog, M1); until then the `solver` step only reports the narrowest window.
+
+## D-016 Input across respawn, replay limits, scene clamp
+- While `Dying`, `Game::step` keeps updating `Player::jump_held` from the input, and `respawn` carries it into the new player. A JUMP held across a respawn is therefore not a new press (no auto-jump); presses during `Dying` never reach the jump buffer (it is not updated while dying and is reset on spawn).
+- Replay files hold at most `MAX_FRAMES_PER_LINE` frames per input line and `MAX_TOTAL_FRAMES` in total (both 216 000 = 1 h at 60 Hz); larger files are parse errors with a line number, so a malformed replay cannot exhaust memory or run for ever.
+- `cargo xtask scene` clamps the player's centre so its hitbox stays inside the level and prints a warning when it did; the camera clamps itself as before.
