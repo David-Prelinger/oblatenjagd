@@ -35,7 +35,7 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 - [x] Camera (no scrolling back), enemy activation by distance
 - [x] HUD, title screen, stage intro, game over, stage clear (German text from `de.toml`)
 - [x] Salzburg tileset, parallax (sky, Untersberg, Festung, rooftops), all M1 sprites — art-director APPROVED
-- [ ] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
+- [x] Level `01_salzburg.level` designed with the 5 sections; solver finishes it; difficulty report reviewed
 - [ ] Replays + goldens for the key scenes
 - [ ] wasm build runs the stage in the browser
 - [x] `verify` treats any remaining placeholder step as a failure (no "skipped" layers left; `Skipped` status removed in M0)
