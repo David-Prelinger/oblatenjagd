@@ -9,18 +9,19 @@
 //! Draw passes (called from `scene::render`):
 //! 1. [`draw_behind_tiles`]: power-ups still rising out of their box
 //! 2. tiles (scene), raised by `Game::tile_bump_px` while bumped
-//! 3. [`draw_entities`]: items, props, enemies
+//! 3. [`draw_entities`]: items, props, enemies (animation by
+//!    `Entity::pose`, facing by `Entity::dir`), the Festungsbahn
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris and popups
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
-use jnr_core::{Block, Camera, Game, SignStyle, Tile};
+use jnr_core::{Block, Camera, Game, Pose, SignStyle, Tile};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
 use crate::font::Font;
-use crate::palette::{OUTLINE, WHITE};
+use crate::palette::{LEATHER_DARK, OUTLINE, WHITE};
 
 /// `o` oblate_gold: Oblaten.
 pub const OBLATE_GOLD: u32 = 0xd9913aff;
@@ -73,6 +74,7 @@ pub struct EntityLooks<'a> {
     taube: Option<&'a AtlasSprite>,
     verkaeufer: Option<&'a AtlasSprite>,
     fiaker: Option<&'a AtlasSprite>,
+    thrown: Option<&'a AtlasSprite>,
     signs: [Option<&'a AtlasSprite>; 3],
     ortsende_bar: Option<&'a AtlasSprite>,
 }
@@ -92,6 +94,7 @@ impl<'a> EntityLooks<'a> {
             taube: s(EnemyKind::Taube.sprite()),
             verkaeufer: s(EnemyKind::MozartkugelVerkaeufer.sprite()),
             fiaker: s(EnemyKind::Fiaker.sprite()),
+            thrown: s("mozartkugel_thrown"),
             signs: SIGN_SPRITES.map(s),
             ortsende_bar: s(ORTSENDE_BAR_SPRITE),
         }
@@ -106,10 +109,13 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Debris => self.debris,
             EntityKind::Checkpoint => self.checkpoint,
             EntityKind::Festungsbahn => self.festungsbahn,
-            EntityKind::Enemy(EnemyKind::SelfieTourist) => self.selfie_tourist,
-            EntityKind::Enemy(EnemyKind::Taube | EnemyKind::TaubeSitting) => self.taube,
-            EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer) => self.verkaeufer,
-            EntityKind::Enemy(EnemyKind::Fiaker) => self.fiaker,
+            EntityKind::Enemy(k) | EntityKind::Defeated(k) => match k {
+                EnemyKind::SelfieTourist => self.selfie_tourist,
+                EnemyKind::Taube | EnemyKind::TaubeSitting => self.taube,
+                EnemyKind::MozartkugelVerkaeufer => self.verkaeufer,
+                EnemyKind::Fiaker => self.fiaker,
+            },
+            EntityKind::Thrown => self.thrown,
             EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
         }
     }
@@ -124,10 +130,13 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Debris => TERRACOTTA,
         EntityKind::Checkpoint => PINE_DARK,
         EntityKind::Sign => CREAM,
-        EntityKind::Enemy(EnemyKind::SelfieTourist) => LAKE_DEEP,
-        EntityKind::Enemy(EnemyKind::Taube | EnemyKind::TaubeSitting) => SILVER_LIGHT,
-        EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer) => WINE_DARK,
-        EntityKind::Enemy(EnemyKind::Fiaker) => PINE_SHADOW,
+        EntityKind::Enemy(k) | EntityKind::Defeated(k) => match k {
+            EnemyKind::SelfieTourist => LAKE_DEEP,
+            EnemyKind::Taube | EnemyKind::TaubeSitting => SILVER_LIGHT,
+            EnemyKind::MozartkugelVerkaeufer => WINE_DARK,
+            EnemyKind::Fiaker => PINE_SHADOW,
+        },
+        EntityKind::Thrown => LEATHER_DARK,
         EntityKind::Festungsbahn => LAKE_TEAL,
         EntityKind::Popup(_) | EntityKind::Bump => WHITE,
     }
@@ -170,6 +179,9 @@ pub fn draw_entities(
             EntityKind::Debris | EntityKind::Popup(_) | EntityKind::Bump => {}
             EntityKind::Sign => draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
+            EntityKind::Enemy(_) | EntityKind::Defeated(_) | EntityKind::Thrown => {
+                draw_enemy(game, looks, atlas, fb, cam, e)
+            }
             _ if e.rising(game.tuning()) => {}
             _ => draw_body(game, looks, atlas, fb, cam, e),
         }
@@ -219,6 +231,69 @@ fn draw_body(
         None => {
             let (bx, by) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
             let (w, h) = (e.w.to_px(), e.h.to_px());
+            fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
+            fb.outline_rect(bx, by, w, h, OUTLINE);
+        }
+    }
+}
+
+/// The catalog animation (and fixed frame, if any) for a pose: `(anim
+/// name, frame)`; `None` = animate with the game frame.
+pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
+    match pose {
+        Pose::Walk => ("walk", None),
+        Pose::Selfie { flash } => ("selfie", Some(usize::from(flash))),
+        Pose::Fly => ("fly", None),
+        Pose::Sit => ("sit", None),
+        Pose::Tumble => ("tumble", None),
+        Pose::Idle => ("idle", None),
+        Pose::Windup => ("windup", None),
+        Pose::Throw => ("throw", None),
+        Pose::Squished => ("squished", None),
+        Pose::Telegraph => ("telegraph", None),
+        Pose::Charge => ("charge", None),
+        Pose::Spin => ("spin", None),
+    }
+}
+
+/// An enemy, a defeated enemy or a thrown Mozartkugel: the animation of
+/// its pose (missing anims fall back to the first one), facing `dir`
+/// (the Fiaker art faces left and is never mirrored). Without a sprite:
+/// the hitbox as a grey box, flattened to its bottom quarter when squished.
+fn draw_enemy(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let pose = e.pose(game.tuning()).unwrap_or(Pose::Idle);
+    let (x, y) = feet_on_screen(e, cam);
+    match looks.sprite(e.kind) {
+        Some(s) => {
+            let (name, frame) = pose_anim(pose);
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            let tick = match frame {
+                Some(i) => i as u32 * anim.ticks,
+                None => game.frame(),
+            };
+            let fiaker = matches!(
+                e.kind,
+                EntityKind::Enemy(EnemyKind::Fiaker) | EntityKind::Defeated(EnemyKind::Fiaker)
+            );
+            let left = e.facing_left() && !fiaker;
+            draw_sprite(fb, atlas, s, anim, tick, x, y, left);
+        }
+        None => {
+            let (w, full) = (e.w.to_px(), e.h.to_px());
+            let h = if pose == Pose::Squished {
+                (full / 4).max(1)
+            } else {
+                full
+            };
+            let bx = e.x.to_px() - cam.x;
+            let by = e.y.to_px() - cam.y + full - h;
             fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
             fb.outline_rect(bx, by, w, h, OUTLINE);
         }
@@ -504,6 +579,98 @@ mod tests {
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }
+    }
+
+    /// A 16x24 frame filled with test colour `c` (`a`, `b` or `c`).
+    fn solid(c: char) -> jnr_artkit::Image {
+        let row: String = std::iter::repeat_n(c, 16).collect();
+        crate::testutil::image(&vec![row.as_str(); 24])
+    }
+
+    /// The Selfie-Tourist's selfie: frame 0 (stick up) for the whole stop,
+    /// frame 1 (flash) only in the 2 frames from frame 24 of the stop; the
+    /// walk anim otherwise; facing left (mirrored) while walking left.
+    #[test]
+    fn selfie_shows_the_flash_frame_for_two_frames() {
+        use crate::testutil::{A, B, C};
+        let tourist = crate::testutil::sprite(
+            "selfie_tourist",
+            (8, 24),
+            true,
+            vec![
+                ("walk", 10, vec![solid('a'), solid('a')]),
+                ("selfie", 24, vec![solid('b'), solid('c')]),
+                ("squished", 0, vec![solid('a')]),
+            ],
+        );
+        let atlas = crate::testutil::atlas(&[tourist]);
+        let texts = Texts::default();
+        let mut g = game();
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let e = g
+                .entities()
+                .iter()
+                .find(|e| e.kind == EntityKind::Enemy(EnemyKind::SelfieTourist))
+                .unwrap();
+            let (fx, fy) = e.feet();
+            fb.get(fx.to_px() - g.camera().x, fy.to_px() - 4 - g.camera().y)
+        };
+        let t = tuning().enemies;
+        let mut seen = Vec::new();
+        for f in 1..=300u32 {
+            g.step(InputFrame::NONE);
+            seen.push((f, shown(&g)));
+        }
+        let start = u32::from(t.tourist_selfie_period);
+        let flash = start + u32::from(t.tourist_flash_at);
+        for (f, colour) in seen {
+            let want = if f >= flash && f < flash + 2 {
+                C
+            } else if f >= start && f < start + u32::from(t.tourist_selfie_frames) {
+                B
+            } else {
+                A
+            };
+            assert_eq!(colour, Some(want), "frame {f}");
+        }
+    }
+
+    #[test]
+    fn every_pose_has_a_catalog_animation() {
+        use jnr_core::Pose;
+        let names: Vec<&str> = [
+            Pose::Walk,
+            Pose::Selfie { flash: false },
+            Pose::Selfie { flash: true },
+            Pose::Fly,
+            Pose::Sit,
+            Pose::Tumble,
+            Pose::Idle,
+            Pose::Windup,
+            Pose::Throw,
+            Pose::Squished,
+            Pose::Telegraph,
+            Pose::Charge,
+            Pose::Spin,
+        ]
+        .into_iter()
+        .map(|p| pose_anim(p).0)
+        .collect();
+        let catalog = include_str!("../../../docs/sprite-catalog.md");
+        for n in names {
+            assert!(
+                catalog.contains(&format!("`{n}`")),
+                "`{n}` not in the catalog"
+            );
+        }
+        assert_eq!(pose_anim(Pose::Selfie { flash: true }), ("selfie", Some(1)));
+        assert_eq!(
+            pose_anim(Pose::Selfie { flash: false }),
+            ("selfie", Some(0))
+        );
     }
 
     #[test]

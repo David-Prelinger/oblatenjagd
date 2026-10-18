@@ -1,0 +1,18 @@
+# Jumps over the tourist, the wall and the Mozartkugel-Verkäufer (no
+# stomps on the way), then lands on top of the charging Fiaker (frame 577):
+# the only `Stomped` of the run is a bounce without damage and without
+# points (the score stays 0), and the player lands safely behind it.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped deaths=0 no_event=Hurt no_event=Died player_x>=950 state=playing
+---
+R 90
+RJ 20
+R 177
+RJ 20
+R 77
+RJ 20
+R 135
+RJ 20
+R 80

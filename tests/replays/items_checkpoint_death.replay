@@ -4,8 +4,8 @@
 level  = items
 seed   = 1
 source = handwritten
-expect = dies_at frames=1145..1145 deaths=1 state=playing lives=3
-expect = oblaten>=9 score>=2850 player_x>=640
+expect = dies_at frames=1107..1107 deaths=1 state=playing lives=3
+expect = oblaten>=9 score>=2950 player_x>=640
 ---
 R 28
 - 30
@@ -20,7 +20,7 @@ L 14
 J 10      # break the brick
 - 20
 R 60
-RJ 30     # over the wall
+RJ 30     # over the wall, onto the tourist (stomp)
 R 111     # through the Oblaten
 - 30
 J 10      # oblaten_10 brick, 3 times
@@ -34,6 +34,6 @@ R 16
 J 10      # Zaunerstollen box
 - 30
 RB 60     # catch the Zaunerstollen
-R 185     # hurt, checkpoint at 1082, into the pit at 1145
-- 60      # dying; respawn at the checkpoint (frame 1205)
+R 147     # checkpoint at 1044, into the pit at 1107
+- 60      # dying; respawn at the checkpoint (frame 1167)
 R 30

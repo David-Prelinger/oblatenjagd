@@ -7,7 +7,7 @@
 //! first, then fewer jumps; remaining ties keep their insertion order,
 //! which is deterministic), de-duplicated by a coarse state key (see
 //! [`StateKey`]) so the beam stays diverse, cut to the beam width plus a
-//! grounded reserve (see [`select_beam`]), and every survivor is expanded
+//! grounded and a "high" reserve (see [`select_beam`]), and every survivor is expanded
 //! with every macro-action in [`MACROS`]. A macro that makes the player die is pruned
 //! and counted as a "search death"; a macro that touches the goal stops at
 //! that frame. The search ends at the first bucket at or after the earliest
@@ -214,7 +214,7 @@ impl Node {
 
 /// Coarse state for de-duplication within a frame bucket: position in 4 px
 /// cells, speed in 1/4 px (x) and 1/2 px (y) per frame, grounded or not,
-/// plus [`Game::world_hash`] (changed tiles, entities, checkpoint, power
+/// plus [`Game::world_hash`] (changed tiles, entities incl. enemy/platform state and pattern counters, checkpoint, power
 /// state), so states that differ in collected items, broken bricks or the
 /// power-up are kept apart. Of several nodes with the same key only the
 /// best-ranked one is kept.
@@ -356,10 +356,15 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
     }
 }
 
-/// The beam: the first `width` of the ranked `nodes`, plus the best
-/// grounded nodes after them until at least a quarter of `width` is
-/// grounded. Airborne nodes far right are often already doomed; the
-/// grounded reserve keeps safe states alive (e.g. waiting at an edge).
+/// The beam: the first `width` of the ranked `nodes`, plus, from the rest
+/// in rank order:
+/// - the best grounded nodes until at least a quarter of `width` is
+///   grounded. Airborne nodes far right are often already doomed; the
+///   grounded reserve keeps safe states alive (e.g. waiting at an edge);
+/// - up to a quarter of `width` "high" nodes: a node whose feet are higher
+///   than every kept node's in its [`HEIGHT_COLUMN_PX`] column. Furthest
+///   right alone drops a player waiting above a pit for a moving platform
+///   (or riding it) in favour of nodes further right down in the pit.
 fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
     let width = width.max(1);
     if nodes.len() <= width {
@@ -367,14 +372,34 @@ fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
     }
     let rest = nodes.split_off(width);
     let grounded = nodes.iter().filter(|n| n.game.player().on_ground).count();
-    let missing = (width / 4).saturating_sub(grounded);
-    nodes.extend(
-        rest.into_iter()
-            .filter(|n| n.game.player().on_ground)
-            .take(missing),
-    );
+    let mut missing = (width / 4).saturating_sub(grounded);
+    let mut high = width / 4;
+    let column = |n: &Node| n.game.player().x.to_px().div_euclid(HEIGHT_COLUMN_PX);
+    let feet = |n: &Node| n.game.player().feet().1;
+    let mut highest: BTreeMap<i32, jnr_core::Fx> = BTreeMap::new();
+    let keep = |n: &Node, highest: &mut BTreeMap<i32, jnr_core::Fx>| {
+        let y = highest.entry(column(n)).or_insert(feet(n));
+        *y = (*y).min(feet(n));
+    };
+    for n in &nodes {
+        keep(n, &mut highest);
+    }
+    for n in rest {
+        if missing > 0 && n.game.player().on_ground {
+            missing -= 1;
+        } else if high > 0 && highest.get(&column(&n)).is_none_or(|&y| feet(&n) < y) {
+            high -= 1;
+        } else {
+            continue;
+        }
+        keep(&n, &mut highest);
+        nodes.push(n);
+    }
     nodes
 }
+
+/// Column width of the beam's "high node" reserve (see [`select_beam`]).
+const HEIGHT_COLUMN_PX: i32 = 16;
 
 /// Expands every node (on up to `threads` threads); the result is in node order.
 fn expand_all(nodes: &[Node], threads: usize) -> Vec<Vec<Option<Node>>> {
@@ -1391,7 +1416,27 @@ mod tests {
         mixed.extend(vec![airborne.clone(); 6]);
         assert_eq!(select_beam(mixed, 4).len(), 4);
         // Fewer nodes than the width: unchanged.
-        assert_eq!(select_beam(vec![airborne; 3], 4).len(), 3);
+        assert_eq!(select_beam(vec![airborne.clone(); 3], 4).len(), 3);
+
+        // High reserve: a node higher than every kept node in its column
+        // survives the cut (one per quarter of the width), lower ones don't.
+        let mut low_first = vec![grounded.clone(); 6];
+        low_first.extend([airborne.clone(), airborne.clone(), grounded.clone()]);
+        let beam = select_beam(low_first, 4);
+        assert_eq!(on_ground(&beam), [true, true, true, true, false]);
+        // In another column it counts on its own.
+        let mut far = grounded.clone();
+        let centre = far.game.player().center_px().0;
+        far.game.teleport_player(centre + HEIGHT_COLUMN_PX);
+        far.game.step(InputFrame::JUMP);
+        let mut ranked = vec![far; 4];
+        ranked.extend([airborne.clone(), grounded]);
+        let beam = select_beam(ranked, 4);
+        assert_eq!(
+            beam.len(),
+            6,
+            "a higher node in the column and the grounded reserve"
+        );
     }
 
     #[test]
@@ -1614,6 +1659,7 @@ mod tests {
         // With the replays present (any content: the `replays` step checks them).
         fs::write(dirs.replays.join("testbed_solver.replay"), "").unwrap();
         fs::write(dirs.replays.join("items_solver.replay"), "").unwrap();
+        fs::write(dirs.replays.join("enemies_solver.replay"), "").unwrap();
         let (ok, out, _) = verify_into(&root(), &dirs);
         assert!(ok, "{out}");
     }

@@ -1,0 +1,19 @@
+# Stomps the tourist and the Mozartkugel-Verkäufer, walks towards the
+# parked Fiaker (column 58): within 8 tiles it telegraphs (frame 519) and
+# charges left at 2 px/frame (frame 559); a walking jump (frame 552) clears
+# it without contact, and it leaves the screen behind the player.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=990 state=playing
+---
+R 80
+RJ 12
+R 60
+R 140
+RJ 20
+R 62
+RJ 16
+R 161
+RJ 20
+R 80

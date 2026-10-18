@@ -16,10 +16,9 @@
 //!   origin at the feet (bottom centre of the hitbox).
 //!
 //! The player interactions (collecting, power-ups, stomping, hurting) live
-//! in `game.rs`, because they change the score, lives and player.
-//! Enemies are placeholders for now: they stand still, hurt on contact and
-//! can be stomped (generic rules from `docs/game-design.md`); their
-//! movement patterns come with the enemy task.
+//! in `game.rs`, because they change the score, lives and player. Enemy
+//! behaviour (patterns, projectiles, defeated enemies) is in
+//! [`crate::enemies`], the Festungsbahn car in [`crate::platform`].
 
 use crate::fx::Fx;
 use crate::hash::Fnv;
@@ -118,7 +117,12 @@ pub enum EntityKind {
     Sign,
     /// An enemy.
     Enemy(EnemyKind),
-    /// The Festungsbahn car (placeholder, does not move yet).
+    /// A stomped or knocked enemy (no collision): squished in place for
+    /// `enemies.squish_frames`, or tumbling down off the screen.
+    Defeated(EnemyKind),
+    /// A Mozartkugel thrown by the Verkäufer (hurts, can't be stomped).
+    Thrown,
+    /// The Festungsbahn car (moving one-way platform, [`crate::platform`]).
     Festungsbahn,
 }
 
@@ -132,7 +136,8 @@ impl EntityKind {
             EntityKind::Zaunerstollen => Some("zaunerstollen"),
             EntityKind::Debris => Some("debris"),
             EntityKind::Checkpoint => Some("checkpoint"),
-            EntityKind::Enemy(k) => Some(k.sprite()),
+            EntityKind::Enemy(k) | EntityKind::Defeated(k) => Some(k.sprite()),
+            EntityKind::Thrown => Some("mozartkugel_thrown"),
             EntityKind::Festungsbahn => Some("festungsbahn"),
             EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
         }
@@ -164,6 +169,11 @@ impl EntityKind {
                 h.u8(k.id());
             }
             EntityKind::Festungsbahn => h.u8(10),
+            EntityKind::Defeated(k) => {
+                h.u8(11);
+                h.u8(k.id());
+            }
+            EntityKind::Thrown => h.u8(12),
         }
     }
 }
@@ -205,6 +215,12 @@ pub struct Entity {
     /// Per-kind reference height (e.g. the centre line of a flying Taube's
     /// sine wave); the spawn y by default.
     pub base_y: Fx,
+    /// Per-kind reference x (the Festungsbahn's start point); the spawn x
+    /// by default.
+    pub base_x: Fx,
+    /// Per-kind frame counter (e.g. the Selfie-Tourist's phase in its
+    /// selfie period, frames into a state); 0 at spawn and activation.
+    pub count: u16,
 }
 
 impl Entity {
@@ -226,6 +242,8 @@ impl Entity {
             state: 0,
             dir: 0,
             base_y: y,
+            base_x: x,
+            count: 0,
         }
     }
 
@@ -302,13 +320,15 @@ impl Entity {
                     t.platforms.festungsbahn_size,
                 );
                 car.x = cell_x;
+                car.base_x = cell_x;
                 car
             }
         };
         entity.active = false;
         entity.spawn = Some(index as u16);
-        if matches!(entity.kind, EntityKind::Enemy(_)) {
+        if let EntityKind::Enemy(kind) = entity.kind {
             entity.dir = -1;
+            entity.state = crate::enemies::initial_state(kind);
         }
         Some(entity)
     }
@@ -363,15 +383,26 @@ impl Entity {
     }
 
     /// Advances an active entity by one frame (its own movement only).
-    /// Returns an entity to spawn (a popped Oblate's score popup).
-    pub(crate) fn update(&mut self, map: &TileMap, t: &Tuning) -> Option<Entity> {
+    /// Returns an entity to spawn (a popped Oblate's score popup, a thrown
+    /// Mozartkugel).
+    pub(crate) fn update(&mut self, ctx: &UpdateCtx) -> Option<Entity> {
+        let (map, t) = (ctx.map, ctx.tuning);
         self.timer = self.timer.saturating_add(1);
         match self.kind {
-            EntityKind::Oblate
-            | EntityKind::Checkpoint
-            | EntityKind::Sign
-            | EntityKind::Enemy(_)
-            | EntityKind::Festungsbahn => None,
+            EntityKind::Oblate | EntityKind::Checkpoint | EntityKind::Sign => None,
+            EntityKind::Enemy(kind) => crate::enemies::update_enemy(self, kind, ctx),
+            EntityKind::Defeated(_) => {
+                crate::enemies::update_defeated(self, t);
+                None
+            }
+            EntityKind::Thrown => {
+                crate::enemies::update_thrown(self, map, t);
+                None
+            }
+            EntityKind::Festungsbahn => {
+                crate::platform::update_car(self, ctx);
+                None
+            }
             EntityKind::PoppedOblate => self.update_popped_oblate(t),
             EntityKind::Mozartkugel => {
                 self.update_power_up(map, t, t.items.mozartkugel_speed);
@@ -451,7 +482,23 @@ impl Entity {
         h.u8(self.state);
         h.u8(self.dir as u8);
         h.i32(self.base_y.raw());
+        h.i32(self.base_x.raw());
+        h.u16(self.count);
     }
+}
+
+/// What an entity update may look at besides the entity itself.
+pub(crate) struct UpdateCtx<'a> {
+    /// The current tile grid.
+    pub map: &'a TileMap,
+    /// The tuning.
+    pub tuning: &'a Tuning,
+    /// The level (spawn data such as a Festungsbahn's end point).
+    pub level: &'a crate::Level,
+    /// The player's hitbox centre x.
+    pub player_cx: Fx,
+    /// The left screen edge (camera x).
+    pub screen_left: Fx,
 }
 
 /// A popup centred on `x` with its top at `y`.
@@ -489,21 +536,27 @@ mod tests {
         let t = tuning();
         let mut p = popup(Popup::Score(200), Fx::from_px(100), Fx::from_px(50));
         assert_eq!(p.popup_rise_px(&t), 0);
-        let map = TileMap::from_level(
-            &crate::Level::parse(
-                "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\nP.\n'''\n",
-            )
-            .unwrap(),
-        );
+        let level = crate::Level::parse(
+            "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\nP.\n'''\n",
+        )
+        .unwrap();
+        let map = TileMap::from_level(&level);
+        let ctx = UpdateCtx {
+            map: &map,
+            tuning: &t,
+            level: &level,
+            player_cx: Fx::ZERO,
+            screen_left: Fx::ZERO,
+        };
         for _ in 0..15 {
-            assert!(p.update(&map, &t).is_none());
+            assert!(p.update(&ctx).is_none());
         }
         assert_eq!(p.popup_rise_px(&t), 8);
         for _ in 15..29 {
-            p.update(&map, &t);
+            p.update(&ctx);
         }
         assert!(!p.removed);
-        p.update(&map, &t);
+        p.update(&ctx);
         assert_eq!(p.popup_rise_px(&t), 16);
         assert!(p.removed, "gone after 30 frames");
         assert_eq!(p.x, Fx::from_px(92), "centred");
@@ -518,6 +571,7 @@ mod tests {
             row: 3,
             text: None,
             style: Default::default(),
+            to: None,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Goal), 0, &t).is_none());

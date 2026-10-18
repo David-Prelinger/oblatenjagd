@@ -1,0 +1,24 @@
+# Stomps the tourist, bumps the Mozartkugel box (column 24) and catches the
+# Mozartkugel after it turned at the wall (Zuckerschock, frame ~440), jumps
+# the wall and waits at x 589 in front of the Mozartkugel-Verkäufer
+# (x 642), never touching him: his second-cycle throw (wind-up from counter
+# 100, throw at 120) lands on the player (frame ~670): Hurt, shrinks to
+# Normal, no death.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped event=PowerUp event=Hurt deaths=0 lives=3 score>=1100 state=playing
+---
+R 80
+RJ 12
+R 60
+R 78
+- 30
+J 20
+- 120
+R 40
+- 40
+R 30
+RJ 20
+R 60
+- 100

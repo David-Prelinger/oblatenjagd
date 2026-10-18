@@ -311,13 +311,13 @@ fn running_jump_reaches_9_to_10_tiles() {
     );
 }
 
-/// Falls from high above onto a Selfie-Tourist holding `token`; returns
-/// how far the feet rise after the stomp (subpixels).
+/// Falls from high above onto a (standing) Mozartkugel-Verkäufer holding
+/// `token`; returns how far the feet rise after the stomp (subpixels).
 fn stomp_rise(token: &str) -> Fx {
     let air = "..........";
     let mut rows = vec![air; 14];
     rows[2] = "..P.......";
-    rows[11] = "..t.......";
+    rows[11] = "..v.......";
     rows[12] = "##########";
     rows[13] = "##########";
     let mut g = Game::new(&level(&rows), &tuning(), 1);
@@ -371,9 +371,9 @@ fn zuckerschock_hitbox_is_12_by_30_and_growing_keeps_the_feet() {
 
 #[test]
 fn transformation_freezes_30_frames_and_hurt_gives_120_safe_frames() {
-    // A Selfie-Tourist next to a Zuckerschock player: hurt, freeze, then
-    // exactly 120 frames in which touching it does nothing.
-    let rows = ["..........", "..P.t.....", "##########"];
+    // A (standing) Verkäufer next to a Zuckerschock player: hurt, freeze,
+    // then exactly 120 frames in which touching it does nothing.
+    let rows = ["..........", "..P.v.....", "##########"];
     let t = tuning();
     let mut g = Game::new(&level(&rows), &t, 1);
     g.player.set_power(crate::Power::Big, &t.player);

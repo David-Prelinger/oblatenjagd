@@ -1,0 +1,11 @@
+# Walks towards the Selfie-Tourist (it walks left at 0.5 px/frame from
+# column 16) and jumps onto it: a stomp on a moving enemy (frame 112,
+# 100 points), the bounce, no hurt.
+level  = enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score>=100 deaths=0 no_event=Hurt state=playing
+---
+R 80
+RJ 12
+R 60

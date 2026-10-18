@@ -10,7 +10,7 @@
 use std::sync::Arc;
 
 use crate::camera::{Camera, SCREEN_W};
-use crate::entity::{EnemyKind, Entity, EntityKind, Popup, popup};
+use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
@@ -310,12 +310,21 @@ impl Game {
         }
 
         let prev_bottom = self.player.y + self.player.h;
+        let was_on_ground = self.player.on_ground;
         let min_x = Fx::from_px(self.camera.x);
         let head_row = self.player.update(
             input,
             &self.map,
             &self.tuning.player,
             min_x,
+            &mut self.events,
+        );
+        crate::platform::land(
+            &mut self.player,
+            &self.entities,
+            prev_bottom,
+            was_on_ground,
+            &self.tuning.player,
             &mut self.events,
         );
         if let Some(row) = head_row {
@@ -466,6 +475,7 @@ impl Game {
             (Block::Brick, Contents::None) => {
                 if self.player.power == Power::Big {
                     self.break_brick(col, row);
+                    self.knock_enemies_on(col, row);
                     return;
                 }
             }
@@ -507,6 +517,18 @@ impl Game {
         );
         self.entities.push(bump);
         self.events.push(Event::BlockBumped);
+        self.knock_enemies_on(col, row);
+    }
+
+    /// A block was hit from below (bumped or broken): enemies standing on
+    /// it are knocked off for `score.bump_enemy` each, items on it hop.
+    fn knock_enemies_on(&mut self, col: i32, row: i32) {
+        let knocked = crate::enemies::knock_off_block(&mut self.entities, col, row, &self.tuning);
+        for (_, x, y) in knocked {
+            let points = self.tuning.score.bump_enemy;
+            self.add_score(points);
+            self.entities.push(popup(Popup::Score(points), x, y));
+        }
     }
 
     /// The bump entity on a cell, if one is running.
@@ -608,6 +630,13 @@ impl Game {
         let activate_x = Fx::from_px(self.camera.x + SCREEN_W + g.activate_margin);
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
+        let ctx = UpdateCtx {
+            map: &self.map,
+            tuning: &self.tuning,
+            level: &self.level,
+            player_cx: self.player.x + self.player.w.div_int(2),
+            screen_left: Fx::from_px(self.camera.x),
+        };
         let mut spawned = Vec::new();
         for e in &mut self.entities {
             // Snapshot for the stomp rule (previous-frame position).
@@ -619,13 +648,28 @@ impl Game {
             if !e.active || e.removed {
                 continue;
             }
-            if let Some(new) = e.update(&self.map, &self.tuning) {
+            let old = e.hitbox();
+            // `ctx.player_cx` is the player's x before any car carried
+            // them this frame (same for every entity: order-independent).
+            if let Some(new) = e.update(&ctx) {
                 spawned.push(new);
+            }
+            if e.kind == EntityKind::Festungsbahn {
+                crate::platform::carry(
+                    &mut self.player,
+                    old,
+                    e,
+                    ctx.map,
+                    ctx.screen_left,
+                    &ctx.tuning.player,
+                    &mut self.events,
+                );
             }
             if e.right() < despawn_x || e.y >= bottom {
                 e.removed = true;
             }
         }
+        crate::enemies::turn_at_enemies(&mut self.entities);
         self.entities.extend(spawned);
     }
 
@@ -675,14 +719,21 @@ impl Game {
                     if self.player.vy > Fx::ZERO && prev_bottom <= middle {
                         bounced = true;
                         if kind.stompable() {
-                            self.entities[i].removed = true;
+                            crate::enemies::defeat(
+                                &mut self.entities[i],
+                                kind,
+                                false,
+                                &self.tuning,
+                            );
                             spawned.extend(self.stomp_reward(kind, fx, e.y));
                         }
                     } else {
                         hurt = true;
                     }
                 }
+                EntityKind::Thrown => hurt = true,
                 EntityKind::PoppedOblate
+                | EntityKind::Defeated(_)
                 | EntityKind::Debris
                 | EntityKind::Popup(_)
                 | EntityKind::Bump
@@ -874,10 +925,13 @@ impl Game {
 
     /// Coarse hash of the level progress, for the solver's de-duplication
     /// key: changed tiles, `oblaten_10` progress, the checkpoint, the
-    /// player's power state and every gameplay entity (kind, spawn, position
-    /// in 4 px cells, direction). Cosmetic entities (popups, debris, bumps)
-    /// and timers are left out, so states that only differ in those count
-    /// as the same. `state_hash` covers everything exactly.
+    /// player's power state and every gameplay entity (spawn, position in
+    /// 4 px cells, direction); for enemies, projectiles and the
+    /// Festungsbahn also their state, facing and pattern counters (moving
+    /// enemies at the same spot can be at different points of their
+    /// pattern). Cosmetic entities (popups, debris, bumps, defeated
+    /// enemies) and item timers are left out, so states that only differ
+    /// in those count as the same. `state_hash` covers everything exactly.
     pub fn world_hash(&self) -> u64 {
         let mut h = Fnv::new();
         self.hash_tiles(&mut h);
@@ -889,7 +943,10 @@ impl Game {
         for e in &self.entities {
             if matches!(
                 e.kind,
-                EntityKind::Popup(_) | EntityKind::Debris | EntityKind::Bump
+                EntityKind::Popup(_)
+                    | EntityKind::Debris
+                    | EntityKind::Bump
+                    | EntityKind::Defeated(_)
             ) {
                 continue;
             }
@@ -898,6 +955,15 @@ impl Game {
             h.i32(e.y.raw() >> 10);
             h.i32(e.vx.signum());
             h.bool(e.rising(&self.tuning));
+            if matches!(
+                e.kind,
+                EntityKind::Enemy(_) | EntityKind::Thrown | EntityKind::Festungsbahn
+            ) {
+                h.bool(e.active);
+                h.u8(e.state);
+                h.u8(e.dir as u8);
+                h.u16(e.count);
+            }
         }
         h.finish()
     }

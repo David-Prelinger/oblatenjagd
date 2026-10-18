@@ -253,7 +253,13 @@ pub struct EntitySpawn {
     pub text: Option<String>,
     /// Board style (signs only; default street).
     pub style: SignStyle,
+    /// The other end point `[dx, dy]` in tiles, relative to the spawn cell
+    /// (`to = [dx, dy]`, required for `festungsbahn`, `None` otherwise).
+    pub to: Option<[i32; 2]>,
 }
+
+/// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
+pub const MAX_TRACK_TILES: i32 = 64;
 
 /// One parallax layer of `[meta].background`.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
@@ -340,6 +346,7 @@ enum LegendEntry {
         kind: SpawnKind,
         text: Option<String>,
         style: SignStyle,
+        to: Option<[i32; 2]>,
     },
 }
 
@@ -416,7 +423,12 @@ impl Level {
                 };
                 match entry {
                     LegendEntry::Tile(t) => tiles.push(*t),
-                    LegendEntry::Entity { kind, text, style } => {
+                    LegendEntry::Entity {
+                        kind,
+                        text,
+                        style,
+                        to,
+                    } => {
                         tiles.push(Tile::default());
                         entities.push(EntitySpawn {
                             kind: *kind,
@@ -424,6 +436,7 @@ impl Level {
                             row: r as i32,
                             text: text.clone(),
                             style: *style,
+                            to: *to,
                         });
                     }
                 }
@@ -560,6 +573,7 @@ fn parse_legend_value(
             let allowed: &[&str] = match (tile, entity) {
                 (Some(_), None) => &["tile", "contains"],
                 (None, Some("sign")) => &["entity", "text", "style"],
+                (None, Some("festungsbahn")) => &["entity", "to"],
                 (None, Some(_)) => &["entity"],
                 _ => {
                     return Err(ParseError::new(format!(
@@ -652,7 +666,36 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
             })?;
         }
     }
-    Ok(LegendEntry::Entity { kind, text, style })
+    let mut to = None;
+    if kind == SpawnKind::Festungsbahn {
+        let bad = || {
+            ParseError::new(format!(
+                "legend \"{key}\": a festungsbahn needs to = [dx, dy] (its other end point in tiles relative to its cell, not both 0, each within ±{MAX_TRACK_TILES})"
+            ))
+        };
+        let Some(toml::Value::Array(a)) = t.get("to") else {
+            return Err(bad());
+        };
+        let v: Vec<i64> = a.iter().filter_map(toml::Value::as_integer).collect();
+        let range = -i64::from(MAX_TRACK_TILES)..=i64::from(MAX_TRACK_TILES);
+        match v.as_slice() {
+            &[dx, dy]
+                if a.len() == 2
+                    && range.contains(&dx)
+                    && range.contains(&dy)
+                    && (dx, dy) != (0, 0) =>
+            {
+                to = Some([dx as i32, dy as i32]);
+            }
+            _ => return Err(bad()),
+        }
+    }
+    Ok(LegendEntry::Entity {
+        kind,
+        text,
+        style,
+        to,
+    })
 }
 
 #[cfg(test)]
@@ -686,6 +729,7 @@ grid = '''
             row,
             text: None,
             style: SignStyle::Street,
+            to: None,
         }
     }
 
@@ -932,6 +976,50 @@ P.sSC.tfG
         assert!(err(&bad_style).contains("neon"));
         let window = V2.replace("min_jump_window = 6", "min_jump_window = -1");
         assert!(Level::parse(&window).is_err());
+    }
+
+    #[test]
+    fn festungsbahn_needs_its_other_end_point() {
+        let with = |to: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"F\" = {{ entity = \"festungsbahn\"{to} }}"),
+                )
+                .replace(".P.--..", ".PF--..")
+        };
+        let l = Level::parse(&with(", to = [8, -5]")).unwrap();
+        let car = l
+            .entities
+            .iter()
+            .find(|e| e.kind == SpawnKind::Festungsbahn)
+            .unwrap();
+        assert_eq!((car.col, car.row, car.to), (2, 1, Some([8, -5])));
+        assert!(
+            l.entities
+                .iter()
+                .all(|e| e.kind == SpawnKind::Festungsbahn || e.to.is_none())
+        );
+        for bad in [
+            "",
+            ", to = [0, 0]",
+            ", to = [1]",
+            ", to = [1, 2, 3]",
+            ", to = [65, 0]",
+            ", to = \"up\"",
+            ", to = [\"1\", 2]",
+        ] {
+            assert!(
+                err(&with(bad)).contains("needs to = [dx, dy]"),
+                "{bad}: {}",
+                err(&with(bad))
+            );
+        }
+        let on_sign = SMALL.replace(
+            "{ entity = \"goal\" }",
+            "{ entity = \"goal\", to = [1, 1] }",
+        );
+        assert!(err(&on_sign).contains("field \"to\""));
     }
 
     #[test]

@@ -9,8 +9,10 @@ Deferred work and known issues, picked up by the work loop when relevant.
 - **Font polish**: at x4 the lowercase `e` (with shadow) and short `t` can look like "=" and "d"; reads fine at 1x. Revisit in a later font pass (art-director note, M0 goldens review).
 - **levels lint (rest of L3)**: entities inside bounds, referenced sprites exist (tile/entity names vs atlas) — once M1 adds sprite-backed tiles and entities.
 - **Per-level `min_jump_window`** (solver, L4): `LevelMeta::min_jump_window` is parsed (E1); the `solver` verify step must still fail when the narrowest window is smaller (target ≥ 6 frames in stages 1–3).
-- **Enemies (E1 placeholders)**: enemy entities stand still; contact hurts, the generic stomp rule and the stomp chain work. Movement patterns, activation timers, „bumping a block defeats an enemy standing on it", stomp using the enemy's previous position, squish animations: enemy task. The Festungsbahn entity is parsed and drawn but inert (needs end points in the level format).
-- **Items on bumped blocks**: a Mozartkugel/Oblate standing on a block that is bumped is not knocked (SMB does); add with the enemy-bump rule.
+- **Oblaten above bumped blocks** (E3 follow-up): rolling items on a bumped block hop and enemies are knocked off (D-023), but a static Oblate directly above a bumped block is not collected (SMB does).
+- **Festungsbahn sprite** (E3): the car is drawn as a grey box until the pixel-artist adds `festungsbahn` (catalog, 48×24, `idle`); enemies and the thrown Mozartkugel already use their catalog animations.
+- **Stage 1 Festungsbahn and the solver** (E3): the beam's "high" reserve (D-023) solves `00_enemies` (waiting above a 1-tile pit for the car); check the Salzburg track (stair-stepped rock below it) with `cargo xtask solve salzburg` when it lands.
+- **Replay `score=N`** (E3): replays can only assert `score>=N`; `enemies_fiaker_bounce` states "no points" in its comment, the unit test `fiaker_bounces_without_damage_or_points` asserts it.
 - **Score popups for static Oblaten**: none (SMB style); the design says popups float "above whatever scored" – game-designer to confirm.
 - **Transformation under a low ceiling**: growing under a 1-tile ceiling overlaps it (levels keep ≥ 2-tile passages, D-017).
 - **Goal trigger vs visual**: the goal trigger is the whole 16 px tile column, the grey-box pole is drawn thin at its centre, so completion happens ~7 px before the visible touch. Align when the Maibaum sprite lands in M1 (trigger = pole hitbox from the sprite, or draw the pole wider).
