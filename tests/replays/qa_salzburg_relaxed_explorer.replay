@@ -1,0 +1,146 @@
+# QA (M1 Stage 1): a relaxed, curious, imperfect full run at walking speed
+# (handwritten, no solver prefix). Busbahnhof: walks under the box row,
+# bumps the ?-box from below, climbs onto the brick row and walks over its
+# Oblaten, steps. Mirabellgarten: jumps over tourist #1 while it takes a
+# selfie, stomps tourist #2, bumps the M-box, eats the Mozartkugel after the
+# hedge turns it back (PowerUp), hops the hedge and breaks three planter bricks
+# from below as Zuckerschock (tourist #3 knocked out), climbs the Pegasus
+# basin and plinth for the Oblaten arc, stomps tourist #4 in the Zwergerl
+# trench. Makartsteg: stomps Taube #1 over the deck, walking jumps over the
+# four gaps. Getreidegasse: past the checkpoint, back to bump the M-box at
+# col 132 as Zuckerschock (points only), stomps a tourist, up onto Z1, a
+# running jump enters the Erker from the side under the burger sign (one-way)
+# and jumps back out onto the sign, steps off its end (low ceiling) with a
+# jump onto Z3, Z4, stomps Verkaeufer #1, walks under the stand. Domplatz:
+# hides on the Residenzbrunnen top while the Fiaker charges through, gets hit
+# by the stage tourist (Hurt: back to Normal), jumps onto the Jedermann stage,
+# waits for the risen Sphaera Taube to pass, over the Sphaera onto the car,
+# rides up and takes a running jump to the Wurstkranz (5000).
+# 60 of 81 Oblaten, 3900 frames (65 s; ZEIT 237 at the touch).
+level  = salzburg
+source = handwritten
+expect = complete frames=3900..3900 deaths=0 lives=3 state=stage_clear
+expect = oblaten>=60 score>=19750
+expect = event=PowerUp event=BrickBroken event=CheckpointReached event=Hurt
+---
+R 130
+- 40
+J 20
+- 40
+L 25
+- 25
+RJ 40
+R 60
+RJ 12
+R 20
+J 10
+R 80
+R 80
+RJ 14
+R 48
+RJ 8
+R 10
+- 20
+J 15
+- 60
+R 40
+RJ 25
+R 40
+- 20
+R 12
+- 10
+J 8
+- 20
+R 16
+- 10
+J 8
+- 10
+R 30
+RJ 20
+R 10
+- 10
+RJ 16
+R 4
+- 16
+J 30
+- 20
+RJ 30
+R 40
+R 10
+RJ 12
+R 16
+RJ 24
+R 30
+R 34
+RJ 20
+R 30
+R 59
+RJ 30
+R 34
+RJ 30
+R 45
+RJ 30
+R 87
+RJ 30
+R 155
+L 34
+- 20
+J 12
+- 40
+R 10
+- 60
+R 16
+RJ 20
+R 6
+RJ 24
+R 40
+- 10
+L 14
+J 30
+- 4
+RB 16
+RBJ 30
+R 6
+- 20
+R 30
+- 30
+L 10
+- 10
+J 30
+- 20
+R 20
+- 20
+R 10
+RJ 30
+R 10
+- 30
+R 30
+RJ 24
+R 30
+- 10
+R 30
+RJ 30
+R 60
+R 146
+RJ 24
+R 10
+- 20
+R 6
+- 160
+R 60
+R 160
+R 6
+RJ 20
+R 80
+R 75
+- 50
+RJ 24
+R 50
+- 10
+RJ 12
+R 16
+- 10
+- 160
+RB 12
+RBJ 30
+R 10

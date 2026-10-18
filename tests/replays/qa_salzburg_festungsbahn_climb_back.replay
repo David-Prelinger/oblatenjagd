@@ -1,0 +1,67 @@
+# QA (M1 Stage 1): falling off the Festungsbahn at the top is no softlock
+# (D-027/D-028). Ride up (salzburg_festungsbahn's route), then walk LEFT off the
+# car at the top station: she falls past the rock stairs into the trench of
+# the lower station (x 3860, feet y 256; camera 3808, so the whole climb is on
+# screen). Hops up again: onto the descending car for a moment, the stair at
+# col 244, col 247 and the rampart edge (col 248, frame 1957), then walks off
+# the rampart onto the meadow into the Maibaum: low touch, 100 (D-035).
+level  = salzburg
+source = handwritten
+expect = complete frames=1982..1982 deaths=0 lives=3 no_event=Hurt
+expect = score=8800
+---
+# solver route (frames 0-1479)
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 102
+RBJ 36
+RB 24
+RBJ 36
+RB 2
+RBJ 36
+RB 29
+RBJ 36
+RB 24
+RBJ 36
+RB 86
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 36
+RB 6
+RBJ 20
+RB 72
+RBJ 36
+RB 18
+RBJ 33
+RB 91
+RBJ 36
+RB 40
+RBJ 36
+RB 68
+RBJ 6
+RB 18
+RBJ 36
+RB 18
+RBJ 34
+RB 8
+RBJ 12
+RB 42       # boards the car
+L 6
+- 152       # top station
+L 60        # walk left off the car: falls into the trench
+- 30
+R 8
+RJ 30       # hop: briefly on the descending car then the stair at col 244
+R 30
+- 10
+RJ 30       # up to col 247
+R 30
+- 10
+RJ 24       # onto the rampart edge
+R 60        # walk off it into the Maibaum (100)
