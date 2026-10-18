@@ -11,8 +11,8 @@ anim   = idle frames=1
 frame idle 0
 ......kkkkkk....
 ....kkOOccOOkk..
-..kkllllOOOOOOk.
-.kllccccllOOOOlk
+..kkllllOOccOOk.
+.kllccccllOOcclk
 .klcccccclOOlllk
 kloooooooolOlllk
 klcccccccclllllk
