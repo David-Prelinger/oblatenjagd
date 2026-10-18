@@ -1,0 +1,27 @@
+# Title flow: three deaths at the Selfie-Tourist (each followed by the stage
+# intro), game over at 1308, „Weiter?" from 1368, START at 1372 → stage intro
+# with 3 lives (D-017, D-025).
+level  = items
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=388..388 deaths=3 lives=3 state=stage_intro
+shots  = 1320:game_over 1370:continue
+---
+- 20
+S 1
+- 150
+RB 70
+RBJ 20    # over the wall
+RB 110    # into the Selfie-Tourist
+- 230     # dying + stage intro
+RB 70
+RBJ 20
+RB 110
+- 230
+RB 70
+RBJ 20
+RB 110
+- 140     # game over at 1308
+S 1       # continue
+- 10

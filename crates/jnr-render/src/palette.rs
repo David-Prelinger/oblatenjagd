@@ -21,6 +21,12 @@ pub const MOZART_YELLOW: u32 = 0xf5c547ff;
 pub const LEATHER_DARK: u32 = 0x5c3226ff;
 /// `r` dirndl_red (grey-box hazards, player placeholder, goal flag).
 pub const DIRNDL_RED: u32 = 0xcf3a3eff;
+/// `S` sky_blue (panel highlight).
+pub const SKY_BLUE: u32 = 0x64aee6ff;
+/// `B` navy (stage intro, game over and „Fortsetzung folgt …" screens).
+pub const NAVY: u32 = 0x2a3878ff;
+/// `i` silver_light (the stage tagline).
+pub const SILVER_LIGHT: u32 = 0xa2abbeff;
 
 #[cfg(test)]
 mod tests {
@@ -49,6 +55,9 @@ mod tests {
             ('Y', MOZART_YELLOW),
             ('l', LEATHER_DARK),
             ('r', DIRNDL_RED),
+            ('B', NAVY),
+            ('S', SKY_BLUE),
+            ('i', SILVER_LIGHT),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }

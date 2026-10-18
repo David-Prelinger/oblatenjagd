@@ -665,7 +665,11 @@ fn timer_stops_while_dying_and_at_the_goal() {
     let mut g = game(&world_with(20, 100, &[(11, 4, 'G')]));
     until(&mut g, "R", 120, |g| g.mode() == Mode::StageClear);
     let t = g.time_left();
-    hold(&mut g, "-", 300);
+    // It stands still while sliding, hopping and walking off; only the
+    // time-bonus tally counts it down (tests/goal.rs).
+    until(&mut g, "-", 400, |g| {
+        g.stage_clear().unwrap().phase == crate::ClearPhase::Tally
+    });
     assert_eq!(g.time_left(), t);
 }
 
@@ -792,7 +796,10 @@ fn losing_the_last_life_is_game_over_and_start_restarts_the_stage() {
     assert!(matches!(g.mode(), Mode::GameOver { .. }));
     hold(&mut g, "-", 1);
     let events = g.step(input("S")).to_vec();
-    assert!(events.contains(&Event::Respawned));
+    assert!(
+        !events.contains(&Event::Respawned),
+        "a restart is no respawn"
+    );
     assert_eq!(g.mode(), Mode::Playing);
     assert_eq!((g.lives(), g.score(), g.oblaten()), (3, 0, 0));
     assert_eq!(g.checkpoint(), None);

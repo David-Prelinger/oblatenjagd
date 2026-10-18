@@ -6,6 +6,14 @@
 //! resets the level part (tiles, entities, timer) to the start state;
 //! score, Oblaten, lives and the checkpoint survive (design: "Checkpoint
 //! respawn"). Game over → `Mode::GameOver`; START restarts the stage.
+//!
+//! The screens around play (title, stage intro, pause) and the Maibaum goal
+//! sequence live in the child module [`flow`]; which of them a game has is
+//! set by its [`Start`] (D-025).
+
+mod flow;
+
+pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
@@ -113,14 +121,31 @@ impl Event {
 /// The game's current mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
+    /// The title screen (only with [`Start::Title`]): START starts the stage.
+    Title {
+        /// Frames since the title screen appeared (saturating; for blinking).
+        frames: u16,
+    },
+    /// The stage intro screen before play, also after every death and after
+    /// a continue (only with [`Start::Title`]). Nothing moves.
+    StageIntro {
+        /// Frames left until play starts.
+        timer: u16,
+    },
     /// Normal play.
     Playing,
+    /// START during play (only with [`Start::Title`]); START again resumes.
+    /// Nothing moves, the timer stands still.
+    Paused,
     /// The player died; respawn (or game over) when `timer` runs out.
     Dying {
         /// Frames left until respawn.
         timer: u16,
     },
-    /// The goal was reached; the simulation stands still.
+    /// The goal was reached: the Maibaum sequence runs (slide, hop, walk
+    /// off, time bonus, texts, „Fortsetzung folgt …"), then the title
+    /// screen. Enemies and the timer stand still; [`Game::stage_clear`]
+    /// has the details.
     StageClear,
     /// No lives left. START (after `game.game_over_frames`) restarts the
     /// stage from its start with full lives, score 0 and Oblaten 0.
@@ -188,6 +213,10 @@ pub struct Game {
     death_cause: Option<DeathCause>,
     /// START was held in the previous step (to detect presses).
     start_held: bool,
+    /// Which flow screens this game has.
+    start: Start,
+    /// The goal sequence while `Mode::StageClear`.
+    clear: Option<StageClear>,
     /// Hash of everything that never changes during a game (start grid,
     /// goals, spawns, tuning), computed once in `new`.
     static_hash: u64,
@@ -201,7 +230,17 @@ impl Game {
     /// A goal occupies its cell's column from one level height above the
     /// top of the level down to the cell's bottom edge (like a pole: it
     /// cannot be jumped over, even above the screen).
+    ///
+    /// Same as [`Game::new_at`] with [`Start::Playing`]: play starts at once,
+    /// without stage intros or pause (tests, tools and replays by default).
     pub fn new(level: &Level, tuning: &Tuning, seed: u64) -> Game {
+        Game::new_at(level, tuning, seed, Start::Playing)
+    }
+
+    /// Starts a level with the given flow: [`Start::Title`] is the real
+    /// game (title screen, stage intros, pause), [`Start::Playing`] starts
+    /// in play without those screens.
+    pub fn new_at(level: &Level, tuning: &Tuning, seed: u64, start: Start) -> Game {
         let map = Arc::new(TileMap::from_level(level));
         let goals: Vec<Aabb> = level
             .entities
@@ -233,8 +272,8 @@ impl Game {
         // tuning field without a hand-written list.
         h.bytes(format!("{tuning:?}").as_bytes());
 
-        let start = level.player_start();
-        let player = Player::spawn(start.col, start.row, &tuning.player);
+        let at = level.player_start();
+        let player = Player::spawn(at.col, at.row, &tuning.player);
         let mut game = Game {
             frame: 0,
             mode: Mode::Playing,
@@ -258,11 +297,16 @@ impl Game {
             checkpoint: None,
             death_cause: None,
             start_held: false,
+            start,
+            clear: None,
             static_hash: h.finish(),
             events: Vec::new(),
         };
         game.reset_level();
         game.place_camera();
+        if start == Start::Title {
+            game.mode = Mode::Title { frames: 0 };
+        }
         game
     }
 
@@ -270,8 +314,36 @@ impl Game {
     pub fn step(&mut self, input: InputFrame) -> &[Event] {
         self.events.clear();
         self.frame = self.frame.wrapping_add(1);
+        let start_pressed = input.contains(InputFrame::START) && !self.start_held;
         match self.mode {
+            Mode::Title { frames } => {
+                self.player.jump_held = input.jump();
+                self.mode = Mode::Title {
+                    frames: frames.saturating_add(1),
+                };
+                if start_pressed {
+                    self.restart();
+                }
+            }
+            Mode::StageIntro { timer } => {
+                self.player.jump_held = input.jump();
+                self.mode = if timer > 1 {
+                    Mode::StageIntro { timer: timer - 1 }
+                } else {
+                    Mode::Playing
+                };
+            }
+            Mode::Playing if start_pressed && self.start == Start::Title => {
+                self.player.jump_held = input.jump();
+                self.mode = Mode::Paused;
+            }
             Mode::Playing => self.step_playing(input),
+            Mode::Paused => {
+                self.player.jump_held = input.jump();
+                if start_pressed {
+                    self.mode = Mode::Playing;
+                }
+            }
             Mode::Dying { timer } => {
                 // Keep tracking JUMP so a button held across the respawn
                 // is not a new press (and presses here never buffer).
@@ -286,13 +358,15 @@ impl Game {
                     self.respawn();
                 }
             }
-            Mode::StageClear => {}
+            Mode::StageClear => {
+                self.player.jump_held = input.jump();
+                self.step_stage_clear();
+            }
             Mode::GameOver { frames } => {
                 self.player.jump_held = input.jump();
                 let frames = frames.saturating_add(1);
                 self.mode = Mode::GameOver { frames };
-                let pressed = input.contains(InputFrame::START) && !self.start_held;
-                if pressed && frames >= self.tuning.game.game_over_frames {
+                if start_pressed && frames >= self.tuning.game.game_over_frames {
                     self.restart();
                 }
             }
@@ -343,10 +417,8 @@ impl Game {
             return;
         }
         self.check_checkpoints();
-        if self.goals.iter().any(|g| g.overlaps(&hb)) {
-            self.mode = Mode::StageClear;
-            self.player.vx = Fx::ZERO;
-            self.events.push(Event::LevelComplete);
+        if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
+            self.touch_goal(goal);
         }
         self.camera.follow(
             self.player.center_px(),
@@ -402,8 +474,28 @@ impl Game {
         self.time_frames = 0;
     }
 
-    /// Puts a Normal player at the checkpoint (or the start) and the camera on it.
+    /// Puts a Normal player at the checkpoint (or the start) and the camera
+    /// on it; play goes on (after the stage intro with [`Start::Title`]).
     fn respawn(&mut self) {
+        self.place_player();
+        self.death_cause = None;
+        self.events.push(Event::Respawned);
+        self.enter_stage();
+    }
+
+    /// Play starts (after the stage intro with [`Start::Title`]).
+    fn enter_stage(&mut self) {
+        self.mode = match self.start {
+            Start::Title => Mode::StageIntro {
+                timer: self.tuning.game.intro_frames.max(1),
+            },
+            Start::Playing => Mode::Playing,
+        };
+    }
+
+    /// A Normal player at the checkpoint (or the start), the camera on it.
+    /// Keeps `jump_held`, so a held JUMP is not a new press.
+    fn place_player(&mut self) {
         let jump_held = self.player.jump_held;
         let at = match self.checkpoint {
             Some(i) => &self.level.entities[i as usize],
@@ -412,19 +504,26 @@ impl Game {
         self.player = Player::spawn(at.col, at.row, &self.tuning.player);
         self.player.jump_held = jump_held;
         self.place_camera();
-        self.mode = Mode::Playing;
-        self.death_cause = None;
-        self.events.push(Event::Respawned);
     }
 
-    /// Game over → START: the stage from its start, full lives, no score.
-    fn restart(&mut self) {
+    /// The stage from its start with full lives, no score, no Oblaten, no
+    /// checkpoint (no mode change, no event).
+    fn reset_run(&mut self) {
         self.lives = self.tuning.game.lives_start;
         self.score = 0;
         self.oblaten = 0;
         self.checkpoint = None;
+        self.clear = None;
+        self.death_cause = None;
         self.reset_level();
-        self.respawn();
+        self.place_player();
+    }
+
+    /// Game over → START, title → START: the stage from its start, full
+    /// lives, no score. No `Respawned` event: that is only for a death.
+    fn restart(&mut self) {
+        self.reset_run();
+        self.enter_stage();
     }
 
     fn place_camera(&mut self) {
@@ -854,6 +953,26 @@ impl Game {
                 h.u8(3);
                 h.u16(frames);
             }
+            Mode::Title { frames } => {
+                h.u8(4);
+                h.u16(frames);
+            }
+            Mode::StageIntro { timer } => {
+                h.u8(5);
+                h.u16(timer);
+            }
+            Mode::Paused => h.u8(6),
+        }
+        h.u8(match self.start {
+            Start::Playing => 0,
+            Start::Title => 1,
+        });
+        match &self.clear {
+            None => h.u8(0),
+            Some(c) => {
+                h.u8(1);
+                c.hash(&mut h);
+            }
         }
         self.player.hash(&mut h);
         self.camera.hash(&mut h);
@@ -996,6 +1115,14 @@ impl Game {
     /// Why the player died (set while `Dying` and in `GameOver`).
     pub fn death_cause(&self) -> Option<DeathCause> {
         self.death_cause
+    }
+    /// The goal sequence (while `Mode::StageClear`).
+    pub fn stage_clear(&self) -> Option<&StageClear> {
+        self.clear.as_ref()
+    }
+    /// Which flow screens this game has.
+    pub fn start(&self) -> Start {
+        self.start
     }
     /// Events of the last step.
     pub fn events(&self) -> &[Event] {

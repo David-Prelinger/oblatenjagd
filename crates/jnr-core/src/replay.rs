@@ -5,6 +5,7 @@
 //! level  = testbed
 //! seed   = 1
 //! source = handwritten          # solver | human | handwritten
+//! start  = playing              # optional: playing (default) | title
 //! expect = complete frames=731..731 deaths=0
 //! shots  = 0:start 760:clear    # frame:name; frame 0 = before the first step
 //! ---
@@ -17,13 +18,16 @@
 //! numbers are [`Game::frame`] values: the state after that many steps.
 //! Ranges `a..b` are inclusive. All expectations are checked after the last
 //! input (the replay always runs to its end).
+//! `start` picks the flow (D-025): `playing` (the default) starts in play
+//! without title, stage intros or pause, like `Game::new`; `title` runs the
+//! real game from its title screen (`Game::new_at(.., Start::Title)`).
 //! A line holds at most [`MAX_FRAMES_PER_LINE`] frames and the whole
 //! replay at most [`MAX_TOTAL_FRAMES`] (1 h at 60 Hz).
 
 use std::fmt;
 
 use crate::ParseError;
-use crate::game::{Event, Game, Mode};
+use crate::game::{Event, Game, Mode, Start};
 use crate::input::InputFrame;
 use crate::level::Level;
 use crate::tuning::Tuning;
@@ -99,6 +103,12 @@ impl fmt::Display for FrameRange {
 /// The game mode at the end of a replay, as named in `state=<…>`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EndState {
+    /// [`Mode::Title`].
+    Title,
+    /// [`Mode::StageIntro`].
+    StageIntro,
+    /// [`Mode::Paused`].
+    Paused,
     /// [`Mode::Playing`].
     Playing,
     /// [`Mode::Dying`].
@@ -117,6 +127,9 @@ impl EndState {
             EndState::Dying => "dying",
             EndState::StageClear => "stage_clear",
             EndState::GameOver => "game_over",
+            EndState::Title => "title",
+            EndState::StageIntro => "stage_intro",
+            EndState::Paused => "paused",
         }
     }
 
@@ -127,6 +140,9 @@ impl EndState {
             Mode::Dying { .. } => EndState::Dying,
             Mode::StageClear => EndState::StageClear,
             Mode::GameOver { .. } => EndState::GameOver,
+            Mode::Title { .. } => EndState::Title,
+            Mode::StageIntro { .. } => EndState::StageIntro,
+            Mode::Paused => EndState::Paused,
         }
     }
 
@@ -136,6 +152,9 @@ impl EndState {
             EndState::Dying,
             EndState::StageClear,
             EndState::GameOver,
+            EndState::Title,
+            EndState::StageIntro,
+            EndState::Paused,
         ]
         .into_iter()
         .find(|v| v.name() == s)
@@ -161,7 +180,8 @@ pub enum Expect {
     PlayerYAtLeast(i32),
     /// `player_y<=PX`: the player's hitbox top edge is at most PX at the end.
     PlayerYAtMost(i32),
-    /// `state=<playing|dying|stage_clear|game_over>` at the end.
+    /// `state=<playing|dying|stage_clear|game_over|title|stage_intro|paused>`
+    /// at the end.
     State(EndState),
     /// `no_event=<Event>`: the event never happened.
     NoEvent(Event),
@@ -183,8 +203,9 @@ pub enum Expect {
 /// What the expectation grammar supports (shown in "not supported yet" errors).
 const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at frames=a..b, \
                          player_x>=PX, player_y>=PX, player_y<=PX, \
-                         state=<playing|dying|stage_clear|game_over>, no_event=<Event>, \
-                         oblaten>=N, oblaten=N, score>=N, score=N, lives=N, lives>=N";
+                         state=<playing|dying|stage_clear|game_over|title|stage_intro|paused>, \
+                         no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
+                         lives>=N";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -217,7 +238,8 @@ impl Expect {
             } else if let Some(s) = w.strip_prefix("state=") {
                 Expect::State(EndState::parse(s).ok_or_else(|| {
                     format!(
-                        "unknown state `{s}` (expected playing, dying, stage_clear or game_over)"
+                        "unknown state `{s}` (expected playing, dying, stage_clear, game_over, \
+                         title, stage_intro or paused)"
                     )
                 })?)
             } else if let Some(n) = w.strip_prefix("oblaten>=") {
@@ -350,6 +372,8 @@ pub struct Replay {
     pub seed: u64,
     /// Where the replay came from.
     pub source: Source,
+    /// How the game starts (`start = title`; default `playing`).
+    pub start: Start,
     /// All expectations, in file order.
     pub expects: Vec<Expect>,
     /// Frames to render, in file order.
@@ -364,6 +388,7 @@ impl Replay {
         let mut level: Option<String> = None;
         let mut seed: Option<u64> = None;
         let mut source: Option<Source> = None;
+        let mut start: Option<Start> = None;
         let mut expects = Vec::new();
         let mut shots: Vec<Shot> = Vec::new();
         // Line of each shot (parallel to `shots`) for errors found after the body.
@@ -447,6 +472,14 @@ impl Replay {
                         ))
                     })?);
                 }
+                "start" => {
+                    once(start.is_some())?;
+                    start = Some(Start::from_name(value).ok_or_else(|| {
+                        err(format!(
+                            "unknown start `{value}` (expected playing or title)"
+                        ))
+                    })?);
+                }
                 "expect" => expects.extend(Expect::parse_clauses(value).map_err(err)?),
                 "shots" => {
                     for item in value.split_whitespace() {
@@ -460,7 +493,7 @@ impl Replay {
                 }
                 _ => {
                     return Err(err(format!(
-                        "unknown header key `{key}` (known: level, seed, source, expect, shots)"
+                        "unknown header key `{key}` (known: level, seed, source, start, expect, shots)"
                     )));
                 }
             }
@@ -477,6 +510,7 @@ impl Replay {
             level,
             seed: seed.unwrap_or(1),
             source,
+            start: start.unwrap_or(Start::Playing),
             expects,
             shots,
             inputs,
@@ -505,6 +539,9 @@ impl Replay {
             self.seed,
             self.source.name()
         );
+        if self.start != Start::Playing {
+            s.push_str(&format!("start  = {}\n", self.start.name()));
+        }
         if !self.expects.is_empty() {
             let clauses: Vec<String> = self.expects.iter().map(Expect::to_string).collect();
             s.push_str(&format!("expect = {}\n", clauses.join(" ")));
@@ -543,7 +580,7 @@ impl Replay {
     /// every step (for hashes and screenshots). The caller checks that
     /// `level` is the replay's level.
     pub fn run(&self, level: &Level, tuning: &Tuning, mut on_frame: impl FnMut(&Game)) -> Outcome {
-        let mut game = Game::new(level, tuning, self.seed);
+        let mut game = Game::new_at(level, tuning, self.seed, self.start);
         let mut outcome = Outcome::new(&game);
         on_frame(&game);
         for input in self.frames() {
@@ -1026,5 +1063,40 @@ RBJ 2
         let mut again = Vec::new();
         r.run(&level, &tuning, |g| again.push((g.frame(), g.state_hash())));
         assert_eq!(seen, again, "deterministic");
+    }
+
+    #[test]
+    fn start_header_picks_the_flow() {
+        assert_eq!(Replay::parse(EXAMPLE).unwrap().start, Start::Playing);
+        assert!(
+            !Replay::parse(EXAMPLE)
+                .unwrap()
+                .format()
+                .contains("start  =")
+        );
+        let text = "level = t\nsource = handwritten\nstart = title\nexpect = state=stage_intro\n---\nS 1\n";
+        let r = Replay::parse(text).unwrap();
+        assert_eq!(r.start, Start::Title);
+        assert!(r.format().contains("start  = title\n"));
+        assert_eq!(Replay::parse(&r.format()).unwrap(), r);
+        assert!(err("level = t\nsource = solver\nstart = menu\n---\n").contains("unknown start"));
+        assert!(
+            err("level = t\nsource = solver\nstart = title\nstart = title\n---\n")
+                .contains("given twice")
+        );
+        for s in ["title", "stage_intro", "paused"] {
+            let text = format!("level = t\nsource = solver\nexpect = state={s}\n---\n");
+            assert!(Replay::parse(&text).is_ok(), "{s}");
+        }
+
+        let level = Level::parse(
+            "[meta]\nid = \"t\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\
+             \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n.P..\n####\n'''\n",
+        )
+        .unwrap();
+        let tuning = Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap();
+        let o = r.run(&level, &tuning, |_| {});
+        assert_eq!(o.state, EndState::StageIntro);
+        assert_eq!(r.check(&o), Vec::<String>::new());
     }
 }

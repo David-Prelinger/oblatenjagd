@@ -168,10 +168,10 @@ Touch the Maibaum → enemies freeze, timer stops, height score popup → Resi s
 
 ### Screens and HUD (320×180, 8 px font, line height 9)
 
-- **HUD** (Playing, Dying, StageClear): two rows at the top, labels at y = 4 in white `w`, values at y = 13 in `Y`; columns left-aligned at x = 16 (PUNKTE, 6 digits zero-padded), x = 96 (OBLATEN, 2 digits), x = 184 (LEBEN), x = 256 (ZEIT, 3 digits; red `r` at ≤ 60). No background panel (the font's shadow is enough); levels keep the top 2 tiles free of important action.
-- **Title**: Salzburg parallax background (static) with Resi idle on the ground at the left. Logo sprite `title_logo` (pixel-artist, ≤ 240×48, centred at y ≈ 24; fallback: `title.name` as text), subtitle `title.subtitle` at y ≈ 84, prompt `title.press_start` at y ≈ 140 blinking (30 frames on, 30 off). START starts the stage intro.
+- **HUD** (Playing, Pause, Dying, StageClear): two rows at the top, labels at y = 4 in white `w`, values at y = 13 in `Y`; columns left-aligned at x = 16 (PUNKTE, 6 digits zero-padded), x = 96 (OBLATEN, 2 digits; with the `hud_oblate` icon: icon at x = 96, digits at x = 106), x = 184 (LEBEN), x = 256 (ZEIT, 3 digits; red `r` at ≤ 60). No background panel (the font's shadow is enough); levels keep the top 2 tiles free of important action.
+- **Title**: Salzburg parallax background (static) with Resi idle on the ground at the left. Logo sprite `title_logo` (pixel-artist, ≤ 240×48, centred at y ≈ 24; fallback: `title.name` as text), subtitle `title.subtitle` at y ≈ 84, prompt `title.press_start` at y = 128 blinking (30 frames on, 30 off). START starts the stage intro.
 - **Stage intro** (150 frames, also after every death): navy `B` background, `stage.salzburg.title` centred at y = 64, `stage.salzburg.tagline` at y = 80 in `i`, Resi's idle sprite and „× N" lives at y ≈ 112.
-- **Pause** (nice-to-have in M1): START during Playing; level dimmed, `ui.pause` centred.
+- **Pause** (nice-to-have in M1): START during Playing; level frozen behind a `B` panel (x 112–207, y 78–101, `k` border, 1 px `S` highlight top and left), `ui.pause` in `w` centred at y = 86.
 - **Game over**: navy background, `ui.game_over` at y = 72; after 60 frames `ui.continue` at y = 96, blinking.
 - **Stage clear**: texts centred over the level at y = 72 and 84 (`stage.clear`, `stage.salzburg.next`), time bonus line `stage.time_bonus` + number at y = 100 during the tally.
 

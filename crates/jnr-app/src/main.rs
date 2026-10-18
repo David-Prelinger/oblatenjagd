@@ -87,7 +87,7 @@ fn new_game(opts: &Options) -> Game {
         .unwrap_or_else(|| panic!("level `{}` is not embedded", opts.level));
     let level = Level::parse(src).unwrap_or_else(|e| panic!("level {}: {e}", opts.level));
     let tuning = Tuning::parse(TUNING_SRC).unwrap_or_else(|e| panic!("tuning.toml: {e}"));
-    Game::new(&level, &tuning, opts.seed)
+    Game::new_at(&level, &tuning, opts.seed, opts.start)
 }
 
 fn texts() -> Texts {
@@ -339,6 +339,11 @@ mod tests {
         let game = new_game(&Options::default());
         assert_eq!(game.level().meta.id, "testbed");
         assert_eq!(game.frame(), 0);
+        assert_eq!(
+            game.mode(),
+            jnr_core::Mode::Title { frames: 0 },
+            "starts at the title"
+        );
         assert_eq!(texts().get("stage.clear"), "Etappe geschafft!");
     }
 

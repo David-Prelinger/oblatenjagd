@@ -20,7 +20,9 @@ Options:
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
   --screenshot-at <frame>:<png> write the 320x180 framebuffer after that simulation
                                 frame (0 = start); repeatable
-  --replay <file>               play a replay file: its level and seed are used;
+  --replay <file>               play a replay file: its level, seed and start are
+                                used (without `start = title` the game starts in
+                                play, not on the title screen);
                                 game input comes only from the replay (Escape
                                 quits; F1/F12 still work); after the last
                                 input nothing is held
@@ -136,6 +138,7 @@ pub fn parse_args_with(
         opts.level = replay.level.clone();
         opts.seed = replay.seed;
         opts.input = InputSource::Replay(replay.frames().collect());
+        opts.start = replay.start;
     }
     if let Some(exit) = opts.exit_after {
         if let Some((frame, path)) = opts.screenshots.iter().find(|(f, _)| *f > exit) {
@@ -264,6 +267,7 @@ mod tests {
                 screenshots: vec![(60, "/tmp/a.png".into()), (0, "b.png".into())],
                 input: InputSource::Keyboard,
                 record: None,
+                start: jnr_core::Start::Title,
             }
         );
     }
@@ -302,6 +306,11 @@ mod tests {
         // Matching --level/--seed are fine.
         let same = run(&["--level", "testbed", "--seed", "7", "--replay", "r.replay"]);
         assert_eq!(same.input, opts.input);
+        assert_eq!(
+            opts.start,
+            jnr_core::Start::Playing,
+            "a replay starts in play by default"
+        );
     }
 
     #[test]

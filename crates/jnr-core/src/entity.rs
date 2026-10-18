@@ -37,6 +37,8 @@ pub enum Popup {
     ExtraLife,
     /// `popup.checkpoint` („Zwischenstopp").
     Checkpoint,
+    /// `popup.wurstkranz` („Wurstkranz!"), the top Maibaum zone.
+    Wurstkranz,
 }
 
 impl Popup {
@@ -46,6 +48,7 @@ impl Popup {
             Popup::Score(_) => None,
             Popup::ExtraLife => Some("popup.extra_life"),
             Popup::Checkpoint => Some("popup.checkpoint"),
+            Popup::Wurstkranz => Some("popup.wurstkranz"),
         }
     }
 }
@@ -154,6 +157,7 @@ impl EntityKind {
                     }
                     Popup::ExtraLife => h.u8(1),
                     Popup::Checkpoint => h.u8(2),
+                    Popup::Wurstkranz => h.u8(3),
                 }
             }
             EntityKind::Bump => h.u8(6),
