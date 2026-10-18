@@ -83,13 +83,15 @@ impl Game {
 pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
 ```
 
-Modules (M0): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run`, expectation checks; see `validation.md` L5), plus `hash` (FNV-1a) and `rng` (xorshift64*).
+Modules (M0, + `entity` in M1): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run`, expectation checks; see `validation.md` L5), plus `hash` (FNV-1a) and `rng` (xorshift64*).
 
 `Game::teleport_player(x_px)` is a tooling-only entry point (`cargo xtask scene`): it places the player on the floor at x without physics; the game, replays and the solver never call it (enforced by the architecture lint: only xtask and test code may call it).
 
 - **Game modes** as a state machine inside core: `Title → StageIntro → Playing → (Dying | StageClear) → ...`. Menus are part of core so they are testable too.
 - **Fixed-point**: positions/velocities are `i32` in 1/256 pixel (`Fx` newtype). Identical results native vs wasm.
 - **Entities**: a plain `Vec<Entity>` with an `EntityKind` enum and per-kind update functions. No ECS framework — the game is small and an enum is easier for agents to reason about.
+  - Implemented (M1, E1, `entity.rs` + `game.rs`): level spawns (`SpawnKind`) become inactive entities on every level reset; activation within `game.activate_margin` of the right screen edge, removal `game.despawn_margin` px behind the camera, below the level, or when finished. Kinds: `Oblate`, `PoppedOblate`, `Mozartkugel`, `Zaunerstollen`, `Debris`, `Popup(Score|ExtraLife|Checkpoint)`, `Bump` (a raised tile), `Checkpoint`, `Sign`, `Enemy(..)` (placeholders: stand still, hurt on contact, stompable), `Festungsbahn` (inert). The renderer reads `Game::entities()`, `Game::tile(col, row)` (the current grid), `Game::tile_bump_px`, `Game::checkpoint()`, `score()`, `oblaten()`, `lives()`, `time_left()`, `death_cause()`.
+  - Player power states (`Power::Normal|Big`), hurt/i-frames, 30-frame transformation freeze, score/Oblaten/lives/timer, checkpoint, level reset on death and `Mode::GameOver` live in `game.rs` (D-021).
 - **Collision**: AABB vs tile grid (solid, one-way, hazard, water/death), AABB vs AABB for entities. No slopes in M1.
 - **One-way platforms** block only from above; the player drops through by pressing DOWN + JUMP while standing on one (DOWN alone does nothing).
 - **Camera** lives in core (it affects enemy activation like in SMB and must be deterministic).
@@ -152,14 +154,20 @@ Implemented (M0):
 
 TOML header + one ASCII grid. One char = one 16×16 tile or an entity spawn.
 
-The example below is the **M1 target** (`oblaten_box` with `contains`, `oblate`, `selfie_tourist`, … are not parsed yet). `jnr-core` currently supports the tile names `ground`/`brick`/`solid`, `oneway`/`oneway_sign`, `hazard`/`salzach_water` (and `empty`) and the entities `player_start` and `goal`/`goal_maibaum`; anything else is a parse error.
+Format v2 (M1, D-021). Tile names: grey-box `solid`/`oneway`/`hazard`/`empty` and the catalog tiles (`ground`, `meadow`, `rock`, `rampart`, `hedge`, `stone`, `bridge`, `railing`, `arch`, `brick`, `oblaten_box`, `oblaten_box_empty` → solid; `railing_bg` → decorative air; `oneway_sign`, `oneway_burger`, `oneway_wood` → one-way; `salzach_water` → hazard). `contains = "oblate|mozartkugel|zaunerstollen|oblaten_10"` is allowed on `brick` and `oblaten_box` only (a box defaults to `oblate`). Entities: `player_start` (exactly one), `goal`/`goal_maibaum`, `checkpoint`, `oblate`, `sign` (`text` key required, `style = "street|bus|ortsende"`, default street), `selfie_tourist`, `taube`, `taube_sitting`, `mozartkugel_verkaeufer`, `fiaker`, `festungsbahn`. Unknown names or fields are parse errors.
 
 ```toml
 [meta]
 id = "salzburg"
 title_key = "stage.salzburg.title"   # "Etappe 1: Salzburg"
-time_limit = 300
-background = ["sky_salzburg", "untersberg_far", "festung_mid", "rooftops_near"]
+time_limit = 300                     # required, 1..=999 seconds
+min_jump_window = 6                  # optional, frames (checked by the solver)
+background = [                       # far to near; factor in 1/16 of the camera speed (0..=32)
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_untersberg", factor = 2 },
+  { sprite = "bg_festung", factor = 4 },
+  { sprite = "bg_rooftops", factor = 8 },
+]
 music = "salzburg"
 
 [legend]

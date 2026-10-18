@@ -14,10 +14,11 @@ use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::level::TILE_PX;
 use jnr_core::physics::Aabb;
 use jnr_core::tuning::PlayerTuning;
-use jnr_core::{Camera, EntityKind, Facing, Fx, Game, Level, Mode, Player, Texts, TileKind};
+use jnr_core::{Camera, Facing, Fx, Game, Level, Mode, Player, Power, SpawnKind, Texts, TileKind};
 
 use crate::Framebuffer;
 use crate::blit::{blit_frame, draw_sprite};
+use crate::entities::{self, EntityLooks};
 use crate::font::Font;
 use crate::palette::{
     DIRNDL_RED, LEATHER_DARK, MEADOW, MOZART_YELLOW, OUTLINE, SKY_LIGHT, STONE_GREY, WHITE,
@@ -28,12 +29,15 @@ pub const STAGE_CLEAR_KEY: &str = "stage.clear";
 
 /// Sprite name of the player.
 pub const PLAYER_SPRITE: &str = "player";
+/// Sprite name of the Zuckerschock player.
+pub const PLAYER_BIG_SPRITE: &str = "player_big";
 /// Sprite name of the goal.
 pub const GOAL_SPRITE: &str = "goal";
 /// Prefix of tile sprites: a tile named `ground` in the legend uses `tile_ground`.
 pub const TILE_SPRITE_PREFIX: &str = "tile_";
 
-/// The player blinks during `Dying`: visible for this many frames, then hidden as long.
+/// The player blinks during `Dying` and while invulnerable, and alternates
+/// sizes while transforming: this many frames per phase.
 const DYING_FLASH_FRAMES: u32 = 4;
 /// Height of the grey-box goal pole in pixels.
 const GOAL_POLE_PX: i32 = 8 * TILE_PX;
@@ -140,7 +144,9 @@ pub struct RenderContext<'a> {
     /// `tile_<name>` sprite per [`Level::tile_names`] index (index 0 = no name).
     tiles: Vec<Option<&'a AtlasSprite>>,
     player: Option<PlayerLook<'a>>,
+    player_big: Option<PlayerLook<'a>>,
     goal: Option<&'a AtlasSprite>,
+    entities: EntityLooks<'a>,
 }
 
 impl<'a> RenderContext<'a> {
@@ -159,24 +165,28 @@ impl<'a> RenderContext<'a> {
                 }
             })
             .collect();
-        let player = with_anims(PLAYER_SPRITE).map(|sprite| PlayerLook {
-            sprite,
-            anims: PlayerAnim::ALL.map(|state| {
-                state
-                    .names()
-                    .iter()
-                    .chain(&["idle"])
-                    .find_map(|name| sprite.anim(name))
-                    .unwrap_or(&sprite.anims[0])
-            }),
-        });
+        let look = |name: &str| {
+            with_anims(name).map(|sprite| PlayerLook {
+                sprite,
+                anims: PlayerAnim::ALL.map(|state| {
+                    state
+                        .names()
+                        .iter()
+                        .chain(&["idle"])
+                        .find_map(|name| sprite.anim(name))
+                        .unwrap_or(&sprite.anims[0])
+                }),
+            })
+        };
         RenderContext {
             atlas,
             texts,
             font: Font::from_atlas(atlas),
             tiles,
-            player,
+            player: look(PLAYER_SPRITE),
+            player_big: look(PLAYER_BIG_SPRITE),
             goal: with_anims(GOAL_SPRITE),
+            entities: EntityLooks::new(atlas),
         }
     }
 
@@ -208,9 +218,12 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     for &layer in background_layers(game) {
         draw_layer(layer, fb);
     }
+    entities::draw_behind_tiles(game, &ctx.entities, ctx.atlas, fb);
     draw_tiles(game, ctx, fb, cam);
     draw_goals(game, ctx, fb, cam);
+    entities::draw_entities(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     draw_player(game, ctx, fb, cam);
+    entities::draw_front(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     if game.mode() == Mode::StageClear {
         let text = ctx.texts.get(STAGE_CLEAR_KEY);
         let w = ctx.font.measure(&text);
@@ -256,11 +269,11 @@ fn draw_tiles(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
         .min(level.height - 1);
     for row in row0..=row1 {
         for col in col0..=col1 {
-            let Some(tile) = level.tile(col, row) else {
+            let Some(tile) = game.tile(col, row) else {
                 continue;
             };
             let x = col * TILE_PX - cam.x;
-            let y = row * TILE_PX - cam.y;
+            let y = row * TILE_PX - cam.y - game.tile_bump_px(col, row);
             match ctx.tiles.get(tile.name as usize).copied().flatten() {
                 Some(s) => {
                     let anim = &s.anims[0];
@@ -269,7 +282,10 @@ fn draw_tiles(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
                 }
                 None => match tile.kind {
                     TileKind::Empty => {}
-                    TileKind::Solid => fb.fill_rect(x, y, TILE_PX, TILE_PX, STONE_GREY),
+                    TileKind::Solid => {
+                        let c = entities::solid_tile_colour(game, tile, STONE_GREY);
+                        fb.fill_rect(x, y, TILE_PX, TILE_PX, c);
+                    }
                     TileKind::OneWay => fb.fill_rect(x, y, TILE_PX, ONEWAY_PX, LEATHER_DARK),
                     TileKind::Hazard => fb.fill_rect(x, y, TILE_PX, TILE_PX, DIRNDL_RED),
                 },
@@ -282,7 +298,7 @@ fn draw_tiles(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
 /// cell, else a grey-box pole (2 px `Y`) with a small `r` flag.
 fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     for e in &game.level().entities {
-        if e.kind != EntityKind::Goal {
+        if e.kind != SpawnKind::Goal {
             continue;
         }
         let foot_x = e.col * TILE_PX + TILE_PX / 2 - cam.x;
@@ -302,9 +318,24 @@ fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
     }
 }
 
-/// The player: sprite `player` with its origin at the feet (bottom centre
-/// of the hitbox, D-011), else the hitbox as an `r` box with a `k` outline.
-/// Blinks while dying, counted from the moment of death.
+/// Whether the player is drawn big this frame: the power state, except
+/// while transforming, when the old and new size alternate every 4 frames
+/// (starting with the old one).
+pub fn player_shown_big(p: &Player, t: &PlayerTuning) -> bool {
+    let big = p.power == Power::Big;
+    if p.transform == 0 {
+        return big;
+    }
+    let elapsed = u32::from(t.transform_frames.saturating_sub(p.transform));
+    let show_new = (elapsed / DYING_FLASH_FRAMES) % 2 == 1;
+    if show_new { big } else { !big }
+}
+
+/// The player: sprite `player` (Normal) or `player_big` (Zuckerschock,
+/// falls back to `player`) with its origin at the feet (bottom centre of
+/// the hitbox, D-011), else the hitbox as an `r` box (`R` when big) with a
+/// `k` outline. Blinks while dying (counted from the moment of death) and
+/// while invulnerable; alternates sizes while transforming.
 fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     if let Mode::Dying { timer } = game.mode() {
         let elapsed = u32::from(game.tuning().game.death_frames.saturating_sub(timer));
@@ -313,19 +344,31 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
         }
     }
     let p = game.player();
-    match &ctx.player {
+    let t = &game.tuning().player;
+    if p.transform == 0 && (u32::from(p.invulnerable) / DYING_FLASH_FRAMES) % 2 == 1 {
+        return;
+    }
+    let big = player_shown_big(p, t);
+    let look = if big {
+        ctx.player_big.as_ref().or(ctx.player.as_ref())
+    } else {
+        ctx.player.as_ref()
+    };
+    let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
+    let feet_y = (p.y + p.h).to_px() - cam.y;
+    match look {
         Some(look) => {
-            let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
-            let feet_y = (p.y + p.h).to_px() - cam.y;
-            let anim = look.anims[PlayerAnim::of(p, &game.tuning().player).index()];
+            let anim = look.anims[PlayerAnim::of(p, t).index()];
             let left = p.facing == Facing::Left;
             let (atlas, tick) = (ctx.atlas, game.frame());
             draw_sprite(fb, atlas, look.sprite, anim, tick, feet_x, feet_y, left);
         }
         None => {
-            let (x, y) = (p.x.to_px() - cam.x, p.y.to_px() - cam.y);
-            let (w, h) = (p.w.to_px(), p.h.to_px());
-            fb.fill_rect(x, y, w, h, DIRNDL_RED);
+            let h = if big { t.hitbox_h_big } else { t.hitbox_h };
+            let (x, y) = (p.x.to_px() - cam.x, feet_y - h);
+            let w = p.w.to_px();
+            let fill = if big { entities::WINE_DARK } else { DIRNDL_RED };
+            fb.fill_rect(x, y, w, h, fill);
             fb.outline_rect(x, y, w, h, OUTLINE);
         }
     }
@@ -358,7 +401,7 @@ mod tests {
 
     fn level(grid: &str) -> Level {
         let text = format!(
-            "[meta]\nid = \"tiny\"\n\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
+            "[meta]\nid = \"tiny\"\ntime_limit = 300\n\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
              \"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n\
              \"G\" = {{ entity = \"goal\" }}\n\n[map]\ngrid = '''\n{grid}'''\n"
         );

@@ -11,6 +11,8 @@ Status: approved v1. Format spec in `docs/architecture.md` → "Level".
 - One char = one 16×16 tile or an entity spawn. Legend in `[legend]`, grid in `[map].grid`.
 - All rows must be the same width. Row 0 is the top. Usually 14 rows tall.
 - Exactly one `P` (player start), at least one goal (`G`), one checkpoint per stage (`C`).
+- Format v2 (D-021, full list in `docs/architecture.md` → "Level"): `"?" = { tile = "oblaten_box", contains = "mozartkugel" }` (contains: `oblate`, `mozartkugel`, `zaunerstollen`, `oblaten_10`; only on `brick`/`oblaten_box`), `"o" = { entity = "oblate" }`, `"C" = { entity = "checkpoint" }`, `"s" = { entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }` (style `street`/`bus`/`ortsende`), enemies by catalog name. `[meta]` needs `time_limit`; `background = [{ sprite = "bg_rooftops", factor = 8 }]` (1/16 camera speed); optional `min_jump_window`.
+- Grey-box test level for items/power states: `content/levels/00_items.level`.
 
 ## Jump reach (check `content/tuning.toml`; update this table when tuning changes)
 | Situation | Max height | Max gap |

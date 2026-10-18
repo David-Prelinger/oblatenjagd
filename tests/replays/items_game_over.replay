@@ -1,0 +1,22 @@
+# Runs into the Selfie-Tourist as Normal three times (no checkpoint yet,
+# so every respawn is at the start): game over after the third death.
+# The level resets on every death, so the same five Oblaten are collected
+# three times (the counter survives: 15).
+level  = items
+seed   = 1
+source = handwritten
+expect = dies_at frames=217..217 dies_at frames=777..777 deaths=3 lives=0 state=game_over
+expect = oblaten>=15 score>=3000 no_event=CheckpointReached
+---
+RB 70
+RBJ 20    # over the wall
+RB 110    # through the Oblaten into the Selfie-Tourist
+- 80      # dying, respawn at the start
+RB 70
+RBJ 20
+RB 110
+- 80
+RB 70
+RBJ 20
+RB 110
+- 80      # game over
