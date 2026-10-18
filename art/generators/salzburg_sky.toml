@@ -9,12 +9,12 @@ width  = 320
 height = 180
 seed   = 3
 bands  = [
-  { colour = "S", until = 56 },
+  { colour = "S", until = 45 },
   { colour = "s", until = 116 },
   { colour = "h" },
 ]
-dither  = 8
-pattern = "bayer4"
+dither  = 2
+pattern = "checker"
 cloud_colour = "w"
 cloud_shadow = "h"
 random_clouds = 2
