@@ -1,24 +1,27 @@
 //! `cargo xtask vnc-smoke` (L8, native): runs the real `jnr-app` window on
 //! the X display (`$DISPLAY`, default `:1`) with a replay and checks
 //!
-//! 1. the app exits with code 0 before [`APP_TIMEOUT`],
+//! 0. no other "Oblatenjagd" window is open (else: close the running game first),
+//! 1. the app exits with code 0 within [`APP_TIMEOUT`] of its start (the
+//!    build before it does not count),
 //! 2. every `--screenshot-at` framebuffer it wrote is pixel-identical to the
 //!    golden `tests/golden/<replay>_<shot>.png` (same renderer, real window
 //!    path), mismatches go to `$CARGO_TARGET_DIR/reports/vnc-smoke/`,
 //! 3. an X root-window screenshot taken while it runs
 //!    (`$CARGO_TARGET_DIR/preview/vnc_smoke_root.png`) shows the game window:
-//!    at least [`MIN_SKY_SHARE`] of the window area is the palette sky colour.
+//!    cropped to the window's geometry (`xwininfo`), at least
+//!    [`MIN_SKY_SHARE`] of it is the palette sky colour.
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, ExitCode, Stdio};
+use std::process::{Child, Command, ExitCode, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
 use jnr_artkit::Image;
 use jnr_core::replay::Shot;
 
 use crate::golden::{Comparison, compare, read_png, write_report};
-use crate::wasm::{KillOnDrop, sky_colour, wait_timeout};
+use crate::wasm::{KillOnDrop, sky_colour};
 use crate::{content, target_dir};
 
 /// The replay the smoke test plays (its shots must have goldens).
@@ -120,6 +123,14 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     let log = out_dir.join("app.log");
 
     // 1) Run the app; while it runs, screenshot the X root window.
+    let existing = game_windows(&display)?;
+    if !existing.is_empty() {
+        return Err(format!(
+            "a window titled Oblatenjagd is already open on {display} (id {}); \
+             close the running game first",
+            existing.join(", ")
+        ));
+    }
     let log_file = fs::File::create(&log).map_err(|e| format!("{}: {e}", log.display()))?;
     let child = Command::new(&app)
         .args(app_args(&replay_path, &replay.shots, &out_dir))
@@ -130,32 +141,38 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         .stderr(log_file)
         .spawn()
         .map_err(|e| format!("could not start {}: {e}", app.display()))?;
+    // The app's own clock: the timeout must not include the build above.
+    let app_started = Instant::now();
     let mut app_proc = KillOnDrop {
         child,
         group: false,
     };
     let see_log = || format!("see {}", log.display());
-    wait_for_window(&mut app_proc.child, &display).map_err(|e| format!("{e}; {}", see_log()))?;
+    let window = wait_for_window(&mut app_proc.child, &display)
+        .map_err(|e| format!("{e}; {}", see_log()))?;
     std::thread::sleep(SETTLE);
+    let geometry = window_geometry(&display, &window);
     let capture = capture_root(&display, &root_shot);
-    let remaining = APP_TIMEOUT.saturating_sub(started.elapsed());
-    let status = wait_timeout(&mut app_proc.child, remaining).ok_or_else(|| {
-        format!(
-            "the app did not exit within {}s (killed); {}",
-            APP_TIMEOUT.as_secs(),
-            see_log()
-        )
-    })?;
+    let remaining = APP_TIMEOUT.saturating_sub(app_started.elapsed());
+    let status =
+        wait_exit(&mut app_proc.child, remaining).map_err(|e| format!("{e}; {}", see_log()))?;
     if !status.success() {
         return Err(format!("the app exited with {status}; {}", see_log()));
     }
     capture?;
+    let geometry = geometry?;
 
-    // 2) The window shows the game (sky colour on the root screenshot).
+    // 2) The window shows the game (sky colour inside the window's area of
+    //    the root screenshot).
     let desktop = read_png(&root_shot)?;
-    let window_area = u64::from(320 * SCALE) * u64::from(180 * SCALE);
-    let sky_summary = check_sky(&desktop, sky, window_area)
-        .map_err(|e| format!("{e} (root screenshot {})", root_shot.display()))?;
+    let in_window = crop(&desktop, geometry);
+    let window_area = u64::from(geometry.width) * u64::from(geometry.height);
+    let sky_summary = check_sky(&in_window, sky, window_area).map_err(|e| {
+        format!(
+            "{e} (window {window} at {geometry:?}, root screenshot {})",
+            root_shot.display()
+        )
+    })?;
 
     // 3) The framebuffer screenshots equal the goldens.
     let mut problems = Vec::new();
@@ -249,26 +266,41 @@ fn build_app(root: &Path) -> Result<PathBuf, String> {
     Ok(target_dir(root).join("debug/jnr-app"))
 }
 
-/// Polls `xdotool search` until a visible "Oblatenjagd" window exists; fails
-/// if the app exits first or [`WINDOW_TIMEOUT`] passes.
-fn wait_for_window(app: &mut Child, display: &str) -> Result<(), String> {
+/// Ids of the visible windows titled exactly "Oblatenjagd". Found by title:
+/// miniquad does not set `_NET_WM_PID`, so `xdotool search --pid` finds nothing.
+fn game_windows(display: &str) -> Result<Vec<String>, String> {
+    let out = Command::new("xdotool")
+        .args(["search", "--onlyvisible", "--name", "^Oblatenjagd$"])
+        .env("DISPLAY", display)
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .map_err(|e| format!("could not run xdotool search: {e}"))?;
+    // Exit code 1 = no match; the ids are on stdout either way.
+    Ok(String::from_utf8_lossy(&out.stdout)
+        .split_whitespace()
+        .map(str::to_owned)
+        .collect())
+}
+
+fn poll_error(e: std::io::Error) -> String {
+    format!("could not poll the app process: {e}")
+}
+
+/// Polls until the app's window is visible and returns its id. Only windows
+/// that appear after the start count ([`smoke_check`] refuses to run while
+/// another game window is open). Fails if the app exits first or
+/// [`WINDOW_TIMEOUT`] passes.
+fn wait_for_window(app: &mut Child, display: &str) -> Result<String, String> {
     let started = Instant::now();
     while started.elapsed() < WINDOW_TIMEOUT {
-        if let Ok(Some(status)) = app.try_wait() {
+        if let Some(status) = app.try_wait().map_err(poll_error)? {
             return Err(format!(
                 "the app exited ({status}) before its window appeared"
             ));
         }
-        let found = Command::new("xdotool")
-            .args(["search", "--onlyvisible", "--name", "^Oblatenjagd$"])
-            .env("DISPLAY", display)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok_and(|s| s.success());
-        if found {
-            return Ok(());
+        if let Some(id) = game_windows(display)?.into_iter().next() {
+            return Ok(id);
         }
         std::thread::sleep(Duration::from_millis(100));
     }
@@ -276,6 +308,90 @@ fn wait_for_window(app: &mut Child, display: &str) -> Result<(), String> {
         "no visible window named Oblatenjagd on {display} after {}s",
         WINDOW_TIMEOUT.as_secs()
     ))
+}
+
+/// Waits for the app to exit; kills it (via [`KillOnDrop`]) after `timeout`.
+fn wait_exit(app: &mut Child, timeout: Duration) -> Result<ExitStatus, String> {
+    let started = Instant::now();
+    loop {
+        if let Some(status) = app.try_wait().map_err(poll_error)? {
+            return Ok(status);
+        }
+        if started.elapsed() >= timeout {
+            return Err(format!(
+                "the app did not exit within {}s of its start (killed)",
+                APP_TIMEOUT.as_secs()
+            ));
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+}
+
+/// A window's client area in root-window coordinates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Geometry {
+    pub x: i64,
+    pub y: i64,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// The window's absolute geometry from `xwininfo -id`. (`xdotool
+/// getwindowgeometry` adds the window manager's title bar a second time.)
+fn window_geometry(display: &str, window: &str) -> Result<Geometry, String> {
+    let out = Command::new("xwininfo")
+        .args(["-display", display, "-id", window])
+        .stdin(Stdio::null())
+        .output()
+        .map_err(|e| {
+            format!(
+                "could not run xwininfo ({e}); install it with `sudo apt-get install x11-utils`"
+            )
+        })?;
+    if !out.status.success() {
+        return Err(format!(
+            "xwininfo -id {window} failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    parse_xwininfo(&String::from_utf8_lossy(&out.stdout))
+}
+
+/// Reads "Absolute upper-left X/Y", "Width" and "Height" from `xwininfo` output.
+pub fn parse_xwininfo(text: &str) -> Result<Geometry, String> {
+    let field = |label: &str| -> Result<i64, String> {
+        text.lines()
+            .find_map(|l| l.trim().strip_prefix(label))
+            .and_then(|v| v.trim().parse().ok())
+            .ok_or_else(|| format!("xwininfo output has no `{label}`"))
+    };
+    let size = |label: &str| -> Result<u32, String> {
+        u32::try_from(field(label)?).map_err(|_| format!("xwininfo: bad `{label}`"))
+    };
+    Ok(Geometry {
+        x: field("Absolute upper-left X:")?,
+        y: field("Absolute upper-left Y:")?,
+        width: size("Width:")?,
+        height: size("Height:")?,
+    })
+}
+
+/// The part of `img` covered by `g` (clipped to the image).
+pub fn crop(img: &Image, g: Geometry) -> Image {
+    let clip = |start: i64, len: u32, max: u32| -> (u32, u32) {
+        let a = start.clamp(0, i64::from(max));
+        let b = (start + i64::from(len)).clamp(0, i64::from(max));
+        (a as u32, (b - a) as u32)
+    };
+    let (x0, w) = clip(g.x, g.width, img.width);
+    let (y0, h) = clip(g.y, g.height, img.height);
+    let mut out = Image::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            out.set(x, y, img.get(x0 + x, y0 + y));
+        }
+    }
+    out
 }
 
 /// `import -window root` into `path`.
@@ -299,10 +415,10 @@ fn capture_root(display: &str, path: &Path) -> Result<(), String> {
 }
 
 /// Checks that at least [`MIN_SKY_SHARE`] of `window_area` pixels of the
-/// desktop screenshot are the sky colour; returns a summary.
-pub fn check_sky(desktop: &Image, sky: [u8; 3], window_area: u64) -> Result<String, String> {
+/// screenshot (cropped to the window) are the sky colour; returns a summary.
+pub fn check_sky(window: &Image, sky: [u8; 3], window_area: u64) -> Result<String, String> {
     let close = |a: u8, b: u8| a.abs_diff(b) <= SKY_TOLERANCE;
-    let sky_pixels = desktop
+    let sky_pixels = window
         .rgba
         .chunks_exact(4)
         .filter(|p| close(p[0], sky[0]) && close(p[1], sky[1]) && close(p[2], sky[2]))
@@ -311,14 +427,14 @@ pub fn check_sky(desktop: &Image, sky: [u8; 3], window_area: u64) -> Result<Stri
     let hex = format!("#{:02x}{:02x}{:02x}", sky[0], sky[1], sky[2]);
     if share < MIN_SKY_SHARE {
         return Err(format!(
-            "the game window is not visible: only {sky_pixels} sky {hex} pixels on the desktop \
+            "the game window is not visible: only {sky_pixels} sky {hex} pixels in the window area \
              ({:.1} % of the {window_area}-pixel window, need {:.0} %)",
             share * 100.0,
             MIN_SKY_SHARE * 100.0
         ));
     }
     Ok(format!(
-        "{sky_pixels} sky {hex} pixels on the desktop ({:.0} % of the window)",
+        "{sky_pixels} sky {hex} pixels in the window ({:.0} % of the window)",
         share * 100.0
     ))
 }
@@ -391,5 +507,64 @@ mod tests {
         let e = check_sky(&desktop(24, 200, sky), sky, 100).unwrap_err();
         assert!(e.contains("not visible"), "{e}");
         assert!(check_sky(&desktop(0, 200, sky), sky, 100).is_err());
+    }
+
+    #[test]
+    fn xwininfo_geometry_is_parsed() {
+        let text = "\nxwininfo: Window id: 0x200005 \"Oblatenjagd\"\n\n  \
+                    Absolute upper-left X:  1\n  Absolute upper-left Y:  16\n  \
+                    Relative upper-left X:  0\n  Relative upper-left Y:  0\n  \
+                    Width: 1280\n  Height: 720\n  Depth: 16\n";
+        assert_eq!(
+            parse_xwininfo(text),
+            Ok(Geometry {
+                x: 1,
+                y: 16,
+                width: 1280,
+                height: 720
+            })
+        );
+        assert!(
+            parse_xwininfo("Width: 3\n")
+                .unwrap_err()
+                .contains("Absolute")
+        );
+    }
+
+    #[test]
+    fn crop_takes_the_window_and_clips_to_the_screen() {
+        let mut img = Image::new(4, 3);
+        img.set(1, 1, [9, 9, 9, 255]);
+        let inside = crop(
+            &img,
+            Geometry {
+                x: 1,
+                y: 1,
+                width: 2,
+                height: 2,
+            },
+        );
+        assert_eq!((inside.width, inside.height), (2, 2));
+        assert_eq!(inside.get(0, 0), [9, 9, 9, 255]);
+        let clipped = crop(
+            &img,
+            Geometry {
+                x: -2,
+                y: 2,
+                width: 10,
+                height: 10,
+            },
+        );
+        assert_eq!((clipped.width, clipped.height), (4, 1));
+        let outside = crop(
+            &img,
+            Geometry {
+                x: 10,
+                y: 0,
+                width: 5,
+                height: 5,
+            },
+        );
+        assert_eq!((outside.width, outside.height), (0, 3));
     }
 }

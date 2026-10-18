@@ -51,7 +51,8 @@ pub enum InputSource {
     /// The keys held right now.
     Keyboard,
     /// One input per step, from a replay file; after the last one, nothing
-    /// is held. The keyboard is ignored (except Escape, which quits).
+    /// is held. Game input comes only from the replay (Escape quits; F1/F12
+    /// still work).
     /// Native only (`--replay`); wasm has no command line.
     #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Replay(Vec<InputFrame>),

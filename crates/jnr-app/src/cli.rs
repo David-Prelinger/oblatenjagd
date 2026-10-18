@@ -20,9 +20,10 @@ Options:
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
   --screenshot-at <frame>:<png> write the 320x180 framebuffer after that simulation
                                 frame (0 = start); repeatable
-  --replay <file>               play a replay file: its level and seed are used,
-                                the keyboard is ignored (Escape quits); after the
-                                last input nothing is held
+  --replay <file>               play a replay file: its level and seed are used;
+                                game input comes only from the replay (Escape
+                                quits; F1/F12 still work); after the last
+                                input nothing is held
   --record <file>               on exit (window close, Escape, --exit-after) write
                                 the played inputs as a replay with expectations
                                 (directories are created); not with --replay
