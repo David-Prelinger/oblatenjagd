@@ -216,7 +216,7 @@ fn check(root: &Path) -> Result<(bool, String), String> {
     Ok((failed == 0, text))
 }
 
-fn write_report(dir: &Path, name: &str, kind: &str, img: &Image) -> Result<PathBuf, String> {
+pub fn write_report(dir: &Path, name: &str, kind: &str, img: &Image) -> Result<PathBuf, String> {
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     let path = dir.join(format!("{name}_{kind}.png"));
     write_png(&path, img)?;

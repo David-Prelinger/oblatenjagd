@@ -13,6 +13,7 @@ mod replay;
 mod report;
 mod sprites;
 mod steps;
+mod vnc;
 mod wasm;
 
 use std::path::{Path, PathBuf};
@@ -40,6 +41,8 @@ Commands:
             (see `cargo xtask replay help`, `cargo xtask golden help`)
   wasm      [--debug] [--serve] [--port N]: build + assemble $CARGO_TARGET_DIR/web
   wasm-smoke  load the wasm build in headless Chromium, check the screenshot
+  vnc-smoke   run the native app on $DISPLAY (default :1) with a replay; compare
+              its screenshots with the goldens, check an X root screenshot
   help      show this help (also -h, --help)
 
 Reports are written to $CARGO_TARGET_DIR/reports/{check,verify}.{json,md}
@@ -61,6 +64,7 @@ fn main() -> ExitCode {
         Some("golden") => golden::run(&workspace_root(), &args[1..]),
         Some("wasm") => wasm::run(&workspace_root(), &args[1..]),
         Some("wasm-smoke") => wasm::smoke(&workspace_root(), &args[1..]),
+        Some("vnc-smoke") => vnc::run(&workspace_root(), &args[1..]),
         Some("help" | "-h" | "--help") | None => {
             print!("{HELP}");
             ExitCode::SUCCESS

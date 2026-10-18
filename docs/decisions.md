@@ -66,3 +66,8 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - (after review) A replay must have at least one expectation (runner failure, not a parse error); `replays` fails on an empty `tests/replays/`; goldens without a shot fail; goldens are only accepted from passing replays.
 - The hand-written testbed route exists once, as `tests/replays/testbed_route.replay`; jnr-core's testbed test includes that file.
 
+## D-014 Live smoke test and human recordings
+- `vnc-smoke` plays `tests/replays/testbed_route.replay` in the real native window and requires its `--screenshot-at` framebuffers to be pixel-identical to the existing goldens (no separate VNC goldens). The X root screenshot is only checked for a sizable sky area (±8 per channel, the desktop is 16-bit RGB565), never compared exactly.
+- `jnr-app --record` writes a replay with `source = human` and an `expect` line derived from the outcome (`complete frames=N..N` or `state=… player_x>=…`, plus `deaths=`), so every recording is a passing replay test the moment it is saved.
+- Native Escape and window close end the session cleanly (macroquad `prevent_quit`) so the recording is always written; wasm keeps running until the page closes.
+
