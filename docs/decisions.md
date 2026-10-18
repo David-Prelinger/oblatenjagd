@@ -77,3 +77,19 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - Solver replays are `tests/replays/<level>_solver.replay`, written only with `--write`, and carry no `shots` by default (shots need art-director-approved goldens; `--shots` opts in).
 - The `solver` verify step also requires the committed `tests/replays/<level>_solver.replay` for every level.
 - A per-level `min_jump_window` waits for an optional `LevelMeta` field (backlog, M1); until then the `solver` step only reports the narrowest window.
+
+## D-016 M0 movement tuning accepted unchanged (game-designer, M0 acceptance)
+- The measured M0 movement (walk 1.5 / run 2.5 px/frame, jumps ~25 / 65 / 81 px, max fall 4 px/frame, coyote and buffer 6 frames, running jump ~9 tiles) is close to Super Mario Bros. and fits medium difficulty, so `content/tuning.toml` keeps its values in M1 (no replay or golden churn).
+- The ~9-tile running jump is not "too far": it's a ceiling for optional routes. Required jumps in stages 1–3 follow the reach rules in `game-design.md` (gaps ≤ 4 tiles, step-ups ≤ 3; 5–6-tile gaps only with ≥ 8 tiles of run-up). The solver's ≥ 6-frame window stays the final check.
+- New feel targets for M1 (new keys, not changes): walking jump reach ~5 tiles, stomp bounce ~1 tile (tap) / ~3 tiles (held), hurt invulnerability 120 frames.
+
+## D-017 Stage 1 gameplay rules (game-designer, before M1)
+- No ducking: DOWN is only used for one-way drop-through (D-011). Zuckerschock hitbox 12×30 px with the same physics; required passages are ≥ 2 tiles high.
+- Stomp = falling and the feet above the enemy hitbox's middle on the previous frame. SMB-style stomp chain and scores (Oblate 200, power-up 1000, brick 50, time bonus 50/s). Maibaum scores by feet height in 2-tile zones up to 5000 for the Wurstkranz (≥ 8 tiles).
+- The Fiaker can't be stomped, but landing on it bounces without damage (medium difficulty: no punishment for the obvious "jump on it" idea).
+- A death resets the whole level (enemies, boxes, Oblaten) like SMB; checkpoint flag, score, Oblaten counter and lives survive; the timer is reset; the player is Normal again. Game over → „Weiter?" restarts from the stage start.
+- Thrown Mozartkugeln are unwrapped chocolate balls, visually distinct from the wrapped power-up.
+- Enemy patterns use frame counters from activation, never the RNG, so the solver and replays see fixed patterns.
+
+## D-018 Level signs (game-designer, before M1)
+- Signs are a decorative `sign` entity referencing a `de.toml` key, ≤ 2 lines of ≤ 12 characters each (`\n` separates the lines); this is how the skill's "signs ≤ 12 characters" applies to two-line boards. The level format for it (e.g. `{ entity = "sign", text = "stage.salzburg.sign_bus", style = "bus" }`) is the engine-engineer's choice.
