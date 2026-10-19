@@ -18,7 +18,8 @@
 //!    the Souvenirstand vendors, snow globes, the Festungsbahn, the Gondel
 //!    cabins and the Schafbergbahn with its steam puffs
 //! 4. player (scene)
-//! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards) and popups
+//! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
+//!    popups on top (the last world pass, under the HUD)
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
@@ -560,7 +561,9 @@ fn draw_line(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, rgba: u32
     }
 }
 
-/// Debris and popups, in front of the player.
+/// Debris and popups, in front of the player: first all debris, then all
+/// popups, so a score or text popup is never cut by a shard's outline
+/// (the last world pass; the HUD draws over it).
 pub fn draw_front(
     game: &Game,
     looks: &EntityLooks,
@@ -569,14 +572,30 @@ pub fn draw_front(
     texts: &jnr_core::Texts,
     fb: &mut Framebuffer,
 ) {
+    draw_front_of(game, game.entities(), looks, atlas, font, texts, fb);
+}
+
+/// [`draw_front`] for the given entities (any order).
+fn draw_front_of(
+    game: &Game,
+    entities: &[Entity],
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    font: &Font,
+    texts: &jnr_core::Texts,
+    fb: &mut Framebuffer,
+) {
     let cam = game.camera();
-    for e in game.entities() {
-        match e.kind {
-            EntityKind::Debris | EntityKind::SteinDebris | EntityKind::SchneekugelScherben => {
-                draw_body(game, looks, atlas, fb, cam, e)
-            }
-            EntityKind::Popup(p) => draw_popup(game, atlas, font, texts, fb, cam, e, p),
-            _ => {}
+    for e in entities {
+        if let EntityKind::Debris | EntityKind::SteinDebris | EntityKind::SchneekugelScherben =
+            e.kind
+        {
+            draw_body(game, looks, atlas, fb, cam, e);
+        }
+    }
+    for e in entities {
+        if let EntityKind::Popup(p) = e.kind {
+            draw_popup(game, atlas, font, texts, fb, cam, e, p);
         }
     }
 }
@@ -1030,6 +1049,42 @@ mod tests {
         assert_eq!(fb.get(left, top - 1), Some(OUTLINE), "top");
         assert_eq!(fb.get(left + 25, top + 8), Some(OUTLINE), "below");
         assert_eq!(fb.get(left - 2, top), Some(testutil::BG));
+    }
+
+    #[test]
+    fn popups_draw_over_debris() {
+        use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
+        use crate::testutil::{self, image};
+        // Every glyph a full 8x8 block; the shards a 32x16 block of `b`
+        // with the origin at its bottom centre.
+        let glyphs = CHARSET.chars().map(|_| image(&["aaaaaaaa"; 8])).collect();
+        let atlas = testutil::atlas(&[
+            testutil::sprite(FONT_SPRITE, (0, 0), false, vec![(GLYPH_ANIM, 0, glyphs)]),
+            testutil::sprite(
+                "schneekugel_scherben",
+                (16, 16),
+                false,
+                vec![("idle", 0, vec![image(&[&*"b".repeat(32); 16])])],
+            ),
+        ]);
+        let font = Font::from_atlas(&atlas);
+        let texts = Texts::default();
+        let looks = EntityLooks::new(&atlas);
+        let g = game();
+        let popup = jnr_core::entity::popup(Popup::Score(200), Fx::from_px(160), Fx::from_px(80));
+        // A shard after the popup in entity order, its feet below the
+        // popup so its block covers the digits.
+        let (fx, fy) = (Fx::from_px(160), Fx::from_px(88));
+        let mut shard = popup;
+        shard.kind = EntityKind::SchneekugelScherben;
+        shard.x = fx - shard.w.div_int(2);
+        shard.y = fy - shard.h;
+        let mut fb = testutil::fb();
+        draw_front_of(&g, &[popup, shard], &looks, &atlas, &font, &texts, &mut fb);
+        let (left, top) = (160 - 13, 80 - popup.popup_rise_px(g.tuning()));
+        assert_eq!(fb.get(left, top), Some(WHITE), "digit");
+        assert_eq!(fb.get(left - 1, top), Some(OUTLINE), "digit outline");
+        assert_eq!(fb.get(left - 2, top), Some(testutil::B), "shard beside it");
     }
 
     #[test]
