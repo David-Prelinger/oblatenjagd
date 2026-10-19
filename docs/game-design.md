@@ -31,6 +31,8 @@ Precise SMB-style platforming, but without SMB's harsh punishment:
 
 ### Level-design reach rules (stages 1–3)
 
+(Stage 4 adds climbing rules on top of these: see "Stage 4: Falkenstein" → "Climbing rules".)
+
 Derived from the measured movement (below) so required jumps keep their ≥ 6-frame windows. The solver report is the final judge; these rules keep designers from fighting it.
 
 | Jump | Reach (flat, ground to ground) | Required in stages 1–3 | Optional / bonus only |
@@ -50,13 +52,14 @@ Derived from the measured movement (below) so required jumps keep their ≥ 6-fr
 |---|---|---|
 | Normal | start | dies on hit |
 | **Zuckerschock** (big) | eat a **Mozartkugel** | taller, breaks bricks, survives one hit |
-| **Hackl** (thrower) | grab **St. Wolfgang's Hackl** (introduced in the Falkenstein stage, after the legend of the axe throw) | throws axes in an arc |
+| **Hackl** (thrower, big) | grab **St. Wolfgang's Hackl** from an `H`-Oblatenkiste (from M3, Falkenstein: at the Hackelwurfkapelle, after the legend of the axe throw), from Normal or Zuckerschock | big like Zuckerschock (breaks bricks), and a new press of RUN throws a Hackl in an arc (D-056) |
 | 1-Up | **Zaunerstollen** (rare) | extra life |
 
-- Physics are the same in both sizes; only the hitbox differs: normal 12×22 px, Zuckerschock **12×30 px** (sprite 16×32). Growing keeps the feet in place.
-- **No ducking** in M1: DOWN only matters for one-way drop-through (DOWN + JUMP, D-011). Levels respect this (≥ 2-tile passages).
-- **Hurt**: Zuckerschock → Normal plus **120 invulnerability frames** (2 s; sprite blinks every 4 frames). Enemies and projectiles can't hurt during them, but pits, water and time-up still kill.
-- **Transformation**: growing or shrinking freezes the game for 30 frames while the sprite alternates between sizes every 4 frames. The timer doesn't run during the freeze.
+- Physics are the same in every state; only the hitbox differs: normal 12×22 px, Zuckerschock and Hackl **12×30 px** (sprite 16×32). Growing keeps the feet in place.
+- **Hierarchy** (from M3, D-056): Normal → (Mozartkugel) Zuckerschock → (Hackl) Hackl; a Hackl also turns Normal straight into Hackl. A hit steps down one state: Hackl → Zuckerschock, Zuckerschock → Normal, Normal dies. An item that doesn't raise the state gives its points only (Mozartkugel as Hackl: 1000).
+- **No ducking**: DOWN only matters for one-way drop-through (DOWN + JUMP, D-011) and, from M3, for entering the Durchkriechstein (DOWN at its mouth starts a scripted crawl, D-057). Levels respect this (≥ 2-tile passages everywhere else).
+- **Hurt**: Hackl → Zuckerschock or Zuckerschock → Normal, plus **120 invulnerability frames** (2 s; sprite blinks every 4 frames). Enemies and projectiles can't hurt during them, but pits, water, the climb camera's death line and time-up still kill.
+- **Transformation**: every power change (growing, shrinking, Zuckerschock ↔ Hackl) freezes the game for 30 frames while the sprite alternates between the old and the new state's sprite every 4 frames. The timer doesn't run during the freeze.
 - **Death**: a hit as Normal, water, falling out of the level, or time-up. Lives −1; then the stage intro screen (with lives) and a respawn at the start or the checkpoint, always as Normal.
 
 ### Movement feel (measured in M0, accepted for M1, tunable in `content/tuning.toml`)
@@ -88,7 +91,7 @@ One stage per station for now; more stages per station can be added later. An il
 | 1 | **Salzburg** | Mirabellgarten, Makartsteg love locks, Getreidegasse with wrought-iron guild signs as platforms, Domplatz with the Jedermann stage, Festungsbahn funicular | Selfie tourists, Sound-of-Music tour groups, Fiaker, Mozartkugel sellers, pigeons |
 | 2 | **St. Gilgen** | Busbahnhof, Zwölferhorn cable car (free-running gondolas), Mozartplatz, Mozarthaus (Mozart's mother's birthplace), lakeside promenade with bandstand, boat pier (M2 spec below) | Nordic-Walker (turn at ledges), Blasmusiker (note trains), Selfie-Tourists, Tauben, one Mozartkugel-Verkäufer |
 | 3 | **Brunnwinkl** | Hamlet of five houses; Karl von Frisch's family estate: old mill, bee house, bathing jetty (M2 spec below) | Bee swarms dancing the waggle-dance figure-eight (the dance points to a bonus), e-bikers on the shore path, Nordic-Walkers |
-| 4 | **Falkenstein** | Pilgrim path up the Falkensteinwand, the hermitage church, the *Durchkriechstein* crawl-through (shed your sins = lose your power-up or gain a bonus). Get the **Hackl** | Pilgrim groups, falling rocks, chamois |
+| 4 | **Falkenstein** | Pilgrim path from Fürberg up the Kreuzweg and the Falkensteinwand (vertical climbing, climb camera), the Falkensteinkirche with the *Durchkriechstein* crawl-through (shed your sins = lose your power-up, or +1 life if you have none), the Hackelwurfkapelle where Resi gets the **Hackl** (M3 spec below) | Pilgrim groups, falling rocks (Steinschlag), chamois (Gams) |
 | 5 | **St. Wolfgang** | Pilgrimage church, "Im Weißen Rößl" hotel, Schafbergbahn cog railway | Operetta singers, souvenir stands, tourist buses |
 | 6 | **Wolfgangsee** | Auto-scrolling lake stage: jump between **Traundl** boats, sailing boats, the paddle steamer; swim sections | Aggressive swans, regatta sailors, water skiers, Gelsen (mosquitoes) |
 | 7 | **Strobl** | "The town everybody only drives through": traffic jams as platforms, roundabouts | Traffic, holiday-flat landlords, cyclists |
@@ -198,23 +201,23 @@ Player (Normal + Zuckerschock, hurt, death), Oblaten, Oblatenkiste, bricks, one-
 
 ## Multi-stage flow (Milestone 2)
 
-The stage order is the route (D-042): `salzburg` → `st_gilgen` → `brunnwinkl` → `falkenstein` → `st_wolfgang` → `wolfgangsee` → `strobl` → `bad_ischl` → `cafe_zauner`. A station is playable when a level with that id ships; in M2 these are the first three (`01_salzburg`, `02_st_gilgen`, `03_brunnwinkl`).
+The stage order is the route (D-042): `salzburg` → `st_gilgen` → `brunnwinkl` → `falkenstein` → `st_wolfgang` → `wolfgangsee` → `strobl` → `bad_ischl` → `cafe_zauner`. A station is playable when a level with that id ships; in M2 these are the first three (`01_salzburg`, `02_st_gilgen`, `03_brunnwinkl`), M3 adds `04_falkenstein` (so the teaser moves from Brunnwinkl → Falkenstein to Falkenstein → St. Wolfgang).
 
 | Thing | Into the next stage | After a death | Game over → „Weiter?" |
 |---|---|---|---|
 | Score | carries over | kept | 0 |
 | Lives | carry over | −1 | 3 |
 | Oblaten counter | carries over | kept | 0 |
-| Power state | **carries over** (Zuckerschock stays, like SMB) | Normal | Normal |
+| Power state | **carries over** (Zuckerschock and, from M3, Hackl stay, like SMB) | Normal | Normal |
 | Timer | the new stage's `time_limit` | reset | reset |
 | Checkpoint | cleared | kept | cleared |
 | Stage | the next station | same stage | **same stage**, from its start (D-017) |
 
 - **Title → START** always starts the route at Salzburg (no stage select, no saves in M2). The title screen itself is unchanged.
 - **Stage clear → route map → intro of the next stage → play.** The Maibaum sequence runs as in Stage 1 up to the `Clear` phase; the route map replaces „Fortsetzung folgt …".
-- **Last playable stage** (Brunnwinkl in M2; generally: the next station has no level yet): the route map still plays, Resi walks on to the next station (Falkenstein), and the panel shows „Fortsetzung folgt …" for 180 frames instead of the prompt; then the title, and the run is reset (score 0, 3 lives, Oblaten 0, Normal).
+- **Last playable stage** (Brunnwinkl in M2, Falkenstein in M3; generally: the next station has no level yet): the route map still plays, Resi walks on to the next station (Falkenstein), and the panel shows „Fortsetzung folgt …" for 180 frames instead of the prompt; then the title, and the run is reset (score 0, 3 lives, Oblaten 0, Normal).
 - **Game over in stage 2 or 3** restarts that stage (not Salzburg) with 3 lives, score 0, Oblaten 0, Normal. Unlimited continues, as in Stage 1.
-- **Stage intro** for every stage: as in "Screens and HUD", with that stage's `stage.<id>.title` and `.tagline`; Resi drawn in her current power state.
+- **Stage intro** for every stage: as in "Screens and HUD", with that stage's `stage.<id>.title` and `.tagline`; Resi drawn in her current power state (`player`, `player_big` or `player_hackl`; the route map too).
 - **Dev entry**: `--level <id>` starts the run at that stage (title → its intro) with the default carry-over values and continues along the route from there.
 - **Replays and tests** (engine's choice, recommended): `start = title` replays follow the real flow across stages; `start = playing` runs keep ending in the title after the goal sequence as in M1, so the solver replays and the M1 replays keep their meaning.
 
@@ -379,6 +382,136 @@ Section details:
 | Walkers on rooftops | reuse of the stage-2 enemy in a new place | – | solver windows ≥ 6 over houses 2 and 5 |
 | Last stage of M2 → teaser | the route continues | – | flow replay: clear Brunnwinkl → map walks to Falkenstein → „Fortsetzung folgt …" → title, run reset |
 
+## Stage 4: Falkenstein (Milestone 3 scope)
+
+**Premise / joke line**: Bus 150 doesn't stop on the north shore, the boat is full, so Resi does what pilgrims have done since 1291: she walks up the Falkenstein. The way is marked trail no. 28 and is steep. Very steep. At the top St. Wolfgang threw his Hackl about 5 km to pick the spot for his church. Resi gets a Hackl too and throws it at whoever's in the way, which is 300 000 pilgrims, a few chamois and the mountain itself.
+
+Length **240 columns** (3840 px) and **42 rows** high (672 px, the first stage that is taller than one screen; D-053). `camera = "climb"` (D-054). The stage climbs **29 tiles** (464 px, ~2.6 screens). It goes from the Fürberg landing on the lake (ground top row 40) up the Kreuzweg gorge and along the foot of the Falkensteinwand, then up a vertical shaft in the wall to the church plateau (row 11), and finally along the rocky saddle to the Maibaum (meadow row 16). Real route: Fürberg (538 m) → Kreuzweg (trail 28) → Falkensteinkirche with the Schliefstein → Brunnkapelle → Hackelwurfkapelle → the saddle with the Aberseeblick (the trail goes on down to Ried; the stage ends before that descent, which is backlog). `time_limit = 240` provisional (D-045: the level-designer sets 3 × the measured relaxed run at acceptance; climbing and the rock waits make this stage slower than its length suggests). `min_jump_window = 5` (D-053). Oblaten target **70 ± 10** (Salzburg 81, St. Gilgen 85, Brunnwinkl 53). Background: `bg_sky_salzburg` (reused, `factor_y` 0), `bg_wolfgangsee` (reused, factor 8, `factor_y` 3: the lake sinks as Resi climbs), `bg_falkenstein` (new near layer: pines and limestone outcrops, factor 13, `factor_y` 8). `factor_y` is new (D-054).
+
+New in this stage: **vertical climbing with the climb camera** (it settles on the ground, follows falls only a little way, and a fall below the screen kills), **jump-through wooden planks in a vertical shaft** (`steig`, one-way; there are no ladders, D-055), **the Hackl power-up** with thrown axes (D-056), **the Durchkriechstein** (D-057), and **Pilger**, **Gams** and **Steinschlag** with rockfall nets (D-058). Reused: Mozartkugel, Zaunerstollen, `taube_sitting` (the pigeon on the monument gag), checkpoint, Maibaum. Not reused: water pits (the lake is far below), Gondel, Blasmusik, bees, E-Biker.
+
+### Vertical layout (rows are the top tile of the walking surface)
+
+| Section | Columns | Ground |
+|---|---|---|
+| Fürberg | 0–27 | row 40 (= Stage 1's street, two rows above the level bottom) |
+| Kreuzweg | 28–79 | 40 → 28 in steps of 1–3 tiles |
+| Steinschlag | 80–117 | 28 → 26 |
+| Falkensteinwand (shaft) | 118–131 | path 26 → planks 23 / 20 / 17 / 14 → plateau 11 |
+| Falkensteinkirche | 132–169 | plateau 11 |
+| Hackelwurf-Sattel → Maibaum | 170–239 | saddle 11–13, launch top row 10, meadow row 16 |
+
+Under every walking surface the mountain is solid (`kalkfels`) down to the level bottom, except for the two lethal clefts (sec. 3 and 6), which are empty down to the bottom (≥ 10 tiles deep, D-054). The goal area's rows 0–16 copy Stages 1–3's vertical layout (meadow row 16, launch 6 tiles above, 3 empty rows on top), so the goal camera frames it exactly like the other stages.
+
+### Climbing rules (stage 4; in addition to the stage 1–3 reach rules)
+
+| Thing | Rule |
+|---|---|
+| Step-up, required | ≤ 3 tiles (walking held jump reaches ~4); 4-tile step-ups optional only |
+| Jump up through a one-way plank (`steig`, `netz`) | plank top ≤ 3 tiles above the standing surface; required planks ≥ 3 tiles wide (the shaft's are 5), optional ones ≥ 2 |
+| Gap over a lethal cleft | ≤ 4 tiles, landing ≥ 2 wide, landing at the same height or ≤ 1 tile higher; at most two clefts in the stage |
+| Walking off a ledge (drop) | required drops ≤ 2 tiles (the lower ground is on screen at the settle framing); optional drops ≤ 6 tiles; **drops of 7–9 tiles are forbidden** (survivable but she lands off screen); ≥ 10 tiles or bottomless = a cleft (death at the death line). Checked by the fall-depth lint (D-054) |
+| Missed jump | every required upward jump: a miss lands ≤ 4 tiles below the take-off on non-lethal ground (no long falls back down the mountain) |
+| Visibility | at the settle framing (feet at screen y 148), ~7.5 tiles above the feet are visible under the HUD (126 px) and 2 below: every required landing (≤ 3 up, ≤ 2 down) and every enemy that can reach it is on screen at take-off, so no blind jumps upward |
+| Rock spawners | the niche cell's bottom is 4–6 tiles above the ground the rock hits (then the whole niche is on screen below the HUD for a player standing on that ground); the first spawner of the stage drops onto a net |
+| Shaft | inner width ≤ 9 columns (then the camera never has to scroll past the shaft's left wall, so every plank stays reachable); entered at the bottom left, left at the top right; nothing outside its columns can be reached before the exit; ≤ 1 enemy in it |
+| Moving hazards | at most one moving hazard acts on any required jump (D-041; a pilgrim group counts as one); no rock column (spawner) above the landing of a required jump that already has another hazard |
+| Jump window | `min_jump_window = 5` (stages 1–3: 6; the design rule allows 4 from stage 4 on, we ramp gently) |
+| Required landings | ≥ 2 tiles wide; 1-tile landings only over non-lethal ground (as in stage 3) |
+
+### Climb camera (`[meta] camera = "climb"`, D-054)
+
+Horizontal behaviour is unchanged (`follow_x = 144`, never scrolls left except D-051). Vertically it is SMW-style: it settles on the ground she stands on instead of following every jump. Today's dead-zone camera would bob up and down with every jump in a tall level, and after a climb it leaves only ~3 tiles visible above her head. Every `camera = "side"` level (all M1/M2 levels, the default) keeps today's dead-zone camera exactly.
+
+| Rule | Value (tuning `[camera]`) |
+|---|---|
+| **Grounded** (on a tile, a one-way tile or a moving platform; also during the Durchkriechstein crawl) | target `camera.y = feet − climb_feet_y` with `climb_feet_y = 148` (the framing of the street in Stages 1–3); the camera moves towards the target by at most `climb_settle_speed = 2` px per frame. The feet height of the last grounded frame is remembered as `ground_feet` |
+| **In the air, upwards** | if the hitbox top is above screen y `climb_top = 40`: `camera.y = top − 40` at once (high bounces stay under the HUD) |
+| **In the air, downwards** | if the feet are below screen y 148: `camera.y = feet − 148`, but never more than `climb_fall_follow = 80` px below the settle target of `ground_feet` (`camera.y ≤ ground_feet − 148 + 80`) |
+| **Death line** | when the player's hitbox top is below the screen bottom (`top > camera.y + 180`) she dies like falling out of the level (same death, same cause). With the numbers above: drops up to ~8 tiles survive (6 tiles lands at screen y 164, on screen); a cleft ≥ 10 tiles deep kills ~40 frames after the take-off, without a long fall to the level bottom |
+| Clamp | to the level as always; at the level bottom the old "below the level" death still applies |
+| Start / respawn | the camera starts at the settle target (no settling animation) |
+| Goal sequence | x fixed (D-040); y settles on her feet with `climb_goal_feet_y = 164` at 2 px/frame, so the goal meadow ends framed exactly as in Stages 1–3 (pole base at screen y 164, crown in the D-029 HUD gap) |
+| Activation | in climb levels an entity activates when, as before, it is within `activate_margin` horizontally **and** its spawn cell is within 64 px (4 tiles) of the screen vertically. Without this, pilgrims and chamois high up the mountain would wake up off screen and come down unseen |
+| Parallax | background layers may set `factor_y` (sixteenths, 0..=32, default 0): the layer is drawn `(max camera y − camera.y) × factor_y / 16` px lower than today's bottom-aligned position, so it sits exactly where it does today when the camera is at the level bottom and sinks as Resi climbs. Layers only ever move down, so the opaque sky behind them never shows a gap |
+
+**Risk and fallback** (engine's call, record it in `decisions.md` if taken): if the settle camera turns out to be fiddly, ship the simpler variant instead. It uses the existing dead-zone follow with a per-level dead zone (`[meta] camera_deadzone = [112, 136]`, which keeps ~6 tiles visible above a standing Resi) plus the death line and the vertical activation rule. The camera then bobs with jumps, but everything stays fair. The design rules above hold for both variants.
+
+### Sections
+
+| # | Section | Columns | New mechanic (introduced safely) | Enemies | Landmarks / jokes |
+|---|---|---|---|---|---|
+| 1 | **Fürberg** | 0–27 | Pilger (one, on flat ground) | Pilger ×1 | Fürberg landing (jetty, the boat line's stop), Gasthof Fürberg, `bus` sign „Bus 150 / nur z'Fuß"; trail sign „Weg 28 / steil. Sehr." |
+| 2 | **Kreuzweg** | 28–79 | the climb camera (stairs up); a pilgrim group coming down the steps; jump-through planks (Holzstiege) over solid ground | Pilger ×6 (one group of 3, one pair, one single) | the steep forest gorge with wayside shrines (`bildstock`), „Bitte Stein / mitnehmen" at a pile of stones (pilgrims carried stones up as penance), „Pilgerstau / seit 1291" |
+| 3 | **Steinschlag** | 80–117 | falling rocks with their telegraph; rockfall net as a shelter; Gams on an unreachable shelf; the first lethal cleft | Steinschlag ×4, Gams ×1 | overhanging limestone wall with niches, „Steinschlag / inklusive", „Gamswild / hat Vorrang"; checkpoint (col 114) + `bus` sign „Bus 150 / winzig, voll" (the bus is visible far below on the other shore) |
+| 4 | **Falkensteinwand** | 118–131 | the vertical shaft (jump-through planks, camera only goes up) | Pilger ×1 (comes down the zigzag) | the wall's wooden stairway bolted to the rock (`steig`), Oblaten arcs between the planks |
+| 5 | **Falkensteinkirche** | 132–169 | **Durchkriechstein** (optional crawl) | none (a rest) | the church built against the rock (1626), the Brunnkapelle, a heap of carried stones, „Passt jeder / ohne Sünden", the Einsiedelei bonus cave with the Zaunerstollen and „Einsiedelei / zu vermieten" |
+| 6 | **Hackelwurf-Sattel → Maibaum** | 170–239 | **Hackl** power-up and throwing; Gams on the path | Pilger ×3 (one group), Gams ×2, `taube_sitting` ×1 | Hackelwurfkapelle with the statue of Wolfgang throwing the axe (a pigeon on his head), „Hacklwurf / Rekord: 5 km"; the Aberseeblick rock as the launch, Maibaum, Ortsende „Falkenstein" |
+
+Section details (for the level-designer; exact tiles are theirs within these rules; columns are targets):
+
+1. **Fürberg (0–27)**: ground row 40, no pits, no way to die except the timer. Start at col 2 on the Fürberg jetty (`jetty` deck on row 40 over `jetty_post`/`wolfgangsee_water` rows 41; the left level edge is the wall). „Bus 150 / nur z'Fuß" `bus` board at col 5 (clear of Resi at the start, E12 rule). Gasthof Fürberg (`gasthof_fuerberg`, back layer) behind 8–15. 5 Oblaten at walking height (7–11). `M`-Oblatenkiste at col 13, row 36 (4 up) with bricks either side and a 2-tile garden wall (`stone`) at 17 so the Mozartkugel turns back (the Stage 1 pattern). „Weg 28 / steil. Sehr." sign at 20, where the trail leaves the shore. **Pilger #1** at col 25 on flat ground, ≥ 6 free tiles either side: the first pilgrim is met where it can't hurt.
+2. **Kreuzweg (28–79)**: the forest gorge (`forest_path` steps, `kalkfels` outcrops), rising from row 40 to row 28. Terraces ≥ 4 wide, steps 1–3 tiles (the first three steps 1–2 tiles: the climb camera is introduced on easy stairs). Three or four `bildstock` wayside shrines on terraces (decoration only; faith is not the joke). „Bitte Stein / mitnehmen" sign at col 32 beside a `steinhaufen` prop at the foot of the climb (pilgrims carried stones up to the church).
+   - „Pilgerstau / seit 1291" sign at ~44, on the terrace below a long terrace (≥ 10 wide, 2 tiles higher) with **pilgrim group A** (3 Pilger, the leftmost one with `lead = true`, one cell apart) walking left. They come down the step towards Resi one after the other (pilgrims walk off ledges): wait below them and stomp the chain (100 / 200 / 400), or jump up behind them. The step is ≤ 2 tiles so their drop and Resi's view are both on screen.
+   - **Holzstiege** (~60–70): two `steig` planks (one-way, 5 wide, overlapping by 2 columns) 3 and 6 tiles above a terrace lead up to the next terrace. There is solid ground under all of it, so a missed jump lands on the plank or terrace below (≤ 3 tiles): the shaft's mechanic, introduced where nothing can go wrong. Oblaten above each plank.
+   - Pilger pair B (#5–6) on a terrace near 72 and single #7 on the top terrace (~77); a `?`-box over a terrace. Kreuzweg ends at row 28.
+3. **Steinschlag (80–117)**: the path runs along the foot of the Falkensteinwand under an **overhang**: solid `kalkfels` from the level top down to 7 tiles above the path, with niche cells cut one row into its underside for the spawners (niche bottom 6 tiles above the path, within the 4–6 rule, so it's on screen below the HUD at the settle framing). Nothing required happens under the overhang above 5 tiles, so no jump bumps it.
+   - „Steinschlag / inklusive" sign at col 81.
+   - **Rock #1 (intro)** at col 88 with `range = 9`, over a `netz` shelter (one-way rockfall net, 3 tiles above the path, cols 86–90): the first rock wobbles, its pebbles trickle down the column, then it falls and shatters **on the net** while Resi watches from the path. She walks under the net safely (Zuckerschock fits: 48 px of headroom). This teaches rocks, the telegraph and the shelter at once.
+   - **Rock #2** at col 95 over open path (`period` 150): wait for the shatter, then walk on. „Gamswild / hat Vorrang" sign at 97.
+   - **Gams #1** on a rock tongue: the overhang reaches down at col 104 to a solid `kalkfels` shelf 3 tiles above the path (99–104; no floating blocks, the shelf hangs from the cliff). The Gams hops back and forth on 99–103 (the wall at 104 and the ledge end at 99 turn it, it never leaves the shelf) and can't reach the path: walk under it safely (3 tiles of headroom), or jump up from the path's left side to stomp it (200, optional). The shelf also shelters the path below it from rocks. The overhang above the shelf stays 4 tiles up (the Gams' hop reaches 2.9 tiles above its floor).
+   - **Rocks #3 and #4** at cols 106 and 109, `period` 150, `phase` 75 apart: a timing run across open path, with a two-step up (row 28 → 26) at ~105 that is not under either column.
+   - **Cleft** (the „Abbruch", 3 tiles, ~111–113): empty down to the level bottom (13 tiles, a death below the screen). It's a walking jump with flat take-off and landing at row 26, and no rock column within 2 tiles of it (one hazard per jump).
+   - **Checkpoint at col 114** (row 26) with the „Bus 150 / winzig, voll" `bus` sign right of it (centred ~117, not covering the pole). From here the far shore with the road is in the background: the bus is tiny and still full (the D-039 adjacent-sign rule).
+4. **Falkensteinwand (118–131)**: the shaft. Left wall col 120 (solid from the level top to row 22; the entrance below it, rows 23–25, is 3 tiles high), right wall cols 130–131 (solid from row 11, the plateau surface, down to the bottom). Inner columns 121–129 (9, the shaft rule). The interior is the decorative back wall `kalkfels_bg` (drawn darker and flatter than solid rock, D-038).
+   - The path (row 26) continues as the shaft floor. **`M`-Oblatenkiste at col 123, row 22** (within 10 columns of the checkpoint, as in every stage): the Mozartkugel rolls in the shaft floor between the walls and can't be lost.
+   - `steig` planks (one-way, 5 wide): row 23 cols 121–125, row 20 cols 125–129, row 17 cols 121–125, row 14 cols 125–129; then a 3-tile step from the row-14 plank onto the plateau at col 130 (row 11). Each jump is 3 tiles up and through the plank above. A miss lands on the plank (or floor) she jumped from. Overlapping by one column means a pilgrim walking off a plank's end lands on the plank below.
+   - **Pilger #8** starts on the row-14 plank and walks the zigzag down (off each plank end onto the next). He is visible from the plank below the whole way. Wait at the far end of a plank while he drops past, or stomp him when he lands on her level.
+   - Oblaten: a short arc above each plank (collected on the way up), ~12 in the shaft.
+   - No side niches and nothing reachable outside 121–129 before the exit (the shaft rule).
+5. **Falkensteinkirche (132–169)**: plateau at row 11, flat, **no enemies and no rocks** (a rest after the wall, and nothing can reach the stone's exit).
+   - `falkensteinkirche` prop (back layer) at 134–139 against the rock: a small white church built into the cliff, under a `kalkfels` overhang. The `steinhaufen` prop (the stones the pilgrims carried up) at 141. `brunnkapelle` prop (back) at 144.
+   - **Einsiedelei** (optional, the stage's Zaunerstollen): a cave in the cliff above the plateau, floor 4 tiles up (row 7), 3 wide (~159–161), 2 tiles high (rows 5–6, `kalkfels_bg` interior), reached by a held 4-tile jump straight from the plateau (optional, so the 4-tile step-up is allowed). The middle tile of its ceiling (row 4) is a `Z`-Oblatenkiste (`zaunerstollen`), hit by a hop inside the cave in either size; the cave's walls stop the rolling Zaunerstollen. „Einsiedelei / zu vermieten" sign on the plateau below it (hermits lived here from 1659 to 1811; holiday-flat prices are a fair target).
+   - **Durchkriechstein** at cols 150–153: the `durchkriechstein` prop (back layer) over `invisible` solid tiles in rows 8–9, cols 150–153 (the boulder's top is 3 tiles above the plateau: the required route climbs over it), and the tunnel row 10, cols 150–153, left empty (`durchkriechstein` entity in cell (150, 10), `len = 4`). DOWN at the mouth (col 149, facing right) starts the crawl; the exit (col 154) has ≥ 2 empty rows. „Passt jeder / ohne Sünden" sign at col 146, left of the mouth, not covering it. The legend is the joke: the stone was said to let only the sinless through, and then even a large person fits. So big Resi fits too, and comes out lighter.
+   - Oblaten on the boulder top and along the plateau.
+6. **Hackelwurf-Sattel → Maibaum (170–239)**:
+   - „Hacklwurf / Rekord: 5 km" sign at col 170. `hackelwurfkapelle` prop (back layer) at 172–174 with Wolfgang's statue throwing the axe; a **`taube_sitting` on the statue's head** (the pigeon-on-a-monument gag). It rises when Resi is within 6 tiles and flies left over the flat plateau at head height (the D-032 meeting rule: no other hazard there).
+   - **`H`-Oblatenkiste at col 176, row 7** (4 up). The Hackl rises out of it and stays put. Flat plateau 170–183 with no enemies within 8 columns of the box (safe pickup).
+   - **Pilger group C** (#9–11, `lead = true` on the leftmost) at 188–190 walking left over flat ground 180–193: the first Hackl targets, approaching slowly from 12+ tiles away (the axe flies ~7 tiles). Without the Hackl they're a stomp chain as in sec. 2.
+   - The saddle (194–222): rocky ups and downs between rows 11 and 13 (steps ≤ 2). **Gams #2** on a flat stretch 195–200 on the path (it hops at Resi: throw, stomp, or pass while it stands). A **cleft** (3 tiles, 207–209, empty down to the bottom) with no enemy within 6 columns of either edge (flat take-off 201–206, landing 210–215). **Gams #3** on a flat stretch 216–221.
+   - **Aberseeblick** (the launch, 223–226): a rock tower whose top is row 10 (6 tiles above the meadow), climbed by ≤ 3-tile steps from the saddle. Meadow (row 16) from 227, **Maibaum at col 230** (lowest ground of its screen, D-029), Ortsende „Falkenstein" at 233, level end 239 (camera clamps at the goal, D-031). Running held jump off the Aberseeblick → Wurstkranz (D-038); walking off → 100 (a 6-tile drop: allowed as optional by the drop rule; the pole column catches her anyway). Nothing flies or walks near this jump (Gams #3 can't leave its stretch).
+
+### Entities and behaviour (new in Stage 4)
+
+Same conventions as Stages 1–3 (px/frame at 60 Hz, distances horizontal centre to centre, frame counters from activation or from entering range, never the RNG). Numbers go to `tuning.toml`; key names are the engine's choice.
+
+| Entity | Sprite / hitbox | Behaviour | Stomp? | Points |
+|---|---|---|---|---|
+| **Pilger** (`pilger`, optional `lead = true`) | 16×24 / 12×22 (`lead`: 16×32 sprite with a pennant on his stick, same hitbox) | Walks 0.5 towards the player at activation (left); turns at walls and other enemies on foot; **walks off ledges** (gravity and max fall speed as the player's), so on the Kreuzweg and in the shaft pilgrims come down the mountain step by step. Groups are 2–3 pilgrims placed one cell apart, which stay in file at equal speed. A pilgrim carries a penance stone on his back (art only). `lead` only changes the sprite (the group's pilgrim leader with a pennant on his stick, like a tour guide's umbrella). | yes | 100 |
+| **Gams** (`gams`, chamois) | 24×20 / 16×14 | Ledge-bound hopper. Cycle from activation: **stand 60** frames → **crouch 16** (the telegraph: head down, legs bent) → **hop**: vx ±1.0, vy −4.0, gravity 0.25 (apex 32 px = 2 tiles, airtime 32 frames, lands 32 px = 2 tiles further) → stand again (period 108). At the start of each crouch it faces the player, then checks the **landing cell** 2 tiles ahead at its current floor height: if there is no solid or one-way top there (ledge end) or a wall is in the way, it turns and checks the other side; if both are blocked it hops straight up (vx 0). So it never leaves its ledge. During the hop it collides with tiles (lands on solid and one-way tops, a wall stops vx). Activates like other enemies; no range trigger. | yes | 200 (starts a chain at 200, D-046) |
+| **Steinschlag** (`steinschlag` spawner; fields `period` 90–300, default 150; `phase` 0 or 41..period−1, default 0; `range` 4–10 tiles, default 6) | niche: draws a resting `stein` | Its counter runs **only while the player is within `range` tiles horizontally and the spawner cell is fully on screen below the HUD** (screen y ≥ 24). Out of range it pauses and keeps its pose. Counter frame f of each `period`; the counter starts at `phase` when the player first comes in range, and `phase` is 0 or 41..period−1 (validated), so the first rock of an approach always follows a full telegraph. f 0–39 **telegraph**: the rock wobbles in its niche and pebbles (`kiesel`, renderer only) trickle down the whole column to the first solid or one-way tile below. At f 40 the rock drops. The niche shows a resting rock again from 30 frames after the drop. | – | – |
+| ↳ **Stein** (falling rock) | 16×16 / 12×12 | Falls straight down from the niche: vy from 0, gravity 0.25, max fall 4.0. **Shatters on the first solid or one-way tile** (4 `stein_debris` pieces like a broken brick) or is removed below the level. Hurts on any contact, also from above (it can't be stomped; a jump onto it is a hurt). It passes through enemies and items. A thrown Hackl shatters it (both gone, 50 points). | no (hurts) | 50 (Hackl only) |
+| **Rockfall net** (tile `netz`) | 16×16 tile | One-way (the player and enemies stand on it and jump up through it); rocks shatter on it like on any one-way tile. Drawn as a steel-cable net on posts. Used 3 tiles above a path as a shelter. | – | – |
+| **Hackl** power-up (`hackl`) | 16×16 / 12×12 | From an `H`-box (`{ tile = "oblaten_box", contains = "hackl" }`): rises out of it over 32 frames (0.5/frame), then **stays where it is** (it doesn't roll; SMB's fire flower). Touch: Normal or Zuckerschock → **Hackl** (30-frame transformation freeze, alternating sprites; growing from Normal keeps the feet, D-024 applies), popup „Wirf, Resi, wirf!" plus the score popup. Already Hackl: points only. Removed when it falls behind the despawn margin like other items. | – | 1000 |
+| ↳ thrown **Hackl** (`hackl_thrown`) | 12×12 / 8×8 | **A new press of RUN** while Hackl (Playing, not frozen, not crawling, not in the goal sequence) throws one if fewer than **2** are alive; holding RUN still runs. Throw pose 10 frames. Spawn: centre 8 px in front of the player's centre (facing side), 10 px below her hitbox top. Fixed arc, independent of her speed: **vx ±3.0, vy −3.0, gravity 0.1875** (apex 24 px = 1.5 tiles at 16 frames, back at hand height after 32 frames and 6 tiles; on flat ground it lands ~7 tiles ahead), max fall 4.0. Spins (`spin`). **Solid tile → sticks** (`stuck` pose, harmless, removed after 20 frames); passes through one-way tiles; water or a hazard tile, or leaving the screen at any edge → removed. **Hits**: every stompable enemy (Selfie-Tourist, Taube, Verkäufer, Nordic-Walker, Blasmusiker, E-Biker, Pilger, Gams) is defeated (tumbles off the screen like a knocked enemy) for its base stomp value (100/200, outside the stomp chain); the Fiaker: the axe bounces off (removed, no effect); a Bienenschwarm, thrown Mozartkugeln and notes: passes through; a falling Stein: both destroyed, 50. One target per axe; blocks and items are not affected. | – | target's |
+| **Durchkriechstein** (`durchkriechstein`, field `len` 2–6 tiles, default 4) | trigger in the tunnel's first cell | A 1-tile-high tunnel through a boulder at ground level, `len` cells to the right of and including its cell. **Start**: while Playing, the player is grounded on the tunnel floor's height, facing right, her hitbox's right edge within 4 px of the tunnel mouth, **DOWN held and JUMP not**, and the stone is unused this attempt. **Crawl** (scripted): her hitbox becomes 12×12, she moves right at 1 px/frame through the tunnel until her hitbox's left edge is past its right end (len × 16 + 12 px; 76 frames for `len` 4), then stands up with her feet on the floor. Input is ignored (JUMP still tracked, D-025), she can't be hurt, enemies keep moving, the timer runs, the camera follows. Turning back is impossible (the tradition: no looking back). **Outcome** at the exit: Normal → **+1 life** (popup „+1 Leben"; at the lives cap 1000 points instead); Zuckerschock or Hackl → **shed to Normal** (30-frame transformation freeze, no invulnerability frames), popup „Ballast weg!", no points. Then the stone is used until the level resets (a death resets it, as boxes; one bonus per attempt, so dying to farm lives only breaks even). | – | – |
+
+Tuning targets for the record: a Gams cycle is 108 frames (1.8 s); a rock dropped from 6 tiles hits the path ~32 frames after the telegraph ends (~72 after it starts); the default rock period leaves ~118 frames between a shatter and the next drop. Enemy count: Pilger 11, Gams 3, Steinschlag 4, `taube_sitting` 1.
+
+### New mechanics: purpose, safe introduction, test
+
+| Mechanic | Purpose | Introduced safely | Test |
+|---|---|---|---|
+| Climb camera (settle, fall limit, death line) | a stage that goes up; you see where you jump | the Kreuzweg's first steps are 1–2 tiles on solid stairs | unit tests: settle speed and target (feet at 148), in-air follow up (top < 40) and down (limit 80 px below the last ground's framing), death line (hitbox top below the screen bottom kills, Normal and big), clamp, respawn framing, a 6-tile drop survives and a 10-tile one kills, `camera = "side"` levels unchanged (every M1/M2 replay and golden passes unchanged); goal camera frames the meadow at 164; lint: fall depth 7–9 tiles rejected; replays: fall into the sec. 3 cleft → death without falling to the level bottom; walk off a 6-tile ledge (the Maibaum launch) → survives |
+| Vertical parallax (`factor_y`) | the lake sinks as Resi climbs | – | render unit test: offset = (max camera y − camera y) × factor_y / 16, 0 at the level bottom; goldens at the foot and at the top of the wall |
+| Jump-through planks / the shaft | vertical climbing without ladders | the Holzstiege over solid ground in sec. 2 | solver finishes the shaft (climb progress metric, D-054); windows ≥ 5; replay: miss a shaft jump → lands on the plank below; replay: Pilger #8 walks down the zigzag |
+| Steinschlag | read a telegraph from above, find shelter | rock #1 shatters on a net in front of Resi | unit tests: counter only in range and with the niche on screen, telegraph 0–39, drop at 40, gravity/max fall, shatters on solid and one-way, hurts from above, passes enemies, `phase`/`period`; replays: shelter under the net, hit as Zuckerschock (shrinks), Hackl shatters a rock (50); solver windows ≥ 5 at rocks #3/#4 |
+| Pilger walking down steps | enemies that come down the mountain at you | single pilgrim on flat ground first, then a group on a 2-tile step | unit tests: walks off ledges, turns at walls/enemies, a group stays in file; replay: stomp chain on group A (100/200/400) |
+| Gams | a hopping enemy with a readable crouch | Gams #1 on a shelf it can't leave, above the path | unit tests: cycle 60/16/32, arc (2 tiles up, 2 across), turns at ledge ends and walls, hops in place when boxed in, never leaves its ledge, stomp 200 with chain start 200, knocked off by a bumped block; replays: stomp #1 from the path, hit by #2 as Zuckerschock |
+| Hackl power-up + throwing | St. Wolfgang's legend as a verb; a ranged answer to the stage's enemies | box on a calm plateau, pilgrim group C approaching slowly from 14 tiles | unit tests: item rises and stays, Normal → Hackl and Zuckerschock → Hackl (freeze, feet kept), Hackl hit → Zuckerschock + 120 i-frames, throw on RUN press only (holding RUN throws once), max 2 alive, arc numbers, sticks in solids, passes one-way, hits per kind (stompable defeated + base points, Fiaker bounce-off, swarm/projectiles pass, rock 50), no throw while frozen/crawling/in the goal; replays: get the Hackl, defeat group C with axes, get hit (→ Zuckerschock), carry Hackl to the route map and the teaser (`player_hackl` drawn) |
+| Durchkriechstein | the custom as an optional gamble: shed your power, or gain a life if you're Normal | optional, beside the required route over the boulder, on an enemy-free plateau | unit tests: start conditions (grounded, facing, within 4 px, DOWN without JUMP, unused), scripted move and length, no hurt during it, outcomes per state, life cap → 1000, used once per attempt, reset on death; lint: tunnel cells empty with solid above and below, mouth floor and exit headroom (2 rows); replays: crawl as Normal (+1 life), as Zuckerschock (→ Normal, „Ballast weg!"), as Hackl (→ Normal), a big Resi at the mouth without DOWN is never stuck (walks back, climbs over) |
+| Checkpoint before the shaft | medium difficulty with a long climb | automatic | replay: die in the shaft after the checkpoint → respawn at 114 as Normal, level reset (`M`-box fresh) |
+
 ## UI text (German)
 
 All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, signs ≤ 2 lines of ≤ 12 characters, only characters of the font's charset (D-012; no `°`, `€`, `&`, `*`).
@@ -408,6 +541,10 @@ All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, sig
 | `stage.brunnwinkl.title` / `.tagline` / `.next` | Etappe 3: Brunnwinkl / Fünf Häuser, null Ruhe. / Weiter zum Falkenstein. |
 | `stage.brunnwinkl.sign_*` | `sign_bus` „Bus 150 / fährt drüben", `sign_gehweg` „Gehweg / nicht Radweg", `sign_haeuser` „Fünf Häuser / am See", `sign_muehle` „Frischluft / seit 1882", `sign_tanzschule` „Tanzschule / Brunnwinkl", `sign_checkpoint` „Bus 150 / winkt rüber", `sign_futter` „Futter nur / auf Blau", `sign_nobelpreis` „Nobelpreis / für alle", `sign_ortsende` „Brunnwinkl" |
 | `popup.hoppala` | Hoppala! (an e-biker crashes into a wall) |
+| `stage.falkenstein.title` / `.tagline` / `.next` | Etappe 4: Falkenstein / Steil. Steiler. Hackl. / Auf nach St. Wolfgang. |
+| `stage.falkenstein.sign_*` | `sign_bus` „Bus 150 / nur z'Fuß", `sign_weg` „Weg 28 / steil. Sehr.", `sign_steine` „Bitte Stein / mitnehmen", `sign_pilgerstau` „Pilgerstau / seit 1291", `sign_steinschlag` „Steinschlag / inklusive", `sign_gams` „Gamswild / hat Vorrang", `sign_checkpoint` „Bus 150 / winzig, voll", `sign_durchkriech` „Passt jeder / ohne Sünden", `sign_einsiedelei` „Einsiedelei / zu vermieten", `sign_hackl` „Hacklwurf / Rekord: 5 km", `sign_ortsende` „Falkenstein" |
+| `popup.hackl` | Wirf, Resi, wirf! (the Hackl is picked up) |
+| `popup.ballast` | Ballast weg! (a big Resi comes out of the Durchkriechstein as Normal; not „Erleichtert!", which also reads as relieving oneself, D-052 rule) |
 | `map.next_stop` | Nächster Halt: |
 | `map.continue` | Weiter mit START |
 | `map.station.<id>` | Salzburg, St. Gilgen, Brunnwinkl, Falkenstein, St. Wolfgang, Wolfgangsee, Strobl, Bad Ischl, Café Zauner (needs the `é` glyph appended to the font, D-043) |
@@ -436,6 +573,16 @@ All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, sig
 - Waggle dance: a straight waggle run then a half-circle return, alternating sides (figure-eight); the run's angle to vertical gives the direction relative to the sun, its duration the distance – [NC State Extension](https://content.ces.ncsu.edu/honey-bee-dance-language), [Wikipedia](https://en.wikipedia.org/wiki/Waggle_dance)
 - Colour vision: von Frisch trained bees to sugar-water dishes on blue paper among grey cards (published 1914) – [Lernhelfer](https://www.lernhelfer.de/schuelerlexikon/biologie/artikel/karl-von-frisch)
 - Common knowledge (no source needed): Wolfgangsee boat line („Linienschiff") from St. Gilgen, Platzkonzerte of the local brass bands („Humtata"), the B158 and the bus running along the south shore, Nordic walking and e-bikes around the lake.
+
+## Sources (facts used in Stage 4)
+
+- Falkenstein pilgrim path St. Gilgen → Fürberg → over the Falkenstein → Ried → St. Wolfgang, waymarked as trail no. 28 from the Fürberg car park, lowest point 538 m, highest 807 m, ~200 m of steep ascent, 24 signposted points of interest (behind „Weg 28 / steil. Sehr.") – [salzkammergut.at: Der Falkenstein-Pilgerweg](https://www.salzkammergut.at/en/oesterreich-tour/detail/430010480/der-falkenstein-pilgerweg.html)
+- From Fürberg the Kreuzweg climbs a steep wooded gorge to the Falkensteinkirche, which is built above a „Durchkriechstein"; stones that pilgrims carried uphill as penance, cup-marked stones read as traces of the saint and the devil, the Quellkapelle, a rocky saddle with chapels and the Aberseeblick, a waterfall and the descent to Ried; Wolfgang threw his axe from the Falkenstein to choose the church site ~4 km away; in the Middle Ages St. Wolfgang ranked with Rome and Santiago, and most pilgrims came over the Falkenstein – [oberoesterreich.at: Der Weg der Wallfahrer](https://www.oberoesterreich.at/oesterreich-tour/detail/100275/der-weg-der-wallfahrer.html)
+- Falkensteinkirchlein: a Wolfgang chapel documented 1350; the present church built 1626 around a cave in the Falkensteinwand (Johann Wilhelm Lueger, Pfleger of Hüttenstein); the crawl-through stone (Schliefstein) was passed in silence and without looking back, and was said to let even a large person through if free of sin; ~300 000 pilgrims in peak years of the 16th century; hermits lived by the church 1659–1811; the Brunnkapelle (1669) over Wolfgang's spring; the Hackelwurfkapelle where he threw the axe, with a figure of Wolfgang throwing it – [Austria-Forum: Falkensteinkirchlein](https://austria-forum.org/af/AustriaWiki/Falkensteinkirchlein)
+- Customs still practised in part: carrying stones (Steinetragen), the echo call, crawling through the stone cave, washing the eyes, turning an old cult stone – [salzkammergut.at: Falkensteinkirche](https://www.salzkammergut.at/oesterreich-poi/detail/430010230/falkensteinkirche.html?type=2026)
+- St. Wolfgang (born 924, Bishop of Regensburg) withdrew to the Abersee (the old name of the Wolfgangsee) in 976; he threw his axe from the Falkenstein, and it landed ~5 km away on a rock above the lake where the market St. Wolfgang grew (behind „Hacklwurf / Rekord: 5 km" and the Hackl power-up); first pilgrimages documented around 1291 (behind „Pilgerstau / seit 1291") – [SalzburgerLand: 1100 Jahre heiliger Wolfgang](https://www.salzburgerland.com/de/magazin/1-100-jahre-heiliger-wolfgang/)
+- The Wolfgangsee boat line stops at Fürberg and Ried-Falkenstein (the Fürberg landing at the start) – [salzkammergut.at: Wolfgangsee-Schifffahrt](https://www.salzkammergut.at/oesterreich-poi/detail/400639/wolfgangsee-schifffahrt.html)
+- Common knowledge (no source needed): chamois (Gämsen) in the Northern Limestone Alps and the „Gamswild"/„Wildwechsel" traffic-sign idiom; „Achtung Steinschlag" signs and rockfall nets on Austrian mountain paths; the Postbus 150 runs along the south shore (Stages 2–3 sources), so the north-shore pilgrim path has no bus.
 
 ## Resolved decisions (human, 2026-10-18)
 

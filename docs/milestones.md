@@ -43,7 +43,7 @@ Scope as in `game-design.md` → "Stage 1: Salzburg".
 
 **Acceptance:** see "Milestone acceptance" below.
 
-## M2 – Stage 2 St. Gilgen + Stage 3 Brunnwinkl + route map
+## M2 – Stage 2 St. Gilgen + Stage 3 Brunnwinkl + route map — ✅ accepted 2026-10-19 (docs/reports/M2.md)
 
 Scope as in `game-design.md` → "Multi-stage flow", "Route map", "Stage 2: St. Gilgen", "Stage 3: Brunnwinkl"; decisions D-041 … D-046; sprites in `sprite-catalog.md` → "M2 additions". Branch `m2-stgilgen-brunnwinkl`.
 
@@ -81,6 +81,48 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes both stages' filmstrips, the route map and all new German text.
 
+## M3 – Stage 4 Falkenstein: vertical climbing, Hackl, Durchkriechstein
+
+Scope as in `game-design.md` → "Stage 4: Falkenstein" (incl. "Climb camera" and "Climbing rules") and "Power states"; decisions D-053 … D-058; sprites in `sprite-catalog.md` → "M3 additions". One stage only. Branch `m3-falkenstein`.
+
+Design
+- [x] Stage 4 spec: vertical layout, climbing rules, climb camera, sections, entities, new-mechanics table, sources (game-designer)
+- [x] Power hierarchy with Hackl, Durchkriechstein rules, enemy rules; decisions D-053 … D-058
+- [x] German text for Stage 4 (title, tagline, next, 11 signs) and the popups `popup.hackl`, `popup.ballast` in `content/text/de.toml`
+- [x] Sprite catalog "M3 additions"
+
+Engine (parallel worktrees, D-009)
+- [ ] Climb camera: `[meta] camera = "side|climb"` (default side, existing levels bit-identical), settle / in-air follow / fall-follow limit, death line, start and respawn framing, goal-sequence framing at 164, vertical activation proximity; tuning keys `climb_*` validated in `Tuning::parse`
+- [ ] Background `factor_y` (level format, `RenderContext`, renderer); existing levels unchanged
+- [ ] Hackl power state: `contains = "hackl"`, the `hackl` item (rises, stays), Normal/Zuckerschock → Hackl, hit → Zuckerschock + i-frames, freeze with alternating sprites for every power change, carry-over across stages, `player_hackl` in the renderer, intro and route map, `throw` pose
+- [ ] Thrown Hackl: RUN-press throw, max 2, fixed arc, sticks in solids, passes one-way, removed in water/off screen; hits per kind as in D-056 (stompable defeated + base points, Fiaker immune, swarm/projectiles pass, rock 50)
+- [ ] Durchkriechstein: entity with `len`, start conditions, scripted crawl (hitbox 12×12, 1 px/frame, invulnerable, input ignored), outcomes (+1 life / shed to Normal + „Ballast weg!"), once per attempt, `crawl` anim in the renderer (fallback: hidden crawl, D-057)
+- [ ] Enemies: Pilger (walks off ledges, `lead`), Gams (stand/crouch/hop, landing check, never leaves its ledge, chain start 200), Steinschlag spawner (`period`, `phase`, `range`; counter only in range and on screen; telegraph + pebbles) + falling Stein (shatters on solid/one-way, hurts from above, `stein_debris`)
+- [ ] New tiles and kinds: `kalkfels`, `steig` and `netz` (one-way), `kalkfels_bg` (decorative); new `PROP_SPRITES`; new text keys in `screens::TEXT_KEYS`
+- [ ] `levels lint` for climb levels: fall depth (7–9 tiles rejected), spawner niche height (4–6 tiles above the ground below), Durchkriechstein geometry, shaft width ≤ 9 (warning)
+- [ ] Solver in climb levels: progress = x + height gained; jump-window recovery also checks height (D-054), or the documented fallback
+- [ ] Unit tests for every behaviour in the Stage 4 "New mechanics" table
+
+Art (pixel-artist, art-director APPROVED)
+- [ ] Player package: `player_hackl` (all anims incl. `throw`, `crawl`), `crawl` for `player` and `player_big`, items `hackl`, `hackl_thrown`
+- [ ] Enemies package: `pilger`, `pilger_lead`, `gams`, `stein`, `kiesel`, `stein_debris`
+- [ ] Falkenstein package: tiles `kalkfels`, `kalkfels_bg`, `steig`, `netz`; props `gasthof_fuerberg`, `bildstock`, `steinhaufen`, `falkensteinkirche`, `brunnkapelle`, `hackelwurfkapelle`, `durchkriechstein`; layer `bg_falkenstein`
+
+Levels (level-designer)
+- [ ] `04_falkenstein.level` (240 × 42, `camera = "climb"`) with the 6 sections, the shaft and the Durchkriechstein as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; fall-depth lint clean
+- [ ] `time_limit` set from the measured relaxed run (D-045); Oblaten 70 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz); D-029 crown check with a shot at the touch
+
+Replays and goldens
+- [ ] Mechanic replays from the Stage 4 "New mechanics" table (cleft death at the death line, 6-tile drop survives, shaft miss, pilgrims down the zigzag, rock shelter + rock hit + Hackl vs rock, Gams stomp + Gams hit, Hackl pickup from Normal, axes on group C, Hackl hit → Zuckerschock, crawl as Normal / Zuckerschock / Hackl, big Resi at the mouth without DOWN, checkpoint respawn in the shaft)
+- [ ] Flow replays: Brunnwinkl clear → map → Falkenstein intro with carry-over; Falkenstein clear with the Hackl → teaser to St. Wolfgang (`player_hackl` on the map) → title; game over in Falkenstein → continue restarts Falkenstein
+- [ ] Tour `falkenstein_tour` (`start = title`, solver inputs, shots per section incl. the shaft, the church with the stone, the Hackl throw and the checkpoint bus joke) — art-director APPROVED
+- [ ] M2 replays and goldens whose ending changes because Falkenstein is now playable (`brunnwinkl_tour` teaser, `flow_m2_brunnwinkl_teaser_title`, `qa_m2_flow_full_route_teaser`, …) re-cut with an art-director verdict
+
+Platform
+- [ ] wasm build plays the route through Falkenstein; `wasm-smoke` still green; verify runtime stays within budget (backlog: it grows with every stage)
+
+**Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Falkenstein filmstrip, the climb-camera framing at the foot, in the shaft and at the summit, the Hackl and crawl replays, and all new German text.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.
@@ -92,7 +134,7 @@ Platform
 
 ## Later milestones (order can change)
 
-- **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein
+- **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (in progress, section above)
 - **M4** St. Wolfgang
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming
 - **M6** Strobl + Bad Ischl
