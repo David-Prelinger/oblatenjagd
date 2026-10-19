@@ -92,21 +92,21 @@ Design
 - [x] Sprite catalog "M3 additions"
 
 Engine (parallel worktrees, D-009)
-- [ ] Climb camera: `[meta] camera = "side|climb"` (default side, existing levels bit-identical), settle / in-air follow / fall-follow limit, death line, start and respawn framing, goal-sequence framing at 164, vertical activation proximity; tuning keys `climb_*` validated in `Tuning::parse`
-- [ ] Background `factor_y` (level format, `RenderContext`, renderer); existing levels unchanged
-- [ ] Hackl power state: `contains = "hackl"`, the `hackl` item (rises, stays), Normal/Zuckerschock → Hackl, hit → Zuckerschock + i-frames, freeze with alternating sprites for every power change, carry-over across stages, `player_hackl` in the renderer, intro and route map, `throw` pose
-- [ ] Thrown Hackl: RUN-press throw, max 2, fixed arc, sticks in solids, passes one-way, removed in water/off screen; hits per kind as in D-056 (stompable defeated + base points, Fiaker immune, swarm/projectiles pass, rock 50)
-- [ ] Durchkriechstein: entity with `len`, start conditions, scripted crawl (hitbox 12×12, 1 px/frame, invulnerable, input ignored), outcomes (+1 life / shed to Normal + „Ballast weg!"), once per attempt, `crawl` anim in the renderer (fallback: hidden crawl, D-057)
-- [ ] Enemies: Pilger (walks off ledges, `lead`), Gams (stand/crouch/hop, landing check, never leaves its ledge, chain start 200), Steinschlag spawner (`period`, `phase`, `range`; counter only in range and on screen; telegraph + pebbles) + falling Stein (shatters on solid/one-way, hurts from above, `stein_debris`)
-- [ ] New tiles and kinds: `kalkfels`, `steig` and `netz` (one-way), `kalkfels_bg` (decorative); new `PROP_SPRITES`; new text keys in `screens::TEXT_KEYS`
-- [ ] `levels lint` for climb levels: fall depth (7–9 tiles rejected), spawner niche height (4–6 tiles above the ground below), Durchkriechstein geometry, shaft width ≤ 9 (warning)
-- [ ] Solver in climb levels: progress = x + height gained; jump-window recovery also checks height (D-054), or the documented fallback
-- [ ] Unit tests for every behaviour in the Stage 4 "New mechanics" table
+- [x] Climb camera: `[meta] camera = "side|climb"` (default side, existing levels bit-identical), settle / in-air follow / fall-follow limit, death line, start and respawn framing, goal-sequence framing at 164, vertical activation proximity; tuning keys `climb_*` validated in `Tuning::parse`
+- [x] Background `factor_y` (level format, `RenderContext`, renderer); existing levels unchanged
+- [x] Hackl power state: `contains = "hackl"`, the `hackl` item (rises, stays), Normal/Zuckerschock → Hackl, hit → Zuckerschock + i-frames, freeze with alternating sprites for every power change, carry-over across stages, `player_hackl` in the renderer, intro and route map, `throw` pose
+- [x] Thrown Hackl: RUN-press throw, max 2, fixed arc, sticks in solids, passes one-way, removed in water/off screen; hits per kind as in D-056 (stompable defeated + base points, Fiaker immune, swarm/projectiles pass, rock 50)
+- [x] Durchkriechstein: entity with `len`, start conditions, scripted crawl (hitbox 12×12, 1 px/frame, invulnerable, input ignored), outcomes (+1 life / shed to Normal + „Ballast weg!"), once per attempt, `crawl` anim in the renderer (fallback: hidden crawl, D-057)
+- [x] Enemies: Pilger (walks off ledges, `lead`), Gams (stand/crouch/hop, landing check, never leaves its ledge, chain start 200), Steinschlag spawner (`period`, `phase`, `range`; counter only in range and on screen; telegraph + pebbles) + falling Stein (shatters on solid/one-way, hurts from above, `stein_debris`)
+- [x] New tiles and kinds: `kalkfels`, `steig` and `netz` (one-way), `kalkfels_bg` (decorative); new `PROP_SPRITES`; new text keys in `screens::TEXT_KEYS`
+- [x] `levels lint` for climb levels: fall depth (7–9 tiles rejected), spawner niche height (4–6 tiles above the ground below), Durchkriechstein geometry, shaft width ≤ 9 (warning)
+- [x] Solver in climb levels: progress = x + height gained; jump-window recovery also checks height (D-054), or the documented fallback
+- [x] Unit tests for every behaviour in the Stage 4 "New mechanics" table
 
 Art (pixel-artist, art-director APPROVED)
-- [ ] Player package: `player_hackl` (all anims incl. `throw`, `crawl`), `crawl` for `player` and `player_big`, items `hackl`, `hackl_thrown`
-- [ ] Enemies package: `pilger`, `pilger_lead`, `gams`, `stein`, `kiesel`, `stein_debris`
-- [ ] Falkenstein package: tiles `kalkfels`, `kalkfels_bg`, `steig`, `netz`; props `gasthof_fuerberg`, `bildstock`, `steinhaufen`, `falkensteinkirche`, `brunnkapelle`, `hackelwurfkapelle`, `durchkriechstein`; layer `bg_falkenstein`
+- [x] Player package: `player_hackl` (all anims incl. `throw`, `crawl`), `crawl` for `player` and `player_big`, items `hackl`, `hackl_thrown`
+- [x] Enemies package: `pilger`, `pilger_lead`, `gams`, `stein`, `kiesel`, `stein_debris`
+- [x] Falkenstein package: tiles `kalkfels`, `kalkfels_bg`, `steig`, `netz`; props `gasthof_fuerberg`, `bildstock`, `steinhaufen`, `falkensteinkirche`, `brunnkapelle`, `hackelwurfkapelle`, `durchkriechstein`; layer `bg_falkenstein`
 
 Levels (level-designer)
 - [ ] `04_falkenstein.level` (240 × 42, `camera = "climb"`) with the 6 sections, the shaft and the Durchkriechstein as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; fall-depth lint clean
