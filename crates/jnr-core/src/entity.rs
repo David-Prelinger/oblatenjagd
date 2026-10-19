@@ -376,10 +376,12 @@ impl Entity {
                 feet_y,
                 e.taube_hitbox,
             ),
+            // Feet on its cell bottom, moved `dy` px (level field, e.g. -8
+            // to sit on a perch between two cell bottoms).
             SpawnKind::TaubeSitting => Entity::at_feet(
                 EntityKind::Enemy(EnemyKind::TaubeSitting),
                 feet_x,
-                feet_y,
+                feet_y + Fx::from_px(s.dy),
                 e.taube_hitbox,
             ),
             SpawnKind::MozartkugelVerkaeufer => Entity::at_feet(

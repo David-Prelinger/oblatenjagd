@@ -343,10 +343,12 @@ pub struct EntitySpawn {
     /// Length of a `bienenschwarm`'s waggle run in tiles (`len = 2..=4`,
     /// [`DEFAULT_SWARM_LEN`] by default).
     pub len: u8,
-    /// Vertical offset of a `bienenschwarm`'s anchor from its cell centre
-    /// in px (`dy = N`, within ±[`MAX_SWARM_DY_PX`], 0 by default; negative
-    /// is up), e.g. -8 so a swarm anchored above the ground never dips
-    /// its bees into it.
+    /// Vertical offset in px (`dy = N`, 0 by default; negative is up):
+    /// of a `bienenschwarm`'s anchor from its cell centre (within
+    /// ±[`MAX_SWARM_DY_PX`]), e.g. -8 so a swarm anchored above the ground
+    /// never dips its bees into it; of a `taube_sitting`'s feet from its
+    /// cell bottom (within ±[`MAX_TAUBE_DY_PX`]), e.g. -8 to sit on a
+    /// perch 40 px above the ground.
     pub dy: i32,
     /// `lead = true` on a `pilger`: the group leader's sprite
     /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
@@ -377,6 +379,10 @@ pub const STEINSCHLAG_RANGE_TILES: std::ops::RangeInclusive<u8> = 4..=10;
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
+/// Largest `|dy|` of a `taube_sitting`, in px (just under a tile), so it
+/// can sit on a perch between two cell bottoms (St. Wolfgang's mitre,
+/// 40 px above the ground).
+pub const MAX_TAUBE_DY_PX: i32 = 15;
 
 /// A `bienenschwarm`'s waggle run without `len`, in tiles.
 pub const DEFAULT_SWARM_LEN: u8 = 3;
@@ -821,6 +827,7 @@ fn parse_legend_value(
                 (_, Some("festungsbahn")) => &["entity", "tile", "to"],
                 (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
+                (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
                 (_, Some("steinschlag")) => &["entity", "tile", "period", "phase", "range"],
@@ -1027,11 +1034,12 @@ fn parse_entity(
         i64::from(*SWARM_LEN_RANGE.start())..=i64::from(*SWARM_LEN_RANGE.end()),
     )?
     .map_or(DEFAULT_SWARM_LEN, |n| n as u8);
-    let dy = int_field(
-        "dy",
-        -i64::from(MAX_SWARM_DY_PX)..=i64::from(MAX_SWARM_DY_PX),
-    )?
-    .unwrap_or(0) as i32;
+    let max_dy = if kind == SpawnKind::TaubeSitting {
+        MAX_TAUBE_DY_PX
+    } else {
+        MAX_SWARM_DY_PX
+    };
+    let dy = int_field("dy", -i64::from(max_dy)..=i64::from(max_dy))?.unwrap_or(0) as i32;
     let period = int_field(
         "period",
         i64::from(*STEINSCHLAG_PERIOD_RANGE.start())..=i64::from(*STEINSCHLAG_PERIOD_RANGE.end()),
@@ -1691,6 +1699,49 @@ P.sSC.tfG
                 "{entity}: {e}"
             );
         }
+    }
+
+    #[test]
+    fn taube_sitting_takes_dy_up_to_15_px() {
+        let with = |fields: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!(
+                        "\"G\" = {{ entity = \"goal\" }}\n\"s\" = {{ entity = \"taube_sitting\"{fields} }}"
+                    ),
+                )
+                .replace(".P.--..", ".Ps--..")
+        };
+        let dy = |fields: &str| {
+            Level::parse(&with(fields))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.kind == SpawnKind::TaubeSitting)
+                .unwrap()
+                .dy
+        };
+        assert_eq!(dy(""), 0, "default");
+        assert_eq!(dy(", dy = -8"), -8);
+        assert_eq!(dy(", dy = -15"), -15);
+        assert_eq!(dy(", dy = 15"), 15);
+        for bad in [", dy = -16", ", dy = 16", ", dy = \"-8\""] {
+            let e = err(&with(bad));
+            assert!(
+                e.contains("field \"dy\" must be a whole number in -15..=15"),
+                "{bad}: {e}"
+            );
+        }
+        for other in [", dir = 1", ", phase = 3", ", len = 3"] {
+            assert!(err(&with(other)).contains("is not allowed"), "{other}");
+        }
+        // Only the swarm and the sitting Taube take `dy`.
+        let on_taube = SMALL.replace(
+            "{ entity = \"goal\" }",
+            "{ entity = \"goal\" }\n\"u\" = { entity = \"taube\", dy = -8 }",
+        );
+        assert!(err(&on_taube).contains("field \"dy\" is not allowed"));
     }
 
     #[test]
