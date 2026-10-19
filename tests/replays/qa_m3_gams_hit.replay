@@ -1,0 +1,127 @@
+# QA M3, Stage 4 Gams hit (game-design.md "New mechanics": "hit by #2 as
+# Zuckerschock"; D-058): the qa_falkenstein_relaxed inputs as Zuckerschock
+# up to the Wolfgang pigeon (stomped at 3524), then no Hackl: Resi drops
+# onto the saddle and stomps pilgrim group C (the lead at 3773, the other
+# two in one landing at 3824), walks on and steps down into Gams #2's dip
+# (195-200) and stands there. The Gams faces her at its crouch and hops
+# into her at 4112: Zuckerschock -> Normal with 120 invulnerability
+# frames, no death. If the relaxed run changes, re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=Hurt deaths=0 power=normal lives=4 state=playing
+---
+R 120
+J 12
+- 60
+R 20
+RJ 20
+R 20
+R 100
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 212
+J 12
+- 30
+J 12
+- 30
+J 12
+- 30
+J 12
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 60
+R 20
+RJ 14
+- 40
+- 60
+- 78
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 150
+- 55
+R 120
+R 20
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 30
+R 10
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 20
+J 22
+- 10
+L 8
+- 10
+J 22
+- 30
+- 10
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 60
+- 10
+J 15
+- 10
+R 8
+- 10
+J 12
+LJ 18
+L 4
+- 66
+J 10
+- 40
+- 10
+R 22
+- 150
+RJ 14
+R 10
+- 2
+J 12
+- 20
+J 12
+- 20
+R 200
+- 100

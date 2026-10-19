@@ -1,0 +1,123 @@
+# QA M3, Stage 4 Hackl hit (D-056, game-design.md "Power states"): the
+# qa_falkenstein_relaxed inputs up to the Hackl (Zuckerschock -> Hackl
+# with the running jump onto the H-box, frame 3745), then Resi walks off
+# the box, along the plateau and down the step onto the saddle without
+# throwing, right into the lead pilgrim of group C (3847): Hackl ->
+# Zuckerschock (30-frame freeze, 120 invulnerability frames), no death.
+# If the relaxed run changes, re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=Hurt no_event=HacklThrown deaths=0 power=big lives=4 state=playing
+---
+R 120
+J 12
+- 60
+R 20
+RJ 20
+R 20
+R 100
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 212
+J 12
+- 30
+J 12
+- 30
+J 12
+- 30
+J 12
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 60
+R 20
+RJ 14
+- 40
+- 60
+- 78
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 150
+- 55
+R 120
+R 20
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 30
+R 10
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 20
+J 22
+- 10
+L 8
+- 10
+J 22
+- 30
+- 10
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 60
+- 10
+J 15
+- 10
+R 8
+- 10
+J 12
+LJ 18
+L 4
+- 66
+J 10
+- 40
+- 5
+L 110
+- 5
+RB 44
+RBJ 20
+R 10
+- 40
+R 120
+- 60

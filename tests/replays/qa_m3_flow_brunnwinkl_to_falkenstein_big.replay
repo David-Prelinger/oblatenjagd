@@ -1,0 +1,127 @@
+# QA M3 flow (D-042, D-047, D-053): Brunnwinkl clear -> route map ->
+# Falkenstein intro with everything carried over, including the power.
+# Dev entry at Brunnwinkl in the title flow (`level = brunnwinkl`, start =
+# title): the qa_brunnwinkl_relaxed inputs from frame 171 (Zuckerschock
+# from frame 217 of play, +1 life from the Zaunerstollen) to the Maibaum
+# (3757), the tally, the route map (auto-continue, no START) and the
+# Falkenstein intro (4566); play from 4716 at the Fürberg jetty: still
+# Zuckerschock (hitbox top 610 = 30 px on row 40), 4 lives, score 15900,
+# 34 Oblaten, timer 240, and the climb camera starts at the settle
+# framing (camera y 492: feet at screen y 148). Then she walks off right.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=3757..3757 deaths=0 no_event=Hurt
+expect = state=playing stage=falkenstein power=big lives=4 score=15900 oblaten=34 player_y<=610 player_y>=610 player_x>=60
+---
+- 20
+S 1       # title -> Brunnwinkl intro
+- 150
+# --- qa_brunnwinkl_relaxed (play from 171) ---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+RJ 30
+R 30
+R 20
+RJ 12
+R 6
+- 20
+R 60
+- 10
+RJ 16
+R 8
+- 6
+RJ 14
+R 6
+- 6
+RJ 18
+R 8
+- 6
+J 16
+R 50
+R 40
+RJ 16
+R 148
+- 20
+J 12
+- 30
+R 20
+RJ 16
+R 130
+- 170
+R 60
+- 10
+J 8
+R 6
+- 40
+RJ 20
+R 10
+- 20
+- 12
+J 14
+- 30
+R 20
+RJ 24
+R 60
+R 90
+R 40
+RJ 30
+R 98
+RJ 30
+R 82
+R 16
+RJ 30
+R 2
+RJ 8
+R 66
+RJ 30
+R 130
+RJ 30
+R 10
+- 10
+J 14
+- 140
+RJ 30
+R 74
+J 30
+- 2
+RJ 30
+R 34
+RJ 30
+R 2
+RJ 20
+R 2
+RJ 30
+R 98
+RJ 30
+R 2
+RJ 20
+R 2
+RJ 30
+R 2
+RJ 4
+R 2
+RJ 8
+R 10
+- 20
+R 80
+- 20
+- 913     # tally, route map (auto), Falkenstein intro; play from 4716
+R 40      # Falkenstein as Zuckerschock

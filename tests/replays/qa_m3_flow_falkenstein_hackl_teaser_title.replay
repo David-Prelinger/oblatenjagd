@@ -1,0 +1,178 @@
+# QA M3 flow (D-042, D-053, D-056): Falkenstein clear with the Hackl ->
+# route map to St. Wolfgang (no level yet: the teaser, `player_hackl` on
+# the map) -> title, with the run reset. Dev entry at Falkenstein in the
+# title flow (`level = falkenstein`, start = title): the
+# qa_falkenstein_relaxed inputs from frame 171 (Hackl from play frame
+# 3745) to the Maibaum (5135), the tally, the route map (5594) and the
+# teaser, then the title (5842) with the run reset: Normal, score 0,
+# Oblaten 0, 3 lives. START starts a new run at Falkenstein (intro 5903,
+# play 6053) as Normal.
+level  = falkenstein
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=5135..5135 deaths=0 no_event=Hurt event=PowerUp event=AxeHit
+expect = state=playing stage=falkenstein power=normal lives=3 score=0 oblaten=0
+---
+- 20
+S 1       # title -> Falkenstein intro
+- 150
+# --- qa_falkenstein_relaxed (play from 171) ---
+R 120
+J 12
+- 60
+R 20
+RJ 20
+R 20
+R 100
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 212
+J 12
+- 30
+J 12
+- 30
+J 12
+- 30
+J 12
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 60
+R 20
+RJ 14
+- 40
+- 60
+- 78
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 150
+- 55
+R 120
+R 20
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 30
+R 10
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 20
+J 22
+- 10
+L 8
+- 10
+J 22
+- 30
+- 10
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 60
+- 10
+J 15
+- 10
+R 8
+- 10
+J 12
+LJ 18
+L 4
+- 66
+J 10
+- 40
+- 5
+L 110
+- 5
+RB 44
+RBJ 20
+R 10
+- 10
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+R 26
+- 30
+B 1
+- 40
+R 30
+- 10
+B 1
+- 40
+R 140
+- 5
+B 1
+- 30
+B 1
+- 30
+R 30
+- 5
+B 1
+- 30
+B 1
+- 30
+R 150
+- 5
+RJ 22
+R 20
+- 20
+R 28
+RJ 22
+R 25
+- 15
+B 1
+- 30
+B 1
+- 30
+R 100
+RJ 20
+R 20
+RJ 15
+R 120
+- 724     # goal, tally, route map to St. Wolfgang (no level: teaser), title at 5842
+S 1       # title -> a new run
+- 160

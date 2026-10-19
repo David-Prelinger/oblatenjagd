@@ -1,0 +1,134 @@
+# QA M3, Stage 4 Durchkriechstein as Hackl (D-057: Zuckerschock or Hackl
+# -> shed to Normal, „Ballast weg!", no points, no life). The stone comes
+# before Falkenstein's H-box and the camera never scrolls back, so a
+# Hackl at the stone needs a carried-over Hackl: the qa_m3_hackl_vs_rock
+# run (test route `hackl falkenstein`, Falkenstein as Hackl from frame
+# 2214, the rock shattered at 4038) goes on up the shaft and across the
+# church plateau into the boulder's face at the mouth (col 149). DOWN
+# without JUMP starts the crawl at 5219; she comes out at col 154 as
+# Normal (frame ~5296, then the 30-frame freeze), lives and score as
+# before the crawl.
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl falkenstein
+expect = event=CrawlStarted no_event=ExtraLife no_event=Hurt deaths=0 power=normal lives=3 score=14700 stage=st_gilgen state=playing player_x>=2464
+---
+- 20
+S 1       # title -> intro
+- 150
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250     # the Maibaum
+- 830     # goal sequence, route map, Falkenstein intro; play from 2214 (frame 2214 = first play frame)
+R 120
+J 12
+- 60
+R 20
+RJ 20
+R 20
+R 100
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 150
+B 1
+- 39
+B 1
+- 39
+B 1
+- 39
+B 1
+- 79
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 60
+R 20
+RJ 14
+- 40
+- 60
+- 78
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 150
+- 28
+B 1
+- 26
+R 120
+R 20
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 30
+R 10
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 20
+J 22
+- 10
+L 8
+- 10
+J 22
+- 30
+- 10
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40      # into the boulder's face at its mouth (col 149), facing right
+D 10      # DOWN without JUMP: the crawl starts
+- 90      # through the tunnel (76 frames), out at col 154 as Normal (the freeze)
+R 30
