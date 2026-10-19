@@ -139,6 +139,20 @@ impl Camera {
         self.y = clamp_y(self.y + (target - self.y).clamp(-step, step), level_h);
     }
 
+    /// The climb goal sequence's camera (D-059 addendum): like
+    /// [`Camera::settle_y`] towards a fixed `target`, but never less than
+    /// `floor` (the camera y that keeps the player's feet at the goal
+    /// framing, so a slide faster than the settle can't drop her out of
+    /// view). With `floor ≤ target`, as when her feet never go below the
+    /// pole base, y moves monotonically towards `target` and never past it.
+    pub fn settle_y_towards(&mut self, target: i32, floor: i32, level_h: i32, t: &CameraTuning) {
+        self.settle_y(target, level_h, t);
+        let target = clamp_y(target, level_h);
+        if self.y < target {
+            self.y = self.y.max(clamp_y(floor, level_h).min(target));
+        }
+    }
+
     /// True if grid row `row` is at most `margin` px above or below the
     /// screen (touching or overlapping it counts). Climb levels activate a
     /// level entity only while its spawn row is that near
@@ -347,6 +361,29 @@ mod tests {
         };
         c.settle_y(10_000, TALL, &T);
         assert_eq!(c.y, TALL - SCREEN_H);
+    }
+
+    #[test]
+    fn settle_y_towards_is_monotonic_and_keeps_up_with_the_floor() {
+        // Down towards 300: 2 px a frame, or as far as the floor demands,
+        // never past the target.
+        let mut c = Camera { x: 5, y: 280 };
+        c.settle_y_towards(300, 270, TALL, &T);
+        assert_eq!(c, Camera { x: 5, y: 282 });
+        c.settle_y_towards(300, 290, TALL, &T);
+        assert_eq!(c.y, 290, "the floor pulls it further");
+        c.settle_y_towards(300, 300, TALL, &T);
+        assert_eq!(c.y, 300, "at most to the target");
+        c.settle_y_towards(300, 250, TALL, &T);
+        assert_eq!(c.y, 300, "a lower floor (the hop) never pulls it up");
+        // Up towards 300: only the settle.
+        let mut c = Camera { x: 5, y: 310 };
+        c.settle_y_towards(300, 290, TALL, &T);
+        assert_eq!(c.y, 308);
+        // Clamped to the level.
+        let mut c = Camera { x: 5, y: 0 };
+        c.settle_y_towards(-40, -60, TALL, &T);
+        assert_eq!(c.y, 0);
     }
 
     #[test]

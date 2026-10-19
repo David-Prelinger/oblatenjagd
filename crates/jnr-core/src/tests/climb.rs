@@ -259,10 +259,87 @@ fn the_goal_sequence_settles_the_feet_at_164() {
     }) {
         hold(&mut g, "-", 1);
         assert_eq!(g.camera().x, x, "x fixed (D-040)");
-        assert!((g.camera().y - prev).abs() <= 2, "settles at 2 px/frame");
+        let d = g.camera().y - prev;
+        assert!((0..=2).contains(&d), "down only, at most 2 px/frame: {d}");
         prev = g.camera().y;
     }
     assert_eq!(g.camera().y, 30 * 16 - 164, "pole base at screen y 164");
+}
+
+/// The camera y of every frame of Slide, Hop and Walk, after touching
+/// the goal on a flat climb level (floor row 30, goal column 20) with a
+/// jump pressed `delay` frames after setting off (`None`: walking in).
+fn goal_camera_track(delay: Option<u32>) -> (Vec<i32>, Vec<i32>) {
+    let mut rows: Vec<String> = Vec::new();
+    for r in 0..40 {
+        let row: String = (0..40)
+            .map(|c| match (r, c) {
+                (30.., _) => '#',
+                (29, 2) => 'P',
+                (29, 20) => 'G',
+                _ => '.',
+            })
+            .collect();
+        rows.push(row);
+    }
+    let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
+    let mut g = Game::new(&level_with("climb", &rows), &tuning(), 1);
+    match delay {
+        Some(d) => {
+            hold(&mut g, "R", d);
+            until(&mut g, "RJ", 300, |g| g.mode() == Mode::StageClear);
+        }
+        None => {
+            until(&mut g, "R", 300, |g| g.mode() == Mode::StageClear);
+        }
+    }
+    let (mut ys, mut feet_on_screen) = (vec![g.camera().y], Vec::new());
+    while g.stage_clear().is_some_and(|c| {
+        matches!(
+            c.phase,
+            ClearPhase::Slide | ClearPhase::Hop | ClearPhase::Walk
+        )
+    }) {
+        hold(&mut g, "-", 1);
+        ys.push(g.camera().y);
+        feet_on_screen.push(feet(&g) - g.camera().y);
+    }
+    (ys, feet_on_screen)
+}
+
+#[test]
+fn the_climb_goal_camera_moves_one_way_and_ignores_the_hop() {
+    // QA (E19): with the touch framed at feet 148 the camera went up while
+    // she slid down, then reversed, then followed the 5 px hop.
+    // On flat ground the touch is always framed at feet 148 or higher on
+    // screen, so the camera goes up 16 px; coming down is covered by
+    // `the_goal_sequence_settles_the_feet_at_164`.
+    for delay in [
+        None,
+        Some(0),
+        Some(40),
+        Some(80),
+        Some(100),
+        Some(110),
+        Some(120),
+    ] {
+        let (ys, feet_on_screen) = goal_camera_track(delay);
+        let steps: Vec<i32> = ys.windows(2).map(|w| w[1] - w[0]).collect();
+        assert!(
+            steps.iter().all(|&d| d >= 0) || steps.iter().all(|&d| d <= 0),
+            "{delay:?}: one way only, got {ys:?}"
+        );
+        assert!(
+            steps.iter().all(|d| d.abs() <= 2),
+            "{delay:?}: calm, {ys:?}"
+        );
+        assert_eq!(*ys.last().unwrap(), 30 * 16 - 164, "{delay:?}: base at 164");
+        assert!(
+            feet_on_screen.iter().all(|&f| f <= 164),
+            "{delay:?}: her feet never sink below the final framing"
+        );
+        assert!(steps.iter().any(|&d| d < 0), "{delay:?}: up to 164");
+    }
 }
 
 #[test]

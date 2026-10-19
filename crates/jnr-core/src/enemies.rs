@@ -17,7 +17,7 @@
 
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
-use crate::level::{TILE_PX, TileKind};
+use crate::level::{Level, SpawnKind, TILE_PX, TileKind};
 use crate::physics::{TILE, TileMap, YHit, tile_of};
 use crate::tuning::Tuning;
 
@@ -849,6 +849,29 @@ fn update_pilger(e: &mut Entity, ctx: &UpdateCtx) {
     }
     e.x = b.x;
     e.y = b.y;
+}
+
+/// The file a Pilger belongs to (D-061 addendum): Pilger spawned in
+/// adjacent cells of the same row form one file, named by its row and its
+/// leftmost column. `None` for every other entity (and for entities
+/// without a spawn). The game activates a file together, so a group that
+/// straddles the activation edge when the camera stops doesn't split.
+pub(crate) fn pilger_file(level: &Level, e: &Entity) -> Option<(i32, i32)> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Pilger) {
+        return None;
+    }
+    let s = level.entities.get(usize::from(e.spawn?))?;
+    let is_pilger_at = |col: i32| {
+        level
+            .entities
+            .iter()
+            .any(|o| o.kind == SpawnKind::Pilger && o.row == s.row && o.col == col)
+    };
+    let mut col = s.col;
+    while is_pilger_at(col - 1) {
+        col -= 1;
+    }
+    Some((s.row, col))
 }
 
 /// The Gams cycle (`count` = frame in the current state, 1-based): stand

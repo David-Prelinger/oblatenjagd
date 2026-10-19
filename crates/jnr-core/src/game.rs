@@ -880,14 +880,26 @@ impl Game {
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
         };
+        let wakes = |e: &Entity| {
+            !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
+        };
+        // A file of Pilger wakes together (D-061 addendum): every file one
+        // of whose pilgrims wakes by the rule above, before anyone moves.
+        let files: Vec<(i32, i32)> = self
+            .entities
+            .iter()
+            .filter(|e| wakes(e))
+            .filter_map(|e| crate::enemies::pilger_file(level, e))
+            .collect();
         let mut spawned = Vec::new();
         for e in &mut self.entities {
             // Snapshot for the stomp rule (previous-frame position).
             e.prev_y = e.y;
-            if !e.active
-                && e.x < activate_x
-                && (!climb || spawn_row_near(level, e, camera, margin_y))
-            {
+            let in_woken_file = || {
+                !files.is_empty()
+                    && crate::enemies::pilger_file(level, e).is_some_and(|f| files.contains(&f))
+            };
+            if !e.active && (wakes(e) || in_woken_file()) {
                 e.active = true;
                 e.timer = 0;
             }

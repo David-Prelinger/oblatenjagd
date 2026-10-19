@@ -3,9 +3,10 @@
 # quiet stratum as kalkfels in shadow: m body, one wavy d bedding line and
 # a short d joint; no light lip, no grass. Edges are recessed, never lit: an
 # open top gets a 2 px ragged d shadow whose row 0 has 1-2 px transparent
-# notches every 2-4 px (cast by the solid rock, a plank or the cave
-# ceiling above), an open left a ragged d shadow column; open right and
-# bottom stay flat. Drawn by the pixel-artist with a throwaway script.
+# notches every 2-4 px, an open left a ragged d shadow column; open right
+# and bottom stay flat. The top counts as joined under any drawn tile (rock,
+# plank, box, brick; D-063), so the top shadow and notches show only
+# against air/sky above. Drawn by the pixel-artist with a throwaway script.
 # Autotiled (D-020): anim `auto`, frame = neighbour mask
 # (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
 sprite = tile_kalkfels_bg
