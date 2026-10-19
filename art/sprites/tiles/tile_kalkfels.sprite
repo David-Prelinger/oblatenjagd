@@ -1,6 +1,7 @@
 # Falkensteinwand limestone (solid; M3): pale i faces with a wavy m bedding
-# plane that wraps left/right (a cliff reads as continuous strata) and two
-# short m joints. Open top: w lip (+ w flecks) with one small y/g/G grass
+# plane that wraps left/right (a cliff reads as continuous strata) and one
+# short m joint. Round 2: no w and no upper joint in the body, w only in the
+# open-top lip. Open top: w lip (+ w flecks) with one small y/g/G grass
 # tuft; open bottom (the Steinschlag overhang is mostly underside): a ragged
 # d overhang edge with broken m shade and 1 px notches; open left m, open
 # right d (light from the top left). Drawn by the pixel-artist with a
@@ -15,16 +16,16 @@ anim   = auto frames=16 ticks=1
 frame auto 0
 .wwywgwwwwwwwww.
 wwigyGiiiwwiiiid
-miiiGiiiiiimiimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimiid
+miiiGiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-mwwiimmmmmmmiwmd
-miiiiimwwwiiiimd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
 mimiiimiiiimiimd
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -32,16 +33,16 @@ ddddmddddddddmdd
 frame auto 1
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
-miiiiiiiiiimiimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimiid
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-mwwiimmmmmmmiwmd
-miiiiimwwwiiiimd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
 mimiiimiiiimiimd
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -49,16 +50,16 @@ ddddmddddddddmdd
 frame auto 2
 .wwywgwwwwwwwwww
 wwigyGiiiwwiiiii
-miiiGiiiiiimiiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
+miiiGiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-mwwiimmmmmmmiwww
-miiiiimwwwiiiiii
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
 mimiiimiiiimiiii
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -66,16 +67,16 @@ ddddmddddddddmdd
 frame auto 3
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
-miiiiiiiiiimiiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-mwwiimmmmmmmiwww
-miiiiimwwwiiiiii
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
 mimiiimiiiimiiii
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -83,16 +84,16 @@ ddddmddddddddmdd
 frame auto 4
 .wwywgwwwwwwwww.
 wwigyGiiiwwiiiid
-miiiGiiiiiimiimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimiid
+miiiGiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-mwwiimmmmmmmiwmd
-miiiiimwwwiiiimd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
 miiiiimiiiiiiimd
 miiiiimmiiiiiiid
 miiiiiiiiiiiiiid
@@ -100,16 +101,16 @@ miiiiiiiiiiiiiid
 frame auto 5
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
-miiiiiiiiiimiimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimimd
-miiiiiiiiiiimiid
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 miiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-mwwiimmmmmmmiwmd
-miiiiimwwwiiiimd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
 miiiiimiiiiiiimd
 miiiiimmiiiiiiid
 miiiiiiiiiiiiiid
@@ -117,16 +118,16 @@ miiiiiiiiiiiiiid
 frame auto 6
 .wwywgwwwwwwwwww
 wwigyGiiiwwiiiii
-miiiGiiiiiimiiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
+miiiGiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-mwwiimmmmmmmiwww
-miiiiimwwwiiiiii
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
 miiiiimiiiiiiiii
 miiiiimmiiiiiiii
 miiiiiiiiiiiiiii
@@ -134,16 +135,16 @@ miiiiiiiiiiiiiii
 frame auto 7
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
-miiiiiiiiiimiiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
-miiiiiiiiiiimiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 miiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-mwwiimmmmmmmiwww
-miiiiimwwwiiiiii
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
 miiiiimiiiiiiiii
 miiiiimmiiiiiiii
 miiiiiiiiiiiiiii
@@ -152,15 +153,15 @@ frame auto 8
 wwwwwwwwwwgwyww.
 iiiwwwiiigyggGid
 iiiiiiiiiiGgGimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-wwwiimmmmmmmiwmd
-iiiiiimwwwiiiimd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
 iimiiimiiiimiimd
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -168,16 +169,16 @@ dd.dddddd.ddddd.
 frame auto 9
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
-iiiiiiiiiiimiimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-wwwiimmmmmmmiwmd
-iiiiiimwwwiiiimd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
 iimiiimiiiimiimd
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -186,15 +187,15 @@ frame auto 10
 wwwwwwwwwwwgwyww
 iiiwwwiiiwgyggGi
 iiiiiiiiiiiGgGii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-wwwiimmmmmmmiwww
-iiiiiimwwwiiiiii
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
 iimiiimiiiimiiii
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -202,16 +203,16 @@ dd.dddddd.dddddd
 frame auto 11
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
-iiiiiiiiiiimiiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-wwwiimmmmmmmiwww
-iiiiiimwwwiiiiii
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
 iimiiimiiiimiiii
 dmmdiimmmmdmmiim
 ddddmddddddddmdd
@@ -220,15 +221,15 @@ frame auto 12
 wwwwwwwwwwgwyww.
 iiiwwwiiigyggGid
 iiiiiiiiiiGgGimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-wwwiimmmmmmmiwmd
-iiiiiimwwwiiiimd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
 iiiiiimiiiiiiimd
 iiiiiimmiiiiiiid
 iiiiiiiiiiiiiiid
@@ -236,16 +237,16 @@ iiiiiiiiiiiiiiid
 frame auto 13
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
-iiiiiiiiiiimiimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimimd
-iiiiiiiiiiiimiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 iiiiiiiiiiiiiiid
 mmmmmiiiiiiimmmd
-wwwiimmmmmmmiwmd
-iiiiiimwwwiiiimd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
 iiiiiimiiiiiiimd
 iiiiiimmiiiiiiid
 iiiiiiiiiiiiiiid
@@ -254,15 +255,15 @@ frame auto 14
 wwwwwwwwwwwgwyww
 iiiwwwiiiwgyggGi
 iiiiiiiiiiiGgGii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-wwwiimmmmmmmiwww
-iiiiiimwwwiiiiii
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
 iiiiiimiiiiiiiii
 iiiiiimmiiiiiiii
 iiiiiiiiiiiiiiii
@@ -270,16 +271,16 @@ iiiiiiiiiiiiiiii
 frame auto 15
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
-iiiiiiiiiiimiiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
-iiiiiiiiiiiimiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 iiiiiiiiiiiiiiii
 mmmmmiiiiiiimmmm
-wwwiimmmmmmmiwww
-iiiiiimwwwiiiiii
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
 iiiiiimiiiiiiiii
 iiiiiimmiiiiiiii
 iiiiiiiiiiiiiiii
