@@ -1,0 +1,12 @@
+# Climb camera death line (D-054): walk into the bottomless 3-wide cleft
+# after the start terrace (surface row 24, feet y 384). The camera follows
+# the fall at most 80 px below the terrace's framing (camera y 236 -> 316),
+# so she dies when her hitbox top passes the screen bottom (y 496),
+# far above the level bottom (y 640),
+# without ever landing. The replay ends while she is still dying.
+level  = climb_test
+source = handwritten
+expect = dies_at frames=151..151 deaths=1 state=dying player_y>=496 player_y<=499
+expect = no_event=Landed
+---
+R 200
