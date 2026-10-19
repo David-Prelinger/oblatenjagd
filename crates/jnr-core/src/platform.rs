@@ -1,5 +1,16 @@
 //! Moving one-way platforms: the Festungsbahn car (`docs/game-design.md`
-//! → "Festungsbahn car", D-026) and the Zwölferhorn Gondel (D-044).
+//! → "Festungsbahn car", D-026), the Zwölferhorn Gondel (D-044) and the
+//! Schafbergbahn (D-067).
+//!
+//! The Schafbergbahn (`{ entity = "schafbergbahn", to = [dx, dy] }`,
+//! 4 ≤ |dx| ≤ 32) is the Festungsbahn's waiting state machine with its own
+//! numbers ([`car_timing`]): a `platforms.schafbergbahn_size` body (whole
+//! tiles, so with whole-tile `to` both roofs lie on the tile grid and sit
+//! flush with the station platforms), travel = max(|dx|, |dy|) ×
+//! `schafbergbahn_frames_per_tile`, `schafbergbahn_wait` frames at the top.
+//! Its lint covers the **swept body** ([`track_problems`]): no solid or
+//! one-way tile may overlap the body anywhere along the track, nor the
+//! [`TRACK_CLEARANCE_PX`] above its roof.
 //!
 //! The Gondel (`{ entity = "gondel", to = [dx, dy], phase = N }`) is placed
 //! like the car (left-aligned in its spawn cell, bottom on the cell's
@@ -38,7 +49,7 @@
 //!   crushed. Levels keep [`TRACK_CLEARANCE_PX`] free above the track
 //!   (checked by `cargo xtask levels lint` via [`track_problems`]).
 
-use crate::entity::{Entity, UpdateCtx};
+use crate::entity::{Entity, EntityKind, UpdateCtx};
 use crate::fx::Fx;
 use crate::game::Event;
 use crate::level::{EntitySpawn, Level, SpawnKind, TILE_PX, TileKind};
@@ -78,11 +89,38 @@ pub(crate) fn initial_state(spawn: &EntitySpawn) -> u8 {
     }
 }
 
+/// The timing of a car that waits for its rider: frames from one end to
+/// the other, and frames standing at the upper end.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CarTiming {
+    /// Frames of travel between the ends (at least 1).
+    pub travel: u16,
+    /// Frames standing at the upper end.
+    pub wait: u16,
+}
+
+/// The timing of a waiting car of `kind` spawned from `spawn`: the
+/// Festungsbahn's fixed `festungsbahn_travel` / `festungsbahn_wait`, or the
+/// Schafbergbahn's [`schafbergbahn_travel`] / `schafbergbahn_wait`.
+pub fn car_timing(kind: EntityKind, spawn: Option<&EntitySpawn>, t: &Tuning) -> CarTiming {
+    let p = &t.platforms;
+    match kind {
+        EntityKind::Schafbergbahn => CarTiming {
+            travel: spawn.map_or(1, |s| schafbergbahn_travel(s, t)),
+            wait: p.schafbergbahn_wait,
+        },
+        _ => CarTiming {
+            travel: p.festungsbahn_travel.max(1),
+            wait: p.festungsbahn_wait,
+        },
+    }
+}
+
 /// The state machine's next `(state, count)` after `(state, count)`;
 /// `rider` = the player stands on the car this frame.
-pub fn next_state(state: u8, count: u16, rider: bool, t: &Tuning) -> (u8, u16) {
-    let wait = t.platforms.festungsbahn_wait;
-    let travel = t.platforms.festungsbahn_travel.max(1);
+pub fn next_state(state: u8, count: u16, rider: bool, timing: CarTiming) -> (u8, u16) {
+    let CarTiming { travel, wait } = timing;
+    let travel = travel.max(1);
     match state {
         car::UP if count >= travel => {
             if wait == 0 {
@@ -103,8 +141,8 @@ pub fn next_state(state: u8, count: u16, rider: bool, t: &Tuning) -> (u8, u16) {
 
 /// How far up the track the car is in `(state, count)`: `(k, travel)`
 /// means `k / travel` of the way from the lower end to the upper end.
-pub fn height_fraction(state: u8, count: u16, t: &Tuning) -> (i32, i32) {
-    let travel = i32::from(t.platforms.festungsbahn_travel.max(1));
+pub fn height_fraction(state: u8, count: u16, timing: CarTiming) -> (i32, i32) {
+    let travel = i32::from(timing.travel.max(1));
     let count = i32::from(count).min(travel);
     let k = match state {
         car::UP => count,
@@ -121,12 +159,25 @@ pub fn track_delta(spawn: &EntitySpawn) -> (Fx, Fx) {
     (TILE.mul_int(dx), TILE.mul_int(dy))
 }
 
+/// Travel frames along a track of `spawn` at `frames_per_tile`:
+/// max(|dx|, |dy|) tiles × that (at least 1).
+fn per_tile_travel(spawn: &EntitySpawn, frames_per_tile: u16) -> u16 {
+    let [dx, dy] = spawn.to.unwrap_or([0, 0]);
+    let tiles = dx.unsigned_abs().max(dy.unsigned_abs()) as u16;
+    (tiles * frames_per_tile).max(1)
+}
+
 /// Travel frames of a Gondel from one end to the other: max(|dx|, |dy|)
 /// tiles × `gondel_frames_per_tile` (at least 1).
 pub fn gondel_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
-    let [dx, dy] = spawn.to.unwrap_or([0, 0]);
-    let tiles = dx.unsigned_abs().max(dy.unsigned_abs()) as u16;
-    (tiles * t.platforms.gondel_frames_per_tile).max(1)
+    per_tile_travel(spawn, t.platforms.gondel_frames_per_tile)
+}
+
+/// Travel frames of a Schafbergbahn from one end to the other:
+/// max(|dx|, |dy|) tiles × `schafbergbahn_frames_per_tile` (at least 1;
+/// Stage 5's 24-tile track: 576 frames).
+pub fn schafbergbahn_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
+    per_tile_travel(spawn, t.platforms.schafbergbahn_frames_per_tile)
 }
 
 /// Frames of a Gondel's whole cycle: 2 × (wait + travel).
@@ -190,20 +241,76 @@ pub fn track_ends(e: &Entity, level: &Level) -> Option<[(Fx, Fx); 2]> {
     Some([start, (start.0 + dx, start.1 + dy)])
 }
 
+/// The rail's rise in whole px `u` px along a track of `dx`, `dy` px
+/// (`dx` ≠ 0), measured from the spawn end: −floor(u · (−dy) / dx), so a
+/// 1:4 track rising to the right steps up 1 px every 4 px and reaches `dy`
+/// exactly at `u = dx`. The Schafbergbahn's roof follows it pixel for pixel
+/// ([`track_offset`]) and the renderer draws the rails with it, so the
+/// wheels never leave the rail (pixel-artist, M4).
+pub fn rail_offset(u: i32, dx: i32, dy: i32) -> i32 {
+    let (mut num, mut den) = (u * -dy, dx);
+    if den < 0 {
+        num = -num;
+        den = -den;
+    }
+    -num.div_euclid(den.max(1))
+}
+
+/// The offset of a moving platform of `kind` from its spawn point `k` of
+/// `n` frames along its track `delta`: the straight line delta · k / n;
+/// for the Schafbergbahn (when it moves across) the height is snapped to
+/// whole pixels on the rail ([`rail_offset`] of the whole-px x offset), so
+/// it stays exactly on the track's 4:1 ratio on every frame.
+pub fn track_offset(kind: SpawnKind, delta: (Fx, Fx), k: i32, n: i32) -> (Fx, Fx) {
+    let x = delta.0.mul_int(k).div_int(n);
+    if kind == SpawnKind::Schafbergbahn && delta.0 != Fx::ZERO {
+        let rise = rail_offset(x.to_px(), delta.0.to_px(), delta.1.to_px());
+        return (x, Fx::from_px(rise));
+    }
+    (x, delta.1.mul_int(k).div_int(n))
+}
+
+/// Where a waiting car (Festungsbahn, Schafbergbahn) spawned from `spawn`
+/// at `(base_x, base_y)` is in `(state, count)`: its hitbox top-left,
+/// recomputed from the spawn point ([`track_offset`]), so it never drifts.
+/// The renderer uses it for the steam puffs left behind.
+pub fn car_position(
+    kind: EntityKind,
+    base: (Fx, Fx),
+    spawn: Option<&EntitySpawn>,
+    state: u8,
+    count: u16,
+    timing: CarTiming,
+) -> (Fx, Fx) {
+    let delta = spawn.map_or((Fx::ZERO, Fx::ZERO), track_delta);
+    let from_upper = spawn.is_some_and(starts_at_upper_end);
+    let (k, n) = height_fraction(state, count, timing);
+    // `k` counts from the lower end, the position from the spawn point.
+    let k = if from_upper { n - k } else { k };
+    let kind = match kind {
+        EntityKind::Schafbergbahn => SpawnKind::Schafbergbahn,
+        _ => SpawnKind::Festungsbahn,
+    };
+    let (dx, dy) = track_offset(kind, delta, k, n);
+    (base.0 + dx, base.1 + dy)
+}
+
 /// One frame of the car (called from `Entity::update`).
 pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
     let spawn = e.spawn.and_then(|i| ctx.level.entities.get(usize::from(i)));
-    let delta = spawn.map_or((Fx::ZERO, Fx::ZERO), track_delta);
-    let from_upper = spawn.is_some_and(starts_at_upper_end);
+    let timing = car_timing(e.kind, spawn, ctx.tuning);
     let rider = ctx
         .player_standing
         .is_some_and(|p| stands_on(&p, &e.hitbox()));
-    (e.state, e.count) = next_state(e.state, e.count, rider, ctx.tuning);
-    let (k, n) = height_fraction(e.state, e.count, ctx.tuning);
-    // `k` counts from the lower end, the position from the spawn point.
-    let k = if from_upper { n - k } else { k };
-    let x = e.base_x + delta.0.mul_int(k).div_int(n);
-    let y = e.base_y + delta.1.mul_int(k).div_int(n);
+    (e.state, e.count) = next_state(e.state, e.count, rider, timing);
+    let (x, y) = car_position(
+        e.kind,
+        (e.base_x, e.base_y),
+        spawn,
+        e.state,
+        e.count,
+        timing,
+    );
     e.vx = x - e.x;
     e.vy = y - e.y;
     e.x = x;
@@ -308,6 +415,7 @@ fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)>
     let travel = match s.kind {
         SpawnKind::Festungsbahn => t.platforms.festungsbahn_travel.max(1),
         SpawnKind::Gondel => gondel_travel(s, t),
+        SpawnKind::Schafbergbahn => schafbergbahn_travel(s, t),
         _ => return None,
     };
     let car = Entity::from_spawn(s, i, t)?;
@@ -320,9 +428,13 @@ fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)>
     Some((start, track_delta(s), i32::from(travel)))
 }
 
-/// Problems of every moving platform's track in `level` (Festungsbahn,
-/// Gondel): its top must have [`TRACK_CLEARANCE_PX`] free of solid tiles
-/// above it at every frame of its travel. Empty if fine.
+/// Problems of every moving platform's track in `level`: at every frame of
+/// its travel, the Festungsbahn's and the Gondel's top must have
+/// [`TRACK_CLEARANCE_PX`] free of solid tiles above it; the Schafbergbahn's
+/// **swept body** and the [`TRACK_CLEARANCE_PX`] above its roof must be
+/// free of solid and one-way tiles (D-067: a 64×32 box moving up a slope
+/// sweeps a parallelogram that stepped ground under the track could cut).
+/// Empty if fine.
 pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let map = TileMap::from_level(level);
     let mut problems = Vec::new();
@@ -330,15 +442,37 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
         let Some((car, delta, travel)) = track(s, i, t) else {
             continue;
         };
+        let swept_body = s.kind == SpawnKind::Schafbergbahn;
         for k in 0..=travel {
-            let x = car.x + delta.0.mul_int(k).div_int(travel);
-            let y = car.y + delta.1.mul_int(k).div_int(travel);
-            let above = Aabb {
+            let (ox, oy) = track_offset(s.kind, delta, k, travel);
+            let (x, y) = (car.x + ox, car.y + oy);
+            let clearance = Fx::from_px(TRACK_CLEARANCE_PX);
+            let mut free = Aabb {
                 x,
-                y: y - Fx::from_px(TRACK_CLEARANCE_PX),
+                y: y - clearance,
                 w: car.w,
-                h: Fx::from_px(TRACK_CLEARANCE_PX),
+                h: clearance,
             };
+            if swept_body {
+                free.h = clearance + car.h;
+                let (x_px, y_px) = (x.to_px(), y.to_px());
+                if map.touches(&free, TileKind::Solid) || map.touches(&free, TileKind::OneWay) {
+                    problems.push(format!(
+                        "{} at row {}, column {}: a tile overlaps the train's body or the {} px above its roof at ({}, {}) px ({} of {} frames along the track); keep the swept body and 3 tiles above it free of solid and one-way tiles",
+                        s.kind.name(),
+                        s.row + 1,
+                        s.col + 1,
+                        TRACK_CLEARANCE_PX,
+                        x_px,
+                        y_px,
+                        k,
+                        travel
+                    ));
+                    break;
+                }
+                continue;
+            }
+            let above = free;
             if map.touches(&above, TileKind::Solid) {
                 problems.push(format!(
                     "{} at row {}, column {}: less than {} px free above the car at ({}, {}) px ({} of {} frames along the track); keep 3 tiles above the whole track free",
@@ -362,7 +496,7 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
 /// need: a walking jump reaches 4 tiles, minus one tile of safety margin.
 pub const MAX_STEP_UP_TILES: i32 = 3;
 
-/// Problems of every moving platform (Festungsbahn, Gondel) whose pit has
+/// Problems of every moving platform (Festungsbahn, Gondel, Schafbergbahn) whose pit has
 /// no way back up (D-027, D-044: falling off means waiting for the car or
 /// climbing back, never a softlock). Empty if fine.
 ///
@@ -395,8 +529,8 @@ pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
         // Highest car top (px) over each column c0..=c1.
         let mut highest = vec![i32::MAX; (c1 - c0 + 1) as usize];
         for k in 0..=travel {
-            let x = car.x + delta.0.mul_int(k).div_int(travel);
-            let y = (car.y + delta.1.mul_int(k).div_int(travel)).to_px();
+            let (ox, oy) = track_offset(s.kind, delta, k, travel);
+            let (x, y) = (car.x + ox, (car.y + oy).to_px());
             for c in tile_of(x)..=tile_of(x + car.w - Fx(1)) {
                 let h = &mut highest[(c - c0) as usize];
                 *h = (*h).min(y);
@@ -474,12 +608,25 @@ mod tests {
     /// rider on every frame where `rider(i)` holds; the height fraction `k`
     /// after each frame.
     fn heights(start: (u8, u16), frames: usize, rider: impl Fn(usize) -> bool) -> Vec<i32> {
-        let t = tuning();
+        heights_with(
+            car_timing(EntityKind::Festungsbahn, None, &tuning()),
+            start,
+            frames,
+            rider,
+        )
+    }
+
+    fn heights_with(
+        timing: CarTiming,
+        start: (u8, u16),
+        frames: usize,
+        rider: impl Fn(usize) -> bool,
+    ) -> Vec<i32> {
         let (mut s, mut c) = start;
         (0..frames)
             .map(|i| {
-                (s, c) = next_state(s, c, rider(i), &t);
-                height_fraction(s, c, &t).0
+                (s, c) = next_state(s, c, rider(i), timing);
+                height_fraction(s, c, timing).0
             })
             .collect()
     }
@@ -487,7 +634,15 @@ mod tests {
     #[test]
     fn the_car_waits_for_a_rider_then_travels_up_waits_and_comes_back() {
         let t = tuning();
-        assert_eq!(height_fraction(car::WAIT_LOWER, 0, &t), (0, 150));
+        let timing = car_timing(EntityKind::Festungsbahn, None, &t);
+        assert_eq!(
+            timing,
+            CarTiming {
+                travel: 150,
+                wait: 60
+            }
+        );
+        assert_eq!(height_fraction(car::WAIT_LOWER, 0, timing), (0, 150));
         // Nobody boards: it waits forever.
         assert!(
             heights((car::WAIT_LOWER, 0), 1000, |_| false)
@@ -707,6 +862,148 @@ mod tests {
         ];
         let lvl = gondel_level("[6, -1]", &ravine[..]);
         assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
+    }
+
+    /// [`track_level`] with the `F` spawn as a `schafbergbahn` instead.
+    fn train_level(to: &str, rows: &[&str]) -> Level {
+        let mut level = track_level(to, rows);
+        for e in &mut level.entities {
+            if e.kind == SpawnKind::Festungsbahn {
+                e.kind = SpawnKind::Schafbergbahn;
+            }
+        }
+        level
+    }
+
+    /// A 1:4 track [8, −2] from cell (2, 12) (body columns 2–5, rows 11–12,
+    /// roof flush with the lower platform at columns 0–1) to cell (10, 10)
+    /// (roof flush with the upper platform from column 14, top row 9), over
+    /// steps that stay below the swept body: row 13, then row 12 at 10–13.
+    /// The body's lowest point over a column is where its lower right
+    /// corner enters it (it rises to the right): bottom 232 − 4c px over
+    /// column c ≥ 6, so 192 (row 12's top) over column 10.
+    const TRAIN_ROWS: [&str; 7] = [
+        "P................", // row 7
+        ".................",
+        "..............###", // row 9
+        "..............###",
+        "##............###", // row 11
+        "##F.......#######",
+        "#################", // row 13
+    ];
+
+    #[test]
+    fn the_rail_steps_1_px_per_4_and_reaches_the_end_exactly() {
+        // Rising right (Stage 5's [24, −6] = 384 × −96 px).
+        let r = |u| rail_offset(u, 384, -96);
+        assert_eq!((r(0), r(3), r(4), r(7), r(8)), (0, 0, -1, -1, -2));
+        assert_eq!((r(-1), r(-4), r(-5)), (1, 1, 2), "beyond the lower end");
+        assert_eq!(r(384), -96);
+        // Spawned at the upper end going down-left ([−8, 2]): the same
+        // rail, seen from the other end.
+        let d = |u| rail_offset(u, -128, 32);
+        assert_eq!((d(0), d(-1), d(-4), d(-128)), (0, 1, 1, 32));
+        assert_eq!((d(4), d(5)), (-1, -1));
+        // The train's offsets: the height follows the whole-px x offset.
+        let delta = (Fx::from_px(384), Fx::from_px(-96));
+        for k in 0..=576 {
+            let (x, y) = track_offset(SpawnKind::Schafbergbahn, delta, k, 576);
+            assert_eq!(y, Fx::from_px(rail_offset(x.to_px(), 384, -96)), "{k}");
+        }
+        assert_eq!(
+            track_offset(SpawnKind::Schafbergbahn, delta, 576, 576),
+            delta
+        );
+        // Other platforms keep the plain straight line.
+        assert_eq!(
+            track_offset(SpawnKind::Festungsbahn, delta, 3, 576).1,
+            Fx::from_px(-96).mul_int(3).div_int(576)
+        );
+    }
+
+    #[test]
+    fn the_train_lint_covers_its_swept_body_and_3_tiles_above_it() {
+        let t = tuning();
+        let clean = train_level("[8, -2]", &TRAIN_ROWS);
+        assert_eq!(track_problems(&clean, &t), Vec::<String>::new());
+        assert_eq!(recovery_problems(&clean, &t), Vec::<String>::new());
+        // The step one column earlier (column 9, top 192) cuts the body as
+        // it passes (its bottom enters column 9 at 196 px), although nothing
+        // is above the roof: the Festungsbahn's lint (above the top only)
+        // would let it pass.
+        let mut cut = TRAIN_ROWS;
+        cut[5] = "##F......########";
+        let cut_level = train_level("[8, -2]", &cut);
+        let p = track_problems(&cut_level, &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with(
+                "schafbergbahn at row 13, column 3: a tile overlaps the train's body or the 48 px above its roof"
+            ),
+            "{}",
+            p[0]
+        );
+        assert_eq!(
+            track_problems(&track_level("[8, -2]", &cut), &t),
+            Vec::<String>::new(),
+            "the car's lint looks above its top only"
+        );
+        // A one-way tile 2 tiles above the roof at the upper end: one-way
+        // tiles count for the train (a rider would be scraped off).
+        let mut low = TRAIN_ROWS;
+        low[0] = "P..........-.....";
+        let p = track_problems(&train_level("[8, -2]", &low), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].contains("a tile overlaps the train's body"),
+            "{}",
+            p[0]
+        );
+        assert_eq!(
+            track_problems(&track_level("[8, -2]", &low), &t),
+            Vec::<String>::new(),
+            "the car's lint counts solid tiles only"
+        );
+    }
+
+    #[test]
+    fn the_train_pit_recovery_is_skipped_over_a_lethal_gorge() {
+        let t = tuning();
+        // A bottomless gorge under the middle of the track (columns 6–9):
+        // no floor there, so those columns are skipped; the steps on both
+        // sides still lead up.
+        let gorge = [
+            "P................", // row 7
+            ".................",
+            "..............###", // row 9
+            "..............###",
+            "##............###", // row 11
+            "##F.......#######",
+            "######....#######", // row 13
+        ];
+        let lvl = train_level("[8, -2]", &gorge);
+        assert_eq!(track_problems(&lvl, &t), Vec::<String>::new());
+        assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
+        // Without the steps at the upper end: a 4-tile step up from the
+        // pit floor (row 13) to the upper platform (row 9).
+        let wall = [
+            "P................", // row 7
+            ".................",
+            "..............###", // row 9
+            "..............###",
+            "##............###", // row 11
+            "##F...........###",
+            "#################", // row 13
+        ];
+        let p = recovery_problems(&train_level("[8, -2]", &wall), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with(
+                "schafbergbahn at row 13, column 3: no way back up from the pit under its track: a 4-tile step up to column 15"
+            ),
+            "{}",
+            p[0]
+        );
     }
 
     #[test]

@@ -1,0 +1,19 @@
+# E21 (D-067 risk 2): as schafbergbahn_hops, with a third hop from the
+# roof's back edge: it drifts 22 px further back and misses the roof, down
+# into the gorge (death at frame 522). Hops belong on the front (uphill)
+# half of the roof.
+level  = schafbergbahn
+seed   = 1
+source = handwritten
+expect = dies_at frames=522..522 deaths=1 oblaten>=3
+---
+R 50
+RJ 14
+R 88
+- 200
+J 10
+- 40
+J 10
+- 40
+J 10      # hop 3: off the back edge
+- 100

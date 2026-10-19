@@ -12,6 +12,7 @@ mod m2;
 mod m3;
 mod modes;
 mod route;
+mod schafbergbahn;
 mod testbed;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};

@@ -47,6 +47,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_route_b.level"),
     ),
     (
+        "schafbergbahn",
+        include_str!("../../../content/levels/00_schafbergbahn.level"),
+    ),
+    (
         "testbed",
         include_str!("../../../content/levels/00_testbed.level"),
     ),
