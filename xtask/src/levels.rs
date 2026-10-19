@@ -11,6 +11,11 @@
 //! out of the pit under it: stair-stepped floor with steps up of at most 3
 //! tiles to the upper end (`jnr_core::platform::recovery_problems`, D-027,
 //! D-044; its doc comment lists what it does not check).
+//!
+//! Climbing (M3, [`crate::climblint`]): no 7–9 tile drops in climb levels
+//! (D-054), rock spawner niches 4–6 tiles above their ground (D-058), the
+//! Durchkriechstein's tunnel, mouth and exit (D-057), and a warning (not a
+//! failure) for climb-level shafts wider than 9 columns (D-055).
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -28,7 +33,10 @@ Commands:
               sign text keys exist, a goal, prop sprites are catalog props,
               3 free tiles above every Festungsbahn and Gondel track, and
               a way back up (steps <= 3 tiles) from the pit under it to its
-              upper end
+              upper end; climbing: no 7-9 tile drops in climb levels, rock
+              spawner niches 4-6 tiles above their ground, Durchkriechstein
+              tunnel/mouth/exit; warns about climb shafts wider than 9
+              columns (warnings never fail)
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -62,11 +70,15 @@ pub fn lint_report(root: &Path, only: Option<&str>) -> (bool, String) {
         content::texts(root),
         content::tuning(root),
     );
-    let problems = match loaded {
-        (Ok(levels), Ok(texts), Ok(tuning)) => lint(&levels, &texts, &tuning, only),
-        (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => vec![e],
+    let (problems, warned) = match loaded {
+        (Ok(levels), Ok(texts), Ok(tuning)) => (
+            lint(&levels, &texts, &tuning, only),
+            warnings(&levels, only),
+        ),
+        (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => (vec![e], Vec::new()),
     };
     let mut text: String = problems.iter().map(|p| format!("{p}\n")).collect();
+    text.extend(warned.iter().map(|w| format!("warning: {w}\n")));
     text.push_str(&format!("levels lint: {} problem(s)\n", problems.len()));
     (problems.is_empty(), text)
 }
@@ -147,6 +159,9 @@ pub fn lint(
             .file_name()
             .and_then(|n| n.to_str())
             .is_some_and(|n| n.starts_with("00_"));
+        for p in crate::climblint::problems(level) {
+            problems.push(format!("{shown}: {p}"));
+        }
         for e in level.entities.iter().filter(|e| e.still && !test_level) {
             problems.push(format!(
                 "{shown}: still enemy at row {}, column {}: `still = true` is for grey-box test levels (00_*.level) only",
@@ -161,6 +176,21 @@ pub fn lint(
         problems.push(format!("no level with id `{id}` in content/levels"));
     }
     problems
+}
+
+/// Warnings (printed, never failing): climb shafts wider than the shaft
+/// rule allows ([`crate::climblint::warnings`]).
+pub fn warnings(levels: &[LevelFile], only: Option<&str>) -> Vec<String> {
+    levels
+        .iter()
+        .filter_map(|(path, level)| Some((path, level.as_ref().ok()?)))
+        .filter(|(_, l)| only.is_none_or(|o| o == l.meta.id))
+        .flat_map(|(path, l)| {
+            crate::climblint::warnings(l)
+                .into_iter()
+                .map(move |w| format!("{}: {w}", path.display()))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -313,8 +343,8 @@ mod tests {
         for name in PROP_SPRITES {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
         }
-        // PROP_SPRITES == the rows of the catalog's "Props and goal" table
-        // and the M2 "Items and props" table that are props (not the
+        // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
+        // the M2 "Items and props" and the M3 "Props" tables that are props (not the
         // checkpoint, Maibaum, signs or the car, which have entities of
         // their own).
         let catalog = include_str!("../../docs/sprite-catalog.md");
@@ -332,6 +362,7 @@ mod tests {
         let mut in_catalog: Vec<&str> = [
             section("## Props and goal", "\n## "),
             section("### Items and props (group `props`)", "\n### "),
+            section("### Props (group `props`)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)
@@ -351,6 +382,44 @@ mod tests {
             "{}",
             problems[0]
         );
+    }
+
+    #[test]
+    fn climb_problems_are_lint_problems_and_wide_shafts_only_warn() {
+        // A ledge (columns 0–3, its right column the shaft's left wall)
+        // beside a 10-column shaft (walls at columns 3 and 14) with a
+        // plank; walking off the ledge into the shaft drops 9 tiles.
+        let mut rows = vec!["P.............#", "###############"];
+        rows[1] = "####..........#";
+        rows.extend(["####..........#"; 7]);
+        rows.push("####....--....#");
+        rows.push("###############");
+        rows.push("G..............");
+        let text = format!(
+            "[meta]\nid = \"c\"\ntime_limit = 1\ncamera = \"climb\"\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        let levels = vec![(
+            PathBuf::from("c.level"),
+            Level::parse(&text).map_err(|e| e.to_string()),
+        )];
+        let texts = Texts::parse("").unwrap();
+        let problems = lint(&levels, &texts, &tuning(), None);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0].starts_with(
+                "c.level: fall depth: walking off the right end of the surface at row 2, column 4 drops 9 tiles"
+            ),
+            "{problems:?}"
+        );
+        let warned = warnings(&levels, None);
+        assert_eq!(
+            warned,
+            [
+                "c.level: shaft between the walls at columns 4 and 15 (rows 2–10) is 10 columns wide inside; the shaft rule allows 9 (D-055)"
+            ]
+        );
+        assert_eq!(warnings(&levels, Some("other")), Vec::<String>::new());
     }
 
     #[test]

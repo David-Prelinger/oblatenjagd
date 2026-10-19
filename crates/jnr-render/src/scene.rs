@@ -202,6 +202,9 @@ pub struct RenderContext<'a> {
     background: Vec<BackgroundLayer<'a>>,
     /// True if the first layer hides the whole screen (no flat sky fill).
     background_covers: bool,
+    /// The camera's lowest y in this level (level height - screen height,
+    /// at least 0): where `factor_y` layers sit unmoved (D-054).
+    max_camera_y: i32,
 }
 
 impl<'a> RenderContext<'a> {
@@ -266,26 +269,28 @@ impl<'a> RenderContext<'a> {
             stage_keys,
             background: Vec::new(),
             background_covers: false,
+            max_camera_y: (level.height * TILE_PX - HEIGHT as i32).max(0),
         }
     }
 
     /// [`RenderContext::new`] plus the level's `[meta].background` layers.
     pub fn for_level(atlas: &'a Atlas, texts: &'a Texts, level: &Level) -> RenderContext<'a> {
-        let layers: Vec<(&str, u32, u32)> = level
+        let layers: Vec<(&str, u32, u32, u32)> = level
             .meta
             .background
             .iter()
-            .map(|l| (l.sprite.as_str(), l.factor, l.y))
+            .map(|l| (l.sprite.as_str(), l.factor, l.y, l.factor_y))
             .collect();
         RenderContext::new(atlas, texts, level).with_background(&layers)
     }
 
     /// Sets the parallax background: `(sprite name, scroll factor in
-    /// sixteenths, y offset in px above the screen bottom)` triples, back
-    /// to front (e.g. `[("bg_sky_salzburg", 0, 0), ("bg_untersberg", 3, 32)]`).
+    /// sixteenths, y offset in px above the screen bottom, vertical factor
+    /// in sixteenths)`, back to front (e.g. `[("bg_sky_salzburg", 0, 0, 0),
+    /// ("bg_untersberg", 3, 32, 0)]`).
     /// Sprites the atlas lacks are skipped; without layers the flat sky is
     /// drawn. See [`crate::background`] for placement.
-    pub fn with_background(mut self, layers: &[(&str, u32, u32)]) -> RenderContext<'a> {
+    pub fn with_background(mut self, layers: &[(&str, u32, u32, u32)]) -> RenderContext<'a> {
         self.background = background::resolve(self.atlas, layers);
         self.background_covers = self
             .background
@@ -407,7 +412,8 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         atlas,
         &ctx.background,
         ctx.background_covers,
-        cam.x,
+        (cam.x, cam.y),
+        ctx.max_camera_y,
         tick,
     );
     draw_props(ctx, fb, cam, tick, PropLayer::Back);
@@ -436,7 +442,8 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
         atlas,
         &ctx.background,
         ctx.background_covers,
-        cam.x,
+        (cam.x, cam.y),
+        ctx.max_camera_y,
         tick,
     );
     draw_props(ctx, fb, cam, tick, PropLayer::Back);
@@ -798,9 +805,9 @@ mod tests {
         let texts = texts();
         let game = tiny_game();
         let ctx = RenderContext::new(&atlas, &texts, game.level()).with_background(&[
-            ("bg_sky", 0, 0),
-            ("bg_missing", 2, 0),
-            ("bg_hills", 8, 0),
+            ("bg_sky", 0, 0, 0),
+            ("bg_missing", 2, 0, 0),
+            ("bg_hills", 8, 0, 0),
         ]);
         assert_eq!(ctx.background().len(), 2);
         assert!(ctx.background_covers);
@@ -817,8 +824,8 @@ mod tests {
         assert_eq!(fb.get(0, 150), Some(STONE_GREY));
 
         // Only a partial layer: the flat sky stays behind it.
-        let ctx =
-            RenderContext::new(&atlas, &texts, game.level()).with_background(&[("bg_hills", 8, 0)]);
+        let ctx = RenderContext::new(&atlas, &texts, game.level())
+            .with_background(&[("bg_hills", 8, 0, 0)]);
         assert!(!ctx.background_covers);
         let mut fb = Framebuffer::new();
         render(&game, &ctx, &mut fb);
@@ -841,6 +848,56 @@ mod tests {
         render(&game, &ctx, &mut fb);
         assert_eq!(fb.get(0, 179 - 5), Some(A), "raised by y = 5");
         assert_eq!(fb.get(0, 179), Some(SKY_LIGHT));
+    }
+
+    /// A 2-column, 21-row climb level with a `factor_y = 8` layer and the
+    /// player standing on a ledge in `start_row`.
+    fn tall_level(start_row: usize) -> Level {
+        let mut rows = vec![".."; 20];
+        rows[start_row] = "P.";
+        rows[start_row + 1] = "##";
+        rows.push("##");
+        let text = format!(
+            "[meta]\nid = \"tall\"\ntime_limit = 300\ncamera = \"climb\"\n\
+             background = [{{ sprite = \"bg_hills\", factor = 0, factor_y = 8 }}]\n\
+             [legend]\n\"P\" = {{ entity = \"player_start\" }}\n\"#\" = \"solid\"\n\
+             [map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    #[test]
+    fn factor_y_layers_sink_as_the_climb_camera_rises() {
+        let atlas = testutil::atlas(&[testutil::sprite(
+            "bg_hills",
+            (0, 0),
+            false,
+            vec![("idle", 0, vec![image(&["ab..", "ab.."])])],
+        )]);
+        let texts = texts();
+        let low = tall_level(18);
+        let ctx = RenderContext::for_level(&atlas, &texts, &low);
+        assert_eq!(ctx.max_camera_y, 21 * 16 - 180);
+        assert_eq!(ctx.background()[0].factor_y16, 8);
+        let game = Game::new(&low, &tuning(), 1);
+        assert_eq!(game.camera().y, ctx.max_camera_y, "at the level bottom");
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(
+            fb.get(100, 179),
+            Some(A),
+            "unmoved at the bottom (right of the level)"
+        );
+        // Feet at 160 settle at screen y 148: camera y 12, 144 px climbed,
+        // so the 2 px strip sinks 72 px, below the screen.
+        let high = tall_level(9);
+        let game = Game::new(&high, &tuning(), 1);
+        assert_eq!(game.camera().y, 12);
+        let mut fb = Framebuffer::new();
+        render(&game, &ctx, &mut fb);
+        assert_eq!(fb.get(100, 179), Some(SKY_LIGHT), "sunk off the screen");
+        assert!(!fb.pixels.contains(&A));
     }
 
     #[test]

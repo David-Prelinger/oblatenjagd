@@ -1,0 +1,12 @@
+# A 6-tile drop survives in a climb level (D-054): jump the cleft, then walk
+# off the terrace (surface row 24) onto the ground 6 tiles lower (row 30,
+# hitbox top 458). The feet land at screen y 164, on screen.
+level  = climb_test
+source = handwritten
+expect = deaths=0 state=playing player_y>=458 player_y<=458 player_x>=400
+expect = event=Landed no_event=Died
+---
+RB 72     # run up to the cleft
+RBJ 36    # jump it (the solver's opening)
+R 80      # walk off the 6-tile drop
+- 60

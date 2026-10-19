@@ -1,0 +1,69 @@
+# Durchkriechstein (Schliefstein) beside the Falkensteinkirche, back-layer
+# prop (D-057): a rounded limestone boulder 4 tiles wide and 3 tall. Rows
+# 0-31 = the boulder over the level's invisible solid tiles (drawn = solid,
+# D-038): its top is row 0 (the corners round off by <= 2 px over the first
+# 6 px), i body with a w highlight at the top left and a w lip, m shade
+# with a curved terminator in the right quarter and a curved m underside,
+# m cracks, two m cup marks (the saint's and the devil's traces), g/G moss.
+# Rows 32-47 = the low tunnel (the empty tile row): an irregular arched
+# ceiling (rows 31-33, radius-3 corners at the mouths, a dip near the
+# middle, >= 14 clear rows above the floor) with a broken k shadow line,
+# the boulder resting on two rounded 3-5 px feet (lit w/i left, m right,
+# polished mouth edges), d interior, a lighter m/i patch where the far
+# opening lets the light in, worn m floor stones. Resi is drawn over it
+# while crawling. No outline (back layer). Drawn by the pixel-artist with a
+# throwaway script; the grid is the source.
+sprite = durchkriechstein
+size   = 64x48
+origin = 32,48
+anim   = idle frames=1
+---
+frame idle 0
+......wwwwggGwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwgggGmmmm......
+...wwwwwwgGGwwwwwwiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiGGmGmmmmmm...
+..wiwwwwwwwwwwwwwwwiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmm..
+.wiiwwwwwwwwwwwwwwwiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmm.
+.iiiiwwwwwwwwwwwwwiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmm.
+wwwiiiiwwwwwwwwwiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiiimiiiiiiiimmmiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiimiiiiiiiimmmmmiiiiiiiiiiiiiimmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiimimiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiimiimmiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiimiiiimiiiiiiiiiimmmiiiiiiiimmmmmmmmmmmmmmm
+wwwwiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiimmmmmiiiiiiimmmmmmmmmmmmmmm
+iwwiiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiimiiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiimmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmm
+iiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+iiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+iiiiiiiiiiiimiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmm
+iiiiiiiiiiiiiiiiiiiiimmmmmmmmmmmmmmmmmmmmmmiiiiiiimmmmmmmmmmmmmm
+iiiiiiiiiiiimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+iiiiiiimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+iimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+wiiiiiiiwkkkkkddkiiiiiiiiiiiiiiiiiiiiiiiiiddiiikkddkkkkimmmmmmmm
+wiiiiiwddddddddddkkkkddkkkkiiiiiiiiidkkkkkddkkkddddddddddimmmmmm
+wiiiiwddddddddddddddddddkdkkddkkkkkdkkkdddddddddddddddddddimmmmm
+.wiiwddddddddddddddddddddddkkkdkkkkddddddddddddddddddddddddimmm.
+.wiiwddddddddddddddddddddddddddddddddddddddddddddddddddddddimmm.
+.wiiwddddddddddddddddddddddddddddddddddddddddddddddddddddddimmm.
+.wiwddddddddddddddddddddddddddddddddddddddddddddddddddddmmddimm.
+.wiwddddddddddddddddddddddddddddddddddddddddddddddddddddmmddimm.
+.wiidddddddddddddddddddddddddddddddddddddddddddddddddddmmmddimm.
+.wiidddddddddddddddddddddddddddddddddddddddddddddddddddmmiddimm.
+.iiiddddddddddddddddddddddddddddddddddddddddddddddddddmmiiddimm.
+.iiiddddddddddddddddddddddddddddddddddddddddddddddddddmmiiddimm.
+.iimiddddddddddddddddddddddddddddddddddddddddddddddddmmiiidimmm.
+iiimiddddddddddddddddddddddddddddddddddddddddddddddddmmiiidimmmm
+iiiimiddddddddddddddddddddddddddddddddddddddddddddddmmmmmmimmmmm
+iiiimidmmmddmmmmddmmmmddmmmmddmmmmddmmmmddmmmmddmmmdddddddimmmmm

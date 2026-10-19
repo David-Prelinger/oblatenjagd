@@ -13,7 +13,18 @@
 //! that frame. The search ends at the first bucket at or after the earliest
 //! completion found, so the route is the earliest completion the beam sees.
 //! It fails when no node survives, after the frame budget (3× the level
-//! width in pixels) or after the wall-clock limit (default 60 s).
+//! width in pixels; climb levels: 3× width + height) or after the
+//! wall-clock limit (default 60 s).
+//!
+//! **Climb levels** (`[meta] camera = "climb"`, D-054): "furthest right"
+//! can't see progress inside a vertical shaft, so nodes are ranked by
+//! [`search_progress`]: x plus the height the feet gained above the start's feet
+//! (both in subpixels; side levels: x alone). The jump-window recovery
+//! then also requires the feet to be at most [`CLIMB_FEET_TOLERANCE_PX`]
+//! lower than the original route's at the checkpoint, so a missed jump
+//! in the shaft that lands on the plank below no longer counts as
+//! recovered just because x is the same.
+//!
 //! A finished route is cleaned up ([`clean_route`]: JUMP removed where it
 //! changes nothing) before it is measured and written.
 //!
@@ -60,7 +71,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use jnr_core::replay::{Expect, FrameRange, Shot, Source};
-use jnr_core::{Event, Game, InputFrame, Level, Mode, Replay, TICKS_PER_SECOND, Tuning};
+use jnr_core::{
+    CameraMode, Event, Game, InputFrame, Level, Mode, Replay, TICKS_PER_SECOND, Tuning,
+};
 use jnr_render::RenderContext;
 use serde_json::{Value, json};
 
@@ -156,6 +169,14 @@ pub const REPLAN_BEAM: usize = 12;
 /// The re-planning search may reach the progress this many frames after
 /// the jump's checkpoint (a shifted jump lands up to 12 frames later).
 pub const REPLAN_MARGIN: u32 = 30;
+/// Climb levels: the re-planning margin (D-054 addendum). A shifted jump
+/// that lands on the plank below costs one more jump up (about 40 frames
+/// up 3 tiles and down onto the plank), which a player simply makes; 30
+/// frames would count it as a failure.
+pub const CLIMB_REPLAN_MARGIN: u32 = 60;
+/// Climb levels: a shifted jump may end with the feet this many px lower
+/// than the original route's at the checkpoint (D-054).
+pub const CLIMB_FEET_TOLERANCE_PX: i32 = 8;
 
 // ------------------------------------------------------------------ search
 
@@ -172,15 +193,17 @@ pub struct SolveOptions {
 }
 
 impl SolveOptions {
-    /// The defaults for `level`: beam 64, budget 3× its width in pixels,
-    /// 60 s, up to 8 threads.
+    /// The defaults for `level`: beam 64, budget 3× its width in pixels
+    /// (climb levels: width + height), 60 s, up to 8 threads.
     pub fn for_level(level: &Level) -> SolveOptions {
         let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
+        let tiles = match level.meta.camera {
+            CameraMode::Side => level.width.max(1),
+            CameraMode::Climb => level.width.max(1) + level.height.max(0),
+        };
         SolveOptions {
             beam_width: DEFAULT_BEAM,
-            frame_budget: BUDGET_PER_PX
-                * (level.width.max(1) as u32)
-                * jnr_core::level::TILE_PX as u32,
+            frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32,
             time_limit: DEFAULT_TIME_LIMIT,
             threads,
         }
@@ -225,8 +248,23 @@ impl Node {
         out
     }
 
-    fn x(&self) -> i32 {
-        self.game.player().x.raw()
+    fn progress(&self) -> i32 {
+        search_progress(&self.game)
+    }
+}
+
+/// How far a state has come, in subpixels: the player's x; in climb levels
+/// (D-054) plus the height her feet gained above the player start's feet
+/// (negative below it). The search ranks by it.
+pub fn search_progress(game: &Game) -> i32 {
+    let p = game.player();
+    match game.level().meta.camera {
+        CameraMode::Side => p.x.raw(),
+        CameraMode::Climb => {
+            let start = game.level().player_start();
+            let start_feet = jnr_core::Fx::from_px((start.row + 1) * jnr_core::level::TILE_PX);
+            p.x.raw() + (start_feet - p.feet().1).raw()
+        }
     }
 }
 
@@ -321,9 +359,10 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
             timed_out = true;
             break;
         }
-        // Furthest right first, then fewer jumps (no needless hops, so jump
-        // windows are not coupled); the stable sort keeps insertion order on ties.
-        nodes.sort_by_key(|n| (std::cmp::Reverse(n.x()), n.jumps));
+        // Furthest right (climb levels: furthest right + highest) first,
+        // then fewer jumps (no needless hops, so jump windows are not
+        // coupled); the stable sort keeps insertion order on ties.
+        nodes.sort_by_key(|n| (std::cmp::Reverse(n.progress()), n.jumps));
         let mut seen = BTreeSet::new();
         nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
         let nodes = select_beam(nodes, opts.beam_width);
@@ -346,7 +385,8 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
                     continue;
                 }
                 if node.game.player().on_ground
-                    && (node.x() > best.x() || (node.x() == best.x() && f < best.game.frame()))
+                    && (node.progress() > best.progress()
+                        || (node.progress() == best.progress() && f < best.game.frame()))
                 {
                     best = node.clone();
                 }
@@ -539,9 +579,11 @@ impl JumpWindow {
     }
 }
 
-/// Per-frame record of a run: x after each frame (index 0 = start) and events.
+/// Per-frame record of a run: x and the feet's y (px) after each frame
+/// (index 0 = start) and events.
 struct Trace {
     x: Vec<i32>,
+    feet: Vec<i32>,
     events: Vec<(u32, Event)>,
 }
 
@@ -549,12 +591,14 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
     let mut g = Game::new(level, tuning, 1);
     let mut t = Trace {
         x: vec![g.player().x.to_px()],
+        feet: vec![g.player().feet().1.to_px()],
         events: Vec::new(),
     };
     for &i in inputs {
         g.step(i);
         t.events.extend(g.events().iter().map(|&e| (g.frame(), e)));
         t.x.push(g.player().x.to_px());
+        t.feet.push(g.player().feet().1.to_px());
     }
     t
 }
@@ -564,6 +608,8 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
 struct Progress {
     /// Player x (px) at the checkpoint, or where the level was completed.
     x: i32,
+    /// The feet's y (px) then.
+    feet: i32,
     /// The level was completed by the checkpoint.
     done: bool,
     /// The player stands on the ground at the checkpoint.
@@ -577,6 +623,7 @@ fn progress(start: &Game, inputs: &[InputFrame], check: u32) -> Option<Progress>
     let mut g = start.clone();
     let at = |g: &Game, done| Progress {
         x: g.player().x.to_px(),
+        feet: g.player().feet().1.to_px(),
         done,
         on_ground: g.player().on_ground,
     };
@@ -635,14 +682,34 @@ fn after_shifted_jump(
     Err(false)
 }
 
+/// Where a shifted jump must get back to (D-033, D-054): standing on the
+/// ground at x ≥ `x` px and, in climb levels, with the feet at y ≤ `feet`
+/// px (no lower than that).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Goal {
+    pub x: i32,
+    pub feet: Option<i32>,
+}
+
+impl Goal {
+    fn reached_by(&self, p: Progress) -> bool {
+        p.done || (p.on_ground && p.x >= self.x && self.feet.is_none_or(|f| p.feet <= f))
+    }
+}
+
 /// The re-planning search (D-033): a small beam search with the solver's
 /// macro-actions from `game` that finds a node standing on the ground at
-/// x ≥ `x_goal` px (or completing the level) by frame `deadline`, without
+/// the `goal` (or completing the level) by frame `deadline`, without
 /// dying. Deterministic like [`search`] (nodes in rank order, results
 /// joined in node order).
-pub fn recovers(game: Game, x_goal: i32, deadline: u32, threads: usize) -> bool {
+pub fn recovers(game: Game, goal: Goal, deadline: u32, threads: usize) -> bool {
     let reached = |g: &Game| {
-        g.mode() == Mode::StageClear || (g.player().on_ground && g.player().x.to_px() >= x_goal)
+        goal.reached_by(Progress {
+            x: g.player().x.to_px(),
+            feet: g.player().feet().1.to_px(),
+            done: g.mode() == Mode::StageClear,
+            on_ground: g.player().on_ground,
+        })
     };
     if reached(&game) {
         return true;
@@ -657,7 +724,7 @@ pub fn recovers(game: Game, x_goal: i32, deadline: u32, threads: usize) -> bool 
         }],
     );
     while let Some((_, mut nodes)) = buckets.pop_first() {
-        nodes.sort_by_key(|n| (std::cmp::Reverse(n.x()), n.jumps));
+        nodes.sort_by_key(|n| (std::cmp::Reverse(n.progress()), n.jumps));
         let mut seen = BTreeSet::new();
         nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
         let nodes = select_beam(nodes, REPLAN_BEAM);
@@ -766,6 +833,7 @@ pub fn jump_windows(
     threads: usize,
 ) -> Vec<JumpWindow> {
     let orig = trace(level, tuning, inputs);
+    let climb = level.meta.camera == CameraMode::Climb;
     let total = inputs.len() as u32;
     let buffer = tuning.player.jump_buffer_frames as u32;
     let first = |ev: Event, from: u32, to: u32| {
@@ -813,7 +881,7 @@ pub fn jump_windows(
             let Some(jump) = jumps.get(i) else {
                 return measured;
             };
-            measured.push((i, window(tuning, inputs, &orig, jump)));
+            measured.push((i, window(tuning, climb, inputs, &orig, jump)));
         }
     };
     let mut out: Vec<(usize, JumpWindow)> = if threads <= 1 || jumps.len() < 2 {
@@ -834,11 +902,25 @@ pub fn jump_windows(
 }
 
 /// Measures the window of one jump of the route `inputs` (D-033).
-fn window(tuning: &Tuning, inputs: &[InputFrame], orig: &Trace, jump: &JumpAt) -> JumpWindow {
+fn window(
+    tuning: &Tuning,
+    climb: bool,
+    inputs: &[InputFrame],
+    orig: &Trace,
+    jump: &JumpAt,
+) -> JumpWindow {
     let (s, e) = jump.hold;
     let check = jump.check;
-    let x_goal = orig.x[check as usize] - PROGRESS_TOLERANCE_PX;
-    let deadline = check + REPLAN_MARGIN;
+    let goal = Goal {
+        x: orig.x[check as usize] - PROGRESS_TOLERANCE_PX,
+        feet: climb.then(|| orig.feet[check as usize] + CLIMB_FEET_TOLERANCE_PX),
+    };
+    let deadline = check
+        + if climb {
+            CLIMB_REPLAN_MARGIN
+        } else {
+            REPLAN_MARGIN
+        };
     let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
         let Some(shifted) = shift_hold(inputs, s, e, d) else {
             return Shifted::Route;
@@ -851,7 +933,7 @@ fn window(tuning: &Tuning, inputs: &[InputFrame], orig: &Trace, jump: &JumpAt) -
         // Fast path: the unchanged later inputs already get there and she
         // stands on the ground (like the re-planning goal).
         if let Some(p) = progress(start, &shifted, check)
-            && (p.done || (p.on_ground && p.x >= x_goal))
+            && goal.reached_by(p)
         {
             return Shifted::Ok;
         }
@@ -859,7 +941,7 @@ fn window(tuning: &Tuning, inputs: &[InputFrame], orig: &Trace, jump: &JumpAt) -
         let ok = match after_shifted_jump(start, tuning, &shifted, press, deadline) {
             // A beam of REPLAN_BEAM nodes is too small to gain from threads;
             // the jumps run in parallel instead.
-            Ok(game) => recovers(game, x_goal, deadline, 1),
+            Ok(game) => recovers(game, goal, deadline, 1),
             Err(done) => done,
         };
         if ok { Shifted::Ok } else { Shifted::Fail }
@@ -1948,14 +2030,88 @@ mod tests {
         let threads = 1;
         let ok = gap_level(3);
         let g = Game::new(&ok, &t, 1);
-        assert!(recovers(g, 20 * 16, 400, threads));
+        assert!(recovers(
+            g,
+            Goal {
+                x: 20 * 16,
+                feet: None
+            },
+            400,
+            threads
+        ));
         let wide = gap_level(11);
         let g = Game::new(&wide, &t, 1);
-        assert!(!recovers(g, 26 * 16, 400, threads));
+        assert!(!recovers(
+            g,
+            Goal {
+                x: 26 * 16,
+                feet: None
+            },
+            400,
+            threads
+        ));
         // Already there: true without searching.
         let g = Game::new(&ok, &t, 1);
         let x = g.player().x.to_px();
-        assert!(recovers(g, x, 0, threads));
+        assert!(recovers(g, Goal { x, feet: None }, 0, threads));
+    }
+
+    fn climb_test_level() -> Level {
+        content::find_level(&root(), "climb_test").unwrap()
+    }
+
+    #[test]
+    fn climb_levels_rank_by_x_plus_the_height_gained() {
+        let t = tuning();
+        let side = Game::new(&gap_level(3), &t, 1);
+        assert_eq!(search_progress(&side), side.player().x.raw());
+        let level = climb_test_level();
+        let mut g = Game::new(&level, &t, 1);
+        assert_eq!(search_progress(&g), g.player().x.raw(), "at the start");
+        // Teleported onto the row-21 plank in the shaft: 3 tiles above the
+        // start terrace (row 24).
+        g.teleport_player(37 * 16 + 8);
+        assert_eq!(g.player().feet().1.to_px(), 21 * 16);
+        assert_eq!(search_progress(&g), g.player().x.raw() + 48 * 256);
+        // The budget covers the climb too.
+        let budget = SolveOptions::for_level(&level).frame_budget;
+        assert_eq!(budget, 3 * (64 + 40) * 16);
+        assert_eq!(
+            SolveOptions::for_level(&gap_level(3)).frame_budget,
+            3 * gap_level(3).width as u32 * 16
+        );
+    }
+
+    #[test]
+    fn climb_recovery_also_needs_the_height() {
+        let level = climb_test_level();
+        let mut g = Game::new(&level, &tuning(), 1);
+        g.teleport_player(37 * 16 + 8);
+        let (x, feet) = (g.player().x.to_px(), g.player().feet().1.to_px());
+        let goal = |feet| Goal { x: x - 16, feet };
+        let f = g.frame();
+        // Where she stands: reached with or without the height check.
+        assert!(recovers(g.clone(), goal(None), f, 1));
+        assert!(recovers(g.clone(), goal(Some(feet + 8)), f, 1));
+        // One plank up (row 18, 3 tiles): she has to jump for it.
+        assert!(!recovers(g.clone(), goal(Some(feet - 48 + 8)), f, 1));
+        assert!(recovers(g.clone(), goal(Some(feet - 48 + 8)), f + 150, 1));
+        // Above the plateau: never (and the goal is too far for 60 frames).
+        assert!(!recovers(g, goal(Some(15 * 16 - 64)), f + 60, 1));
+        // The fast-path check: x alone is not enough in a climb level.
+        let p = Progress {
+            x,
+            feet: feet + 48,
+            done: false,
+            on_ground: true,
+        };
+        assert!(goal(None).reached_by(p));
+        assert!(!goal(Some(feet + 8)).reached_by(p));
+        assert!(goal(Some(feet + 8)).reached_by(Progress { done: true, ..p }));
+        assert!(!goal(None).reached_by(Progress {
+            on_ground: false,
+            ..p
+        }));
     }
 
     #[test]

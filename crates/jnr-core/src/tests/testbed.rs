@@ -52,4 +52,4 @@ const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame (changes whenever the hashed tuning gains keys
 /// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
 /// Hackl/crawl player fields).
-const FINISH_HASH: u64 = 0xea80_3bdd_1d09_228b;
+const FINISH_HASH: u64 = 0x6287_e5b9_dbd4_7995;

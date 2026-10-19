@@ -214,6 +214,22 @@ pub struct CameraTuning {
     pub deadzone_top: i32,
     /// Lower edge of the vertical dead zone (screen y of the player's centre).
     pub deadzone_bottom: i32,
+    /// Climb camera (`[meta] camera = "climb"`, D-054): screen y the feet
+    /// settle at while grounded.
+    pub climb_feet_y: i32,
+    /// Climb camera: most px per frame the camera moves while settling.
+    pub climb_settle_speed: i32,
+    /// Climb camera: in the air, the camera follows up at once when the
+    /// hitbox top is above this screen y.
+    pub climb_top: i32,
+    /// Climb camera: in the air it follows the feet down at most this many
+    /// px below the settle framing of the last ground.
+    pub climb_fall_follow: i32,
+    /// Climb camera: screen y the feet settle at during the goal sequence.
+    pub climb_goal_feet_y: i32,
+    /// Climb levels: a level entity activates only while its spawn cell is
+    /// at most this many px above or below the screen.
+    pub climb_activate_y: i32,
 }
 
 /// Game flow constants.
@@ -453,9 +469,27 @@ pub struct EnemyTuning {
     pub stein_points: u32,
 }
 
+/// Frames of a Gams hop on flat ground until it lands (the frame whose
+/// move would take it below its start height), moving like
+/// `enemies::update_gams`: vy starts at −`up`, gravity is added before each
+/// move, fall speed capped at `max_fall`. `None` if it takes more than 1000
+/// frames.
+pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
+    let (mut y, mut vy) = (0i64, -i64::from(up.raw()));
+    for n in 1..=1000 {
+        vy = (vy + i64::from(gravity.raw())).min(i64::from(max_fall.raw()));
+        y += vy;
+        if y > 0 {
+            return Some(n);
+        }
+    }
+    None
+}
+
 impl EnemyTuning {
     /// The M3 enemy keys (Pilger, Gams, Steinschlag; D-058).
-    fn validate_m3(&self) -> Result<(), ParseError> {
+    /// `max_fall` is the player's max fall speed (the Gams falls with it).
+    fn validate_m3(&self, max_fall: Fx) -> Result<(), ParseError> {
         for (name, [w, h]) in [
             ("enemies.pilger_hitbox", self.pilger_hitbox),
             ("enemies.gams_hitbox", self.gams_hitbox),
@@ -493,6 +527,18 @@ impl EnemyTuning {
         if !(1..=4).contains(&self.gams_hop_tiles) {
             return Err(ParseError::new(
                 "tuning.toml: enemies.gams_hop_tiles must be 1..=4",
+            ));
+        }
+        // The landing check sweeps `gams_hop_tiles` tiles, so the hop must
+        // not carry it further: simulate the hop on flat ground exactly as
+        // `enemies::update_gams` moves (gravity before the move, `vx` every
+        // frame including the landing one).
+        let airtime = gams_airtime(self.gams_hop_speed_y, self.gams_gravity, max_fall);
+        let across = airtime.map(|n| i64::from(self.gams_hop_speed_x.raw()) * i64::from(n));
+        let swept = i64::from(Fx::from_px(self.gams_hop_tiles * TILE_PX).raw());
+        if across.is_none_or(|a| a > swept) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.gams_hop_speed_x × the hop's airtime (from gams_hop_speed_y and gams_gravity) <= gams_hop_tiles × 16 px, so the Gams never lands past the floor it checked",
             ));
         }
         // The level's `phase` is 0 or STEINSCHLAG_MIN_PHASE.., so the first
@@ -632,7 +678,7 @@ impl Tuning {
                 "tuning.toml: game.activate_margin and game.despawn_margin must be >= 0",
             ));
         }
-        self.enemies.validate_m3()?;
+        self.enemies.validate_m3(self.player.max_fall_speed)?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -887,6 +933,32 @@ impl Tuning {
                 "tuning.toml: need 0 <= camera.deadzone_top <= camera.deadzone_bottom < 180",
             ));
         }
+        let h = crate::camera::SCREEN_H;
+        if !(0 <= c.climb_top && c.climb_top < c.climb_feet_y && c.climb_feet_y <= h) {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 <= camera.climb_top < camera.climb_feet_y <= 180",
+            ));
+        }
+        if !(1..=h).contains(&c.climb_goal_feet_y) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_goal_feet_y must be 1..=180",
+            ));
+        }
+        if !(1..=TILE_PX).contains(&c.climb_settle_speed) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_settle_speed must be 1..=16 px/frame",
+            ));
+        }
+        for (name, v) in [
+            ("camera.climb_fall_follow", c.climb_fall_follow),
+            ("camera.climb_activate_y", c.climb_activate_y),
+        ] {
+            if !(0..=h).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=180 px"
+                )));
+            }
+        }
         Ok(())
     }
 
@@ -962,6 +1034,14 @@ mod tests {
         assert!(t.player.walk_speed < t.player.run_speed);
         assert_eq!(t.player.coyote_frames, 6);
         assert_eq!(t.player.jump_buffer_frames, 6);
+        let e = t.enemies;
+        let airtime = gams_airtime(e.gams_hop_speed_y, e.gams_gravity, t.player.max_fall_speed);
+        assert_eq!(airtime, Some(32), "a Gams hop lands on its 32nd frame");
+        assert_eq!(
+            e.gams_hop_speed_x.mul_int(32),
+            Fx::from_px(e.gams_hop_tiles * TILE_PX),
+            "exactly the swept tiles"
+        );
     }
 
     #[test]
@@ -1087,12 +1167,27 @@ mod tests {
             ("gams_crouch", 0),
             ("gams_hop_tiles", 0),
             ("gams_hop_tiles", 5),
+            ("gams_hop_tiles", 1),
+            ("gams_hop_speed_x", 257),
+            ("gams_gravity", 60),
+            ("gams_hop_speed_y", 1100),
             ("steinschlag_telegraph", 0),
             ("steinschlag_telegraph", 41),
             ("steinschlag_refill", 0),
             ("steinschlag_refill", 50),
             ("steinschlag_screen_top", -1),
             ("steinschlag_screen_top", 180),
+            ("climb_feet_y", 181),
+            ("climb_feet_y", 40),
+            ("climb_top", -1),
+            ("climb_settle_speed", 0),
+            ("climb_settle_speed", 17),
+            ("climb_fall_follow", -1),
+            ("climb_fall_follow", 181),
+            ("climb_goal_feet_y", 0),
+            ("climb_goal_feet_y", 181),
+            ("climb_activate_y", -1),
+            ("climb_activate_y", 181),
             ("item_hitbox", 0),
             ("axe_hitbox", 17),
             ("max_alive", 0),

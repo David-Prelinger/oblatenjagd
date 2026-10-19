@@ -450,7 +450,11 @@ fn scene(root: &Path, args: &SceneArgs) -> Result<(), String> {
     let ctx = if args.bg.is_empty() {
         RenderContext::for_level(atlas, &texts, &level)
     } else {
-        let bg: Vec<(&str, u32, u32)> = args.bg.iter().map(|(n, f)| (n.as_str(), *f, 0)).collect();
+        let bg: Vec<(&str, u32, u32, u32)> = args
+            .bg
+            .iter()
+            .map(|(n, f)| (n.as_str(), *f, 0, 0))
+            .collect();
         RenderContext::new(atlas, &texts, &level).with_background(&bg)
     };
     let (game, clamped) = scene_game(&level, &tuning, x);

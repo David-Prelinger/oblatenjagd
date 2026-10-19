@@ -1,0 +1,95 @@
+# Pilger: friendly pilgrim on the Falkenstein trail (Steinetragen custom).
+# Green felt hat G/g/j with a small brass badge Y, grey hair and a white
+# moustache w/i, brown loden jacket O/l with a backpack strap l, grey
+# Kniebundhose m/d, grey wool socks i/m, leather shoes O/l. Prop: a green
+# backpack G/g/j with a grey penance stone i/m/d (l rope) strapped on top,
+# poking up behind his head - the 1x read; plus one plain wooden walking
+# stick O (not two poles: that is the Nordic-Walker). No religious props.
+# walk: 0 = stride, stick planted on the ground; 1 = passing, 1 px bob up,
+# stick lifted. squished = he sat down on his stone for a rest, hat pushed
+# back (a rest, not a squash). Faces right; mirror = auto.
+# Built with a layered scratch script (parts + per-part k outline), frozen
+# to text here.
+sprite = pilger
+size   = 16x24
+origin = 8,24
+hitbox = 2,2,12,22
+mirror = auto
+anim   = walk     frames=2 ticks=12 loop
+anim   = squished frames=1
+---
+frame walk 0
+..kkk...........
+.kiimkkk.....k..
+kiimkGGGk...kOk.
+kimdkGGGYkk.kOk.
+kmdgGGGGGGjkkOk.
+.kllkiieeeekkOk.
+.klkkieeekekkOk.
+kggGkieeeeeEkOk.
+kgGGkieewwwwkOk.
+kGGGGkkkkkikkOk.
+kGGGjkOkkOk.kOk.
+kGGGklkOOkOkkOk.
+kGGjklkOOkkkkkk.
+kGjjklklOOOOeek.
+.kjjklOkkkkkeEk.
+..kkkOOOOOlkkkk.
+....kkkkkklkkOk.
+....kmmmmdk.kOk.
+...kmkkmmdk.kOk.
+..kmmdkkmmdkkOk.
+..kiimkkiimkkOk.
+.kiimk.kiimkkOk.
+.kOOllkkOOllkOk.
+..kkkk..kkkk.k..
+frame walk 1
+..kkk........k..
+.kiimkkk....kOk.
+kiimkGGGk...kOk.
+kimdkGGGYkk.kOk.
+kmdgGGGGGGjkkOk.
+.kllkiieeeekkOk.
+.klkkieeekekkOk.
+kggGkieeeeeEkOk.
+kgGGkieewwwwkOk.
+kGGGGkkkkkikkOk.
+kGGGjkOkkOk.kOk.
+kGGGklkOOkOkkOk.
+kGGjklkOOkkkkkk.
+kGjjklklOOOOeek.
+.kjjklOkkkkkeEk.
+..kkkOOOOOlkkkk.
+....kllkkkkkkOk.
+....kkkmmmdkkOk.
+....kmmkmmdkkOk.
+....kmmkmmdkkOk.
+....kiikiimkkOk.
+....kiikOOllkOk.
+....kOOlkkkk.k..
+.....kkkk.......
+frame squished 0
+................
+................
+................
+..............k.
+.............kOk
+........kk...kOk
+......kkGGk..kOk
+.....kGGGGGk.kOk
+....kgGGGGYjkkOk
+....kiieeeek.kOk
+....kieeekek.kOk
+....kieeeeeEkkOk
+....kieewwwwkkOk
+.....kkkkkik.kOk
+.....kOOkkkkkkOk
+....klOkOOOOeekk
+...kklOOkkkkeEkk
+.kkiklOOkkkkkkOk
+kiiikllkmmmmdkOk
+kiimmkkkkkkmmkOk
+kmmmmddk..kiikOk
+.kmddddk..kiikOk
+..kkkkk...kOOkOk
+...........kkkk.
