@@ -23,34 +23,34 @@
 
 use super::{Event, Game};
 use crate::crawl::{self, stone};
-use crate::entity::{EntityKind, Popup, popup};
+use crate::entity::{EntityKind, Popup, popup, stacked_popups};
 use crate::fx::Fx;
 use crate::hackl::{self, AxeHit, axe};
 use crate::physics::Aabb;
 use crate::player::{Facing, Player, Power};
 use crate::{SCREEN_H, SCREEN_W};
 
-/// The „Wirf, Resi, wirf!" popup starts this many px above the score popup.
-const HACKL_POPUP_ABOVE_PX: i32 = 10;
+/// Resi's sprite reaches this many px above her hitbox top (the 32 px big
+/// sprites over the 30 px hitbox): popups start above it, so her head
+/// stays visible.
+const SPRITE_ABOVE_HITBOX_PX: i32 = 2;
 
 impl Game {
-    /// The player touched the Hackl item at feet (`x`, `y`): Normal or
-    /// Zuckerschock become Hackl; points in any state. Returns the popups.
+    /// The player touched the Hackl item (feet x `x`, top `y`): Normal or
+    /// Zuckerschock become Hackl; points in any state. Returns the popups:
+    /// the score, and on a change „Wirf, Resi, wirf!" stacked above it,
+    /// both above the item and above Resi's (new) head.
     pub(super) fn pick_up_hackl(&mut self, x: Fx, y: Fx) -> Vec<crate::Entity> {
-        let mut popups = Vec::new();
+        let points = self.tuning.score.power_up;
+        let mut shown = vec![Popup::Score(points)];
         if self.player.power != Power::Hackl {
             self.player.set_power(Power::Hackl, &self.tuning.player);
             self.events.push(Event::PowerUp);
-            popups.push(popup(
-                Popup::Hackl,
-                x,
-                y - Fx::from_px(HACKL_POPUP_ABOVE_PX),
-            ));
+            shown.push(Popup::Hackl);
         }
-        let points = self.tuning.score.power_up;
         self.add_score(points);
-        popups.push(popup(Popup::Score(points), x, y));
-        popups
+        let head = self.player.y - Fx::from_px(SPRITE_ABOVE_HITBOX_PX);
+        stacked_popups(&shown, x, y.min(head))
     }
 
     /// A new RUN press while Hackl throws an axe (at most

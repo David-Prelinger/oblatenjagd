@@ -159,6 +159,19 @@ fn normal_and_zuckerschock_become_hackl_with_the_freeze() {
             shown.contains(&Popup::Hackl) && shown.contains(&Popup::Score(1000)),
             "{shown:?}"
         );
+        // Stacked: the text clear above the score, both above her head
+        // (the 32 px sprite top, 2 px above the hitbox).
+        let top = |k: Popup| {
+            g.entities()
+                .iter()
+                .find(|e| e.kind == EntityKind::Popup(k))
+                .unwrap()
+                .y
+                .to_px()
+        };
+        let (score, text) = (top(Popup::Score(1000)), top(Popup::Hackl));
+        assert!(text + 9 < score - 1, "no overlap: {text} vs {score}");
+        assert!(score + 9 < p.y.to_px() - 2, "{from:?}: above her head");
         // The whole game freezes for 30 frames (the timer too).
         let time = (g.time_left(), g.frame());
         hold(&mut g, "R", u32::from(t.player.transform_frames));

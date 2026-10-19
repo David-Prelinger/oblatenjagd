@@ -4,8 +4,9 @@
 # ground: bump it, the Hackl rises onto it, jump onto the box to take it);
 # an M-box at 12 (row 9; the Mozartkugel rolls right, the boulder turns it
 # back); the Durchkriechstein at 20-23 (tunnel row 11, `len = 4`, the
-# boulder above it is solid rows 9-10: 3 tiles to climb over; mouth 19,
-# exit 24); three still Selfie-Tourists at 40, 44 and 48 as axe targets
+# boulder above it is `invisible` solid rows 9-10: 3 tiles to climb over; mouth 19,
+# exit 24; drawn by the `durchkriechstein` prop, back layer, bottom centre
+# between columns 21 and 22); three still Selfie-Tourists at 40, 44 and 48 as axe targets
 # (`still = true`, D-026); goal 60.
 # Replays: tests/replays/hackl_*.replay, flow_hackl_carry_over.replay.
 
@@ -15,9 +16,11 @@ time_limit = 100
 
 [legend]
 "#" = "solid"
+"I" = "invisible"   # the boulder's solid top under the prop (D-057)
 "H" = { tile = "oblaten_box", contains = "hackl" }
 "M" = { tile = "oblaten_box", contains = "mozartkugel" }
 "K" = { entity = "durchkriechstein", len = 4 }
+"D" = { entity = "prop", sprite = "durchkriechstein", layer = "back", dx = 8 }   # the boulder, 64x48 over columns 20-23, rows 9-11
 "t" = { entity = "selfie_tourist", still = true }   # a fixed target (D-026)
 "P" = { entity = "player_start" }
 "G" = { entity = "goal" }
@@ -33,9 +36,9 @@ grid = '''
 ................................................................
 ................................................................
 ................................................................
-......H.....M.......####........................................
-....................####........................................
-..P.................K...................t...t...t...........G...
+......H.....M.......IIII........................................
+....................IIII........................................
+..P.................KD..................t...t...t...........G...
 ################################################################
 ################################################################
 '''

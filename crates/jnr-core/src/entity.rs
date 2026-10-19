@@ -725,6 +725,23 @@ pub fn popup(p: Popup, x: Fx, y: Fx) -> Entity {
     Entity::new(EntityKind::Popup(p), x - w.div_int(2), y, w, Fx::from_px(8))
 }
 
+/// Vertical pitch of popups spawned together ([`stacked_popups`]), whole
+/// pixels: a popup's text is drawn from its top down over a 9 px line with
+/// the 1 px outline above and below (10 px), plus 1 px of air.
+pub const POPUP_STACK_PX: i32 = 11;
+
+/// Popups that spawn together (e.g. a score and a text), stacked upwards
+/// so they never overlap: `popups[0]` lowest, with its drawn bottom (incl.
+/// the outline) 1 px above `bottom`, each next one [`POPUP_STACK_PX`]
+/// higher. All centred on `x`; they float up together.
+pub fn stacked_popups(popups: &[Popup], x: Fx, bottom: Fx) -> Vec<Entity> {
+    popups
+        .iter()
+        .zip(1..)
+        .map(|(&p, i)| popup(p, x, bottom - Fx::from_px(POPUP_STACK_PX * i) + Fx::ONE))
+        .collect()
+}
+
 /// How far a bumped tile is raised `timer` frames into its bump, whole pixels.
 pub fn bump_offset_px(timer: u16, t: &Tuning) -> i32 {
     let frames = i32::from(t.items.bump_frames.max(2));
@@ -738,6 +755,24 @@ mod tests {
 
     fn tuning() -> Tuning {
         Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap()
+    }
+
+    #[test]
+    fn stacked_popups_never_overlap() {
+        let bottom = Fx::from_px(100);
+        let s = stacked_popups(&[Popup::Score(1000), Popup::Hackl], Fx::from_px(50), bottom);
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].kind, EntityKind::Popup(Popup::Score(1000)));
+        // Drawn rows: top − 1 (outline) .. top + 9 (descender + outline).
+        let rows = |e: &Entity| (e.y.to_px() - 1, e.y.to_px() + 9);
+        let (a, b) = (rows(&s[0]), rows(&s[1]));
+        assert_eq!(a.1, 99, "1 px above `bottom`");
+        assert!(
+            b.1 < a.0,
+            "the text sits clear above the score: {a:?} {b:?}"
+        );
+        assert_eq!(a.0 - b.1, 1, "1 px of air");
+        assert!(s.iter().all(|e| e.x + e.w.div_int(2) == Fx::from_px(50)));
     }
 
     #[test]
