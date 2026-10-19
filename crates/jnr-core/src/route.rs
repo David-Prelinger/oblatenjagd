@@ -111,14 +111,15 @@ pub const STATIONS: [Station; 9] = [
         id: "falkenstein",
         dot: (152, 68),
         // Clear of the St. Wolfgang marker (art-director, M2). Alternate
-        // (M3): ending at x 171 when a big Resi stands on St. Wolfgang (the
-        // teaser), so the outline clears her.
+        // (M3): ending at x 170 when a big Resi stands on St. Wolfgang (the
+        // teaser), so the outline (x 170) keeps a 1 px gap to her 16×32 box
+        // (x 172..) and never touches it (QA, M3 task E19).
         label: LabelSide::Below,
         label_top: None,
         label_right: Some(172),
         label_alt: Some(LabelSlot {
             top: None,
-            right: Some(171),
+            right: Some(170),
         }),
         path_in: &[(136, 58), (144, 62)],
     },

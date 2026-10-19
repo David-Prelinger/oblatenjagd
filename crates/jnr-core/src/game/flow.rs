@@ -11,7 +11,8 @@
 //! 4. [`ClearPhase::Walk`] right at walk speed until off screen (during 2-4
 //!    the camera's x stays and its y follows her with the play dead zone, so
 //!    a high touch ends at the ground framing, D-040; in climb levels it
-//!    settles on her feet at `camera.climb_goal_feet_y` instead, D-054),
+//!    settles one way only to the pole base at `camera.climb_goal_feet_y`
+//!    instead, D-054 and the D-059 addendum),
 //! 5. [`ClearPhase::Tally`]: one second of time per frame, `score.time_bonus` each,
 //! 6. [`ClearPhase::Clear`]: the stage-clear texts for `goal.clear_frames`,
 //! 7. in the real flow of a run with a route (D-042): the route map
@@ -264,10 +265,19 @@ impl Game {
             let level_h = self.map.height_fx().to_px();
             let t = &self.tuning.camera;
             if self.climb() {
-                // D-054: settle on the feet at `climb_goal_feet_y`, which
-                // frames the meadow like Stages 1–3.
+                // D-054: feet at `climb_goal_feet_y` on the walk ground
+                // line (the pole base), which frames the meadow like
+                // Stages 1–3. Calm (D-059 addendum, E19): the target is
+                // the final framing from the touch on, so the camera
+                // moves one way only and ignores the hop; it never lets
+                // her feet sink below that framing while she slides.
                 let feet = (self.player.y + self.player.h).to_px();
-                self.camera.settle_y(feet - t.climb_goal_feet_y, level_h, t);
+                self.camera.settle_y_towards(
+                    c.base_y - t.climb_goal_feet_y,
+                    feet - t.climb_goal_feet_y,
+                    level_h,
+                    t,
+                );
             } else {
                 let (_, cy) = self.player.center_px();
                 self.camera.follow_y(cy, level_h, t);

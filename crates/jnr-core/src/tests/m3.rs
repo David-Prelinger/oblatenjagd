@@ -181,6 +181,62 @@ fn a_pilger_group_stays_in_file() {
     }
 }
 
+/// A 60-column world, the camera parked at x 0 (the player stands
+/// still), so entities activate left of x 640: a file of pilgrims in row
+/// 11 at columns 38–41 straddles that edge.
+fn straddling(marks: &[(usize, usize, char)]) -> Game {
+    let g = game(&world(60, marks));
+    assert_eq!(g.camera().x, 0);
+    g
+}
+
+#[test]
+fn a_pilger_file_straddling_the_activation_edge_wakes_together() {
+    // QA (E19): the camera stopped with the file across the edge and the
+    // leader (column 39, x < 640) walked off alone; 40 and 41 are past it.
+    let mut g = straddling(&[(11, 39, 'L'), (11, 40, 'p'), (11, 41, 'p')]);
+    let edge = Fx::from_px(640);
+    let before = all(&g, PILGER);
+    assert!(before[0].x < edge && before[1].x >= edge && before[2].x >= edge);
+    safe_step(&mut g);
+    assert!(
+        all(&g, PILGER).iter().all(|p| p.active),
+        "all three at once"
+    );
+    for _ in 0..160 {
+        safe_step(&mut g);
+    }
+    let group = all(&g, PILGER);
+    assert_eq!(group.len(), 3);
+    assert!(group.iter().all(|p| p.dir == -1));
+    for w in group.windows(2) {
+        assert_eq!(w[1].x - w[0].x, Fx::from_px(16), "still in file");
+    }
+    // The same file entered from its other end: the rule is per file,
+    // whichever member wakes first.
+    let mut g = straddling(&[(11, 38, 'p'), (11, 39, 'p'), (11, 40, 'L')]);
+    safe_step(&mut g);
+    assert!(all(&g, PILGER).iter().all(|p| p.active));
+}
+
+#[test]
+fn only_adjacent_pilger_in_the_same_row_form_a_file() {
+    // A gap of one cell, another row, another kind in between: separate.
+    for marks in [
+        vec![(11, 39, 'p'), (11, 41, 'p')],
+        vec![(11, 39, 'p'), (10, 40, 'p')],
+        vec![(11, 39, 'p'), (11, 40, 'a'), (11, 41, 'p')],
+    ] {
+        let mut g = straddling(&marks);
+        safe_step(&mut g);
+        // Left to right (the entity list is in row order).
+        let mut pilgrims = all(&g, PILGER);
+        pilgrims.sort_by_key(|p| p.x);
+        let woke: Vec<bool> = pilgrims.iter().map(|p| p.active).collect();
+        assert_eq!(woke, vec![true, false], "{marks:?}");
+    }
+}
+
 #[test]
 fn lead_only_changes_the_look() {
     let run = |ch: char| {
