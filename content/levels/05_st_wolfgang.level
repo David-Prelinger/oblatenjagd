@@ -52,8 +52,15 @@
 #                             photo stop at 130-133 under an Oblaten arc
 #                             (130-133, rows 9-10: a roof bounce takes
 #                             them), then on under the shelter and off.
-#                             ?-box 142 (row 11), Selfie-Tourist #3 146,
-#                             checkpoint 150, Bus 546 / auch voll 153.
+#                             ?-box 142 (row 11), checkpoint 150, Bus 546
+#                             / auch voll 153. Selfie-Tourist #3 (159) is
+#                             penned at the Markt entrance (153-162,
+#                             between a 1-high bench at 152 and the
+#                             fountain basin): he never waits behind bus
+#                             #2, and a respawned Resi holding LEFT walks
+#                             to the screen edge (x 2264) on open road;
+#                             bus #2 (parked 2144-2208, stopped right edge
+#                             2142) stays off screen left of her.
 #   4 Markt/Kirche  155-209   cobbles from 155. M-box 156 (row 11) between
 #                             bricks 155/157 (6 columns after the
 #                             checkpoint; moved from 158 so the running
@@ -75,9 +82,11 @@
 #   5 Weisses Roessl 210-256  Zahlkellner sign 211; weisses_roessl (back)
 #                             217-228; balcony B1 217-220 (row 11, starts
 #                             at the hotel's left edge, art-director note)
-#                             with Operettensänger #1 at 218 (sings into
-#                             the sky) and an Oblate at 220 (out of his
-#                             column); Glück sign 223, roessl_pferd 226
+#                             with Operettensänger #1 at 219 (sings into
+#                             the sky; 2 tiles of floor left of him for a
+#                             landing from the street, 220 right of him
+#                             for the jump up to B2) and an Oblate at 217;
+#                             Glück sign 223, roessl_pferd 226
 #                             (row 12); Operettensänger #2 at 228 on the
 #                             street (222-232 free; B2 above is one-way:
 #                             his C ends 10 px under it). Upper route: B2
@@ -103,10 +112,11 @@
 #                             above the meadow; meadow row 16 from 280,
 #                             Maibaum 290, Ortsende 293.
 # Oblaten: 75 placed + 1 in the ?-box.
-# Solver (D-066 target narrowest 5-7, three jumps <= 8): the jump over
-# Operettensänger #2 during his inhale (5), the leap from the first jetty
-# over both Seebad gaps onto the quay (5; two jumps via the middle jetty
-# are the relaxed way), the running leap over the Pilgerbrunnen canopy (8).
+# time_limit 260: QA's relaxed run is 87.4 s (x 3 = 262, D-045).
+# Solver (D-066 target narrowest 5-7, three jumps <= 8): narrowest 5, the
+# leap from the first jetty over both Seebad gaps onto the quay (two jumps
+# via the middle jetty are the relaxed way); the next are 11 (the gorge
+# leap) and 12. Gap: only one jump <= 8 since the QA fixes (see D-066).
 # Replays: tests/replays/st_wolfgang_*.replay.
 
 [meta]
@@ -196,11 +206,11 @@ grid = '''
 ....................................................................o...........KKKKKKKK.oo.....................................................................................................................................ooo......K.oo.o.e.Q.........................................................
 ................................................................................RRRRRRRR,,,,......o...............................................................................................H............................&&&&&&....++++++++++.........................................................
 ................................................................................RRRRRRRR,,,,.ooT..,................................oo....................................................................................................(........).........................................................
-..............................................................................RRRRRRRRRR,,,,,,,,,,,...............................o..o...............................q.........................m...6.oooo..Lp.............e.o............(........)..........................ooo........IIIIII..............
+..............................................................................RRRRRRRRRR,,,,,,,,,,,...............................o..o...............................q.........................m...6.oooo..Lp............o.e.............(........)..........................ooo........IIIIII..............
 .............BMB......o.......ooo.............................................RRRRRRRRRR,,,,,,,,,,,.ooo......................ooo..............?............BMB......III..ooo......ooo......###################o..........&&&&............(........).........................^^^^........IIIIII..............
 .....................o.o.....^^^^.............o.f.o...........................RRRRRRRRRR,,,,,,,,,,,,,,,,,....................---.....................................K...........^^^^.....K####################o..................8......(........)...........oo......................KKIIIIII..............
 ..................K..........................KKKKKKK............RRRR..........RRRRRRRRRR:;:::;:::;:::;:::..........................................................o.K.o.................KK#####################o........................(........)....oo............oooo...s[[[..v...KKIIIIII..............
-..P..a.ooooo......K..c...K...s[[[....T...d.1KKKKKKKKz.......RRRRRRRR..........RRRRRRRRRR:::::::::::::::::3......r....ooo..h...4.......x...........T...C..i.......k5KKKKK.....T...s[[[.l.KKK######################..n..........7u....e....(ooo.....)..............=======================IIIIII..............
+..P..a.ooooo......K..c...K...s[[[....T...d.1KKKKKKKKz.......RRRRRRRR..........RRRRRRRRRR:::::::::::::::::3......r....ooo..h...4.......x...............C.Ki.....T.k5KKKKK.....T...s[[[.l.KKK######################..n..........7u....e....(ooo.....)..............=======================IIIIII..............
 jjjjjj==============================================RRRRRRRRRRRRRRRR..........RRRRRRRRRR___________________________________________________________________================================######################===================================jjj~~jjjj~~~~=======================IIIIII9...G..O......
 JwwJwJ==============================================RRRRRRRRRRRRRRRR..........RRRRRRRRRR___________________________________________________________________================================######################===================================JJJwwJJJJwwww=======================,,,,,,,,,,,,,,,,,,,,
 '''

@@ -1,17 +1,17 @@
 # Stage 5 goal, Wurstkranz zone (D-038; game-design.md Stage 5 section 6):
 # the solver route onto the Schiffsstation's roof (row 10, 6 tiles above
-# the meadow) by frame 2028, where Resi stops, walks back towards the roof's
+# the meadow) by frame 2036, where Resi stops, walks back towards the roof's
 # left end and takes a held running jump off its right edge: she grabs the
-# Maibaum high enough for the Wurstkranz, 5000 points (score 9000 -> 14000;
+# Maibaum high enough for the Wurstkranz, 5000 points (score 10100 -> 15100;
 # walking off the same roof scores 100, st_wolfgang_goal_walk_off). Run-ups
 # of 26 to 34 frames from there all reach it (22 or less: 1000-2000). If the
 # solver route changes, re-copy the prefix and re-check the frames.
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = complete frames=2183..2183 score=14000 deaths=0 state=stage_clear
+expect = complete frames=2187..2187 score=15100 deaths=0 state=stage_clear
 ---
-# --- the first 2028 frames of st_wolfgang_solver.replay ---
+# --- the first 2036 frames of st_wolfgang_solver.replay ---
 RB 80
 RBJ 6
 RB 10
@@ -42,41 +42,42 @@ RB 3
 RJ 36
 R 2
 RB 74
-RBJ 20
-RB 40
-RBJ 20
-RB 56
-RBJ 32
-RB 44
-RBJ 20
-RB 34
-RBJ 36
-RB 126
-RBJ 36
-RB 20
-RBJ 20
-RB 11
-RBJ 36
-RB 2
-RBJ 20
-RB 40
-RBJ 36
-RB 18
-RBJ 33
-RB 27
+RBJ 12
+RB 52
 RBJ 36
 RB 24
-R 38
-- 16
-RBJ 33
-RB 5
 RBJ 36
-RB 101
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+RBJ 36
+RB 13
+RBJ 36
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 110
+RBJ 1
+RB 6
+LB 14
+RJ 36
+R 2
+RB 3
+LB 14
+RBJ 20
+RB 125
 RBJ 36
 RB 64
 RBJ 36
 RB 40
-RBJ 22
+RBJ 26
 # --- end of the solver prefix ---
 - 40      # stand on the roof
 L 30      # back towards its left end

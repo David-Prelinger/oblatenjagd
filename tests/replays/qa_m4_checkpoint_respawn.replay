@@ -1,13 +1,16 @@
 # QA M4 checkpoint at col 150: die after it, respawn there with fresh
-# boxes. The solver route past the checkpoint (1180) to the Pilgerbrunnen,
-# a little LEFT in the air: she lands in the Markt lane and stand #2's
-# globe rolls into her (death 1426). Respawn at the checkpoint (1486, x 2402) as
-# Normal; walk right under the M-box (col 156, fresh) and bump it, catch
-# the Mozartkugel when it comes back from the basin.
+# boxes. The solver route past the checkpoint to the Pilgerbrunnen (1290),
+# a little LEFT: she lands in the Markt lane and stand #2's globe rolls
+# into her (death 1411). Respawn at the checkpoint (x 2402) as Normal; wait
+# for Selfie-Tourist #3 (reset in his pen 153-162 between the bench at 152
+# and the basin) to come back to the bench, hop the bench onto him (stomp
+# 100), then under the M-box (col 156, fresh), bump it, catch the
+# Mozartkugel when it comes back from the basin. Re-cut after the M4 level
+# fixes (new solver route, tourist #3 penned at the Markt entrance).
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = dies_at frames=1426..1426 deaths=1 lives=2 event=Respawned event=CheckpointReached event=PowerUp power=big
+expect = dies_at frames=1411..1411 deaths=1 lives=2 event=Respawned event=CheckpointReached event=PowerUp power=big no_event=Hurt score=7200
 ---
 # st_wolfgang_solver inputs to 1290
 RB 80
@@ -40,24 +43,31 @@ RB 3
 RJ 36
 R 2
 RB 74
-RBJ 20
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
 RB 40
-RBJ 20
-RB 56
-RBJ 32
-RB 44
-RBJ 20
+RBJ 36
 RB 34
 RBJ 36
-RB 126
+RB 46
 RBJ 36
-RB 12
-# a little LEFT, into the globe lane: death 1426; respawn 1486
-L 30
-- 166
+RB 24
+RBJ 36
+RB 28
+# a little LEFT, into the globe lane: death 1411, then the respawn
+L 20
+- 200
+# wait for tourist #3 at the bench, hop onto him
+- 126
+R 8
+RJ 12
+- 40
 # to the M-box, bump, catch the Mozartkugel
-R 60
-- 26
+R 16
+- 20
 J 14
 - 160
 R 40

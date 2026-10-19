@@ -2,12 +2,13 @@
 # run onto the shelter; bus #2 stands at its photo stop (130-133) from
 # ~2190; a hop off the shelter lands on its roof (bounce, no points, no
 # damage), bounce on along the roof through the 4 Oblaten over the stop,
-# then stomp Selfie-Tourist #3, who stands right behind the bus during the
-# stop (100), and land on the road.
+# and land on the open road behind it (since the M4 level fix Selfie-Tourist
+# #3 is penned at the Markt entrance, so nobody waits behind the bus; QA's
+# original cut stomped him there for 100).
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt oblaten=24 score=5100
+expect = deaths=0 no_event=Hurt oblaten=24 score=5000
 ---
 # the qa_st_wolfgang_relaxed inputs to 2220 (on the shelter, bus #2 at its photo stop)
 R 150

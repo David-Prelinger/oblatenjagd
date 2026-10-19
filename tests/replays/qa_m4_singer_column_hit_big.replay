@@ -41,8 +41,12 @@ RJ 18
 R 6
 - 345
 R 45
-RJ 12
-R 262
+R 220      # walk to the bench at the Markt entrance (col 152)
+RJ 12      # hop the bench: stomp Selfie-Tourist #3 in his pen (153-162); checkpoint on the way
+R 20
+- 10
+L 6        # back under the M-box
+- 6
 - 26
 J 14
 - 160
