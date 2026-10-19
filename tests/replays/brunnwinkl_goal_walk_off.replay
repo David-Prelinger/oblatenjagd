@@ -1,0 +1,50 @@
+# Badesteg -> Maibaum: the solver route up to frame 1435 (Resi on the
+# boathouse roof), she stops, then walks off the roof's edge: she lands on
+# the meadow before the pole and touches it at its base: 100 points
+# (D-035/D-038: walking off scores 100).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = complete frames=1513..1513 score=6300 deaths=0 state=stage_clear
+# review shots (enable with goldens after an art-director verdict): 1513:touch
+---
+RB 108
+RBJ 36
+RB 47
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 188
+RBJ 1
+RB 18
+L 4
+RJ 36
+R 2
+RB 3
+RBJ 12
+RB 210
+RBJ 6
+RB 22
+RJ 36
+R 2
+RB 34
+RBJ 36
+RB 60
+RBJ 36
+RB 5
+RBJ 1
+RB 32
+RBJ 36
+RB 38
+RBJ 36
+RB 40
+RBJ 36
+RB 32
+RBJ 36
+RB 4
+- 40
+R 40

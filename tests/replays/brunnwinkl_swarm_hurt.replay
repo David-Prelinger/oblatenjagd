@@ -1,0 +1,41 @@
+# Uferweg -> Kornmuehle as Zuckerschock: eat the Mozartkugel (M-box 16,
+# it comes back from the rock wall), climb the wall, wait on the boulder
+# (E-Biker #1 crashes), stomp Nordic-Walker #1 from the boulder, jump the
+# mill race, step onto the hive and jump straight up into swarm #1 (it
+# can't be stomped; contact from below hurts): Resi shrinks, no death.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=Hurt event=Stomped no_event=Died deaths=0 lives=3 state=playing
+# review shots (enable with goldens after an art-director verdict): 1030:swarm
+---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+RJ 30
+R 30
+R 20
+RJ 12
+R 6
+- 20
+J 36
+- 30
+J 36
+- 30
+J 36
+- 30

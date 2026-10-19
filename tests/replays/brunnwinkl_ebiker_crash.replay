@@ -1,0 +1,18 @@
+# Uferweg: Resi jumps the rock wall (19), lands on the boulder (25-26) and
+# waits. E-Biker #1 (col 34) triggers within 9 tiles, telegraphs, rides
+# left and crashes into the boulder below her („Hoppala!", no points);
+# she walks on afterwards. Score = the 5 start Oblaten only.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = score=1000 deaths=0 no_event=Stomped no_event=Hurt state=playing player_x>=490
+# review shots (enable with goldens after an art-director verdict): 340:telegraph 385:hoppala
+---
+R 165
+RJ 24
+R 30
+- 20
+RJ 20
+L 4
+- 160
+R 60

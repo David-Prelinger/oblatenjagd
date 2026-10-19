@@ -1,0 +1,31 @@
+# Fuenf Haeuser: the solver route up to frame 840 (past the checkpoint at
+# col 122), then Resi walks on without jumping into E-Biker #2 (col 146):
+# a side hit as Normal, death at 963. She respawns at the checkpoint
+# (x >= 1952) with the level reset, keeps her score and Oblaten, and
+# walks on.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=CheckpointReached event=Respawned dies_at frames=963..963 deaths=1 lives=2 state=playing player_x>=1952
+# review shots (enable with goldens after an art-director verdict): 963:hit 1040:respawned
+---
+RB 108
+RBJ 36
+RB 47
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 188
+RBJ 1
+RB 18
+L 4
+RJ 36
+R 2
+RB 3
+RBJ 12
+RB 143
+R 200
