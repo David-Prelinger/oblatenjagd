@@ -61,7 +61,7 @@ pub use level::{
 };
 pub use player::{Facing, Player, Power};
 pub use replay::Replay;
-pub use route::{MapPhase, Route, RouteMap, STATIONS, Station};
+pub use route::{LabelSlot, MapPhase, Route, RouteMap, STATIONS, Station};
 pub use text::Texts;
 pub use tuning::Tuning;
 
