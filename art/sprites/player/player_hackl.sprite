@@ -6,6 +6,7 @@
 # head, in `throw` 1 her hand is empty. `crawl` is the squashed big Resi of
 # player_big in the Janker (bottom 14 rows, D-057). Art faces right;
 # mirror = auto. Hitbox 12x30 like player_big.
+# `throw` timing is owned by the engine: frame 0 for 4 frames, then frame 1 for 6.
 sprite = player_hackl
 size   = 16x32
 origin = 8,32
@@ -36,7 +37,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjjk..
 kwik.kgGrRGkek..
 kiimOkgGrRGkEk..
@@ -70,7 +71,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjjk..
 kwik.kgGrRGkek..
 kiimOkgGrRGkEk..
@@ -102,7 +103,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjjk..
 kwik.kgGrRGkek..
 kiimOkgGrRGjkek.
@@ -134,7 +135,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjjk..
 kwik.kgGrRGkek..
 kiimOkgGrRGkEk..
@@ -168,7 +169,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjk...
 kwik.kgGrRGk....
 kiimOkgGrRGk....
@@ -200,7 +201,7 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjjk..
 kwik.kgGrRGkek..
 kiimOkgGrRGkEk..
@@ -366,7 +367,7 @@ kokkOeeeeeepk...
 kYk.kkEeeeEk.kk.
 kok..kweEk..keek
 kYkkggGwrgGkgGEk
-kokkgGGwrgGjjk..
+krkkgGGwrgGjjk..
 kkkkgGGrRGjk....
 kwiOkgGrRGk.....
 kmdOkgGrRGk.....
@@ -399,7 +400,7 @@ kYokkOeeeeeekgGk
 koOk.kkEeeeEkgGk
 kYok..kweEkkgGk.
 koOkkggGwrgGk...
-kYokkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjk...
 kwik.kgGrRGk....
 kiimOkgGrRGk....
@@ -498,7 +499,7 @@ koOkkOeeeeeekeek
 kYok.kkEeeeEkEEk
 koOk..kweEkkgGk.
 kYokkggGwrgGk...
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjkkk.
 kwik.kgGrRGkkeek
 kiimOkgGrRGkkEEk
@@ -531,7 +532,7 @@ koOkkOeeeeeepkk.
 kYok.kkEeeeEkeek
 koOk..kweEk.kEEk
 kYokkggGwrgkgGk.
-koOkkgGGwrgGjk..
+krRkkgGGwrgGjk..
 kkkkkgGGrRGjk...
 kwik.kgGrRGkkkk.
 kiimOkgGrRGkkeek
@@ -564,13 +565,13 @@ kokgGkeeeeeepk..
 kYkgGkkEeeeEk...
 kokgGkkweEk.....
 kYkgGGgGwrgGk...
-koOkkgGGwrgGjk..
-kYokkgGGrRGjjk..
-koOk.kgGrRGkek..
-kYok.kgGrRGkEk..
-koOk.kgGSSSbk...
-krRk.kgGSSSbjk..
-.kk..kjjSSSbjk..
+krRkkgGGwrgGjk..
+kkkkkgGGrRGjjk..
+.....kgGrRGkek..
+.....kgGrRGkEk..
+.....kgGSSSbk...
+.....kgGSSSbjk..
+.....kjjSSSbjk..
 ....krrrSSSbRRk.
 ....krrrSSSbRRk.
 ...krrrrSSSbRRk.
@@ -597,13 +598,13 @@ koOkkOeeeeeepk..
 kYok.kkEeeeEk...
 koOk..kweEk.....
 kYokkggGwrgGkkk.
-koOkkgGGwrgGGjek
-kYokkgGGrRGjkkk.
-koOk.kgGrRGkek..
-kYok.kgGrRGkEk..
-koOk.kgGSSSbk...
-krRk.kgGSSSbjk..
-.kk..kjjSSSbjk..
+krRkkgGGwrgGGjek
+kkkkkgGGrRGjkkk.
+.....kgGrRGkek..
+.....kgGrRGkEk..
+.....kgGSSSbk...
+.....kgGSSSbjk..
+.....kjjSSSbjk..
 ....krrrSSSbRRk.
 ....krrrSSSbRRk.
 ...krrrrSSSbRRk.
@@ -643,8 +644,8 @@ frame crawl 0
 ...kkkkkkkYYYYk.
 ..krYoYoYoYYYYYk
 .krRoOoOoOoYYYOk
-krrrrGGggkOoYOek
-krrrrjjGGjkOkkek
+krrrrggGGkOoYOek
+krrrrGGjjjkOkkek
 kRRRRRRSSbkkeepk
 .kkkkkkSSbkekek.
 kllkeekkkkkekek.
@@ -676,8 +677,8 @@ frame crawl 1
 ...kkkkkkkYYYYk.
 ..krYoYoYoYYYYYk
 .krRoOoOoOoYYYOk
-krrrrGGggkOoYOek
-krrrrjjGGjkOkkek
+krrrrggGGkOoYOek
+krrrrGGjjjkOkkek
 kRRRRRRSSbkkeepk
 .kkkkkkSSbkekkek
 .kllkeekkkkekkek
