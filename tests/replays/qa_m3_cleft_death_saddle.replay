@@ -11,7 +11,7 @@ seed   = 1
 source = handwritten
 expect = dies_at frames=1454..1454 deaths=1 player_y<=310 state=dying
 ---
-# --- the first 1367 frames of falkenstein_solver.replay ---
+# --- the first 1367 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -63,6 +63,6 @@ RBJ 36
 RB 43
 RBJ 36
 RB 27
-# --- end of the first 1367 frames of falkenstein_solver.replay ---
+# --- end of the first 1367 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 R 100     # walks right off the take-off into the cleft (207-209)
 - 20      # dies at the death line, far above the level bottom

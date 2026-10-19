@@ -13,7 +13,7 @@ source = handwritten
 expect = event=PowerUp event=CrawlStarted no_event=Hurt no_event=ExtraLife deaths=0 lives=3 player_y>=150
 shots  = 1626:mouth 1670:crawl 1718:ballast_weg
 ---
-# --- the first 746 frames of falkenstein_solver.replay ---
+# --- the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -45,7 +45,7 @@ RBJ 1
 RB 44
 RBJ 36
 RB 25
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 20
 L 26       # back under the M-box
 - 12

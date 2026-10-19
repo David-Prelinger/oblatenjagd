@@ -74,14 +74,162 @@ fn a_climb_level_starts_with_the_feet_at_148() {
     );
 }
 
-#[test]
-fn the_camera_settles_on_a_higher_ledge_at_2_px_per_frame() {
-    // Floor at row 30, a 3-tile step up from column 4.
+/// 40 rows, 40 columns: floor at row 30, a step `height` tiles up from
+/// column 8, the player at column 2 on the floor.
+fn step_level(height: usize) -> Level {
     let mut rows: Vec<String> = Vec::new();
     for r in 0..40 {
         let row: String = (0..40)
             .map(|c| {
-                if r >= 30 || (c >= 4 && r >= 27) {
+                if r >= 30 || (c >= 8 && r >= 30 - height) {
+                    '#'
+                } else if c == 2 && r == 29 {
+                    'P'
+                } else {
+                    '.'
+                }
+            })
+            .collect();
+        rows.push(row);
+    }
+    let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
+    level_with("climb", &rows)
+}
+
+/// A held jump up the step of [`step_level`]; returns the camera y of every
+/// frame from the take-off until she lands on the step (the landing frame
+/// last).
+fn jump_onto_step(g: &mut Game, height: i32) -> Vec<i32> {
+    until(g, "R", 60, |g| g.player().x.to_px() >= 5 * 16);
+    until(g, "RJ", 60, |g| !g.player().on_ground);
+    let surface = (30 - height) * 16;
+    let mut ys = vec![g.camera().y];
+    while !g.player().on_ground {
+        hold(g, "RJ", 1);
+        ys.push(g.camera().y);
+        assert!(ys.len() < 120, "never landed");
+    }
+    assert_eq!(feet(g), surface, "landed on the step");
+    ys
+}
+
+#[test]
+fn a_3_tile_step_up_keeps_the_ground_below_on_screen() {
+    // D-065: a box she can walk under is 3 tiles high; standing on it the
+    // camera keeps the floor's framing.
+    let mut g = Game::new(&step_level(3), &tuning(), 1);
+    let start_y = g.camera().y;
+    assert_eq!(start_y, 480 - 148);
+    let ys = jump_onto_step(&mut g, 3);
+    hold(&mut g, "-", 120);
+    assert!(
+        ys.iter().all(|&y| y == start_y),
+        "never moves in the air: {ys:?}"
+    );
+    assert_eq!(g.camera().y, start_y, "stays on the step");
+    assert_eq!(480 - g.camera().y, 148, "the floor stays at screen y 148");
+    // Back down: still nothing to do.
+    until(&mut g, "L", 120, |g| g.player().on_ground && feet(g) == 480);
+    hold(&mut g, "-", 30);
+    assert_eq!(g.camera().y, start_y);
+}
+
+#[test]
+fn walking_on_along_higher_ground_settles_on_it() {
+    // D-065: the slack keeps the floor's framing only near the step-up;
+    // walking on along a 2-tile terrace, the camera settles on it as before
+    // (so a long staircase doesn't leave the camera low for good).
+    let mut g = Game::new(&step_level(2), &tuning(), 1);
+    let start_y = g.camera().y;
+    jump_onto_step(&mut g, 2);
+    let landed_x = g.player().center_px().0;
+    hold(&mut g, "-", 30);
+    assert_eq!(g.camera().y, start_y, "held near the step-up");
+    until(&mut g, "R", 120, |g| {
+        g.player().center_px().0 > landed_x + 48
+    });
+    hold(&mut g, "-", 30);
+    assert_eq!(g.camera().y, 448 - 148, "settled on the terrace");
+}
+
+#[test]
+fn a_4_tile_step_up_settles_by_16_px_at_2_px_per_frame() {
+    let mut g = Game::new(&step_level(4), &tuning(), 1);
+    let start_y = g.camera().y;
+    let ys = jump_onto_step(&mut g, 4);
+    let (landing, air) = ys.split_last().unwrap();
+    assert!(air.iter().all(|&y| y == start_y), "in the air: {ys:?}");
+    assert_eq!(*landing, start_y - 2, "the landing frame settles 2 px");
+    // Grounded on the step: 2 px per frame up to the excess over the slack.
+    let target = start_y - 16;
+    let mut prev = g.camera().y;
+    while g.camera().y != target {
+        hold(&mut g, "-", 1);
+        assert_eq!(prev - g.camera().y, 2.min(prev - target));
+        prev = g.camera().y;
+        assert!(g.frame() < 400);
+    }
+    hold(&mut g, "-", 10);
+    assert_eq!(g.camera().y, target, "stays at the target");
+}
+
+#[test]
+fn a_shaft_of_planks_3_tiles_apart_keeps_resi_on_screen() {
+    // Floor at row 38, one-way planks every 3 tiles up to row 14. With the
+    // slack (D-065) the first plank keeps the framing and every further one
+    // moves it by 3 tiles; grounded, her top is never above `climb_top`.
+    let planks = [35, 32, 29, 26, 23, 20, 17, 14];
+    let mut rows: Vec<String> = Vec::new();
+    for r in 0..40 {
+        let row: String = (0..20)
+            .map(|c| {
+                if r >= 38 {
+                    '#'
+                } else if planks.contains(&r) {
+                    '-'
+                } else if c == 2 && r == 37 {
+                    'P'
+                } else {
+                    '.'
+                }
+            })
+            .collect();
+        rows.push(row);
+    }
+    let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
+    let mut g = Game::new(&level_with("climb", &rows), &tuning(), 1);
+    let t = tuning().camera;
+    assert_eq!(g.camera().y, 608 - 148);
+    for (i, &plank) in planks.iter().enumerate() {
+        let surface = plank * 16;
+        until(&mut g, "J", 120, |g| {
+            let on_screen = top(g) >= g.camera().y && feet(g) <= g.camera().y + SCREEN_H;
+            assert!(on_screen, "plank {plank}: off screen");
+            g.player().on_ground && feet(g) == surface
+        });
+        for _ in 0..60 {
+            hold(&mut g, "-", 1);
+            assert!(
+                top(&g) - g.camera().y >= t.climb_top,
+                "plank {plank}: top at screen y {}",
+                top(&g) - g.camera().y
+            );
+        }
+        let want = if i == 0 { 608 } else { surface + 48 };
+        assert_eq!(g.camera().y, want - 148, "plank {plank}");
+    }
+}
+
+#[test]
+fn a_cleft_beside_a_box_still_kills_at_the_death_line() {
+    // Floor at row 30 (columns 0..12), a 3-tile box on it at columns 8..12,
+    // then bottomless. She jumps onto the box (the camera keeps the floor's
+    // framing, D-065) and walks off its far side.
+    let mut rows: Vec<String> = Vec::new();
+    for r in 0..40 {
+        let row: String = (0..40)
+            .map(|c| {
+                if c < 12 && (r >= 30 || (c >= 8 && r >= 27)) {
                     '#'
                 } else if c == 2 && r == 29 {
                     'P'
@@ -94,33 +242,16 @@ fn the_camera_settles_on_a_higher_ledge_at_2_px_per_frame() {
     }
     let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
     let mut g = Game::new(&level_with("climb", &rows), &tuning(), 1);
-    let start_y = g.camera().y;
-    assert_eq!(start_y, 480 - 148);
-    // A held jump up the step: the camera holds still in the air.
-    until(&mut g, "RJ", 60, |g| !g.player().on_ground);
-    let mut ys = vec![g.camera().y];
-    for _ in 0..24 {
-        hold(&mut g, "RJ", 1);
-        ys.push(g.camera().y);
-    }
-    until(&mut g, "R", 120, |g| {
-        g.player().on_ground && feet(g) == 27 * 16
-    });
-    ys.push(g.camera().y);
-    assert!(
-        ys.iter().all(|&y| (start_y - 2..=start_y).contains(&y)),
-        "still in the air: {ys:?}"
-    );
-    // Grounded on the step: 2 px per frame up to feet − 148.
-    let mut prev = g.camera().y;
-    while g.camera().y != 432 - 148 {
-        hold(&mut g, "-", 1);
-        assert_eq!(prev - g.camera().y, 2.min(prev - (432 - 148)));
-        prev = g.camera().y;
-        assert!(g.frame() < 400);
-    }
-    hold(&mut g, "-", 10);
-    assert_eq!(g.camera().y, 432 - 148, "stays at the target");
+    jump_onto_step(&mut g, 3);
+    assert_eq!(g.camera().y, 480 - 148);
+    let events = walk_off(&mut g);
+    assert!(events.contains(&Event::Died), "{events:?}");
+    assert_eq!(g.death_cause(), Some(DeathCause::Pit));
+    let cam = g.camera().y;
+    // The fall-follow limit is measured from the box (her last ground),
+    // as without the slack, so the death line is where it always was.
+    assert_eq!(cam, 432 - 148 + 80, "the box's framing + the fall limit");
+    assert!(top(&g) >= cam + SCREEN_H && top(&g) < cam + SCREEN_H + 4);
 }
 
 #[test]

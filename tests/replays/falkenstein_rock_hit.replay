@@ -8,7 +8,7 @@ source = handwritten
 expect = dies_at frames=623..623
 shots  = 609:telegraph 619:falling
 ---
-# --- the first 560 frames of falkenstein_solver.replay ---
+# --- the first 560 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -29,7 +29,7 @@ RB 10
 RBJ 1
 RB 8
 L 4
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30
 R 22       # under rock #2
 - 60

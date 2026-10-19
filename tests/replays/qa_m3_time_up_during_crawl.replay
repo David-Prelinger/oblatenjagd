@@ -12,7 +12,7 @@ source = handwritten
 expect = event=CrawlStarted dies_at frames=15300..15300 deaths=1 lives=2 no_event=ExtraLife event=Respawned
 expect = state=playing power=normal player_y>=394 player_y<=394 player_x>=1858
 ---
-# --- the first 1000 frames of falkenstein_solver.replay ---
+# --- the first 1000 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -56,7 +56,7 @@ RBJ 20
 RB 16
 RBJ 20
 RB 95
-# --- end of the first 1000 frames of falkenstein_solver.replay ---
+# --- end of the first 1000 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30
 R 50      # into the boulder's face, facing right
 - 14181   # wait at the mouth until the timer shows 1

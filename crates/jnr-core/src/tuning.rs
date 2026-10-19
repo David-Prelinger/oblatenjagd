@@ -219,6 +219,13 @@ pub struct CameraTuning {
     pub climb_feet_y: i32,
     /// Climb camera: most px per frame the camera moves while settling.
     pub climb_settle_speed: i32,
+    /// Climb camera (D-065): grounded, the framing stays while the feet are
+    /// at most this many px above the ground it last settled on; higher, it
+    /// settles up by the excess only.
+    pub climb_up_slack: i32,
+    /// Climb camera (D-065): the slack holds only while she stays within
+    /// this many px (horizontally) of where she stepped up.
+    pub climb_up_reach: i32,
     /// Climb camera: in the air, the camera follows up at once when the
     /// hitbox top is above this screen y.
     pub climb_top: i32,
@@ -949,6 +956,16 @@ impl Tuning {
                 "tuning.toml: camera.climb_settle_speed must be 1..=16 px/frame",
             ));
         }
+        if !(0..=c.climb_feet_y - c.climb_top).contains(&c.climb_up_slack) {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 <= camera.climb_up_slack <= climb_feet_y - climb_top",
+            ));
+        }
+        if !(0..=crate::camera::SCREEN_W).contains(&c.climb_up_reach) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_up_reach must be 0..=320 px",
+            ));
+        }
         for (name, v) in [
             ("camera.climb_fall_follow", c.climb_fall_follow),
             ("camera.climb_activate_y", c.climb_activate_y),
@@ -1182,6 +1199,10 @@ mod tests {
             ("climb_top", -1),
             ("climb_settle_speed", 0),
             ("climb_settle_speed", 17),
+            ("climb_up_slack", -1),
+            ("climb_up_slack", 109),
+            ("climb_up_reach", -1),
+            ("climb_up_reach", 321),
             ("climb_fall_follow", -1),
             ("climb_fall_follow", 181),
             ("climb_goal_feet_y", 0),
