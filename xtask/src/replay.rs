@@ -536,11 +536,12 @@ mod tests {
         assert_eq!(first_difference(&[1, 2], &[1, 2, 3]), Some(2));
     }
 
-    /// D-036: the Stage 1 tour is the title intro, then the solver route
-    /// unchanged, then 800 idle frames for the Maibaum sequence. A re-solve
-    /// that changes the route must be copied into the tour.
+    /// D-036: each stage tour is the title intro, then the stage's solver
+    /// route unchanged, then 800 idle frames for the Maibaum sequence (and
+    /// the route map). A re-solve that changes a route must be copied into
+    /// its tour.
     #[test]
-    fn salzburg_tour_replays_the_solver_route() {
+    fn stage_tours_replay_the_solver_route() {
         let frames = |name: &str| -> Vec<u64> {
             let path = root().join("tests/replays").join(name);
             let replay = Replay::parse(&fs::read_to_string(&path).unwrap()).unwrap();
@@ -548,27 +549,29 @@ mod tests {
         };
         let (none, start) = (0, u64::from(InputFrame::START.bits()));
         let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
-        let route = frames("salzburg_solver.replay");
-        let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
-        let tour = frames("salzburg_tour.replay");
-        if let Some(i) = first_difference(&tour, &expected) {
-            let part = if i < intro.len() {
-                "the title/intro prefix `- 20`, `S 1`, `- 150`"
-            } else if i < intro.len() + route.len() {
-                "the solver route"
-            } else {
-                "the Maibaum outro `- 800`"
-            };
-            panic!(
-                "tests/replays/salzburg_tour.replay differs at frame {i}, in {part} (tour {} \
-                 frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs of \
-                 tests/replays/salzburg_solver.replay unchanged, then `- 800` (D-036). If \
-                 `cargo xtask solve salzburg --write` changed the route, re-copy its inputs \
-                 into the tour, update its `expect` frames and re-pick the shot frames (new \
-                 goldens need an art-director verdict).",
-                tour.len(),
-                expected.len()
-            );
+        for stage in ["salzburg", "st_gilgen", "brunnwinkl"] {
+            let route = frames(&format!("{stage}_solver.replay"));
+            let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+            let tour = frames(&format!("{stage}_tour.replay"));
+            if let Some(i) = first_difference(&tour, &expected) {
+                let part = if i < intro.len() {
+                    "the title/intro prefix `- 20`, `S 1`, `- 150`"
+                } else if i < intro.len() + route.len() {
+                    "the solver route"
+                } else {
+                    "the Maibaum outro `- 800`"
+                };
+                panic!(
+                    "tests/replays/{stage}_tour.replay differs at frame {i}, in {part} (tour {} \
+                     frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs \
+                     of tests/replays/{stage}_solver.replay unchanged, then `- 800` (D-036). \
+                     If `cargo xtask solve {stage} --write` changed the route, re-copy its \
+                     inputs into the tour, update its `expect` frames and re-pick the shot \
+                     frames (new goldens need an art-director verdict).",
+                    tour.len(),
+                    expected.len()
+                );
+            }
         }
     }
 

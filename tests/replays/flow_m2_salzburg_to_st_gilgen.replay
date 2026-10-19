@@ -1,0 +1,75 @@
+# M2 flow on the real stages (D-042/D-047, task E12): Salzburg clear → route
+# map → St. Gilgen intro with carry-over. The title flow (start = title),
+# the inputs of salzburg_solver.replay unchanged from frame 171 (like
+# salzburg_tour), the Maibaum sequence and the route map: Arrive from
+# frame 2365, Walk to St. Gilgen, Wait with the prompt; START in Wait (frame
+# 2561) starts St. Gilgen's intro with score, lives and Oblaten carried
+# over, the new stage's timer and no checkpoint. If the solver route
+# changes, re-copy it and re-pick the frames. Shots: the route map after
+# Salzburg (route-map goldens: Arrive without the panel = every label
+# readable, Walk, Wait with the prompt), the St. Gilgen
+# intro and its first play frame with the carried-over HUD.
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1772..1772 deaths=0 no_event=Respawned
+expect = state=playing stage=st_gilgen lives=3 oblaten=37 score=22300
+shots  = 2385:map_labels 2440:map_walk 2500:map_wait 2640:st_gilgen_intro 2720:st_gilgen_hud
+---
+- 20
+S 1       # frame 21: title → Salzburg intro
+- 150     # play starts at frame 171
+# --- salzburg_solver.replay inputs, unchanged ---
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 62
+RBJ 20
+RB 40
+# --- end of salzburg_solver.replay ---
+- 788     # Maibaum sequence, tally, route map: Arrive from 2365, Walk, Wait
+S 1       # frame 2561: START in Wait → St. Gilgen intro
+- 150     # St. Gilgen intro (carry-over), play from frame 2711
+R 20      # a few steps into St. Gilgen (before its first Oblate)

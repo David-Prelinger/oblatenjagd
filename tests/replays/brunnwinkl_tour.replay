@@ -1,0 +1,57 @@
+# Stage 3 golden tour (task E12, D-036 style): the real game from the title
+# with the run started at Brunnwinkl (`level = brunnwinkl`, D-047): START at
+# frame 21, stage intro 21..170, then the inputs of brunnwinkl_solver.replay
+# unchanged from frame 171 (re-copy them after `cargo xtask solve brunnwinkl
+# --write`; the xtask tour coupling test checks it), then 800 idle frames:
+# the Maibaum sequence, the tally, the route-map teaser to Falkenstein
+# („Fortsetzung folgt …") and the title, with the run reset to its first
+# stage (here Brunnwinkl, the `level` it started at).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1644..1644 deaths=0 state=title stage=brunnwinkl score=0 lives=3
+shots  = 0:title 60:intro 200:uferweg 360:ebiker 480:kornmuehle 830:bienenhaus 958:checkpoint 1305:fuenf_haeuser 1530:badesteg 1644:maibaum 1860:tally 2220:teaser
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 108
+RBJ 36
+RB 47
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 188
+RBJ 1
+RB 18
+L 4
+RJ 36
+R 2
+RB 3
+RBJ 12
+RB 210
+RBJ 6
+RB 22
+RJ 36
+R 2
+RB 34
+RBJ 36
+RB 60
+RBJ 36
+RB 5
+RBJ 1
+RB 32
+RBJ 36
+RB 38
+RBJ 36
+RB 40
+RBJ 36
+RB 32
+RBJ 36
+RB 42
+- 800     # Maibaum sequence, tally, route map
