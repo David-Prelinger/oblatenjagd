@@ -88,7 +88,7 @@ title = "Etappe 3: Brunnwinkl"
 tagline = "Fünf Häuser, null Ruhe."
 next = "Weiter zum Falkenstein."
 # Level signs (entity `sign`), in the order of the stage.
-sign_bus = "Bus 150\nanderes Ufer"
+sign_bus = "Bus 150\nfährt drüben"
 sign_gehweg = "Gehweg\nnicht Radweg"
 sign_haeuser = "Fünf Häuser\nam See"
 sign_muehle = "Frischluft\nseit 1882"
