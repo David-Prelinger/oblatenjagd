@@ -33,6 +33,13 @@ water_sink_px = 8         # px the feet sink into water before it kills (D-050);
 follow_x = 144            # px: camera scrolls right once the player's centre passes this screen x
 deadzone_top = 64         # px: vertical dead zone for the player's centre (screen y)
 deadzone_bottom = 120
+# Climb camera, levels with `[meta] camera = "climb"` (D-054); other levels ignore these.
+climb_feet_y = 148        # px: grounded, the camera settles with the feet at this screen y ...
+climb_settle_speed = 2    # ... moving at most 2 px per frame
+climb_top = 40            # px: in the air it follows up at once when the hitbox top is above this screen y
+climb_fall_follow = 80    # px: and follows a fall at most this far below the last ground's settle framing
+climb_goal_feet_y = 164   # px: the goal sequence settles the feet here (frames the meadow like Stages 1-3)
+climb_activate_y = 64     # px: an entity activates only while its spawn cell is this close to the screen vertically
 
 [game]
 death_frames = 60         # 1 s from death to respawn

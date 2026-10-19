@@ -21,12 +21,12 @@ pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
-use crate::camera::{Camera, SCREEN_W};
+use crate::camera::{Camera, ClimbFocus, SCREEN_H, SCREEN_W};
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
-use crate::level::{Block, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
+use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
 use crate::player::{Player, Power};
 use crate::rng::Rng;
@@ -213,6 +213,9 @@ pub struct Game {
     goals: Arc<[Aabb]>,
     pub(crate) player: Player,
     pub(crate) camera: Camera,
+    /// Climb camera (D-054): the feet height (whole px) of the last
+    /// grounded frame; unused (0) in side levels.
+    ground_feet: i32,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
@@ -307,6 +310,7 @@ impl Game {
             goals,
             player,
             camera: Camera { x: 0, y: 0 },
+            ground_feet: 0,
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
@@ -468,15 +472,44 @@ impl Game {
         if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
             self.touch_goal(goal);
         }
-        self.camera.follow(
-            self.player.center_px(),
-            self.map.width_fx().to_px(),
-            self.map.height_fx().to_px(),
-            &self.tuning.camera,
-        );
+        self.follow_camera();
+        // The climb camera's death line (D-054): the hitbox top below the
+        // screen is a fall out of the level.
+        if self.mode == Mode::Playing
+            && self.climb()
+            && hb.y > Fx::from_px(self.camera.y + SCREEN_H)
+        {
+            self.die(DeathCause::Pit);
+            return;
+        }
         if self.mode == Mode::Playing {
             self.tick_timer();
         }
+    }
+
+    /// True in a `camera = "climb"` level (D-054).
+    fn climb(&self) -> bool {
+        self.level.meta.camera == CameraMode::Climb
+    }
+
+    /// One frame of the level's camera (side: dead zone; climb: D-054).
+    fn follow_camera(&mut self) {
+        let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+        let t = &self.tuning.camera;
+        if !self.climb() {
+            self.camera.follow(self.player.center_px(), w, h, t);
+            return;
+        }
+        let p = &self.player;
+        let mut focus = ClimbFocus {
+            cx: p.center_px().0,
+            top: p.y.to_px(),
+            feet: (p.y + p.h).to_px(),
+            grounded: p.on_ground,
+            ground_feet: self.ground_feet,
+        };
+        self.camera.follow_climb(&mut focus, w, h, t);
+        self.ground_feet = focus.ground_feet;
     }
 
     /// D-051: the player's own movement stops at the screen's left edge,
@@ -596,13 +629,19 @@ impl Game {
         self.static_hash = static_hash;
     }
 
+    /// The camera on the player at the start, on respawn and on a stage
+    /// change (climb: at the settle target at once, D-054).
     fn place_camera(&mut self) {
-        self.camera = Camera::new(
-            self.player.center_px(),
-            self.map.width_fx().to_px(),
-            self.map.height_fx().to_px(),
-            &self.tuning.camera,
-        );
+        let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+        let t = &self.tuning.camera;
+        if self.climb() {
+            let feet = (self.player.y + self.player.h).to_px();
+            self.camera = Camera::new_climb(self.player.center_px().0, feet, w, h, t);
+            self.ground_feet = feet;
+        } else {
+            self.camera = Camera::new(self.player.center_px(), w, h, t);
+            self.ground_feet = 0;
+        }
     }
 
     // ------------------------------------------------------------ blocks
@@ -792,6 +831,10 @@ impl Game {
     fn update_entities(&mut self) {
         let g = &self.tuning.game;
         let activate_x = Fx::from_px(self.camera.x + SCREEN_W + g.activate_margin);
+        // Climb levels: also only near the screen vertically (D-054).
+        let climb = self.climb();
+        let (camera, margin_y) = (self.camera, self.tuning.camera.climb_activate_y);
+        let level = &self.level;
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
         let ctx = UpdateCtx {
@@ -806,7 +849,10 @@ impl Game {
         for e in &mut self.entities {
             // Snapshot for the stomp rule (previous-frame position).
             e.prev_y = e.y;
-            if !e.active && e.x < activate_x {
+            if !e.active
+                && e.x < activate_x
+                && (!climb || spawn_row_near(level, e, camera, margin_y))
+            {
                 e.active = true;
                 e.timer = 0;
             }
@@ -1156,6 +1202,7 @@ impl Game {
         }
         self.player.hash(&mut h);
         self.camera.hash(&mut h);
+        h.i32(self.ground_feet);
         h.u64(self.rng.state());
         h.u32(self.deaths);
         self.hash_tiles(&mut h);
@@ -1344,6 +1391,17 @@ impl Game {
     pub fn tuning(&self) -> &Tuning {
         &self.tuning
     }
+}
+
+/// D-054: in a climb level an entity activates only while its spawn cell
+/// (or, for entities without a spawn, its hitbox's top row) is within
+/// `margin` px of the screen vertically ([`Camera::row_near`]).
+pub fn spawn_row_near(level: &Level, e: &Entity, camera: Camera, margin: i32) -> bool {
+    let row = match e.spawn.and_then(|i| level.entities.get(usize::from(i))) {
+        Some(s) => s.row,
+        None => tile_of(e.y),
+    };
+    camera.row_near(row, margin)
 }
 
 /// The parts of a game derived from its level alone: the start grid, the

@@ -15,6 +15,10 @@ use jnr_core::{InputFrame, Level, Start};
 /// follows `jnr_core::route::Route::standard` over all of these (D-047).
 pub const LEVELS: &[(&str, &str)] = &[
     (
+        "climb_test",
+        include_str!("../../../content/levels/00_climb_test.level"),
+    ),
+    (
         "enemies",
         include_str!("../../../content/levels/00_enemies.level"),
     ),

@@ -161,6 +161,22 @@ pub struct CameraTuning {
     pub deadzone_top: i32,
     /// Lower edge of the vertical dead zone (screen y of the player's centre).
     pub deadzone_bottom: i32,
+    /// Climb camera (`[meta] camera = "climb"`, D-054): screen y the feet
+    /// settle at while grounded.
+    pub climb_feet_y: i32,
+    /// Climb camera: most px per frame the camera moves while settling.
+    pub climb_settle_speed: i32,
+    /// Climb camera: in the air, the camera follows up at once when the
+    /// hitbox top is above this screen y.
+    pub climb_top: i32,
+    /// Climb camera: in the air it follows the feet down at most this many
+    /// px below the settle framing of the last ground.
+    pub climb_fall_follow: i32,
+    /// Climb camera: screen y the feet settle at during the goal sequence.
+    pub climb_goal_feet_y: i32,
+    /// Climb levels: a level entity activates only while its spawn cell is
+    /// at most this many px above or below the screen.
+    pub climb_activate_y: i32,
 }
 
 /// Game flow constants.
@@ -733,6 +749,32 @@ impl Tuning {
                 "tuning.toml: need 0 <= camera.deadzone_top <= camera.deadzone_bottom < 180",
             ));
         }
+        let h = crate::camera::SCREEN_H;
+        if !(0 <= c.climb_top && c.climb_top < c.climb_feet_y && c.climb_feet_y <= h) {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 <= camera.climb_top < camera.climb_feet_y <= 180",
+            ));
+        }
+        if !(1..=h).contains(&c.climb_goal_feet_y) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_goal_feet_y must be 1..=180",
+            ));
+        }
+        if !(1..=TILE_PX).contains(&c.climb_settle_speed) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_settle_speed must be 1..=16 px/frame",
+            ));
+        }
+        for (name, v) in [
+            ("camera.climb_fall_follow", c.climb_fall_follow),
+            ("camera.climb_activate_y", c.climb_activate_y),
+        ] {
+            if !(0..=h).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=180 px"
+                )));
+            }
+        }
         Ok(())
     }
 }
@@ -861,6 +903,17 @@ mod tests {
             ("walk_px", 9),
             ("wait_frames", 0),
             ("teaser_frames", 0),
+            ("climb_feet_y", 181),
+            ("climb_feet_y", 40),
+            ("climb_top", -1),
+            ("climb_settle_speed", 0),
+            ("climb_settle_speed", 17),
+            ("climb_fall_follow", -1),
+            ("climb_fall_follow", 181),
+            ("climb_goal_feet_y", 0),
+            ("climb_goal_feet_y", 181),
+            ("climb_activate_y", -1),
+            ("climb_activate_y", 181),
         ]
         .map(|(f, v)| (f, v.to_string()))
         .into_iter()
