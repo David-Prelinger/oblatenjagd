@@ -35,13 +35,19 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 34
-RBJ 6
-RB 56
-RBJ 2
-RB 6
-RBJ 12
-RB 31
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
 RBJ 36
 RB 40
 LBJ 12
@@ -53,17 +59,17 @@ LB 8
 LBJ 33
 LB 5
 RBJ 20
-RB 17
+RB 16
 RBJ 20
-RB 99
+RB 101
 RBJ 36
-RB 76
-RBJ 2
-RB 108
+RB 44
+RBJ 20
+RB 119
 RBJ 36
-RB 40
+RB 43
 RBJ 36
-RB 28
+RB 26
 # --- end of the first 1366 frames of falkenstein_solver.replay ---
 R 100     # into the saddle cleft: death 1 (1625)
 - 250     # intro, respawn at the checkpoint (col 116, behind the curb)

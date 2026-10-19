@@ -7,7 +7,7 @@
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = complete frames=1581..1581 deaths=0
+expect = complete frames=1583..1583 deaths=0
 ---
 # --- the first 1480 frames of falkenstein_solver.replay ---
 RB 40
@@ -26,13 +26,19 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 34
-RBJ 6
-RB 56
-RBJ 2
-RB 6
-RBJ 12
-RB 31
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
 RBJ 36
 RB 40
 LBJ 12
@@ -44,22 +50,22 @@ LB 8
 LBJ 33
 LB 5
 RBJ 20
-RB 17
+RB 16
 RBJ 20
-RB 99
+RB 101
 RBJ 36
-RB 76
-RBJ 2
-RB 108
+RB 44
+RBJ 20
+RB 119
 RBJ 36
-RB 40
+RB 43
 RBJ 36
-RB 28
+RB 27
 RBJ 20
 RB 40
 RBJ 20
 RB 9
-RBJ 25
+RBJ 24
 # --- end of falkenstein_solver.replay ---
 - 60       # stand on the Aberseeblick
 R 40       # walk off its right edge

@@ -11,7 +11,7 @@ level  = falkenstein
 seed   = 1
 source = handwritten
 expect = event=PowerUp event=CrawlStarted no_event=Hurt no_event=ExtraLife deaths=0 lives=3 player_y>=150
-shots  = 1676:mouth 1720:crawl 1768:ballast_weg
+shots  = 1626:mouth 1670:crawl 1718:ballast_weg
 ---
 # --- the first 746 frames of falkenstein_solver.replay ---
 RB 40
@@ -30,15 +30,21 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 34
-RBJ 6
-RB 56
-RBJ 2
-RB 6
-RBJ 12
-RB 31
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
 RBJ 36
-RB 26
+RB 25
 # --- end of falkenstein_solver.replay ---
 - 20
 L 26       # back under the M-box
@@ -46,7 +52,7 @@ L 26       # back under the M-box
 J 10       # bump: Mozartkugel
 - 40
 R 100      # after it into the shaft (Zuckerschock)
-- 90
+- 40
 J 24       # floor -> plank row 23
 - 40
 R 17       # to column 125

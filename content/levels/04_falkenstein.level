@@ -3,16 +3,17 @@
 # 40 (rows 40-41, the level bottom); the stage climbs to the church plateau
 # (row 11) and ends on the goal meadow (row 16), whose rows 0-16 copy the
 # Stage 1-3 goal layout. Under every walking surface kalkfels runs down to
-# the level bottom, except in the two clefts (111-113 and 207-209).
+# the level bottom, except in the two clefts (110-112 and 207-209).
 #   1 Fürberg          0-27   jetty 0-4 (start col 2), shore path row 40.
 #                             Bus 150 / nur z'Fuß sign 5; Gasthof Fürberg
 #                             (back, cell 12 + dx -56: house 5-11, beer
 #                             garden 10-13, so the B M B row at 12-14 / row
 #                             36 is clear of its upper windows); 5 Oblaten
 #                             7-11; M-box 13 (row 36, 4 up) between bricks;
-#                             garden wall (stone) 16, 2 high, turns the
-#                             Mozartkugel; Weg 28 sign 20; Pilger #1 at 26
-#                             on flat ground (paces 17-27 between the wall
+#                             garden wall (stone) 17, 2 high: the
+#                             Mozartkugel bounces off it and comes back to
+#                             the box; Weg 28 sign 20; Pilger #1 at 26 on
+#                             flat ground (paces 18-27 between the wall
 #                             and the first step).
 #   2 Kreuzweg        28-79   forest_path steps on kalkfels: 39 (28-33),
 #                             38 (34-38), 36 (39-45), 34 (46-64): the first
@@ -34,21 +35,29 @@
 #                             (niche bottoms 6 tiles above the path). Sign
 #                             81; rock #1 at 88 (range 9) over the net 86-90
 #                             (row 25, posts 86/90); rock #2 at 92;
-#                             Gamswild sign 94; Gams #1 on the shelf 95-99
-#                             (row 24, 3 tiles of headroom under it, 4 of
-#                             air above it; the tongue at 100 and the
-#                             shelf's left end turn it); step up 2 at 103
-#                             (101-102 under open overhang, so it can be
-#                             jumped); rocks #3 105 and #4 107 (period 150,
+#                             Gamswild sign 97 (under the shelf, below the
+#                             Gams); a fallen rock on the path
+#                             at 93 (1 high) under open sky (the overhang
+#                             is cut back over 93-94): from its top a
+#                             walking jump stomps Gams #1 while it stands
+#                             or reaches its shelf (95-99, row 25: 3 above
+#                             the path, 2 rows of headroom under it, 4 of
+#                             air above it; its ends turn the Gams). A
+#                             short rock stub hangs over 100 (row 22, both
+#                             sizes walk off the shelf's right end under
+#                             it). Step up 2 at 103 (101-102 open, so it
+#                             can be jumped); rocks #3 105 and #4 107 (period 150,
 #                             phases 0/75) over path row 26 (4 tiles); the
 #                             overhang rises to row 16 from 108, so the
 #                             cleft 110-112 (3 wide, bottomless, flat row
 #                             26 both sides, no rock column within 2 tiles)
-#                             is a free walking jump. Checkpoint 114, curb
-#                             115 (1 high), M-box 117 (row 22, 3 columns
-#                             after the checkpoint), Bus 150 / winzig, voll
-#                             sign 119 (D-039). The Mozartkugel rolls
-#                             between the curb and the shaft's right wall.
+#                             is a free walking jump. Curb 115 (1 high),
+#                             checkpoint 116 behind it (holding LEFT after a
+#                             respawn can't walk into the cleft), M-box 117
+#                             (row 22, 1 column after the checkpoint), Bus
+#                             150 / winzig, voll sign 119 (D-039). The
+#                             Mozartkugel rolls between the curb and the
+#                             shaft's right wall.
 #   4 Falkensteinwand 120-131 left wall 120 (rows 0-20, entrance rows 21-25:
 #                             the first plank jump is made in the open),
 #                             right wall 130-131 (row 11 down), inner 121-
@@ -73,16 +82,22 @@
 #                             4 above the plateau: an optional held jump up
 #                             through it); Z-box 160 row 4 hangs in the
 #                             cave with air above it (the item rises into
-#                             row 3), the cave walls stop the Zaunerstollen.
+#                             row 3). The cave opens to the right (162-163,
+#                             rows 5-6): walk out and drop 4 to the plateau
+#                             (the Zaunerstollen can roll out the same way).
 #                             „Einsiedelei" sign 160 (under the cave,
 #                             clear of the stone exit's popups). No enemies.
 #   6 Sattel/Maibaum  170-239 one step down (row 12) from the plateau, so
 #                             nothing walks back to the church. Hacklwurf
-#                             sign 167 (on the plateau), hackelwurfkapelle 173 with a
-#                             taube_sitting on Wolfgang's head (173, row 9,
-#                             dy -4: perched right above the mitre tip).
-#                             H-box at the plateau's end (166, row 7, 4
-#                             up; the Hackl stays on it), so the stretch
+#                             sign 167 (on the plateau), hackelwurfkapelle
+#                             173 with a taube_sitting on Wolfgang's head
+#                             (173, row 9, dy -4: perched right above the
+#                             mitre tip; it takes off at 6 tiles). H-box
+#                             at 164 (row 8, 2 rows above the plateau: the
+#                             Hackl on its top is a plain standing jump for
+#                             either size, and the pickup spot is 9 tiles
+#                             from the pigeon, out of its trigger). The
+#                             wall above it runs to 164. The stretch
 #                             170-194 is a clear axe lane with no box over
 #                             it; pilger group C 191-193 (lead 191) walks
 #                             left over it from 15+ tiles away.
@@ -185,11 +200,11 @@ grid = '''
 ................................................................................#############..#############............#::::wwwww#############################################################################...##############################
 ................................................................................########r###s.......#####t#u............::::::::::#############################################################################...##############################
 ....................................................................................................#..........o.....M..::000:::::#############################################################################...##############################
-....................................................................................................#.........o.o.......:wwwww::::#############################################################################...##############################
-................................................................................................ogo.#...................::::::::::#############################################################################...##############################
-........................................................................ooo...........nnnnn....######..............#C..c::::::::::#############################################################################...##############################
+..............................................................................................................o.o.......:wwwww::::#############################################################################...##############################
+................................................................................................ogo.....................::::::::::#############################################################################...##############################
+........................................................................ooo...........nnnnn....#####...............#C..c::::::::::#############################################################################...##############################
 .............................................................ooo......................|...|............#######...##############################################################################################...##############################
-...................................................................2.............S....|ooo|..#A........#######...##############################################################################################...##############################
+...................................................................2.............S....|ooo|..#...A.....#######...##############################################################################################...##############################
 ............................................................-----=====....pp..p.##############################...##############################################################################################...##############################
 ..........................................................ooo....#####==========##############################...##############################################################################################...##############################
 .................................................................#############################################...##############################################################################################...##############################

@@ -33,15 +33,21 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 34
-RBJ 6
-RB 56
-RBJ 2
-RB 6
-RBJ 12
-RB 31
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
 RBJ 36
-RB 26
+RB 25
 # --- end of the first 746 frames of falkenstein_solver.replay ---
 - 20      # past the checkpoint (116), sliding to a stop
 L 26      # back under the M-box

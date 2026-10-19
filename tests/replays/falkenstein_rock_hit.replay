@@ -5,8 +5,8 @@
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = dies_at frames=618..618
-shots  = 604:telegraph 614:falling
+expect = dies_at frames=623..623
+shots  = 609:telegraph 619:falling
 ---
 # --- the first 560 frames of falkenstein_solver.replay ---
 RB 40
@@ -25,7 +25,10 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 23
+RB 10
+RBJ 1
+RB 8
+L 4
 # --- end of falkenstein_solver.replay ---
 - 30
 R 22       # under rock #2

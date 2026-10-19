@@ -10,7 +10,8 @@
 # before the crawl.
 # Re-cut after the QA level fixes: the Fürberg stretch (2214-2520) as in
 # qa_m3_hackl_vs_rock, and a 20-frame wait on the row-23 plank (4772)
-# while Pilger #8 drops past; the crawl starts at 5239.
+# while Pilger #8 drops past, a hop over the fallen rock at col 93 (4080);
+# the crawl starts at 5239.
 level  = hackl
 seed   = 1
 source = handwritten
@@ -93,7 +94,9 @@ R 90
 - 178
 B 1
 - 26
-R 140
+R 28
+RJ 8
+R 104
 - 190
 R 6
 RJ 20

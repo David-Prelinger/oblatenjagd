@@ -1,6 +1,6 @@
 # Stage 4 Hackl (D-056, game-design.md "New mechanics"): the solver route
-# to the church plateau (it runs under the H-box), then Resi stops, walks
-# back under the H-box (164, row 8, 2 rows above the plateau), bumps it,
+# to the church plateau (it jumps onto the H-box), then Resi stops on the
+# plateau, walks under the H-box (164, row 8, 2 rows above the plateau), bumps it,
 # and the Hackl rises onto it and stays; a straight jump beside the box with
 # a drift left takes it (Normal -> Hackl, „Wirf, Resi, wirf!" + 1000) and
 # she lands on the box. Facing right from the box top she throws an axe
@@ -10,10 +10,10 @@
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = event=PowerUp no_event=Hurt deaths=0 score=5800
-shots  = 1150:bump 1250:pickup 1660:axes
+expect = event=PowerUp no_event=Hurt deaths=0 score=6000
+shots  = 1172:bump 1305:pickup 1680:axes
 ---
-# --- the first 1100 frames of falkenstein_solver.replay ---
+# --- the first 1080 frames of falkenstein_solver.replay ---
 RB 40
 RBJ 36
 RB 38
@@ -30,13 +30,19 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 34
-RBJ 6
-RB 56
-RBJ 2
-RB 6
-RBJ 12
-RB 31
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
 RBJ 36
 RB 40
 LBJ 12
@@ -48,17 +54,19 @@ LB 8
 LBJ 33
 LB 5
 RBJ 20
-RB 17
+RB 16
 RBJ 20
-RB 99
+RB 101
 RBJ 36
-RB 60
+RB 38
 # --- end of falkenstein_solver.replay ---
 - 30
-R 12       # back under the H-box
-- 4
+R 38       # under the H-box
+- 20
 J 10       # bump: the Hackl rises
 - 50
+R 16       # beside the box
+- 20
 J 6        # straight up beside the box ...
 LJ 26      # ... and drift left onto the Hackl
 L 6
