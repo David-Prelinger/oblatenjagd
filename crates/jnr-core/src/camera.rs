@@ -128,7 +128,8 @@ impl Camera {
     /// (horizontally) away from where she stepped up (`f.slack_x`), and
     /// settles towards it. In the air: up at once when the top is above
     /// `climb_top` (while the slack holds: `climb_top` minus the lag of the
-    /// settle feet below the last ground, at least `climb_top_min`), down with the feet below `climb_feet_y` but at most
+    /// settle feet below the last ground, at least `climb_top_min`), down
+    /// with the feet below `climb_feet_y` but at most
     /// `climb_fall_follow` px below the last ground's own framing (never
     /// up because of that limit). Clamped to the level.
     pub fn follow_climb(
