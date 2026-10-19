@@ -2,11 +2,14 @@
 # (standing on it at col 90 while rock #1 shatters on it), then Resi walks
 # off it under rock #2's column (col 92) and stays: after its telegraph
 # (wobble and pebbles) the rock falls on her; as Normal that is a death.
+# E20 (D-065): while the slack holds the climb camera follows jumps up
+# later, so on this route rock #2's niche comes on screen later and the
+# death moved from 623 to 636 (shots 609/619 -> 622/632).
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = dies_at frames=623..623
-shots  = 609:telegraph 619:falling
+expect = dies_at frames=636..636
+shots  = 622:telegraph 632:falling
 ---
 # --- the first 560 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40

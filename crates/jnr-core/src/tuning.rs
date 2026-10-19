@@ -229,6 +229,13 @@ pub struct CameraTuning {
     /// Climb camera: in the air, the camera follows up at once when the
     /// hitbox top is above this screen y.
     pub climb_top: i32,
+    /// Climb camera (D-065): while the slack holds, the up-follow line is
+    /// `climb_top` minus the slack's lag, but never above this screen y.
+    pub climb_top_min: i32,
+    /// Climb camera (D-065): grounded with the hitbox top above
+    /// `climb_top`, the camera moves up this many px per frame more than
+    /// the settle until it is below.
+    pub climb_catch_up_speed: i32,
     /// Climb camera: in the air it follows the feet down at most this many
     /// px below the settle framing of the last ground.
     pub climb_fall_follow: i32,
@@ -956,6 +963,21 @@ impl Tuning {
                 "tuning.toml: camera.climb_settle_speed must be 1..=16 px/frame",
             ));
         }
+        if !(0..=TILE_PX).contains(&c.climb_catch_up_speed) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_catch_up_speed must be 0..=16 px/frame",
+            ));
+        }
+        if !(0..=c.climb_top).contains(&c.climb_top_min) {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 <= camera.climb_top_min <= climb_top",
+            ));
+        }
+        if c.climb_up_slack > c.climb_fall_follow {
+            return Err(ParseError::new(
+                "tuning.toml: need camera.climb_up_slack <= climb_fall_follow",
+            ));
+        }
         if !(0..=c.climb_feet_y - c.climb_top).contains(&c.climb_up_slack) {
             return Err(ParseError::new(
                 "tuning.toml: need 0 <= camera.climb_up_slack <= climb_feet_y - climb_top",
@@ -1202,9 +1224,14 @@ mod tests {
             ("climb_up_slack", -1),
             ("climb_up_slack", 109),
             ("climb_up_reach", -1),
+            ("climb_top_min", -1),
+            ("climb_top_min", 41),
+            ("climb_catch_up_speed", -1),
+            ("climb_catch_up_speed", 17),
             ("climb_up_reach", 321),
             ("climb_fall_follow", -1),
             ("climb_fall_follow", 181),
+            ("climb_fall_follow", 47), // < climb_up_slack
             ("climb_goal_feet_y", 0),
             ("climb_goal_feet_y", 181),
             ("climb_activate_y", -1),

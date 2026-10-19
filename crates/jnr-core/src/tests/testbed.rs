@@ -51,6 +51,6 @@ fn hand_written_route_reaches_the_goal() {
 const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame (changes whenever the hashed tuning gains keys
 /// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
-/// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach` and the hashed
+/// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach`/`climb_top_min`/`climb_catch_up_speed` and the hashed
 /// `settle_feet`/`slack_x`).
-const FINISH_HASH: u64 = 0x5e4e_44c0_4f3b_9763;
+const FINISH_HASH: u64 = 0x48e7_462e_4b19_6515;
