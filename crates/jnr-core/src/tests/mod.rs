@@ -8,6 +8,7 @@ mod goal;
 mod hackl;
 mod items;
 mod m2;
+mod m3;
 mod modes;
 mod route;
 mod testbed;

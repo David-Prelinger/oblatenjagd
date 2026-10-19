@@ -84,6 +84,8 @@ fn enemy(kind: EnemyKind, x: i32) -> Entity {
         EnemyKind::Fiaker => t.enemies.fiaker_hitbox,
         EnemyKind::MozartkugelVerkaeufer => t.enemies.mozartkugel_verkaeufer_hitbox,
         EnemyKind::Bienenschwarm => t.enemies.bienenschwarm_hitbox,
+        EnemyKind::Pilger => t.enemies.pilger_hitbox,
+        EnemyKind::Gams => t.enemies.gams_hitbox,
         _ => t.enemies.selfie_tourist_hitbox,
     };
     Entity::at_feet(
@@ -450,6 +452,9 @@ fn stompable_enemies_are_defeated_for_their_base_points() {
         (EnemyKind::MozartkugelVerkaeufer, 200),
         (EnemyKind::Blasmusiker, 200),
         (EnemyKind::EBiker, 200),
+        // The M3 enemies through E16's `defeat_by_projectile`.
+        (EnemyKind::Pilger, 100),
+        (EnemyKind::Gams, 200),
     ] {
         // About 6 tiles ahead, where the arc is back at hand height.
         let mut e = enemy(kind, 150);
@@ -472,6 +477,28 @@ fn stompable_enemies_are_defeated_for_their_base_points() {
         assert_eq!(g.player().stomp_chain, 0, "outside the stomp chain");
         assert!(popups(&g).contains(&Popup::Score(points)));
     }
+}
+
+#[test]
+fn an_axe_shatters_a_falling_rock_for_50() {
+    let t = tuning();
+    let mut g = as_hackl(game(&world(40, &[])));
+    hold(&mut g, "B", 1);
+    let a = axes(&g)[0];
+    let (cx, _) = a.feet();
+    let rock = Entity::at_feet(
+        EntityKind::Stein,
+        cx + Fx::from_px(3),
+        a.y + a.h,
+        t.enemies.stein_hitbox,
+    );
+    g.entities.push(rock);
+    let events = hold(&mut g, "-", 1);
+    assert!(events.contains(&Event::AxeHit), "{events:?}");
+    assert!(axes(&g).is_empty());
+    assert!(!g.entities().iter().any(|e| e.kind == EntityKind::Stein));
+    assert_eq!(g.score(), t.enemies.stein_points);
+    assert_eq!(t.enemies.stein_points, 50);
 }
 
 #[test]

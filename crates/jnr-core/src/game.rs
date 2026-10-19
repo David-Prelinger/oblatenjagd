@@ -835,6 +835,7 @@ impl Game {
             player_cx: self.player.x + self.player.w.div_int(2),
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
+            screen_top: Fx::from_px(self.camera.y),
         };
         let mut spawned = Vec::new();
         for e in &mut self.entities {
@@ -852,6 +853,9 @@ impl Game {
             // them this frame (same for every entity: order-independent).
             if let Some(new) = e.update(&ctx) {
                 spawned.push(new);
+            }
+            if e.kind == EntityKind::Stein && e.state == crate::enemies::state::SHATTERED {
+                spawned.extend(crate::enemies::stein_debris(e, ctx.tuning));
             }
             if e.kind.is_platform() {
                 crate::platform::carry(
@@ -958,8 +962,11 @@ impl Game {
                         hurt = true;
                     }
                 }
-                EntityKind::Thrown | EntityKind::Note => hurt = true,
+                // A falling rock hurts on any contact, also from above.
+                EntityKind::Thrown | EntityKind::Note | EntityKind::Stein => hurt = true,
                 EntityKind::PoppedOblate
+                | EntityKind::Steinschlag
+                | EntityKind::SteinDebris
                 | EntityKind::Defeated(_)
                 | EntityKind::Debris
                 | EntityKind::Popup(_)
@@ -1028,6 +1035,29 @@ impl Game {
             }
             None => self.add_life().then(|| popup(Popup::ExtraLife, x, y)),
         }
+    }
+
+    /// A projectile (the thrown Hackl, D-056) hit entity `i`: the M3 kinds'
+    /// outcome from [`crate::enemies::hit_by_projectile`] (Pilger 100 and
+    /// Gams 200 defeated, tumbling; a falling rock shatters for 50) with the
+    /// score, its popup and the rock's debris. Returns false (nothing
+    /// happened) for every other kind, so a caller can handle those itself.
+    pub(crate) fn defeat_by_projectile(&mut self, i: usize) -> bool {
+        let Some(e) = self.entities.get_mut(i) else {
+            return false;
+        };
+        let Some(points) = crate::enemies::hit_by_projectile(e, &self.tuning) else {
+            return false;
+        };
+        let e = *e;
+        if e.kind == EntityKind::Stein {
+            self.entities
+                .extend(crate::enemies::stein_debris(&e, &self.tuning));
+        }
+        self.add_score(points);
+        let (fx, _) = e.feet();
+        self.entities.push(popup(Popup::Score(points), fx, e.y));
+        true
     }
 
     /// A hit steps down one power state (Hackl → Zuckerschock →
@@ -1241,6 +1271,7 @@ impl Game {
                 e.kind,
                 EntityKind::Popup(_)
                     | EntityKind::Debris
+                    | EntityKind::SteinDebris
                     | EntityKind::Bump
                     | EntityKind::Defeated(_)
             ) {
@@ -1256,6 +1287,8 @@ impl Game {
                 EntityKind::Enemy(_)
                     | EntityKind::Thrown
                     | EntityKind::Note
+                    | EntityKind::Steinschlag
+                    | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
                     | EntityKind::ThrownHackl

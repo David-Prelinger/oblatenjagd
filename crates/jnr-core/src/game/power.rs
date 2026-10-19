@@ -108,20 +108,20 @@ impl Game {
         }
     }
 
-    /// Axe `i` hits entity `j` (its reaction is not `Pass`).
+    /// Axe `i` hits entity `j` (its reaction is not `Pass`): the M3 kinds
+    /// through `defeat_by_projectile` (E16), the others here.
     fn axe_hit(&mut self, i: usize, j: usize) {
         self.entities[i].removed = true;
         self.events.push(Event::AxeHit);
+        if self.defeat_by_projectile(j) {
+            return;
+        }
         let target = self.entities[j];
         let (x, _) = target.feet();
         let points = match (target.axe_hit(), target.kind) {
             (AxeHit::Defeat, EntityKind::Enemy(kind)) => {
                 crate::enemies::defeat(&mut self.entities[j], kind, true, &self.tuning);
                 base_points(kind, &self.tuning)
-            }
-            (AxeHit::Shatter, _) => {
-                self.entities[j].removed = true;
-                self.tuning.hackl.rock_points
             }
             // Bounce (the Fiaker): the axe is gone, nothing else.
             _ => return,

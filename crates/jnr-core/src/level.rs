@@ -198,6 +198,13 @@ pub enum SpawnKind {
     Bienenschwarm,
     /// A Zwölferhorn cabin (`to`, `phase`): free-running moving platform.
     Gondel,
+    /// Enemy `pilger` (walks off ledges; `lead = true`: the pennant look).
+    Pilger,
+    /// Enemy `gams` (ledge-bound hopper).
+    Gams,
+    /// A `steinschlag` rock spawner in a cliff niche (`period`, `phase`,
+    /// `range`).
+    Steinschlag,
     /// The Durchkriechstein's tunnel (`len` cells from its cell to the
     /// right): DOWN at its mouth starts the scripted crawl (D-057).
     Durchkriechstein,
@@ -205,7 +212,7 @@ pub enum SpawnKind {
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 18] = [
+    pub const ALL: [SpawnKind; 21] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -223,6 +230,9 @@ impl SpawnKind {
         SpawnKind::EBiker,
         SpawnKind::Bienenschwarm,
         SpawnKind::Gondel,
+        SpawnKind::Pilger,
+        SpawnKind::Gams,
+        SpawnKind::Steinschlag,
         SpawnKind::Durchkriechstein,
     ];
 
@@ -247,6 +257,9 @@ impl SpawnKind {
             SpawnKind::EBiker => "e_biker",
             SpawnKind::Bienenschwarm => "bienenschwarm",
             SpawnKind::Gondel => "gondel",
+            SpawnKind::Pilger => "pilger",
+            SpawnKind::Gams => "gams",
+            SpawnKind::Steinschlag => "steinschlag",
             SpawnKind::Durchkriechstein => "durchkriechstein",
         }
     }
@@ -339,7 +352,32 @@ pub struct EntitySpawn {
     /// is up), e.g. -8 so a swarm anchored above the ground never dips
     /// its bees into it.
     pub dy: i32,
+    /// `lead = true` on a `pilger`: the group leader's sprite
+    /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
+    pub lead: bool,
+    /// A `steinschlag`'s counter period in frames (`period = N`,
+    /// [`STEINSCHLAG_PERIOD_RANGE`], [`DEFAULT_STEINSCHLAG_PERIOD`] by
+    /// default; with `phase` = 0 or [`STEINSCHLAG_MIN_PHASE`]..period).
+    pub period: u16,
+    /// A `steinschlag`'s range in tiles (`range = N`,
+    /// [`STEINSCHLAG_RANGE_TILES`], [`DEFAULT_STEINSCHLAG_RANGE`] by
+    /// default): its counter runs while the player is this close.
+    pub range: u8,
 }
+
+/// A `steinschlag`'s `period` without the field, in frames (D-058).
+pub const DEFAULT_STEINSCHLAG_PERIOD: u16 = 150;
+/// Allowed `period` of a `steinschlag`, in frames.
+pub const STEINSCHLAG_PERIOD_RANGE: std::ops::RangeInclusive<u16> = 90..=300;
+/// A `steinschlag`'s `phase` is 0 or at least this (and below its
+/// `period`): the counter starts there when the player first comes in
+/// range, so the first rock always follows the whole 40-frame telegraph
+/// (`enemies.steinschlag_telegraph` < this, validated).
+pub const STEINSCHLAG_MIN_PHASE: u16 = 41;
+/// A `steinschlag`'s `range` without the field, in tiles.
+pub const DEFAULT_STEINSCHLAG_RANGE: u8 = 6;
+/// Allowed `range` of a `steinschlag`, in tiles.
+pub const STEINSCHLAG_RANGE_TILES: std::ops::RangeInclusive<u8> = 4..=10;
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -502,6 +540,9 @@ enum LegendEntry {
         dir: u8,
         len: u8,
         dy: i32,
+        lead: bool,
+        period: u16,
+        range: u8,
     },
 }
 
@@ -592,6 +633,9 @@ impl Level {
                         dir,
                         len,
                         dy,
+                        lead,
+                        period,
+                        range,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -609,6 +653,9 @@ impl Level {
                             dir: *dir,
                             len: *len,
                             dy: *dy,
+                            lead: *lead,
+                            period: *period,
+                            range: *range,
                         });
                     }
                 }
@@ -750,6 +797,8 @@ fn parse_legend_value(
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
                 (_, Some("durchkriechstein")) => &["entity", "tile", "len"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
+                (_, Some("pilger")) => &["entity", "tile", "lead"],
+                (_, Some("steinschlag")) => &["entity", "tile", "period", "phase", "range"],
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
@@ -895,15 +944,15 @@ fn parse_entity(
             _ => return Err(bad()),
         }
     }
-    let still = match t.get("still") {
-        None => false,
-        Some(toml::Value::Boolean(b)) => *b,
-        Some(_) => {
-            return Err(ParseError::new(format!(
-                "legend \"{key}\": field \"still\" must be true or false"
-            )));
-        }
+    let bool_field = |field: &str| match t.get(field) {
+        None => Ok(false),
+        Some(toml::Value::Boolean(b)) => Ok(*b),
+        Some(_) => Err(ParseError::new(format!(
+            "legend \"{key}\": field \"{field}\" must be true or false"
+        ))),
     };
+    let still = bool_field("still")?;
+    let lead = bool_field("lead")?;
     let mut sprite = None;
     let mut layer = PropLayer::default();
     let mut dx = 0;
@@ -962,6 +1011,25 @@ fn parse_entity(
         -i64::from(MAX_SWARM_DY_PX)..=i64::from(MAX_SWARM_DY_PX),
     )?
     .unwrap_or(0) as i32;
+    let period = int_field(
+        "period",
+        i64::from(*STEINSCHLAG_PERIOD_RANGE.start())..=i64::from(*STEINSCHLAG_PERIOD_RANGE.end()),
+    )?
+    .map_or(DEFAULT_STEINSCHLAG_PERIOD, |n| n as u16);
+    let range = int_field(
+        "range",
+        i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
+    )?
+    .map_or(DEFAULT_STEINSCHLAG_RANGE, |n| n as u8);
+    if kind == SpawnKind::Steinschlag
+        && phase != 0
+        && !(STEINSCHLAG_MIN_PHASE..period).contains(&phase)
+    {
+        return Err(ParseError::new(format!(
+            "legend \"{key}\": a steinschlag's phase must be 0 or {STEINSCHLAG_MIN_PHASE}..={} (below its period {period}), so its first rock shows the whole telegraph",
+            period - 1
+        )));
+    }
     Ok(LegendEntry::Entity {
         tile,
         kind,
@@ -976,6 +1044,9 @@ fn parse_entity(
         dir,
         len,
         dy,
+        lead,
+        period,
+        range,
     })
 }
 
@@ -1034,6 +1105,9 @@ grid = '''
             dir: 0,
             len: DEFAULT_SWARM_LEN,
             dy: 0,
+            lead: false,
+            period: DEFAULT_STEINSCHLAG_PERIOD,
+            range: DEFAULT_STEINSCHLAG_RANGE,
         }
     }
 
@@ -1517,6 +1591,83 @@ P.sSC.tfG
         }
         let e = err(&with(", to = [1, 0], dir = 1"));
         assert!(e.contains("field \"dir\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn m3_enemies_take_lead_period_phase_and_range() {
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"b\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pb--..")
+        };
+        let spawn = |entity: &str| {
+            Level::parse(&with(entity))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.col == 2)
+                .unwrap()
+        };
+        let p = spawn("{ entity = \"pilger\" }");
+        assert_eq!((p.kind, p.lead), (SpawnKind::Pilger, false));
+        assert!(spawn("{ entity = \"pilger\", lead = true }").lead);
+        assert_eq!(spawn("{ entity = \"gams\" }").kind, SpawnKind::Gams);
+        let rock = |fields: &str| {
+            let s = spawn(&format!("{{ entity = \"steinschlag\"{fields} }}"));
+            assert_eq!(s.kind, SpawnKind::Steinschlag);
+            (s.period, s.phase, s.range)
+        };
+        assert_eq!(rock(""), (150, 0, 6), "defaults");
+        assert_eq!(rock(", period = 90, phase = 41, range = 4"), (90, 41, 4));
+        assert_eq!(
+            rock(", period = 300, phase = 299, range = 10"),
+            (300, 299, 10)
+        );
+        let rock_err =
+            |fields: &str| err(&with(&format!("{{ entity = \"steinschlag\"{fields} }}")));
+        for (bad, field) in [
+            (", period = 89", "period"),
+            (", period = 301", "period"),
+            (", range = 3", "range"),
+            (", range = 11", "range"),
+            (", phase = -1", "phase"),
+        ] {
+            let e = rock_err(bad);
+            assert!(
+                e.contains(&format!("field \"{field}\" must be")),
+                "{bad}: {e}"
+            );
+        }
+        // The phase must not skip into the telegraph.
+        for bad in [
+            ", phase = 1",
+            ", phase = 40",
+            ", phase = 150",
+            ", period = 100, phase = 100",
+        ] {
+            let e = rock_err(bad);
+            assert!(e.contains("phase must be 0 or 41..="), "{bad}: {e}");
+        }
+        assert!(
+            err(&with("{ entity = \"pilger\", lead = 1 }"))
+                .contains("field \"lead\" must be true or false")
+        );
+        for (entity, field) in [
+            ("{ entity = \"gams\", lead = true }", "lead"),
+            ("{ entity = \"pilger\", period = 100 }", "period"),
+            ("{ entity = \"steinschlag\", lead = true }", "lead"),
+            ("{ entity = \"steinschlag\", len = 3 }", "len"),
+            ("{ entity = \"selfie_tourist\", range = 5 }", "range"),
+        ] {
+            let e = err(&with(entity));
+            assert!(
+                e.contains(&format!("field \"{field}\" is not allowed")),
+                "{entity}: {e}"
+            );
+        }
     }
 
     #[test]

@@ -63,7 +63,7 @@ impl Popup {
     }
 }
 
-/// The enemy types of Stages 1–3.
+/// The enemy types of Stages 1–4.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -84,6 +84,10 @@ pub enum EnemyKind {
     EBiker,
     /// `bienenschwarm`: dances a figure-eight; hurts on any contact.
     Bienenschwarm,
+    /// `pilger`: walks towards the player, off ledges (`lead` is a look).
+    Pilger,
+    /// `gams`: stands, crouches, hops; never leaves its ledge.
+    Gams,
 }
 
 impl EnemyKind {
@@ -101,10 +105,14 @@ impl EnemyKind {
 
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker; D-046), else 0.
+    /// Blasmusiker, E-Biker, Gams; D-046, D-058), else 0. Also the index of
+    /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
         match self {
-            EnemyKind::MozartkugelVerkaeufer | EnemyKind::Blasmusiker | EnemyKind::EBiker => 1,
+            EnemyKind::MozartkugelVerkaeufer
+            | EnemyKind::Blasmusiker
+            | EnemyKind::EBiker
+            | EnemyKind::Gams => 1,
             _ => 0,
         }
     }
@@ -120,6 +128,8 @@ impl EnemyKind {
             EnemyKind::Blasmusiker => "blasmusiker",
             EnemyKind::EBiker => "e_biker",
             EnemyKind::Bienenschwarm => "bienenschwarm",
+            EnemyKind::Pilger => "pilger",
+            EnemyKind::Gams => "gams",
         }
     }
 
@@ -134,6 +144,8 @@ impl EnemyKind {
             EnemyKind::Blasmusiker => 6,
             EnemyKind::EBiker => 7,
             EnemyKind::Bienenschwarm => 8,
+            EnemyKind::Pilger => 9,
+            EnemyKind::Gams => 10,
         }
     }
 }
@@ -176,6 +188,15 @@ pub enum EntityKind {
     /// A Zwölferhorn cabin (free-running moving one-way platform,
     /// [`crate::platform`]).
     Gondel,
+    /// A Steinschlag rock spawner: the resting rock in its niche (no
+    /// collision; its hitbox is the resting rock's), see
+    /// [`crate::enemies::update_steinschlag`].
+    Steinschlag,
+    /// A falling rock (hurts on any contact, can't be stomped; shatters on
+    /// solid and one-way tiles).
+    Stein,
+    /// A piece of a shattered rock (no collision).
+    SteinDebris,
     /// St. Wolfgang's Hackl power-up: rises out of its box, then stays.
     Hackl,
     /// A Hackl thrown by the player ([`crate::hackl`]): flies in a fixed
@@ -202,6 +223,8 @@ impl EntityKind {
             EntityKind::Festungsbahn => Some("festungsbahn"),
             EntityKind::Note => Some("note"),
             EntityKind::Gondel => Some("gondel"),
+            EntityKind::Steinschlag | EntityKind::Stein => Some("stein"),
+            EntityKind::SteinDebris => Some("stein_debris"),
             EntityKind::Hackl => Some("hackl"),
             EntityKind::ThrownHackl => Some("hackl_thrown"),
             EntityKind::Popup(_)
@@ -254,9 +277,12 @@ impl EntityKind {
             EntityKind::Thrown => h.u8(12),
             EntityKind::Note => h.u8(13),
             EntityKind::Gondel => h.u8(14),
-            EntityKind::Hackl => h.u8(15),
-            EntityKind::ThrownHackl => h.u8(16),
-            EntityKind::Durchkriechstein => h.u8(17),
+            EntityKind::Steinschlag => h.u8(15),
+            EntityKind::Stein => h.u8(16),
+            EntityKind::SteinDebris => h.u8(17),
+            EntityKind::Hackl => h.u8(18),
+            EntityKind::ThrownHackl => h.u8(19),
+            EntityKind::Durchkriechstein => h.u8(20),
         }
     }
 }
@@ -449,6 +475,21 @@ impl Entity {
                     [w, h],
                 )
             }
+            SpawnKind::Pilger => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Pilger),
+                feet_x,
+                feet_y,
+                e.pilger_hitbox,
+            ),
+            SpawnKind::Gams => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Gams),
+                feet_x,
+                feet_y,
+                e.gams_hitbox,
+            ),
+            SpawnKind::Steinschlag => {
+                crate::enemies::resting_rock(EntityKind::Steinschlag, s.col, s.row, t)
+            }
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -570,6 +611,11 @@ impl Entity {
                 crate::enemies::update_note(self, map, t);
                 None
             }
+            EntityKind::Steinschlag => crate::enemies::update_steinschlag(self, ctx),
+            EntityKind::Stein => {
+                crate::enemies::update_stein(self, map, t);
+                None
+            }
             EntityKind::PoppedOblate => self.update_popped_oblate(t),
             EntityKind::Mozartkugel => {
                 self.update_power_up(map, t, t.items.mozartkugel_speed);
@@ -579,7 +625,7 @@ impl Entity {
                 self.update_power_up(map, t, t.items.zaunerstollen_speed);
                 None
             }
-            EntityKind::Debris => {
+            EntityKind::Debris | EntityKind::SteinDebris => {
                 self.vy = (self.vy + t.player.gravity).min(t.player.max_fall_speed);
                 self.x += self.vx;
                 self.y += self.vy;
@@ -669,6 +715,8 @@ pub(crate) struct UpdateCtx<'a> {
     pub player_standing: Option<crate::physics::Aabb>,
     /// The left screen edge (camera x).
     pub screen_left: Fx,
+    /// The top screen edge (camera y).
+    pub screen_top: Fx,
 }
 
 /// A popup centred on `x` with its top at `y`.
@@ -718,6 +766,7 @@ mod tests {
             player_cx: Fx::ZERO,
             player_standing: None,
             screen_left: Fx::ZERO,
+            screen_top: Fx::ZERO,
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());
@@ -751,6 +800,9 @@ mod tests {
             dir: 0,
             len: crate::level::DEFAULT_SWARM_LEN,
             dy: 0,
+            lead: false,
+            period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
+            range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());
@@ -769,6 +821,8 @@ mod tests {
                 let above = match kind {
                     SpawnKind::Oblate => 3,
                     SpawnKind::Bienenschwarm => 1,
+                    // The resting rock sits 2 px above the niche floor.
+                    SpawnKind::Steinschlag => 2,
                     _ => 0,
                 };
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");

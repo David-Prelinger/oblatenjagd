@@ -1,0 +1,18 @@
+# Over the pilgrims, then Resi waits at the Gams' block until it has
+# hopped to the block's right half (it hops 2 tiles towards her, turns
+# at the block's end), jumps onto the block and walks into it: a side
+# hit, Normal dies (frame 528).
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=528..528 deaths=1 score=300
+---
+RB 56
+RBJ 20
+RB 15
+RBJ 36
+RB 18
+RBJ 31
+R 314
+RJ 12
+R 40

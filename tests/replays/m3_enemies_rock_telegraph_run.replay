@@ -1,0 +1,18 @@
+# Like m3_enemies_rock_hit, but Resi runs: she crosses niche #2's column
+# during its telegraph and is past it before the rock comes down.
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=1140 score=500
+---
+RB 56
+RBJ 20
+RB 15
+RBJ 36
+RB 18
+RBJ 31
+RB 45
+RBJ 20
+RB 2
+RBJ 36
+RB 180

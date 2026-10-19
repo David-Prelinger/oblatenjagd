@@ -8,18 +8,23 @@
 //! one-way tiles, and is removed in water or a hazard tile. Leaving the
 //! screen removes it too (the game checks that, it knows the camera).
 //!
-//! **Adding an entity kind** (E16: Pilger, Gams, Steinschlag/Stein): the
-//! matches in [`EnemyKind::axe_hit`] and [`Entity::axe_hit`] are exhaustive
-//! on purpose, so a new kind must be classified there:
-//! - a stompable enemy (`EntityKind::Enemy(kind)`) → [`AxeHit::Defeat`]: the
-//!   game knocks it off (tumbling, like a bumped block) for its base value
+//! **The axe-hit hook** (for every entity kind): the matches in
+//! [`EnemyKind::axe_hit`] and [`Entity::axe_hit`] are exhaustive on
+//! purpose, so a new kind must be classified there:
+//! - a stompable enemy (`EntityKind::Enemy(kind)`) → [`AxeHit::Defeat`]:
+//!   knocked off (tumbling, like a bumped block) for its base value
 //!   `score.stomp_chain[kind.chain_start()]` (100 or 200) outside the stomp
 //!   chain;
-//! - an immune one → [`AxeHit::Bounce`] (the axe is gone, nothing else);
-//! - swarms and projectiles → [`AxeHit::Pass`] (the axe flies on);
-//! - the falling Stein → [`AxeHit::Shatter`]: both removed, `hackl.rock_points`
-//!   (50) with a score popup (`Game::axe_hits`; spawn the `stein_debris`
-//!   there if wanted).
+//! - an immune one (the Fiaker) → [`AxeHit::Bounce`] (the axe is gone,
+//!   nothing else);
+//! - swarms, projectiles, items, spawners → [`AxeHit::Pass`] (flies on);
+//! - the falling Stein → [`AxeHit::Shatter`] (both gone, 50 points).
+//!
+//! `Game::axe_hits` applies a hit by first calling
+//! `Game::defeat_by_projectile` (E16: Pilger, Gams, Stein with their points,
+//! popup and debris); for every other kind it applies the rules above
+//! itself. A new kind with special effects goes into
+//! `enemies::hit_by_projectile`.
 
 use crate::entity::{EnemyKind, Entity, EntityKind};
 use crate::fx::Fx;
@@ -63,7 +68,9 @@ impl EnemyKind {
             | EnemyKind::MozartkugelVerkaeufer
             | EnemyKind::NordicWalker
             | EnemyKind::Blasmusiker
-            | EnemyKind::EBiker => AxeHit::Defeat,
+            | EnemyKind::EBiker
+            | EnemyKind::Pilger
+            | EnemyKind::Gams => AxeHit::Defeat,
             EnemyKind::Fiaker => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
@@ -95,7 +102,10 @@ impl Entity {
             | EntityKind::Defeated(_)
             | EntityKind::Festungsbahn
             | EntityKind::Gondel
-            | EntityKind::Durchkriechstein => AxeHit::Pass,
+            | EntityKind::Durchkriechstein
+            | EntityKind::Steinschlag
+            | EntityKind::SteinDebris => AxeHit::Pass,
+            EntityKind::Stein => AxeHit::Shatter,
         }
     }
 }
@@ -194,6 +204,10 @@ mod tests {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }
         assert_eq!(e(EntityKind::Enemy(Fiaker)).axe_hit(), AxeHit::Bounce);
+        assert_eq!(e(EntityKind::Stein).axe_hit(), AxeHit::Shatter);
+        assert_eq!(e(EntityKind::Steinschlag).axe_hit(), AxeHit::Pass);
+        assert_eq!(Pilger.axe_hit(), AxeHit::Defeat);
+        assert_eq!(Gams.axe_hit(), AxeHit::Defeat);
         let mut crashed = e(EntityKind::Enemy(EBiker));
         assert_eq!(crashed.axe_hit(), AxeHit::Defeat);
         crashed.state = crate::enemies::state::CRASH;

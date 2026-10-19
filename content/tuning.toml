@@ -128,6 +128,23 @@ squish_frames = 30            # a stomped enemy stays visible (squished) this lo
 knock_speed = 768             # 3 px/frame: upward speed of an enemy or item knocked by a bumped block
 bounce_grace_frames = 8       # a bounce off the Fiaker puts the feet on its top; if a solid or hazard tile is in the way,
                               # non-stompable enemies do no harm for this many frames instead (>= 2, D-027)
+# M3 enemies (D-058). Pilger and Gams use the player's max fall speed when they fall off something.
+pilger_hitbox = [12, 22]      # sprite 16x24 (`lead`: 16x32 with a pennant, same hitbox)
+pilger_speed = 128            # 0.5 px/frame towards the player; turns at walls and enemies on foot, walks off ledges
+gams_hitbox = [16, 14]        # sprite 24x20
+gams_stand = 60               # Gams cycle from activation: stand 60 ...
+gams_crouch = 16              # ... crouch 16 (the telegraph; it picks its hop direction at the crouch's start) ...
+gams_hop_speed_x = 256        # ... hop: 1.0 px/frame across (2 tiles over the hop) ...
+gams_hop_speed_y = 1024       # ... 4.0 px/frame up ...
+gams_gravity = 64             # ... 0.25 px/frame²: apex 30 px, lands on frame 32 at the same height
+gams_hop_tiles = 2            # the landing cell it checks: this many tiles ahead (= vx × 32 frames)
+stein_hitbox = [12, 12]       # the falling rock (sprite 16x16, origin 8,14)
+stein_gravity = 64            # 0.25 px/frame² ...
+stein_max_fall = 1024         # ... max 4.0 px/frame
+steinschlag_telegraph = 40    # Steinschlag counter frames 0-39 wobble + pebbles, the rock drops at frame 40 ...
+steinschlag_refill = 30       # ... and the niche shows a resting rock again 30 frames after the drop
+steinschlag_screen_top = 24   # px: the niche counts as on screen only below the HUD (screen y >= 24)
+stein_points = 50             # a rock shattered by a thrown Hackl (D-056)
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
@@ -165,7 +182,7 @@ throw_ahead = 8           # px: the axe's centre at the throw is in front of Res
 throw_below_top = 10      # ... and this far below her hitbox top
 throw_pose_frames = 10    # the `throw` pose (frame 0 for 4 ticks, frame 1 for 6: the anim decides)
 stuck_frames = 20         # an axe stuck in a solid tile stays (harmless) this long
-rock_points = 50          # an axe shatters a falling rock (both gone)
+                          # (an axe shatters a falling rock for enemies.stein_points)
 
 [crawl]
 hitbox = [12, 12]         # px [w, h] while crawling through the Durchkriechstein (D-057)
