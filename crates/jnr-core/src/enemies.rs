@@ -435,7 +435,7 @@ fn update_e_biker(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
         let (cx, _) = e.feet();
         return Some(popup(Popup::Hoppala, cx, e.y - TILE.div_int(2)));
     }
-    if ctx.map.touches(&b, TileKind::Hazard) || e.right() <= ctx.screen_left {
+    if ctx.map.touches_lethal(&b) || e.right() <= ctx.screen_left {
         e.removed = true;
     }
     None

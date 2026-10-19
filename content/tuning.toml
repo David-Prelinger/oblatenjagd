@@ -27,6 +27,7 @@ stomp_bounce = 900        # upward speed after a stomp, JUMP not held: rise ~1 t
 stomp_bounce_held = 940   # with JUMP held (gravity_hold while held): rise ~3 tiles
 invulnerable_frames = 120 # 2 s after shrinking (counted after the transformation freeze)
 transform_frames = 30     # the game freezes while growing or shrinking
+water_sink_px = 8         # px the feet sink into water before it kills (D-050); spikes kill on touch
 
 [camera]
 follow_x = 144            # px: camera scrolls right once the player's centre passes this screen x

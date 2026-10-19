@@ -3,7 +3,7 @@
 # checkpoint yet) with one life less; the Oblaten counter survives.
 level  = salzburg
 source = handwritten
-expect = dies_at frames=605..610 deaths=1 lives=2 oblaten>=13 state=playing
+expect = dies_at frames=611..616 deaths=1 lives=2 oblaten>=13 state=playing
 expect = no_event=Hurt
 ---
 RB 64    # solver route, frames 0-584

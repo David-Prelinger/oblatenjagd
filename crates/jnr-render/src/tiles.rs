@@ -187,7 +187,9 @@ pub(crate) fn draw_tiles(
                         fb.fill_rect(x, y, TILE_PX, TILE_PX, c);
                     }
                     TileKind::OneWay => fb.fill_rect(x, y, TILE_PX, ONEWAY_PX, LEATHER_DARK),
-                    TileKind::Hazard => fb.fill_rect(x, y, TILE_PX, TILE_PX, DIRNDL_RED),
+                    TileKind::Hazard | TileKind::Water => {
+                        fb.fill_rect(x, y, TILE_PX, TILE_PX, DIRNDL_RED)
+                    }
                 },
             }
         }

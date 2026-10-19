@@ -579,7 +579,7 @@ impl Entity {
         }
         self.x = b.x;
         self.y = b.y;
-        if map.touches(&b, crate::level::TileKind::Hazard) {
+        if map.touches_lethal(&b) {
             self.removed = true;
         }
     }
