@@ -1,0 +1,27 @@
+# Stein debris: a limestone chip of a shattered rock (lit i, m side, d
+# shadow, k outline), the counterpart of the brick `debris`. spin = the chip
+# tumbles between two shapes, lit edge kept top left.
+sprite = stein_debris
+size   = 8x8
+origin = 4,8
+hitbox = 1,1,6,6
+anim   = spin frames=2 ticks=4 loop
+---
+frame spin 0
+..kkk...
+.kiimk..
+kiiimmk.
+kimmddk.
+.kdddk..
+..kkk...
+........
+........
+frame spin 1
+..kk....
+.kiikk..
+.kiimmk.
+.kimmdk.
+..kmddk.
+...kdk..
+....k...
+........

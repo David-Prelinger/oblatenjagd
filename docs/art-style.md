@@ -143,6 +143,7 @@ From most to least prominent: **Resi > enemies, items, hazards > playfield tiles
 - No character sprite other than Resi contains all three of `r`, `S` and `w`. An enemy with an `S` remap may not carry an `r` prop. Items and UI are exempt.
 - Collectibles (Oblaten) are cream and gold with a `k` outline so they pop against every sky and water colour.
 - On the playfield, only collectibles use `c` as a fill; their `k` outline separates them from `c` façades behind them. (Solid tiles never use `c` as a fill.)
+- `c` may be used as a small accent (≤12 px per frame, not round, bordered by `k` or a darker shade) on non-collectible sprites; `c` fills stay collectible-only.
 - Backgrounds never contain shapes that look like collectibles (round gold) or hazards (red spikes).
 - Solid vs background: solid tiles have a light top lip and darker body; background layers never have a light top lip of the same kind.
 
