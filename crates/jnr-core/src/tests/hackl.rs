@@ -381,6 +381,7 @@ fn axes_stick_in_solid_tiles_harmlessly_then_vanish() {
     let mut g = as_hackl(game(&world(40, &[(10, 3, '#'), (11, 3, '#')])));
     hold(&mut g, "B", 1);
     assert_eq!(axes(&g)[0].state, axe::STUCK);
+    assert_eq!(axes(&g)[0].right(), Fx::from_px(48), "flush with the face");
     // A stuck axe does not hit anything.
     let mut g = as_hackl(game(&world(40, &wall)));
     hold(&mut g, "B", 1);

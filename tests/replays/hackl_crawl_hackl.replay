@@ -1,0 +1,20 @@
+# Durchkriechstein as Hackl (D-057): pickup, then DOWN at the mouth: out
+# at the exit shed to Normal („Ballast weg!").
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=CrawlStarted power=normal lives=3 deaths=0 player_x>=384
+expect = no_event=Hurt state=playing
+---
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 140     # into the boulder's face
+D 80      # crawl
+- 40

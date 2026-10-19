@@ -1,0 +1,36 @@
+# Hackl axes on three still Selfie-Tourists (D-056): pickup, over the
+# Durchkriechstein's boulder, then one RUN press per tourist from ~6 tiles
+# (each defeated for 100, the axe gone), then the goal as Hackl.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = complete frames=1172..1172 deaths=0 power=hackl event=HacklThrown event=AxeHit
+expect = no_event=Hurt score>=1300
+---
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120     # under the M-box, into the boulder's face
+- 20
+L 15
+- 20
+RJ 50     # over the boulder (3 tiles)
+R 110
+- 40
+B 1       # axe 1 -> tourist at column 40
+- 50
+R 40
+- 40
+B 1       # axe 2 -> column 44
+- 50
+R 40
+- 40
+B 1       # axe 3 -> column 48
+- 60
+R 250     # to the goal

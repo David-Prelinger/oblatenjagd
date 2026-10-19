@@ -1,0 +1,19 @@
+# Durchkriechstein as Zuckerschock (D-057): the Mozartkugel from the M-box,
+# then DOWN at the mouth: out at the exit shed to Normal („Ballast weg!"),
+# no life, no points.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=CrawlStarted power=normal lives=3 score=1000 deaths=0 player_x>=384
+expect = no_event=Hurt state=playing
+---
+R 98
+- 30
+J 10      # the M-box
+- 30
+R 40      # catch the Mozartkugel: Zuckerschock
+- 20
+R 60      # into the boulder's face
+- 30
+D 80      # crawl
+- 30

@@ -29,7 +29,7 @@
 use crate::entity::{EnemyKind, Entity, EntityKind};
 use crate::fx::Fx;
 use crate::level::TileKind;
-use crate::physics::{TileMap, YHit};
+use crate::physics::{TILE, TileMap, YHit, tile_of};
 use crate::player::{Facing, Player};
 use crate::tuning::Tuning;
 
@@ -133,6 +133,18 @@ pub(crate) fn throw_axe(p: &Player, map: &TileMap, t: &Tuning) -> Entity {
     e.vy = -h.throw_speed_y;
     e.dir = dir as i8;
     if map.touches(&e.hitbox(), TileKind::Solid) {
+        // Flush against the wall face on the throwing side (the `stuck`
+        // art has the face just beyond the hitbox), not inside it.
+        let (c0, c1) = (tile_of(e.x), tile_of(e.right() - Fx(1)));
+        let (r0, r1) = (tile_of(e.y), tile_of(e.y + e.h - Fx(1)));
+        let solid = |c: i32| (r0..=r1).any(|r| map.kind_at(c, r) == TileKind::Solid);
+        if dir > 0 {
+            if let Some(c) = (c0..=c1).find(|&c| solid(c)) {
+                e.x = TILE.mul_int(c) - e.w;
+            }
+        } else if let Some(c) = (c0..=c1).rev().find(|&c| solid(c)) {
+            e.x = TILE.mul_int(c + 1);
+        }
         stick(&mut e);
     }
     e

@@ -1,0 +1,44 @@
+# Hackl carries over into the next stage (D-042, D-056): the real flow on
+# the test route hackl -> route_b (stations Salzburg -> St. Gilgen): title,
+# the hackl_axes run to the Maibaum, goal sequence, route map (it starts the
+# next stage on its own), route_b's intro (player_hackl drawn), play.
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl route_b
+expect = complete deaths=0 event=AxeHit
+expect = state=playing stage=st_gilgen power=hackl
+---
+- 20
+S 1       # title -> intro
+- 150
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250     # the Maibaum
+- 1100    # goal sequence, route map, route_b intro
+R 30

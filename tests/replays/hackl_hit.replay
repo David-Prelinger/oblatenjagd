@@ -1,0 +1,25 @@
+# A hit as Hackl drops to Zuckerschock (D-056): pickup, over the boulder,
+# walk into the first still tourist without throwing.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=Hurt power=big deaths=0 state=playing no_event=HacklThrown
+---
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+R 90      # into the tourist at column 40: Hackl -> Zuckerschock + i-frames
+- 20
