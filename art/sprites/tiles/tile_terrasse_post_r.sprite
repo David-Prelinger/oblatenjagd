@@ -1,0 +1,285 @@
+# Kaiserterrasse pile (decorative, NON-solid, like netz_post; M4): the
+# right end leg of oneway_wood (`kOlk`, columns 11-14, plain wood, no joints)
+# continued down to the ground under the Weisses Roessl terrace. Vertical
+# autotile only: an open bottom gets a k-outlined i/m/d stone footing in
+# rows 12-15; left/right bits are ignored. `_r` is written out by hand (not
+# mirrored) so the O|l light stays lit-left.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_terrasse_post_r
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 1
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 2
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 3
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 4
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 5
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 6
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 7
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 8
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 9
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 10
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 11
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+.........kkkOlkk
+.........kiiiiik
+.........kmmmmdk
+.........kdddddk
+frame auto 12
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 13
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 14
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+frame auto 15
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.
+...........kOlk.

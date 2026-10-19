@@ -54,8 +54,9 @@ impl TileKind {
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
-            | "netz_post" | "tunnel_bg" | "tunnel_bg_lamp" | "zahnrad_gleis_0"
-            | "zahnrad_gleis_1" | "zahnrad_gleis_2" | "zahnrad_gleis_3" => Some(TileKind::Empty),
+            | "netz_post" | "terrasse_post_l" | "terrasse_post_r" | "tunnel_bg"
+            | "tunnel_bg_lamp" | "zahnrad_gleis_0" | "zahnrad_gleis_1" | "zahnrad_gleis_2"
+            | "zahnrad_gleis_3" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
@@ -2088,6 +2089,8 @@ P.sSC.tfG
             ("kalkfels", Solid),
             ("kalkfels_bg", Empty),
             ("netz_post", Empty),
+            ("terrasse_post_l", Empty),
+            ("terrasse_post_r", Empty),
             ("steig", OneWay),
             ("steig_wall", OneWay),
             ("netz", OneWay),
