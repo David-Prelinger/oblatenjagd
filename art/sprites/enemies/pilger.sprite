@@ -20,12 +20,12 @@ anim   = squished frames=1
 ---
 frame walk 0
 ..kkk...........
-.kiiikkk.....k..
-kiiikGGGk...kOk.
-kiikkGGGYkk.kOk.
-kikgGGGGGGjkkOk.
-.kdkkiieeeekkOk.
-.kkkkieeekekkOk.
+.kiimkkk.....k..
+kiimkGGGk...kOk.
+kimdkGGGYkk.kOk.
+kmdgGGGGGGjkkOk.
+.kllkiieeeekkOk.
+.klkkieeekekkOk.
 kggGkieeeeeEkOk.
 kgGGkieewwwwkOk.
 kGGGGkkkkkikkOk.
@@ -45,12 +45,12 @@ kGjjklklOOOOeek.
 ..kkkk..kkkk.k..
 frame walk 1
 ..kkk........k..
-.kiiikkk....kOk.
-kiiikGGGk...kOk.
-kiikkGGGYkk.kOk.
-kikgGGGGGGjkkOk.
-.kdkkiieeeekkOk.
-.kkkkieeekekkOk.
+.kiimkkk....kOk.
+kiimkGGGk...kOk.
+kimdkGGGYkk.kOk.
+kmdgGGGGGGjkkOk.
+.kllkiieeeekkOk.
+.klkkieeekekkOk.
 kggGkieeeeeEkOk.
 kgGGkieewwwwkOk.
 kGGGGkkkkkikkOk.
@@ -65,8 +65,8 @@ kGjjklklOOOOeek.
 ....kmmkmmdkkOk.
 ....kmmkmmdkkOk.
 ....kiikiimkkOk.
-....kiikOOllkk..
-....kOOlkkkk....
+....kiikOOllkOk.
+....kOOlkkkk.k..
 .....kkkk.......
 frame squished 0
 ................

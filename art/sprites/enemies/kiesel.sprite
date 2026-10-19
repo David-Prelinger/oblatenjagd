@@ -1,6 +1,6 @@
 # Kiesel: the telegraph pebbles that trickle down a Steinschlag column
 # before a rock drops (renderer only, no collision). Two grey grains: a 2x2
-# grain i/m and a single i grain, each with a k underside so they read on
+# grain i/m/k and a single i grain, each with a k underside so they read on
 # pale limestone and on dark rock alike. fall: the grains swap height.
 sprite = kiesel
 size   = 4x4
@@ -9,12 +9,12 @@ hitbox = 0,0,4,4
 anim   = fall frames=2 ticks=4 loop
 ---
 frame fall 0
-im..
+ii..
 mk..
 ...i
 ...k
 frame fall 1
 ...i
 ...k
-im..
+ii..
 mk..
