@@ -83,6 +83,7 @@ RBJ 34
 RB 58
 RBJ 36
 RB 24
+# --- end of the first 375 frames of st_gilgen_solver.replay ---
 R 200     # off the knoll into the ravine (death 1)
 - 100     # dying, intro
 # --- the first 375 frames of st_gilgen_solver.replay ---
@@ -97,6 +98,7 @@ RBJ 34
 RB 58
 RBJ 36
 RB 24
+# --- end of the first 375 frames of st_gilgen_solver.replay ---
 R 200     # death 2
 - 100
 # --- the first 375 frames of st_gilgen_solver.replay ---
@@ -111,6 +113,7 @@ RBJ 34
 RB 58
 RBJ 36
 RB 24
+# --- end of the first 375 frames of st_gilgen_solver.replay ---
 R 200     # death 3: game over
 - 400     # „Aus is'! Spiel vorbei." / „Weiter?"
 S 1       # frame 5037: continue → St. Gilgen intro, not Salzburg

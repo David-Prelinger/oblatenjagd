@@ -201,7 +201,7 @@ grid = '''
 
 `.` is always empty air and needs no legend entry; any other grid character missing from `[legend]` is a parse error with row and column. `jnr-core` maps tile names to a collision kind (empty, solid, one-way, hazard) in `TileKind::from_tile_name`; the grey-box names `solid`, `oneway`, `hazard` work in any level (see `content/levels/00_testbed.level`).
 
-An entity's cell is empty air by default. Any entity entry may add `tile = "<tile name>"` to draw that tile in its cell under the spawn, e.g. `"w" = { entity = "nordic_walker", tile = "wall_village_bg" }` for a walker in front of a house wall or `{ entity = "oblate", tile = "wall_village_bg" }`. The tile must be non-colliding (`TileKind::Empty`: `wall_village_bg`, `railing_bg`, `empty`) and takes no `contains`; anything else is a parse error. It is stored in the grid (`Level::tiles`), not in the `EntitySpawn`, so the entity behaves exactly as on air.
+An entity's cell is empty air by default. Any entity entry may add `tile = "<tile name>"` to draw that tile in its cell under the spawn, e.g. `"w" = { entity = "nordic_walker", tile = "wall_village_bg" }` for a walker in front of a house wall or `{ entity = "oblate", tile = "wall_village_bg" }`. The tile must be non-colliding (`TileKind::Empty`: `wall_village_bg`, `railing_bg`) and takes no `contains`; anything else is a parse error. It is stored in the grid (`Level::tiles`), not in the `EntitySpawn`, so the entity behaves exactly as on air.
 
 Height: typically 14 rows (224 px, camera scrolls vertically a little). Width: ~200–320 columns for a full stage.
 

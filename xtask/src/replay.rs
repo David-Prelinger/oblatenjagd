@@ -575,6 +575,100 @@ mod tests {
         }
     }
 
+    /// D-049: the `flow_m2_*` replays copy solver routes between marker
+    /// comments, `# --- <stage>_solver.replay inputs, unchanged ---` (the
+    /// whole route) or `# --- the first N frames of <stage>_solver.replay
+    /// ---` (a prefix), each closed by `# --- end of ... ---`. Every block
+    /// must still match its solver replay, so a re-solve says "re-copy".
+    #[test]
+    fn flow_m2_replays_copy_the_solver_routes() {
+        let inputs = |name: &str, body: &str| -> Vec<u64> {
+            let text = format!("level = x\nsource = handwritten\n---\n{body}");
+            let replay = Replay::parse(&text)
+                .unwrap_or_else(|e| panic!("{name}: solver block does not parse: {e}"));
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let solver = |stage: &str| -> Vec<u64> {
+            let name = format!("{stage}_solver.replay");
+            let text = fs::read_to_string(root().join("tests/replays").join(&name)).unwrap();
+            let replay = Replay::parse(&text).unwrap();
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let mut files: Vec<PathBuf> = fs::read_dir(root().join("tests/replays"))
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                let name = p.file_name().unwrap().to_string_lossy();
+                name.starts_with("flow_m2_") && name.ends_with(".replay")
+            })
+            .collect();
+        files.sort();
+        assert!(!files.is_empty(), "no flow_m2_* replays found");
+        for path in files {
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let text = fs::read_to_string(&path).unwrap();
+            let mut blocks = 0;
+            let mut open: Option<(String, Option<usize>, String)> = None;
+            for line in text.lines() {
+                let marker = line
+                    .strip_prefix("# --- ")
+                    .and_then(|l| l.strip_suffix(" ---"));
+                match (marker, &mut open) {
+                    (Some(m), None) => {
+                        let (stage, limit) =
+                            if let Some(s) = m.strip_suffix("_solver.replay inputs, unchanged") {
+                                (s, None)
+                            } else if let Some(rest) = m.strip_prefix("the first ") {
+                                let (n, s) = rest.split_once(" frames of ").unwrap_or_else(|| {
+                                    panic!("{name}: bad solver marker `{line}`")
+                                });
+                                let s = s.strip_suffix("_solver.replay").unwrap_or_else(|| {
+                                    panic!("{name}: bad solver marker `{line}`")
+                                });
+                                (s, Some(n.parse::<usize>().unwrap()))
+                            } else {
+                                panic!("{name}: unknown marker `{line}`");
+                            };
+                        open = Some((stage.to_owned(), limit, String::new()));
+                    }
+                    (Some(m), Some((stage, limit, body))) => {
+                        assert!(
+                            m.starts_with("end of"),
+                            "{name}: unclosed block before `{line}`"
+                        );
+                        let got = inputs(&name, body);
+                        let route = solver(stage);
+                        let expected = match limit {
+                            None => &route[..],
+                            Some(n) => {
+                                assert!(*n <= route.len(), "{name}: {n} > {stage} route");
+                                &route[..*n]
+                            }
+                        };
+                        if let Some(i) = first_difference(&got, expected) {
+                            panic!(
+                                "tests/replays/{name}: the copy of {stage}_solver.replay differs at \
+                                 its frame {i} ({} frames, expected {}). Re-copy the solver inputs \
+                                 (D-049), update the expectations and re-pick the shot frames.",
+                                got.len(),
+                                expected.len()
+                            );
+                        }
+                        blocks += 1;
+                        open = None;
+                    }
+                    (None, Some((_, _, body))) => {
+                        body.push_str(line);
+                        body.push('\n');
+                    }
+                    (None, None) => {}
+                }
+            }
+            assert!(open.is_none(), "{name}: unclosed solver block");
+            assert!(blocks > 0, "{name}: no solver block");
+        }
+    }
+
     #[test]
     fn real_replays_pass_and_render_shots() {
         let root = root();
