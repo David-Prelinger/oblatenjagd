@@ -1,0 +1,47 @@
+# QA M3 acceptance (D-064): the checkpoint at col 116 behind the 1-high curb
+# at 115. The solver route past the checkpoint (744), Resi waits on the
+# shaft floor as Normal until Pilger #8, coming down the zigzag, walks into
+# her (death 1817). She respawns at the checkpoint (1877, x 1858) and holds
+# LEFT+RUN for 200 frames: the curb stops her at x 1856 (its right edge),
+# she can't walk into the cleft at 110-112 (deaths stays 1).
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = dies_at frames=1817..1817 deaths=1 lives=2 event=Respawned event=CheckpointReached power=normal player_x>=1856 state=playing
+---
+# --- the first 746 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 25
+# --- end of the solver prefix ---
+R 90      # into the shaft, to the floor's right side
+- 1045    # Pilger #8 zigzags down and walks into her: death (Normal) at 1817, respawn 1877
+LB 200    # hold LEFT+RUN after the respawn: the curb at 115 stops her
