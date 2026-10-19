@@ -1,0 +1,58 @@
+# BUG (QA M2): a Gondel rider is pushed off by the camera's left edge and
+# falls to her death. D-044 assumes |dx| <= 8 keeps a rider carried back
+# away from the screen's left edge, but that only holds if she boards at the
+# cabin's spawn end; the camera never scrolls back, so boarding at the far
+# end after walking a little further breaks it.
+# Steps: st_gilgen_gondeln (A -> B -> C, off C onto the ledge/street at
+# x 1401, frame 1133), walk on to x 1433 (camera x 1295, a few steps past the
+# ledge), walk back onto the ledge 83-85 and hop onto Gondel C waiting at its
+# lower end (x 1296, frame 1342), then stand still on its roof. C travels
+# up-left to the pylon (x 1184); at frame ~1380 Resi's hitbox reaches the
+# camera's left edge (x 1295) and is held there while the cabin moves on
+# under her; she drops off its left end at ~1398 and dies in the ravine at
+# 1424 - without any input.
+# Expected (D-044): the rider stays on the cabin (it carries her to the
+# pylon; e.g. the camera scrolls back for a carried rider, or the cabin's
+# carry overrides the screen edge), no death.
+# Actual: Died at 1424 (DeathCause::Pit), x stuck at 1295 = camera.x.
+# Filmstrip: cargo xtask filmstrip bug_m2_gondel_camera_edge_push --every 10
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing
+---
+# st_gilgen_gondeln (frames 0-1133)
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+R 20
+R 16
+RJ 14
+L 6
+- 72
+RJ 8
+R 6
+- 125
+R 60
+- 205
+R 40
+- 110
+R 14
+RJ 10
+R 4
+- 130
+R 60
+- 20
+R 14        # a few steps further right: camera x 1295
+- 10
+L 30
+LJ 10       # back up onto the ledge 83-85
+L 14
+- 90        # Gondel C arrives at its lower end (x 1296)
+LJ 8        # hop onto its roof (frame 1342)
+L 10
+- 150       # stand still and ride up towards the pylon
