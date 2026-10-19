@@ -1,0 +1,78 @@
+# Stage 4 golden tour (M3, D-036 style): the real game from the title with
+# the run started at Falkenstein (`level = falkenstein`, D-047): START at
+# frame 21, stage intro 21..170, then the inputs of falkenstein_solver.replay
+# unchanged from frame 171 (re-copy them after `cargo xtask solve falkenstein
+# --write`; the xtask tour coupling test checks it), then 800 idle frames:
+# the Maibaum sequence, the tally, the route map to St. Wolfgang, which has
+# no level yet, so the teaser („Fortsetzung folgt …") and the title, with
+# the run reset to its first stage (here Falkenstein, the `level` it started
+# at). The solver route takes the Hackl box; the Durchkriechstein, axe
+# throws, rocks and Gams stomps are in the falkenstein_* mechanic replays.
+level  = falkenstein
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1713..1713 deaths=0
+shots  = 0:title 60:intro 175:fuerberg 470:kreuzweg 730:steinschlag_net 891:checkpoint 970:shaft_low 1030:shaft_high 1140:kirche 1310:hackelwurf 1713:maibaum 1938:tally 2388:teaser
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 101
+RBJ 36
+RB 44
+RBJ 20
+RB 119
+RBJ 36
+RB 43
+RBJ 36
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 9
+RBJ 36
+RB 50
+- 800     # Maibaum sequence, tally, route map, teaser, title

@@ -1,0 +1,108 @@
+# QA M3, Stage 4: Pilger #8 walks down the shaft's zigzag (game-design.md
+# sec. 4 and "New mechanics"; was bug_m3_shaft_pilger_missing: the "8" was
+# in the legend but not in the grid). The solver route past the checkpoint
+# (746), then Resi walks to the shaft floor's right side and hops in place:
+# the pilgrim starts on the top plank (row 14), walks left, drops plank by
+# plank (the walls at 120 and 130 turn him), reaches the floor and walks
+# into her hops: a stomp (100) at 1910.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=Stomped deaths=0
+---
+# --- the first 746 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 25
+# --- end of the first 746 frames of falkenstein_solver.replay ---
+R 90      # into the shaft, to the floor's right side
+J 14      # hop in place: the zigzag pilgrim gets stomped when he reaches the floor
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26

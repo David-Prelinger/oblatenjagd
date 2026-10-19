@@ -1,0 +1,58 @@
+# QA M3, Stage 4 shaft miss (game-design.md "New mechanics", D-055): the
+# solver route up to its landing on the row-20 plank (frame 810) and the
+# first 2 frames of its next JUMP; the jump is released at 812, too low for
+# the row-17 plank: she lands back on the row-20 plank (top 298, frame
+# 836). A tap hop lands there again; then she walks off the plank's left
+# end (col 124) and drops 3 tiles onto the row-23 plank below (top 346),
+# never further and never off screen.
+# If the solver route changes, re-copy the prefix and re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_y>=346 player_y<=346 player_x>=1936
+---
+# --- the first 812 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 1
+# --- end of the first 812 frames of falkenstein_solver.replay ---
+- 30      # landed back on the row-20 plank at 836
+J 5       # tap hop: lands on the same plank
+- 40
+L 70      # off the plank's left end ...
+- 60      # ... onto the row-23 plank (3 tiles down)

@@ -1,0 +1,121 @@
+# QA M3, Stage 4 Gams hit (game-design.md "New mechanics": "hit by #2 as
+# Zuckerschock"; D-058): the qa_falkenstein_relaxed inputs as Zuckerschock
+# up to the Einsiedelei (frame 3320), then no Hackl: Resi walks onto the
+# saddle (the Wolfgang pigeon flies over her), waits for pilgrim group C
+# and stomps all three with hops in place (3794, 3813, 3836), walks on and
+# steps down into Gams #2's dip (195-200) and stands there. The Gams faces
+# her at its crouch and hops into her at 4334: Zuckerschock -> Normal with
+# 120 invulnerability frames, no death. If the relaxed run changes,
+# re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=Hurt deaths=0 power=normal lives=4 state=playing
+---
+# --- the first 3320 frames of qa_falkenstein_relaxed.replay ---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 73
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 218
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 4
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 205
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 10
+# --- end of the first 3320 frames of qa_falkenstein_relaxed.replay ---
+R 120     # no Hackl: past the H-box onto the saddle (the pigeon flies over her)
+- 320     # wait for pilgrim group C
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+J 14
+- 26
+R 250     # on into Gams #2's dip (195-200)
+- 60      # it hops into her at 4334

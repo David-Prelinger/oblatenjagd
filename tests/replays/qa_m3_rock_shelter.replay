@@ -1,0 +1,35 @@
+# QA M3, Stage 4 rock shelter (game-design.md "New mechanics", D-058): the
+# solver route into the trough below the Steinschlag path (frame 499), then
+# Resi walks up onto the path and stops under the rockfall net (row 25,
+# cols 86-90), right below rock #1's column (col 88; hitbox x 1409 vs the
+# rock's 1410). Rock #1 telegraphs and drops twice (at 580 and 728) and
+# shatters on the net both times; rock #2 (col 92) falls beside the net.
+# Normal Resi stands there for ~220 frames and is never hurt.
+# If the solver route changes, re-copy the prefix and re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing power=normal player_x>=1400
+---
+# --- the first 499 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+# --- end of the first 499 frames of falkenstein_solver.replay ---
+RJ 12     # up onto the path (row 28)
+R 56      # under the net, in rock #1's column
+- 220     # rock #1 shatters on the net at ~597 and ~750

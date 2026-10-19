@@ -1,0 +1,132 @@
+# QA M3, Stage 4 Durchkriechstein as Hackl (D-057: Zuckerschock or Hackl
+# -> shed to Normal, „Ballast weg!", no points, no life). The stone comes
+# before Falkenstein's H-box and the camera never scrolls back, so a
+# Hackl at the stone needs a carried-over Hackl: the qa_m3_hackl_vs_rock
+# run (test route `hackl falkenstein`, Falkenstein as Hackl from frame
+# 2214, the rock shattered at 4038) goes on up the shaft and across the
+# church plateau into the boulder's face at the mouth (col 149). DOWN
+# without JUMP starts the crawl at 5219; she comes out at col 154 as
+# Normal (frame ~5296, then the 30-frame freeze), lives and score as
+# before the crawl.
+# Re-cut after the QA level fixes: the Fürberg stretch (2214-2520) as in
+# qa_m3_hackl_vs_rock, and a 20-frame wait on the row-23 plank (4772)
+# while Pilger #8 drops past, a hop over the fallen rock at col 93 (4080);
+# the crawl starts at 5239.
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl falkenstein
+expect = event=CrawlStarted no_event=ExtraLife no_event=Hurt deaths=0 power=normal lives=3 score=14500 stage=st_gilgen state=playing player_x>=2464
+---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250
+- 830
+R 120
+J 12
+- 90
+R 4
+RJ 18
+R 108
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 150
+B 1
+- 39
+B 1
+- 39
+B 1
+- 39
+B 1
+- 79
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 178
+B 1
+- 26
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+D 10
+- 90
+R 30

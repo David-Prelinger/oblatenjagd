@@ -1,0 +1,97 @@
+# QA M3, Stage 4: a big Resi at the Durchkriechstein's mouth without DOWN
+# is never stuck (D-057). The qa_falkenstein_relaxed inputs as
+# Zuckerschock up to the boulder's face at the mouth (col 149, frame
+# ~3024); she holds RIGHT against it for 60 frames (a wall: no crawl, no
+# power loss), steps back, jumps onto the boulder (3 up, Oblaten on top)
+# and walks down its far side onto the plateau, still Zuckerschock.
+# If the relaxed run changes, re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = no_event=CrawlStarted no_event=Hurt deaths=0 power=big lives=3 player_x>=2480 player_y>=146 player_y<=146 state=playing
+---
+# --- the first 3024 frames of qa_falkenstein_relaxed.replay ---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 73
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 218
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 4
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 205
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+# --- end of the first 3024 frames of qa_falkenstein_relaxed.replay ---
+R 60      # pushing against the boulder's face at the mouth, no DOWN: nothing happens
+L 6       # steps back
+- 25
+J 14      # jumps ...
+RJ 8
+R 80      # ... onto the boulder (3 up) and down its far side
+- 20
