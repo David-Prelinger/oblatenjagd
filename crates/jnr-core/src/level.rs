@@ -41,17 +41,23 @@ impl TileKind {
     /// (`solid`, `oneway`, `hazard`, `empty`) and the M1 art tile names of
     /// `docs/sprite-catalog.md` (M1 and M2) map to a kind; unknown names
     /// return `None`. Decorative back tiles (`railing_bg`,
-    /// `wall_village_bg`, `roof_bg`) are `Empty`: drawn, never collide.
+    /// `wall_village_bg`, `roof_bg`, `kalkfels_bg`, `netz_post`: the post
+    /// under a rockfall net) are `Empty`: drawn,
+    /// never collide. M3: `kalkfels` is solid, the shaft planks `steig` (and
+    /// `steig_wall`, the same plank drawn over the `kalkfels_bg` back wall) and
+    /// the rockfall net `netz` are one-way (D-055, D-058).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
-            "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" => Some(TileKind::Empty),
+            "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
+            | "netz_post" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
-            | "jetty_post" | "forest_path" | "beute" | "chimney" => Some(TileKind::Solid),
-            "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" => {
-                Some(TileKind::OneWay)
+            | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" => {
+                Some(TileKind::Solid)
             }
+            "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
+            | "steig_wall" | "netz" => Some(TileKind::OneWay),
             "hazard" => Some(TileKind::Hazard),
             "salzach_water"
             | "salzach_water_deep"
@@ -425,6 +431,13 @@ pub const PROP_SPRITES: &[&str] = &[
     "bienenhaus",
     "futterschaelchen",
     "boathouse",
+    "gasthof_fuerberg",
+    "bildstock",
+    "steinhaufen",
+    "falkensteinkirche",
+    "brunnkapelle",
+    "hackelwurfkapelle",
+    "durchkriechstein",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -441,6 +454,24 @@ pub struct BackgroundLayer {
     /// Offset in px above the screen bottom (default 0: bottom-aligned).
     #[serde(default)]
     pub y: u32,
+    /// Vertical parallax in 1/16 (0..=32, default 0 = fixed to the screen
+    /// bottom): the layer is drawn `(max camera y - camera y) × factor_y /
+    /// 16` px lower, so it sits as before at the level bottom and sinks as
+    /// the camera climbs (D-054).
+    #[serde(default)]
+    pub factor_y: u32,
+}
+
+/// How the camera follows the player vertically (`[meta] camera`, D-054).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CameraMode {
+    /// The dead-zone camera of Stages 1–3 (the default).
+    #[default]
+    Side,
+    /// The SMW-style climb camera: settles on the ground, follows falls
+    /// only a little way, and a fall below the screen kills.
+    Climb,
 }
 
 /// The `[meta]` table.
@@ -463,6 +494,9 @@ pub struct LevelMeta {
     /// Smallest jump window (frames) the solver must measure on this level.
     #[serde(default)]
     pub min_jump_window: Option<u32>,
+    /// Vertical camera behaviour (`"side"` by default, `"climb"`; D-054).
+    #[serde(default)]
+    pub camera: CameraMode,
 }
 
 /// Largest `time_limit` (the HUD shows 3 digits).
@@ -733,6 +767,12 @@ fn validate_meta(meta: &LevelMeta) -> Result<(), ParseError> {
             return Err(ParseError::new(format!(
                 "meta.background[{i}] ({}): factor must be 0..={MAX_BACKGROUND_FACTOR} (1/16 of the camera speed), got {}",
                 layer.sprite, layer.factor
+            )));
+        }
+        if layer.factor_y > MAX_BACKGROUND_FACTOR {
+            return Err(ParseError::new(format!(
+                "meta.background[{i}] ({}): factor_y must be 0..={MAX_BACKGROUND_FACTOR} (1/16 of the camera's climb), got {}",
+                layer.sprite, layer.factor_y
             )));
         }
     }
@@ -1165,12 +1205,14 @@ P.sSC.tfG
                 BackgroundLayer {
                     sprite: "bg_sky_salzburg".into(),
                     factor: 0,
-                    y: 0
+                    y: 0,
+                    factor_y: 0
                 },
                 BackgroundLayer {
                     sprite: "bg_rooftops".into(),
                     factor: 8,
-                    y: 24
+                    y: 24,
+                    factor_y: 0
                 },
             ]
         );
@@ -1729,6 +1771,48 @@ P.sSC.tfG
                 "{name}"
             );
         }
+    }
+
+    #[test]
+    fn m3_tile_names_have_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("kalkfels", Solid),
+            ("kalkfels_bg", Empty),
+            ("netz_post", Empty),
+            ("steig", OneWay),
+            ("steig_wall", OneWay),
+            ("netz", OneWay),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+    }
+
+    /// A one-cell level with extra `[meta]` lines.
+    fn with_meta(meta: &str) -> String {
+        format!(
+            "[meta]\nid = \"c\"\ntime_limit = 1\n{meta}\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP\n'''\n"
+        )
+    }
+
+    #[test]
+    fn camera_mode_defaults_to_side_and_takes_climb() {
+        let mode = |meta: &str| Level::parse(&with_meta(meta)).unwrap().meta.camera;
+        assert_eq!(mode(""), CameraMode::Side);
+        assert_eq!(mode("camera = \"side\""), CameraMode::Side);
+        assert_eq!(mode("camera = \"climb\""), CameraMode::Climb);
+        assert!(err(&with_meta("camera = \"top\"")).contains("camera"));
+    }
+
+    #[test]
+    fn background_factor_y_defaults_to_0_and_is_at_most_32() {
+        let bg = |layer: &str| with_meta(&format!("background = [{layer}]"));
+        let l = Level::parse(&bg("{ sprite = \"bg\", factor = 8 }")).unwrap();
+        assert_eq!(l.meta.background[0].factor_y, 0);
+        let l = Level::parse(&bg("{ sprite = \"bg\", factor = 8, factor_y = 32 }")).unwrap();
+        assert_eq!(l.meta.background[0].factor_y, 32);
+        let e = err(&bg("{ sprite = \"bg\", factor = 8, factor_y = 33 }"));
+        assert!(e.contains("factor_y must be 0..=32"), "{e}");
     }
 
     #[test]

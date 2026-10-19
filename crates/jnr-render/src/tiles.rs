@@ -5,7 +5,9 @@
 //! drawn with frame = [`autotile_mask`] of its cell (bit 1 = the same tile
 //! name above, 2 = right, 4 = below, 8 = left; cells outside the level count
 //! as the same; names of one [`autotile_family`] count as the same, e.g.
-//! `arch` on `arch_under`). Any other tile sprite shows its first animation,
+//! `arch` on `arch_under`; a few [`one_way_join`]s count a neighbour as
+//! the same for one side only, e.g. `kalkfels_bg` around a `steig_wall`
+//! plank, while the plank keeps its own ends). Any other tile sprite shows its first animation,
 //! animated by the game frame (e.g. water). The tile name `invisible` is
 //! never drawn (solid, under props such as the Sphaera). Which look a tile
 //! name has is resolved once in [`TileLooks::resolve`]; the mask is computed from the live grid
@@ -72,6 +74,24 @@ pub(crate) fn autotile_family(name: &str) -> &str {
     }
 }
 
+/// One-way autotile joins (art review, M3): the mask bits (directions,
+/// seen from a `here` tile) in which a `neighbour` tile name counts as the
+/// same, although the two are different families and `neighbour` does not
+/// return the favour. Every other pair: 0.
+/// - `kalkfels_bg` (the shaft's back wall) runs on behind a `steig_wall`
+///   plank on every side, so the wall shows no edge around the plank; the
+///   plank still sees the wall as different and keeps its end brackets.
+/// - `kalkfels` under a solid ground tile (`forest_path`, `meadow`,
+///   `stone`, `ground`) counts it as the same above only, so the rock draws
+///   no open-top lip and grass under the dirt.
+pub(crate) fn one_way_join(here: &str, neighbour: &str) -> u8 {
+    match (here, neighbour) {
+        ("kalkfels_bg", "steig_wall") => MASK_N | MASK_E | MASK_S | MASK_W,
+        ("kalkfels", "forest_path" | "meadow" | "stone" | "ground") => MASK_N,
+        _ => 0,
+    }
+}
+
 /// How each tile name of a level is drawn, indexed by
 /// [`jnr_core::Tile::name`] (resolved once, see [`crate::RenderContext`]).
 #[derive(Clone, Debug, Default)]
@@ -82,6 +102,9 @@ pub(crate) struct TileLooks<'a> {
     pub(crate) family: Vec<u16>,
     /// Never drawn ([`INVISIBLE_TILE`]).
     pub(crate) hidden: Vec<bool>,
+    /// [`one_way_join`] per pair of name indices, row-major
+    /// (`joins[here * names + neighbour]`; empty: no joins).
+    pub(crate) joins: Vec<u8>,
 }
 
 impl<'a> TileLooks<'a> {
@@ -109,13 +132,47 @@ impl<'a> TileLooks<'a> {
             })
             .collect();
         let hidden = names.iter().map(|n| n == INVISIBLE_TILE).collect();
+        let joins = names
+            .iter()
+            .flat_map(|here| names.iter().map(move |nb| one_way_join(here, nb)))
+            .collect();
         TileLooks {
             looks,
             family,
             hidden,
+            joins,
         }
     }
+
+    /// [`autotile_mask`] plus this level's [`one_way_join`]s.
+    pub(crate) fn mask(&self, map: &TileMap, col: i32, row: i32) -> u8 {
+        let mut mask = autotile_mask(map, &self.family, col, row);
+        let (Some(here), n) = (map.tile(col, row), self.family.len()) else {
+            return mask;
+        };
+        if self.joins.len() != n * n {
+            return mask;
+        }
+        for (dc, dr, bit) in NEIGHBOURS {
+            let Some(nb) = map.tile(col + dc, row + dr) else {
+                continue;
+            };
+            let (h, b) = (usize::from(here.name), usize::from(nb.name));
+            if h < n && b < n && self.joins[h * n + b] & bit != 0 {
+                mask |= bit;
+            }
+        }
+        mask
+    }
 }
+
+/// The four neighbours (dc, dr) with their mask bit.
+const NEIGHBOURS: [(i32, i32, u8); 4] = [
+    (0, -1, MASK_N),
+    (1, 0, MASK_E),
+    (0, 1, MASK_S),
+    (-1, 0, MASK_W),
+];
 
 /// The 4-neighbour mask of cell (col, row): a bit is set when that
 /// neighbour has the same tile name (the same `family` entry, see
@@ -128,12 +185,7 @@ pub fn autotile_mask(map: &TileMap, family: &[u16], col: i32, row: i32) -> u8 {
     let fam = |name: u16| family.get(usize::from(name)).copied().unwrap_or(name);
     let same = |c: i32, r: i32| map.tile(c, r).is_none_or(|t| fam(t.name) == fam(here.name));
     let mut mask = 0;
-    for (dc, dr, bit) in [
-        (0, -1, MASK_N),
-        (1, 0, MASK_E),
-        (0, 1, MASK_S),
-        (-1, 0, MASK_W),
-    ] {
+    for (dc, dr, bit) in NEIGHBOURS {
         if same(col + dc, row + dr) {
             mask |= bit;
         }
@@ -174,7 +226,7 @@ pub(crate) fn draw_tiles(
             match looks.looks.get(name).copied().flatten() {
                 Some(look) => {
                     let index = if look.auto {
-                        usize::from(autotile_mask(level, &looks.family, col, row))
+                        usize::from(looks.mask(level, col, row))
                     } else {
                         look.anim.frame_index_at(tick)
                     };
@@ -316,6 +368,53 @@ mod tests {
         );
         // Without the families the names differ.
         assert_eq!(autotile_mask(&map, &[], 1, 1), MASK_E);
+    }
+
+    #[test]
+    fn kalkfels_bg_joins_a_steig_wall_plank_one_way() {
+        assert_eq!(one_way_join("kalkfels_bg", "steig_wall"), 15);
+        assert_eq!(one_way_join("steig_wall", "kalkfels_bg"), 0);
+        // Back wall around a 2-tile plank in a shaft.
+        let l = level(
+            "\":\" = \"kalkfels_bg\"\n\"w\" = \"steig_wall\"\n",
+            "P....\n.:::.\n.:ww.\n.:::.\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (2,1) wall above the plank: S is the plank, counted as wall.
+        assert_eq!(autotile_mask(&map, &looks.family, 2, 1), MASK_E | MASK_W);
+        assert_eq!(looks.mask(&map, 2, 1), MASK_E | MASK_S | MASK_W);
+        // (1,2) wall left of the plank: E joins too.
+        assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_E | MASK_S);
+        // The plank keeps its ends: (2,2) sees only the other plank (E).
+        assert_eq!(looks.mask(&map, 2, 2), MASK_E);
+        assert_eq!(looks.mask(&map, 3, 2), MASK_W);
+    }
+
+    #[test]
+    fn kalkfels_joins_solid_ground_above_it_only() {
+        for ground in ["forest_path", "meadow", "stone", "ground"] {
+            assert_eq!(one_way_join("kalkfels", ground), MASK_N, "{ground}");
+            assert_eq!(one_way_join(ground, "kalkfels"), 0, "{ground}");
+        }
+        assert_eq!(one_way_join("kalkfels", "steig"), 0);
+        // Path on rock, rock beside the path's column, path again beside it.
+        let l = level(
+            "\"#\" = \"kalkfels\"\n\"f\" = \"forest_path\"\n",
+            "P....\n.ff#.\n.##f.\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (1,2) rock under the path: N joins (no lip); E rock; S level edge.
+        assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_E | MASK_S);
+        // (2,2): N path, W rock, E path (only N joins), S edge.
+        assert_eq!(looks.mask(&map, 2, 2), MASK_N | MASK_W | MASK_S);
+        // The path sees the rock below as different.
+        assert_eq!(looks.mask(&map, 1, 1), MASK_E);
+        // (3,1) rock with air above and path below: open on every side.
+        assert_eq!(looks.mask(&map, 3, 1), 0);
     }
 
     #[test]

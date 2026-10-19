@@ -51,8 +51,8 @@ pub use fx::Fx;
 pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};
 pub use input::InputFrame;
 pub use level::{
-    Block, Contents, EntitySpawn, Level, PROP_SPRITES, PropLayer, SignStyle, SpawnKind, Tile,
-    TileKind,
+    Block, CameraMode, Contents, EntitySpawn, Level, PROP_SPRITES, PropLayer, SignStyle, SpawnKind,
+    Tile, TileKind,
 };
 pub use player::{Facing, Player, Power};
 pub use replay::Replay;

@@ -50,4 +50,4 @@ fn hand_written_route_reaches_the_goal() {
 /// Frame on which the route touches the goal.
 const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame (changes whenever the hashed tuning gains keys).
-const FINISH_HASH: u64 = 0x5cab_1f46_3125_654d;
+const FINISH_HASH: u64 = 0x8d91_3fcf_fc1d_9e2f;
