@@ -1,0 +1,19 @@
+# The solver's way over the pilgrim group (two stomped, 100 + 200),
+# then a running jump onto the Gams hopping on its block: stomped for
+# 200 (a new chain starts at 200, D-058).
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=500 deaths=0 no_event=Hurt state=playing
+---
+RB 56
+RBJ 20
+RB 15
+RBJ 36
+RB 18
+RBJ 31
+RB 45
+RBJ 20
+RB 2
+RBJ 36
+R 20

@@ -11,9 +11,11 @@
 //! 2. tiles (scene), raised by `Game::tile_bump_px` while bumped
 //! 3. [`draw_entities`]: Gondel cables first, then items, props, enemies
 //!    (animation by `Entity::pose`, facing by `Entity::dir`, the swarm's
-//!    shake by `Entity::shake_px`), the Festungsbahn and the Gondel cabins
+//!    shake by `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), the
+//!    Steinschlag niches (resting/wobbling rock and the `kiesel` trickle),
+//!    falling rocks, the Festungsbahn and the Gondel cabins
 //! 4. player (scene)
-//! 5. [`draw_front`]: debris and popups
+//! 5. [`draw_front`]: debris (bricks and rocks) and popups
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
@@ -63,6 +65,21 @@ pub const LAKE_TURQUOISE: u32 = 0x46cabeff;
 pub const MEADOW_LIGHT: u32 = 0xb0d65aff;
 /// `e` skin_light: Gondel cabin.
 pub const SKIN_LIGHT: u32 = 0xf9cfa6ff;
+/// `g` meadow: Pilger.
+pub const MEADOW: u32 = 0x56a845ff;
+/// `B` navy: Gams.
+pub const NAVY: u32 = 0x2a3878ff;
+/// `F` far_dark: Stein (falling and in its niche).
+pub const FAR_DARK: u32 = 0x8ea4ccff;
+/// `f` far_light: Stein debris.
+pub const FAR_LIGHT: u32 = 0xa4bad8ff;
+/// `m` stone_grey: `kiesel` pebbles without their sprite.
+pub const STONE_GREY: u32 = 0x5d6680ff;
+
+/// Pebbles in a Steinschlag's telegraph trickle (renderer only) ...
+pub const KIESEL_COUNT: i32 = 3;
+/// ... falling this many px per frame down the rock's column.
+pub const KIESEL_SPEED_PX: i32 = 3;
 
 /// The Gondel's cable grip above its feet (sprite-catalog: the cable
 /// meets the 32×52 sprite at (16, 0), origin (16, 52)).
@@ -88,6 +105,12 @@ pub struct EntityLooks<'a> {
     bienenschwarm: Option<&'a AtlasSprite>,
     note: Option<&'a AtlasSprite>,
     gondel: Option<&'a AtlasSprite>,
+    pilger: Option<&'a AtlasSprite>,
+    pilger_lead: Option<&'a AtlasSprite>,
+    gams: Option<&'a AtlasSprite>,
+    stein: Option<&'a AtlasSprite>,
+    stein_debris: Option<&'a AtlasSprite>,
+    kiesel: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -116,6 +139,12 @@ impl<'a> EntityLooks<'a> {
             bienenschwarm: s(EnemyKind::Bienenschwarm.sprite()),
             note: s("note"),
             gondel: s("gondel"),
+            pilger: s(EnemyKind::Pilger.sprite()),
+            pilger_lead: s("pilger_lead"),
+            gams: s(EnemyKind::Gams.sprite()),
+            stein: s("stein"),
+            stein_debris: s("stein_debris"),
+            kiesel: s("kiesel"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -139,10 +168,14 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Blasmusiker => self.blasmusiker,
                 EnemyKind::EBiker => self.e_biker,
                 EnemyKind::Bienenschwarm => self.bienenschwarm,
+                EnemyKind::Pilger => self.pilger,
+                EnemyKind::Gams => self.gams,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
             EntityKind::Gondel => self.gondel,
+            EntityKind::Steinschlag | EntityKind::Stein => self.stein,
+            EntityKind::SteinDebris => self.stein_debris,
             EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
         }
     }
@@ -166,7 +199,11 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Blasmusiker => SKIN_SHADE,
             EnemyKind::EBiker => LAKE_TURQUOISE,
             EnemyKind::Bienenschwarm => MEADOW_LIGHT,
+            EnemyKind::Pilger => MEADOW,
+            EnemyKind::Gams => NAVY,
         },
+        EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
+        EntityKind::SteinDebris => FAR_LIGHT,
         EntityKind::Thrown => LEATHER_DARK,
         EntityKind::Note => SLATE_DARK,
         EntityKind::Festungsbahn => LAKE_TEAL,
@@ -215,13 +252,18 @@ pub fn draw_entities(
     }
     for e in game.entities() {
         match e.kind {
-            EntityKind::Debris | EntityKind::Popup(_) | EntityKind::Bump => {}
+            EntityKind::Debris
+            | EntityKind::SteinDebris
+            | EntityKind::Popup(_)
+            | EntityKind::Bump => {}
             EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
             EntityKind::Enemy(_)
             | EntityKind::Defeated(_)
             | EntityKind::Thrown
+            | EntityKind::Stein
             | EntityKind::Note => draw_enemy(game, looks, atlas, fb, cam, e),
+            EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
             EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
             EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
             _ if e.rising(game.tuning()) => {}
@@ -333,7 +375,9 @@ pub fn draw_front(
     let cam = game.camera();
     for e in game.entities() {
         match e.kind {
-            EntityKind::Debris => draw_body(game, looks, atlas, fb, cam, e),
+            EntityKind::Debris | EntityKind::SteinDebris => {
+                draw_body(game, looks, atlas, fb, cam, e)
+            }
             EntityKind::Popup(p) => draw_popup(game, atlas, font, texts, fb, cam, e, p),
             _ => {}
         }
@@ -392,6 +436,64 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Crash => ("crash", None),
         Pose::Buzz => ("buzz", None),
         Pose::Waggle => ("waggle", None),
+        Pose::Crouch => ("crouch", None),
+        Pose::Hop => ("hop", None),
+        Pose::Rest => ("rest", None),
+        Pose::Wobble => ("wobble", None),
+        Pose::Fall => ("fall", None),
+    }
+}
+
+/// True for a Pilger (or a defeated one) placed with `lead = true`.
+fn is_lead_pilger(game: &Game, e: &Entity) -> bool {
+    matches!(
+        e.kind,
+        EntityKind::Enemy(EnemyKind::Pilger) | EntityKind::Defeated(EnemyKind::Pilger)
+    ) && e
+        .spawn
+        .and_then(|i| game.level().entities.get(usize::from(i)))
+        .is_some_and(|s| s.lead)
+}
+
+/// A Steinschlag niche: the rock (`stein` anim `rest` or `wobble`, nothing
+/// while the niche is empty; grey box without the sprite) and, in the
+/// telegraph, [`KIESEL_COUNT`] `kiesel` pebbles trickling down the rock's
+/// column to the first solid or one-way tile (`kiesel` anim `fall` at their
+/// feet, else 2×2 `m` dots), evenly spaced and falling [`KIESEL_SPEED_PX`]
+/// px per frame.
+fn draw_steinschlag(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let Some(pose) = e.pose(game.tuning()) else {
+        return;
+    };
+    draw_enemy(game, looks, atlas, fb, cam, e);
+    if pose != Pose::Wobble {
+        return;
+    }
+    let (fx, fy) = e.feet();
+    let top = fy.to_px();
+    let len = jnr_core::enemies::rock_column_bottom(e, game.map()).to_px() - top;
+    if len <= 0 {
+        return;
+    }
+    let x = fx.to_px() - cam.x;
+    let tick = game.frame();
+    for i in 0..KIESEL_COUNT {
+        let dy = ((tick as i32 % 1024) * KIESEL_SPEED_PX + i * len / KIESEL_COUNT) % len;
+        let (px, py) = (x - 3 + 3 * i, top + dy - cam.y);
+        match looks.kiesel {
+            Some(s) => {
+                let anim = s.anim("fall").unwrap_or(&s.anims[0]);
+                draw_sprite(fb, atlas, s, anim, tick, px, py + 1, false);
+            }
+            None => fb.fill_rect(px - 1, py - 1, 2, 2, STONE_GREY),
+        }
     }
 }
 
@@ -413,7 +515,12 @@ fn draw_enemy(
     let (sx, sy) = e.shake_px(game.tuning());
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
-    match looks.sprite(e.kind) {
+    let lead = is_lead_pilger(game, e);
+    let sprite = match looks.pilger_lead {
+        Some(s) if lead => Some(s),
+        _ => looks.sprite(e.kind),
+    };
+    match sprite {
         Some(s) => {
             let (name, frame) = pose_anim(pose);
             let anim = s.anim(name).unwrap_or(&s.anims[0]);
@@ -440,6 +547,12 @@ fn draw_enemy(
             let by = e.y.to_px() - cam.y + full - h + sy;
             fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
             fb.outline_rect(bx, by, w, h, OUTLINE);
+            if lead && pose != Pose::Squished {
+                // The leader's pennant: a 1 px stick above the box with a
+                // small red flag.
+                fb.fill_rect(bx + w - 2, by - 8, 1, 8, OUTLINE);
+                fb.fill_rect(bx + w - 1, by - 8, 3, 2, DIRNDL_RED);
+            }
         }
     }
 }
@@ -695,6 +808,11 @@ mod tests {
             ('t', LAKE_TURQUOISE),
             ('y', MEADOW_LIGHT),
             ('e', SKIN_LIGHT),
+            ('g', MEADOW),
+            ('B', NAVY),
+            ('F', FAR_DARK),
+            ('f', FAR_LIGHT),
+            ('m', STONE_GREY),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }
@@ -828,6 +946,11 @@ mod tests {
             Pose::Crash,
             Pose::Buzz,
             Pose::Waggle,
+            Pose::Crouch,
+            Pose::Hop,
+            Pose::Rest,
+            Pose::Wobble,
+            Pose::Fall,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -918,6 +1041,65 @@ mod tests {
         assert_eq!(shown_top(&g), Some(2));
     }
 
+    /// A grey-box M3 level (20x10, ground in row 9, player at column 2):
+    /// a Steinschlag niche at (3, 6) (in range), a `lead` Pilger at
+    /// (8, 12) and a plain one at (8, 14).
+    fn m3_game() -> Game {
+        let text = "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"r\" = { entity = \"steinschlag\" }\n\
+             \"L\" = { entity = \"pilger\", lead = true }\n\"p\" = { entity = \"pilger\" }\n\
+             \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n\
+             ....................\n....................\n....................\n\
+             ......r.............\n....................\n....................\n\
+             ....................\n....................\n..P.........L.p.....\n\
+             ####################\n'''\n";
+        Game::new(&Level::parse(text).unwrap(), &tuning(), 1)
+    }
+
+    /// The niche draws its resting rock, pebbles trickle down its column
+    /// during the telegraph, the niche is empty after the drop; the lead
+    /// Pilger's grey box carries a red pennant, the plain one doesn't.
+    #[test]
+    fn steinschlag_telegraph_pebbles_and_the_lead_pennant() {
+        let mut g = m3_game();
+        let col_x = 6 * 16 + 8;
+        let pebbles = |fb: &Framebuffer| {
+            (64..144)
+                .filter(|&y| (col_x - 4..col_x + 4).any(|x| fb.get(x, y) == Some(STONE_GREY)))
+                .count()
+        };
+        g.step(InputFrame::NONE);
+        let fb = rendered(&g);
+        assert_eq!(
+            fb.get(col_x, 3 * 16 + 8),
+            Some(FAR_DARK),
+            "rock in the niche"
+        );
+        assert!(pebbles(&fb) >= 4, "telegraph pebbles");
+        let pilgers: Vec<Entity> = g
+            .entities()
+            .iter()
+            .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Pilger))
+            .copied()
+            .collect();
+        let pennant = |e: &Entity| {
+            let (x, y) = (e.right().to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+            fb.get(x, y - 8) == Some(DIRNDL_RED)
+        };
+        assert!(pennant(&pilgers[0]) && !pennant(&pilgers[1]));
+        // Frame 56: the rock dropped at 41 and has fallen past the niche.
+        for _ in 0..55 {
+            g.step(InputFrame::NONE);
+        }
+        let fb = rendered(&g);
+        assert_ne!(fb.get(col_x, 3 * 16 + 8), Some(FAR_DARK), "niche empty");
+        assert_eq!(pebbles(&fb), 0, "no pebbles after the drop");
+        assert!(
+            g.entities().iter().any(|e| e.kind == EntityKind::Stein),
+            "the falling rock"
+        );
+    }
+
     #[test]
     fn every_popup_text_key_exists() {
         let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
@@ -952,6 +1134,10 @@ mod tests {
             EntityKind::Enemy(EnemyKind::Bienenschwarm),
             EntityKind::Note,
             EntityKind::Gondel,
+            EntityKind::Enemy(EnemyKind::Pilger),
+            EntityKind::Enemy(EnemyKind::Gams),
+            EntityKind::Stein,
+            EntityKind::SteinDebris,
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
