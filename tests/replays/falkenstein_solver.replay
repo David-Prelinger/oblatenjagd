@@ -2,7 +2,7 @@
 level  = falkenstein
 seed   = 1
 source = solver
-expect = complete frames=1542..1542 deaths=0
+expect = complete frames=1534..1534 deaths=0
 ---
 RB 28
 RBJ 36
@@ -12,43 +12,39 @@ RB 43
 RBJ 36
 RB 18
 RBJ 12
-RB 44
+RB 43
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 44
+RB 43
 RBJ 36
 RB 40
 RBJ 36
 RB 40
 RBJ 6
-RB 56
+RB 59
 RBJ 6
-RB 13
-L 4
-RB 16
+RB 40
 RBJ 36
-RB 27
-RBJ 2
-RB 20
-LBJ 12
-LB 2
-RB 11
-LBJ 12
-LB 2
-RB 8
-LBJ 34
-LB 4
-RBJ 20
-RB 18
+RB 40
 RBJ 12
-RB 103
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 98
 RBJ 36
-RB 196
+RB 188
 RBJ 36
-RB 38
+RB 43
 RBJ 20
 RB 40
 RBJ 20

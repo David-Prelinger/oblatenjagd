@@ -1,0 +1,61 @@
+# Stage 4 Gams (D-058): the solver route onto the saddle, then Resi waits
+# at the edge of the first dip (195-200) where Gams #2 hops between its
+# walls (it never leaves the dip), takes a short run-up and jumps onto it
+# while it stands: a stomp (200), no hurt.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=Stomped no_event=Hurt deaths=0
+shots  = 1405:stomp
+---
+# --- the first 1270 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 6
+RB 59
+RBJ 6
+RB 40
+RBJ 36
+RB 40
+RBJ 12
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 98
+RBJ 36
+RB 188
+RBJ 36
+RB 14
+# --- end of falkenstein_solver.replay ---
+- 30
+R 18       # to the dip's edge
+L 20       # back for a run-up
+- 35
+R 10
+RJ 14      # onto the Gams
+R 20
+- 40

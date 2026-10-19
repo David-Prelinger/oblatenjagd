@@ -1,0 +1,53 @@
+# Stage 4 Durchkriechstein as Normal (D-057): the solver route to the
+# church plateau, then Resi walks into the boulder's face at its mouth (col
+# 149) and holds DOWN: the scripted crawl takes her through the tunnel (row
+# 10, cols 150-153) and out at col 154 with +1 life („+1 Leben").
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = no_event=Hurt deaths=0 lives=4
+shots  = 1060:crawl 1125:plus_leben
+---
+# --- the first 995 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 6
+RB 59
+RBJ 6
+RB 40
+RBJ 36
+RB 40
+RBJ 12
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 97
+# --- end of falkenstein_solver.replay ---
+- 30
+R 20       # into the boulder's face, facing right
+D 4        # DOWN at the mouth: crawl
+- 100

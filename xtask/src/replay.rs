@@ -553,7 +553,7 @@ mod tests {
         };
         let (none, start) = (0, u64::from(InputFrame::START.bits()));
         let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
-        for stage in ["salzburg", "st_gilgen", "brunnwinkl"] {
+        for stage in ["salzburg", "st_gilgen", "brunnwinkl", "falkenstein"] {
             let route = frames(&format!("{stage}_solver.replay"));
             let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
             let tour = frames(&format!("{stage}_tour.replay"));

@@ -1,0 +1,84 @@
+# Stage 4 Hackl (D-056, game-design.md "New mechanics"): the solver route
+# to the church plateau (it runs past the H-box), then Resi bumps the H-box
+# at the plateau's end (166, row 7), the Hackl rises onto it and stays; a
+# straight jump beside the box with a drift left takes it (Normal -> Hackl,
+# „Wirf, Resi, wirf!" + 1000). On the way down to the saddle she stomps the
+# Wolfgang pigeon (100). Facing right on the clear axe lane, she throws an
+# axe every 31 frames (new RUN presses) and defeats pilger group C (3 x 100,
+# outside the stomp chain) without being hurt.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=PowerUp no_event=Hurt deaths=0 score=6200
+shots  = 1235:bump 1290:pickup 1510:axes
+---
+# --- the first 1100 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 6
+RB 59
+RBJ 6
+RB 40
+RBJ 36
+RB 40
+RBJ 12
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 98
+RBJ 36
+RB 68
+# --- end of falkenstein_solver.replay ---
+- 30
+R 16       # under the H-box
+- 12
+J 10       # bump: the Hackl rises
+- 34
+R 4
+- 8
+J 12       # straight up beside the box ...
+LJ 18      # ... and drift left onto the Hackl
+L 4
+- 40       # transformation freeze
+R 50       # down onto the saddle (stomps the pigeon on the way)
+- 16
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 60
