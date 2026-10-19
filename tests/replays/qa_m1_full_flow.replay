@@ -7,7 +7,10 @@
 # solver route unchanged (a continue is a clean restart: the route still
 # completes 1601 frames after play starts) -> Maibaum, tally, stage clear,
 # „Fortsetzung folgt …" -> back on the title with the run reset.
+# The route is pinned to Salzburg alone (D-047 `route`): since St. Gilgen
+# ships, the standard route would continue to the route map instead.
 level  = salzburg
+route  = salzburg
 seed   = 1
 source = handwritten
 start  = title

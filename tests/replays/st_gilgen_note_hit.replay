@@ -1,0 +1,52 @@
+# Stage 2 (D-046): the counterpart of st_gilgen_bench_shelter. On the bench
+# (frame 1366) she waits for Blasmusiker #2's first train, then steps down
+# off the bench's far side onto the street into it: the note (10 px above
+# the street) hits Normal Resi at frame 1490; she respawns at the
+# checkpoint (col 142).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = dies_at frames=1490..1490 deaths=1 lives=2 event=Respawned
+---
+# solver route (frames 0-1366)
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+RBJ 34
+RB 58
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 126
+RBJ 36
+RB 14
+RBJ 36
+RB 18
+RBJ 12
+RB 16
+RBJ 12
+RB 2
+RBJ 36
+RB 120
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+L 10        # brake on the bench
+- 90
+R 12        # step down into the train
+- 120

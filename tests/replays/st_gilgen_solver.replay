@@ -1,0 +1,55 @@
+# Written by `cargo xtask solve st_gilgen --write`; re-create it instead of editing.
+level  = st_gilgen
+seed   = 1
+source = solver
+expect = complete frames=1723..1723 deaths=0
+---
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+RBJ 34
+RB 58
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 126
+RBJ 36
+RB 14
+RBJ 36
+RB 18
+RBJ 12
+RB 16
+RBJ 12
+RB 2
+RBJ 36
+RB 120
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 13
+RBJ 36
+RB 40
