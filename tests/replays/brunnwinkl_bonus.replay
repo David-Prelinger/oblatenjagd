@@ -1,0 +1,43 @@
+# Both bee bonuses: the solver route up to frame 1130 (it takes bonus 1,
+# the five Oblaten on the Kornmuehle's ridge that swarm #1's run points
+# at, between frames 360 and 400: Oblaten 8 -> 13), then Resi stops on
+# house 4's ridge under the Oblatenkiste that swarm #4's diagonal run
+# points at (next to the blue futterschaelchen), bumps it, and the
+# Zaunerstollen rolls right into the chimney and back to her: +1 life.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=ExtraLife lives=4 deaths=0 oblaten>=13 state=playing
+# review shots (enable with goldens after an art-director verdict): 400:bonus1 1260:zaunerstollen
+---
+RB 108
+RBJ 36
+RB 47
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 188
+RBJ 1
+RB 18
+L 4
+RJ 36
+R 2
+RB 3
+RBJ 12
+RB 210
+RBJ 6
+RB 22
+RJ 36
+R 2
+RB 34
+RBJ 36
+RB 60
+RBJ 27
+L 24
+- 40
+J 20
+- 150

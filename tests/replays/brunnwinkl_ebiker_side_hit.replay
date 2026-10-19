@@ -1,0 +1,16 @@
+# Uferweg: a Normal Resi steps off the boulder into the riding E-Biker #1:
+# side contact hurts, so she dies (no stomp, no points for the bike).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = dies_at frames=341..341 event=Died no_event=Stomped score=1000 lives=2 state=dying
+# review shots (enable with goldens after an art-director verdict): 341:hit
+---
+R 165
+RJ 24
+R 30
+- 20
+RJ 20
+L 4
+- 40
+R 40
