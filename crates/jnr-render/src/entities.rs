@@ -608,10 +608,12 @@ fn draw_enemy(
 }
 
 /// An Operettensänger's high-C column ([`jnr_core::enemies::high_c_column`])
-/// while it sounds: `hohes_c` rings (anim `ring`) stacked every 8 px from
-/// his hitbox top up to the column's top (only whole rings, so none pokes
-/// into the solid tile that stopped it), alternate rings half a period
-/// apart; without the sprite the column as a white box with an `i` outline.
+/// while it sounds: `hohes_c` rings (anim `ring`, 8 px slices) stacked
+/// every 8 px from his hitbox top up, alternate rings half a period apart.
+/// A column clipped by a solid tile at a height that is no multiple of 8
+/// gets one more ring hung from its top (overlapping the ring below), so
+/// every hurting pixel lies in a ring's slice and none pokes into the tile.
+/// Without the sprite: the column as a white box with an `i` outline.
 fn draw_high_c(
     game: &Game,
     looks: &EntityLooks,
@@ -629,9 +631,17 @@ fn draw_high_c(
         Some(s) => {
             let anim = s.anim("ring").unwrap_or(&s.anims[0]);
             let cx = x + w / 2;
-            for i in 0..h / 8 {
+            let full = h / 8;
+            for i in 0..full {
                 let tick = game.frame() + i as u32 * anim.ticks;
                 draw_sprite(fb, atlas, s, anim, tick, cx, y + h - 8 * i, false);
+            }
+            if h % 8 != 0 {
+                // The partial top: one more ring whose slice starts at the
+                // clipped top (a column under 8 px keeps it on his head).
+                let tick = game.frame() + full as u32 * anim.ticks;
+                let feet = if full > 0 { y + 8 } else { y + h };
+                draw_sprite(fb, atlas, s, anim, tick, cx, feet, false);
             }
         }
         None => {
@@ -1040,6 +1050,69 @@ mod tests {
             checked += 1;
         }
         assert!(checked > 200, "checked while moving both ways");
+    }
+
+    /// A column clipped by a solid tile 26 px above the singer's head (not
+    /// a multiple of 8): with a ring sprite that fills its whole 8 px slice,
+    /// every hurting row is covered, and nothing is drawn above the column
+    /// (in the tile) or below it (on his head).
+    #[test]
+    fn a_clipped_high_c_column_is_covered_up_to_its_top() {
+        use crate::testutil::A;
+        let full = "a".repeat(16);
+        let ring = crate::testutil::sprite(
+            "hohes_c",
+            (8, 8),
+            false,
+            vec![("ring", 4, vec![crate::testutil::image(&[full.as_str(); 8])])],
+        );
+        let atlas = crate::testutil::atlas(&[ring]);
+        let texts = Texts::default();
+        let rows = [
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "..........#.........",
+            "....................",
+            "....................",
+            "..P.......o.........",
+            "####################",
+            "####################",
+        ];
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"o\" = {{ entity = \"operettensaenger\" }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        let mut g = Game::new(&Level::parse(&text).unwrap(), &tuning(), 1);
+        for _ in 0..60 {
+            g.step(InputFrame::NONE);
+        }
+        let singer = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Operettensaenger))
+            .unwrap();
+        let c = jnr_core::enemies::high_c_column(&singer, g.map(), g.tuning()).unwrap();
+        assert_eq!(c.h.to_px(), 26, "clipped at the tile, 26 % 8 = 2");
+        let ctx = RenderContext::new(&atlas, &texts, g.level());
+        let mut fb = Framebuffer::new();
+        render(&g, &ctx, &mut fb);
+        let cam = g.camera();
+        let cx = (c.x + c.w.div_int(2)).to_px() - cam.x;
+        let top = c.y.to_px() - cam.y;
+        let bottom = top + c.h.to_px();
+        for y in top..bottom {
+            assert_eq!(fb.get(cx, y), Some(A), "row {} of the column", y - top);
+        }
+        assert_ne!(fb.get(cx, top - 1), Some(A), "nothing in the tile");
+        assert_ne!(fb.get(cx, bottom), Some(A), "nothing on his head");
     }
 
     #[test]

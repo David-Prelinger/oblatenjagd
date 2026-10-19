@@ -263,52 +263,54 @@ impl EntityKind {
         matches!(self, EntityKind::Festungsbahn | EntityKind::Gondel)
     }
 
-    fn hash(self, h: &mut Fnv) {
+    /// The kind's leading byte in the state hash; distinct per variant
+    /// (unit-tested). A new kind takes the next free number.
+    const fn tag(self) -> u8 {
         match self {
-            EntityKind::Oblate => h.u8(0),
-            EntityKind::PoppedOblate => h.u8(1),
-            EntityKind::Mozartkugel => h.u8(2),
-            EntityKind::Zaunerstollen => h.u8(3),
-            EntityKind::Debris => h.u8(4),
-            EntityKind::Popup(p) => {
-                h.u8(5);
-                match p {
-                    Popup::Score(n) => {
-                        h.u8(0);
-                        h.u32(n);
-                    }
-                    Popup::ExtraLife => h.u8(1),
-                    Popup::Checkpoint => h.u8(2),
-                    Popup::Wurstkranz => h.u8(3),
-                    Popup::Hoppala => h.u8(4),
-                    Popup::Hackl => h.u8(5),
-                    Popup::Ballast => h.u8(6),
-                    Popup::Bravo => h.u8(7),
+            EntityKind::Oblate => 0,
+            EntityKind::PoppedOblate => 1,
+            EntityKind::Mozartkugel => 2,
+            EntityKind::Zaunerstollen => 3,
+            EntityKind::Debris => 4,
+            EntityKind::Popup(_) => 5,
+            EntityKind::Bump => 6,
+            EntityKind::Checkpoint => 7,
+            EntityKind::Sign => 8,
+            EntityKind::Enemy(_) => 9,
+            EntityKind::Festungsbahn => 10,
+            EntityKind::Defeated(_) => 11,
+            EntityKind::Thrown => 12,
+            EntityKind::Note => 13,
+            EntityKind::Gondel => 14,
+            EntityKind::Steinschlag => 15,
+            EntityKind::Stein => 16,
+            EntityKind::SteinDebris => 17,
+            EntityKind::Hackl => 18,
+            EntityKind::ThrownHackl => 19,
+            EntityKind::Durchkriechstein => 20,
+            EntityKind::Souvenirstand => 21,
+            EntityKind::SchneekugelScherben => 22,
+        }
+    }
+
+    fn hash(self, h: &mut Fnv) {
+        h.u8(self.tag());
+        match self {
+            EntityKind::Popup(p) => match p {
+                Popup::Score(n) => {
+                    h.u8(0);
+                    h.u32(n);
                 }
-            }
-            EntityKind::Bump => h.u8(6),
-            EntityKind::Checkpoint => h.u8(7),
-            EntityKind::Sign => h.u8(8),
-            EntityKind::Enemy(k) => {
-                h.u8(9);
-                h.u8(k.id());
-            }
-            EntityKind::Festungsbahn => h.u8(10),
-            EntityKind::Defeated(k) => {
-                h.u8(11);
-                h.u8(k.id());
-            }
-            EntityKind::Thrown => h.u8(12),
-            EntityKind::Note => h.u8(13),
-            EntityKind::Gondel => h.u8(14),
-            EntityKind::Steinschlag => h.u8(15),
-            EntityKind::Stein => h.u8(16),
-            EntityKind::SteinDebris => h.u8(17),
-            EntityKind::Hackl => h.u8(18),
-            EntityKind::ThrownHackl => h.u8(19),
-            EntityKind::Durchkriechstein => h.u8(20),
-            EntityKind::Souvenirstand => h.u8(21),
-            EntityKind::SchneekugelScherben => h.u8(22),
+                Popup::ExtraLife => h.u8(1),
+                Popup::Checkpoint => h.u8(2),
+                Popup::Wurstkranz => h.u8(3),
+                Popup::Hoppala => h.u8(4),
+                Popup::Hackl => h.u8(5),
+                Popup::Ballast => h.u8(6),
+                Popup::Bravo => h.u8(7),
+            },
+            EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
+            _ => {}
         }
     }
 }
@@ -907,6 +909,133 @@ mod tests {
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");
             }
         }
+    }
+
+    /// Every enemy kind. The match below fails to compile when a kind is
+    /// added, so the list can't silently fall behind.
+    fn all_enemy_kinds() -> Vec<EnemyKind> {
+        let all = vec![
+            EnemyKind::SelfieTourist,
+            EnemyKind::Taube,
+            EnemyKind::TaubeSitting,
+            EnemyKind::MozartkugelVerkaeufer,
+            EnemyKind::Fiaker,
+            EnemyKind::NordicWalker,
+            EnemyKind::Blasmusiker,
+            EnemyKind::EBiker,
+            EnemyKind::Bienenschwarm,
+            EnemyKind::Pilger,
+            EnemyKind::Gams,
+            EnemyKind::Operettensaenger,
+            EnemyKind::Schneekugel,
+        ];
+        for k in &all {
+            match k {
+                EnemyKind::SelfieTourist
+                | EnemyKind::Taube
+                | EnemyKind::TaubeSitting
+                | EnemyKind::MozartkugelVerkaeufer
+                | EnemyKind::Fiaker
+                | EnemyKind::NordicWalker
+                | EnemyKind::Blasmusiker
+                | EnemyKind::EBiker
+                | EnemyKind::Bienenschwarm
+                | EnemyKind::Pilger
+                | EnemyKind::Gams
+                | EnemyKind::Operettensaenger
+                | EnemyKind::Schneekugel => {}
+            }
+        }
+        all
+    }
+
+    /// Every entity kind (one representative per tuple variant), guarded
+    /// by an exhaustive match like [`all_enemy_kinds`].
+    fn all_entity_kinds() -> Vec<EntityKind> {
+        let all = vec![
+            EntityKind::Oblate,
+            EntityKind::PoppedOblate,
+            EntityKind::Mozartkugel,
+            EntityKind::Zaunerstollen,
+            EntityKind::Debris,
+            EntityKind::Popup(Popup::ExtraLife),
+            EntityKind::Bump,
+            EntityKind::Checkpoint,
+            EntityKind::Sign,
+            EntityKind::Enemy(EnemyKind::SelfieTourist),
+            EntityKind::Defeated(EnemyKind::SelfieTourist),
+            EntityKind::Thrown,
+            EntityKind::Festungsbahn,
+            EntityKind::Note,
+            EntityKind::Gondel,
+            EntityKind::Steinschlag,
+            EntityKind::Stein,
+            EntityKind::SteinDebris,
+            EntityKind::Hackl,
+            EntityKind::ThrownHackl,
+            EntityKind::Durchkriechstein,
+            EntityKind::Souvenirstand,
+            EntityKind::SchneekugelScherben,
+        ];
+        for k in &all {
+            match k {
+                EntityKind::Oblate
+                | EntityKind::PoppedOblate
+                | EntityKind::Mozartkugel
+                | EntityKind::Zaunerstollen
+                | EntityKind::Debris
+                | EntityKind::Popup(_)
+                | EntityKind::Bump
+                | EntityKind::Checkpoint
+                | EntityKind::Sign
+                | EntityKind::Enemy(_)
+                | EntityKind::Defeated(_)
+                | EntityKind::Thrown
+                | EntityKind::Festungsbahn
+                | EntityKind::Note
+                | EntityKind::Gondel
+                | EntityKind::Steinschlag
+                | EntityKind::Stein
+                | EntityKind::SteinDebris
+                | EntityKind::Hackl
+                | EntityKind::ThrownHackl
+                | EntityKind::Durchkriechstein
+                | EntityKind::Souvenirstand
+                | EntityKind::SchneekugelScherben => {}
+            }
+        }
+        all
+    }
+
+    #[test]
+    fn hash_tags_are_distinct() {
+        let mut ids: Vec<u8> = all_enemy_kinds().into_iter().map(EnemyKind::id).collect();
+        let n = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), n, "two EnemyKinds share a hash id");
+        let mut tags: Vec<u8> = all_entity_kinds()
+            .into_iter()
+            .map(EntityKind::tag)
+            .collect();
+        let n = tags.len();
+        tags.sort_unstable();
+        tags.dedup();
+        assert_eq!(tags.len(), n, "two EntityKinds share a hash tag");
+        // The tuple variants still tell their contents apart.
+        let hash = |k: EntityKind| {
+            let mut h = Fnv::new();
+            k.hash(&mut h);
+            h.finish()
+        };
+        assert_ne!(
+            hash(EntityKind::Enemy(EnemyKind::Operettensaenger)),
+            hash(EntityKind::Enemy(EnemyKind::Schneekugel))
+        );
+        assert_ne!(
+            hash(EntityKind::Popup(Popup::Bravo)),
+            hash(EntityKind::Popup(Popup::Ballast))
+        );
     }
 
     #[test]

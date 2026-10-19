@@ -1200,16 +1200,25 @@ pub fn high_c_column(e: &Entity, map: &TileMap, t: &Tuning) -> Option<Aabb> {
     })
 }
 
-/// A new snow globe from stand `e`: the `schneekugel_hitbox` with its
-/// bottom centre on the stand cell's bottom centre, rolling left. Its
-/// `base_x`/`base_y` (the spawn point) tell which stand it came from.
-fn new_globe(e: &Entity, t: &Tuning) -> Entity {
+/// Where stand `e`'s globes start (hitbox top left): the
+/// `schneekugel_hitbox` with its bottom centre on the stand cell's bottom
+/// centre. A globe keeps it as `base_x`/`base_y`, which tells its stand.
+fn globe_spawn_point(e: &Entity, t: &Tuning) -> (Fx, Fx) {
+    let [w, h] = t.enemies.schneekugel_hitbox;
     let (fx, fy) = e.feet();
-    let mut g = Entity::at_feet(
+    (fx - Fx::from_px(w).div_int(2), fy - Fx::from_px(h))
+}
+
+/// A new snow globe from stand `e`, rolling left.
+fn new_globe(e: &Entity, t: &Tuning) -> Entity {
+    let [w, h] = t.enemies.schneekugel_hitbox;
+    let (x, y) = globe_spawn_point(e, t);
+    let mut g = Entity::new(
         EntityKind::Enemy(EnemyKind::Schneekugel),
-        fx,
-        fy,
-        t.enemies.schneekugel_hitbox,
+        x,
+        y,
+        Fx::from_px(w),
+        Fx::from_px(h),
     );
     g.dir = -1;
     g.vx = -t.enemies.schneekugel_speed;
@@ -1250,9 +1259,8 @@ pub(crate) fn update_souvenirstand(e: &mut Entity, ctx: &UpdateCtx) -> Option<En
     } else {
         (e.count + 1) % period
     };
-    let globe = new_globe(e, t);
     if first || e.count == 0 {
-        let origin = (globe.base_x, globe.base_y);
+        let origin = globe_spawn_point(e, t);
         let alive = ctx.globes.iter().filter(|&&g| g == origin).count();
         e.state = if alive >= usize::from(et.souvenirstand_max_alive) {
             state::SKIPPING
@@ -1260,7 +1268,7 @@ pub(crate) fn update_souvenirstand(e: &mut Entity, ctx: &UpdateCtx) -> Option<En
             state::COUNTING
         };
     }
-    (e.state == state::COUNTING && e.count == et.souvenirstand_telegraph).then_some(globe)
+    (e.state == state::COUNTING && e.count == et.souvenirstand_telegraph).then(|| new_globe(e, t))
 }
 
 /// A snow globe rolls left at `schneekugel_speed` with the player's
