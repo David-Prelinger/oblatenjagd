@@ -1,0 +1,69 @@
+# QA M4 acceptance (checkpoint hold-left, re-test after the level fix):
+# qa_m4_checkpoint_hold_left with RUN and jumps instead of a plain walk.
+# The st_wolfgang_solver route to 1290, a little LEFT into the Markt globe
+# lane (death 1411), the respawn at the checkpoint, then RUN LEFT, a running
+# jump back right, a running jump left and RUN LEFT to the screen's left
+# edge (x 2264, the camera never scrolls back). Bus #2 (parked 2144-2208,
+# right edge 2142 at its stop) stays left of the screen edge and drives away;
+# tourist #3 stays in his pen behind the bench. No hurt, no second death.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=1 lives=2 event=Respawned state=playing no_event=Hurt player_x>=2264
+---
+# st_wolfgang_solver inputs to 1290
+# (the route as of the M4 acceptance; the pen-wall fix changed the solver
+# route, this prefix still plays the same way)
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+# a little LEFT, into the globe lane: death 1411
+L 20
+- 200
+# RUN LEFT, a running jump right, a running jump left, RUN LEFT
+LB 40
+RBJ 20
+RB 20
+LBJ 30
+LB 190

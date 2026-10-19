@@ -1,5 +1,6 @@
 # Stage 5 Schafbergbahn (D-067): the solver route's inputs to the lower
-# station (frame 305), then walk onto the waiting train (it starts when she
+# station (frame 305; the route as of the M4 acceptance, before the
+# pen-wall fix), then walk onto the waiting train (it starts when she
 # stands on it) and ride the whole 24-tile, 576-frame track standing on the
 # coach (the uphill half), with two tap hops over the gorge for the Oblaten
 # line (each hop takes 1-2 and lands back on the roof), and walk off onto

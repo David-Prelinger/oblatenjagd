@@ -4,11 +4,13 @@
 # damage), bounce on along the roof through the 4 Oblaten over the stop,
 # and land on the open road behind it (since the M4 level fix Selfie-Tourist
 # #3 is penned at the Markt entrance, so nobody waits behind the bus; QA's
-# original cut stomped him there for 100).
+# original cut stomped him there for 100). Re-cut for the pen-wall fix:
+# Selfie-Tourist #2's terrace is a tile lower, so she reaches the shelter
+# 7 px further left (one more Alm Oblate) and steps further right.
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt oblaten=24 score=5000
+expect = deaths=0 no_event=Hurt oblaten=25 score=5100
 ---
 # the qa_st_wolfgang_relaxed inputs to 2220 (on the shelter, bus #2 at its photo stop)
 R 150
@@ -39,8 +41,8 @@ R 70
 - 180
 R 200
 RJ 18
-R 6
-- 145
+R 18
+- 160
 # onto the roof, bounce, over the tourist
 RJ 12
 R 30

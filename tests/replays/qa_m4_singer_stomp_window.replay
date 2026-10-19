@@ -1,14 +1,16 @@
 # QA M4 Operettensänger #2 (D-068): stomp him in his idle window. The
 # solver route to 1630 (Normal, on the street in front of him), wait out
 # the high C, walk in and jump onto him in his idle window: stomp 200,
-# „Bravo!", no hurt (score 7700 -> 7900). Re-cut after the M4 level fixes
+# „Bravo!", no hurt (score 6600 -> 6800). Re-cut after the M4 level fixes
 # (new solver route).
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt event=Stomped score=7900 power=normal
+expect = deaths=0 no_event=Hurt event=Stomped score=6800 power=normal
 ---
 # st_wolfgang_solver inputs to 1630
+# (the route as of the M4 acceptance; the pen-wall fix changed the solver
+# route, this prefix still plays the same way)
 RB 80
 RBJ 6
 RB 10

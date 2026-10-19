@@ -1,80 +1,89 @@
 # QA M4 Operettensänger #2 (D-068): the high C hurts on any contact. The
-# relaxed run as Zuckerschock to 3966 (church terrace, H-box skipped), walk
+# relaxed run as Zuckerschock to 4043 (church terrace, H-box skipped;
+# 3966 before the pen-wall re-cut), walk
 # down to the street, stop 70 px in front of him, then a walking jump over
 # him during his second high C: the column catches her at the apex, 50 px
-# above his head (Hurt at 4491, Zuckerschock -> Normal); she floats on
+# above his head (Hurt at ~4568, Zuckerschock -> Normal); she floats on
 # over him during the invulnerability.
 level  = st_wolfgang
 seed   = 1
 source = handwritten
 expect = deaths=0 lives=3 event=Hurt power=normal player_x>=3670
 ---
-# the qa_st_wolfgang_relaxed inputs to 3966 (Zuckerschock, after the Pilger stomps)
-R 150
+# the qa_st_wolfgang_relaxed inputs to 4043 (Zuckerschock, after the Pilger stomps)
+R 150      # Ried: walk, 5 Oblaten
 RJ 20
 R 60
 R 2
 - 26
 J 12
 RJ 10
-- 152
+- 152      # stand on the curb (col 25): stand #1's globe shatters on it
 R 30
 RJ 10
 R 60
 - 40
 R 22
-RJ 16
+RJ 16      # stomp Selfie-Tourist #1 at the station
 R 30
 RJ 8
 R 16
 RJ 8
 R 21
 RJ 8
-R 95
-- 570
-R 225
+R 95       # walk onto the waiting train (it starts)
+- 570      # ride the whole 24-tile track standing
+R 225      # walk off at the Alm halt; stepping down stomps Selfie-Tourist #2
 RJ 10
 R 70
-- 180
+- 180      # watch bus #1 drive under the terrace into the tunnel
 R 200
 RJ 18
 R 6
-- 345
+- 345      # on the shelter roof: bus #2's photo stop, then it drives under
 R 45
 R 220      # walk to the bench at the Markt entrance (col 152)
 RJ 12      # hop the bench: stomp Selfie-Tourist #3 in his pen (153-162); checkpoint on the way
 R 20
-- 10
-L 6        # back under the M-box
-- 6
-- 26
-J 14
-- 160
-R 104
-RJ 8
-- 30
-RJ 20
+- 40
+R 16       # under the M-box (col 156)
+- 20
+J 14       # M-box; the Mozartkugel turns at the 2-high basin end (col 163) and comes back
+- 230
+R 40
+RJ 12      # onto the basin end (col 163, 2 high)
 R 10
-- 329
-RJ 14
-R 30
-- 80
-J 10
-R 10
-- 50
-R 24
-RJ 10
-R 52
+- 20
 RJ 16
+R 6
+- 30
+RJ 12      # onto the Pilgerbrunnen canopy
+R 8
+- 30
+R 30       # down onto the basin's right end (col 167), overhanging the globe lane
+- 255      # wait: Selfie-Tourist #4 paces the sunken lane (168-177) and turns under her
+R 6        # step off onto him: stomp
+- 30
+R 40
+- 52
+J 12       # hop over stand #2's globe
+- 60
+R 30
+RJ 14      # up onto the awning
+R 40       # over it, down into the dip at 181-183
+- 20
+RJ 16      # up the church steps
+R 16
+RJ 8
 R 16
 RJ 8
 R 16
 RJ 8
 R 6
-- 110
-RJ 16
+- 68
+RJ 16      # church terrace: stomp the Pilger pair (chain)
 R 40
-- 10
+- 15
 # down to the street, wait, jump over him into the column
 R 330
 - 150
