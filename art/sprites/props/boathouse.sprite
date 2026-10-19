@@ -1,8 +1,9 @@
 # Brunnwinkl boathouse (Bootshaus, back-layer prop over the shore block,
-# D-031/D-038): a steep wooden-shingle roof (O shingles, l joints and course
-# shadows; o/O lit left barge board, l right) over a short o/O
+# D-031/D-038): a steep wooden-shingle roof (O shingles, l joints, 1 px l drip
+# shadows, courses offset 2 px; o/O lit left barge board, l right) over a short o/O
 # plank wall with a cross window, on o O l stilts over the
-# dark slip where a white rowing boat (w i m) is moored on T/b water.
+# dark d slip where a white rowing boat (w i m) hangs on two l hoist slings
+# (the lake itself is the jetty/jetty_post tiles below the prop).
 # Left of it a plank stair tower and a woodpile form the 2-tile steps.
 # Drawn = solid: the outline matches the collision profile in tiles (prop
 # placed bottom centre under col 223 + dx 8, bottom = top of the jetty row):
@@ -21,40 +22,40 @@ frame idle 0
 .................................oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo.
 ................................oOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOll
 ................................oOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................................oOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................................oOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................................oOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................................oOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................................oOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................................oOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................................oOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................................oOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................................oOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................................oOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................................oOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................................oOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................................oOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooooooooooooooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................OOOOOOOOOOOOOOOloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................lllllllllllllllloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................lllllllllllllllloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................oooOoooOoooOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOoooOoooOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOoooOoooOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOoooOoooOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOoooOoooOoooloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................oooOoooOoooOoooloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................oooOollllllOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOolssbblOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOolssbblOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOolbbbblOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOolbbbblOoooloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................oooOolbbbblOoooloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
-................oooOolbbbblOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOollllllOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOoooOoooOoooloOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOll
-................oooOoooOoooOoooloOllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-................oooOoooOoooOoooloOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOll
+................................oOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................................oOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................................oOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................................oOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................................oOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................................oOlOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlllll
+................................oOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................................oOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................................oOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................................oOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................................oOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................................oOlOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlllll
+................................oOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooooooooooooooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................OOOOOOOOOOOOOOOloOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................lllllllllllllllloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................lllllllllllllllloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................oooOoooOoooOoooloOlOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlllll
+................oooOoooOoooOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOoooOoooOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOoooOoooOoooloOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................oooOoooOoooOoooloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................oooOoooOoooOoooloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................oooOollllllOoooloOlOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlllll
+................oooOolssbblOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOolssbblOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOolbbbblOoooloOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................oooOolbbbblOoooloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................oooOolbbbblOoooloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
+................oooOolbbbblOoooloOlOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlllll
+................oooOollllllOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOoooOoooOoooloOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOll
+................oooOoooOoooOoooloOlllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOllllOOlll
+................oooOoooOoooOoooloOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOlOOOOOll
 ................oooOoooOoooOooolOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 ................oooOoooOoooOooolllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
 ................oooOoooOoooOoool..llllllllllllllllllllllllllllllllllllllllllllllllllllllllllll..
@@ -71,30 +72,30 @@ OOOOOOOOOOOOOOOOoooOoooOoooOoool..oooOoooOoolbbbllbbbloooOoooOoooOoooOoooOoooOoo
 OOOOOOOOOOOOOOOOoooOoooOoooOoool..oooOoooOoolbbbllbbbloooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
 lllllllllllllllloooOoooOoooOoool..oooOoooOoolllllllllloooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
 lOOllOOllOOllOOloooOoooOoooOoool..oooOoooOooOOOOOOOOOOoooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
-OOOOOOOOOOOOOOOloooOoooOoooOoool..oooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
-OOOlOOOlOOOlOOOloooOoooOoooOoool..oooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
-lOlllOlllOlllOlloooOoooOoooOoool.OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO.
+lOOllOOllOOllOOloooOoooOoooOoool..oooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
+lllllllllllllllloooOoooOoooOoool..oooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOoooOooOO..
+OllOOllOOllOOllloooOoooOoooOoool.OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO.
 OllOOllOOllOOllloooOoooOoooOoool.llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll.
-OOOOOOOOOOOOOOOloooOoooOoooOoool.llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll.
-OlOOOlOOOlOOOlOlooollllllllllool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-lllOlllOlllOllllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-OOOOOOOOOOOOOOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-OOOlOOOlOOOlOOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-lOlllOlllOlllOllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
+lllllllllllllllloooOoooOoooOoool.llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll.
+lOOllOOllOOllOOlooollllllllllool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+OllOOllOOllOOlllooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+OllOOllOOllOOlllooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddldddddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddldddddddoOldddddddddddddoOldddddddlddddwoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddldddddddoOldooooooodddddoOldddddddldddwwoOlddddd..
+OllOOllOOllOOlllooolOOOllOOOlool..ddddoOldddddldddddddoOldOOOOOOOdddddoOldddddddlddwwdoOlddddd..
+OllOOllOOllOOlllooolOoOllOOOlool..ddddoOldddwwwwwwwwwwoOlwwwwwwwwwwwwwoOlwwwwwwwwddwwdoOlddddd..
+llllllllllllllllooolOoOllOOOlool..ddddoOldddiiiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiidddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOlddddiiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiiiddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiiiddoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOlddddddmmmmmmmoOlmmmmmmmmmmmmmoOlmmmmmmmmmmdddoOlddddd..
+OllOOllOOllOOlllooolOOOllOOOlool..ddddoOlddddddddmmmmmoOlmmmmmmmmmmmmmoOlmmmmmmmmdddddoOlddddd..
 OllOOllOOllOOlllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
-OOOOOOOOOOOOOOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOlddddddddddddwoOlddddd..
-OlOOOlOOOlOOOlOlooolOOOllOOOlool..ddddoOldddddddddddddoOldooooooodddddoOldddddddddddwwoOlddddd..
-lllOlllOlllOllllooolOOOllOOOlool..ddddoOldddddddddddddoOldOOOOOOOdddddoOlddddddddddwwdoOlddddd..
-lOOllOOllOOllOOlooolOoOllOOOlool..ddddoOldddwwwwwwwwwwoOlwwwwwwwwwwwwwoOlwwwwwwwwddwwdoOlddddd..
-OOOOOOOOOOOOOOOlooolOoOllOOOlool..ddddoOldddiiiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiidddoOlddddd..
-OOOlOOOlOOOlOOOlooolOOOllOOOlool..ddddoOlddddiiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiiiddoOlddddd..
-lOlllOlllOlllOllooolOOOllOOOlool..ddddoOldddddiiiiiiiioOliiiiiiiiiiiiioOliiiiiiiiiiiddoOlddddd..
-OllOOllOOllOOlllooolOOOllOOOlool..ddddoOlddddddmmmmmmmoOlmmmmmmmmmmmmmoOlmmmmmmmmmmdddoOlddddd..
-OOOOOOOOOOOOOOOlooolOOOllOOOlool..ddddoOlddddddddmmmmmoOlmmmmmmmmmmmmmoOlmmmmmmmmdddddoOlddddd..
-OlOOOlOOOlOOOlOlooolOOOllOOOlool..ddddoOldddddddddBBBBoOlBBBBBBBBBBBBBoOlBBBBBBdddddddoOlddddd..
-lllOlllOlllOllllooolOOOllOOOlool..TTTToOlTTTTTTTTTTTTToOlTTTTTTTTTTTTToOlTTTTTTTTTTTTToOlTTTTT..
-lOOllOOllOOllOOlooolOOOllOOOlool..bbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbb..
-OOOOOOOOOOOOOOOlooolOOOllOOOlool..bbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbb..
-OOOlOOOlOOOlOOOlooolOOOllOOOlool..bbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbb..
-llllllllllllllllooolOOOllOOOlool..bbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbbbbbbbbbboOlbbbbb..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
+lOOllOOllOOllOOlooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..
+llllllllllllllllooolOOOllOOOlool..ddddoOldddddddddddddoOldddddddddddddoOldddddddddddddoOlddddd..

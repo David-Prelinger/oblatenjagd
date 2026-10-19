@@ -118,7 +118,7 @@ Art is in `art/sprites/props/`; move the row into the table above when the name 
 
 | Sprite | Size | Origin | Animations / notes |
 |---|---|---|---|
-| `boathouse` (Brunnwinkl Bootshaus) | 96×80 | 48,80 (bottom centre) | `idle` held — `layer = "back"`; steep wooden-shingle roof, plank wall with a cross window, `o O l` stilts over the dark slip with a moored white rowing boat; a stair tower and a woodpile on its left. Drawn = solid (D-038): placed at col 223 with `dx = 8`, bottom on the top of the jetty row, its outline matches the shore block 221–226: woodpile top 2 tiles, stair tower 4 tiles, roof ridge (4 tiles, `o` lip) 5 tiles = the launch. Collision stays with tiles (`invisible` under it); stilts sit at x 6–8 of each tile, so `jetty_post` tiles below continue them into the lake |
+| `boathouse` (Brunnwinkl Bootshaus) | 96×80 | 48,80 (bottom centre) | `idle` held — `layer = "back"`; steep wooden-shingle roof, plank wall with a cross window, `o O l` stilts over the dark `d` slip with a white rowing boat hung on two `l` hoist slings; a stair tower and a woodpile on its left. Drawn = solid (D-038): placed at col 223 with `dx = 8`, bottom on the top of the jetty row, its outline matches the shore block 221–226: woodpile top 2 tiles, stair tower 4 tiles, roof ridge (4 tiles, `o` lip) 5 tiles = the launch. Collision stays with tiles (`invisible` under it); under it the level puts `jetty` (row 15: the lake surface 4 px below the deck line, as on the bathing jetty) and `jetty_post` (row 16) |
 
 ### Tiles (group `tiles`, 16×16, `tile_<name>`)
 
