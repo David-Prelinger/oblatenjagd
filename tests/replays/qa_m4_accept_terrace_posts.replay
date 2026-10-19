@@ -1,0 +1,88 @@
+# QA M4 acceptance: the Kaiserterrasse posts (terrasse_post_l at 233,
+# terrasse_post_r at 242, rows 9-14) are decorative and never block. The
+# st_wolfgang_solver route to 1734 (running on the street at x 3708), let go:
+# she runs through post 233 (x 3728-3743) at 1.6 px/frame without slowing
+# down beyond the normal deceleration, walks on under the terrace, walks
+# through post 242 (x 3872-3887), stops inside it and jumps straight up in
+# it to y 156 (her head in rows 9-10, no bump), lands, walks on to the
+# first jetty plank (x 3943) and stands there. Singer #3 sings on the
+# terrace above (his column rises into the sky, never down to the street).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=3940 player_y>=218 state=playing oblaten=40
+---
+# st_wolfgang_solver inputs to 1734
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+RBJ 36
+RB 13
+RBJ 36
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 110
+RBJ 1
+RB 6
+LB 14
+RJ 36
+R 2
+RB 3
+LB 14
+RBJ 20
+RB 25
+- 30
+L 6
+- 20
+R 40
+- 40
+R 34
+- 16
+J 24
+- 40
+R 26
+- 30
+

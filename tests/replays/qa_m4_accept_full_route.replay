@@ -1,0 +1,441 @@
+# QA M4 acceptance: the whole journey in one run of the real game, from the
+# title through Salzburg, St. Gilgen, Brunnwinkl and Falkenstein (the
+# qa_m3_accept_full_route inputs, Falkenstein cleared with the Hackl), the
+# route map in Wait, START (13501) -> the St. Wolfgang intro as Hackl Resi
+# with the run carried over (D-056, D-071), then a handwritten Hackl route
+# through Stage 5 at walking pace: M-box Mozartkugel (1000, stays Hackl),
+# over the garden wall, stand #1's globe shatters on the curb, over the
+# counter and awning, axe on Selfie-Tourist #1, the whole Schafbergbahn ride
+# standing, stomp Selfie-Tourist #2 at the Alm, bus #1 watched from the
+# terrace, bus #2's photo stop waited out on the shelter, checkpoint (16505),
+# over the bench into tourist #3's pen, axe on him, M-box (1000), basin ->
+# Pilgerbrunnen canopy, stomp tourist #4, axe on stand #2's globe, counter ->
+# awning -> steps -> church terrace, point-blank axes on the Pilger pair,
+# bump the H-box (Hackl stays), down to the street, under balcony B1
+# (singer #1 sings into the sky), axe on singer #2, along the street through
+# both decorative Kaiserterrasse posts (233, 242), the Seebad in two jumps,
+# axe on stand #3's globe, awning (the 100th Oblate: extra life), step,
+# landing hall, walk off to the Maibaum (100). St. Wolfgang LevelComplete at
+# 19103, the tally, then the route map St. Wolfgang -> Wolfgangsee (from
+# 19565): no level yet, so the teaser, still with Hackl Resi and the run (it
+# turns to the title at 19809, covered by qa_m4_flow_st_wolfgang_teaser_title).
+# The replay ends in the teaser.
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt event=AxeHit event=ExtraLife event=CheckpointReached
+expect = state=route_map stage=st_wolfgang power=hackl lives=6 score=99400 oblaten=1
+---
+- 20
+S 1         # title -> Salzburg intro
+- 150
+# salzburg_solver (play 172-1772)
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 62
+RBJ 20
+RB 40
+- 1154      # goal sequence, map (auto-continue 2776), St. Gilgen intro
+# st_gilgen_solver (play 2927-4649)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 13
+RBJ 36
+RB 40
+- 1002      # goal sequence, map (auto 5501), Brunnwinkl intro
+# brunnwinkl_solver (play 5652-7119)
+RB 104
+RBJ 36
+RB 27
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 33
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 9
+RBJ 12
+RB 40
+- 495       # goal sequence; map Arrive from 7603
+S 1         # 7615: Arrive -> Wait
+- 39
+S 1         # 7655: START in Wait -> Falkenstein intro
+- 150     # Falkenstein intro
+# --- qa_falkenstein_relaxed ---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 73
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 218
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 4
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 205
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 50
+- 8
+J 10
+- 46
+J 8
+LJ 22
+L 4
+- 30
+R 12
+- 20
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 2
+R 95
+- 172
+R 140
+- 5
+B 1
+- 30
+B 1
+- 30
+R 30
+- 5
+B 1
+- 30
+B 1
+- 30
+R 150
+- 5
+RJ 22
+R 20
+- 20
+R 28
+RJ 22
+R 25
+- 15
+B 1
+- 30
+B 1
+- 30
+R 100
+RJ 20
+R 20
+RJ 15
+R 120
+# --- end ---
+- 554     # goal, tally, route map Falkenstein -> St. Wolfgang (Wait) from 13375
+S 1       # 13501: START in Wait -> St. Wolfgang intro, as Hackl
+- 150     # St. Wolfgang intro (13502-13651)
+# --- St. Wolfgang as Hackl, play from 13652 ---
+R 120
+- 26
+J 14
+- 100
+R 30
+RJ 20
+R 50
+- 45
+RJ 16
+R 12
+RJ 16
+R 30
+RJ 16
+R 20
+- 51
+R 64
+- 45
+B 1
+- 30
+R 60
+RJ 16
+R 100
+- 600
+R 200
+R 30
+RJ 14
+R 60
+- 230
+R 200
+RJ 18
+R 6
+- 345
+R 45
+R 230
+- 60
+RJ 12
+R 30
+- 200
+B 1
+- 30
+R 12
+- 5
+J 14
+- 60
+R 60
+RJ 8
+- 30
+J 14
+RJ 8
+R 6
+- 200
+RJ 14
+R 20
+- 20
+B 1
+- 20
+R 50
+RJ 16
+R 60
+RJ 16
+R 40
+- 10
+RJ 16
+R 30
+- 200
+B 1
+- 30
+B 1
+- 30
+R 55
+- 10
+J 6
+- 60
+R 200
+R 88
+B 1
+- 30
+R 208
+RJ 14
+R 26
+RJ 30
+R 50
+RJ 30
+R 30
+R 28
+B 1
+- 20
+R 40
+RJ 16
+R 60
+RJ 16
+R 30
+RJ 16
+R 40
+RJ 16
+R 16
+RJ 16
+R 200
+- 511     # goal sequence, tally, route map -> Wolfgangsee teaser (19565..)
