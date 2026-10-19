@@ -1,0 +1,46 @@
+# Grey-box test level for the Reisebus (M4 task E23, D-070; not part of
+# the journey; side camera). Sections (columns): start 0-5 with an `M`-box
+# at 4; steps up (6-9) to a terrace slab (row 9, top 3 tiles above the
+# street, 8-26) over an open underpass (rows 10-11 free from column 10);
+# bus #1 parked at 34-37 without `stop`: it triggers while Resi stands at
+# the terrace edge (~26) and drives beneath her through the underpass and
+# off screen. A one-way shelter roof (51-53, row 9, 3 tiles up) and bus #2
+# parked at 60-63 with `stop = 4`: it triggers when Resi reaches the
+# shelter, halts at 56-59 for the photo stop (120 frames of flashes, 30 of
+# hazard lights) and drives on under the shelter roof. A Hackl box at 72
+# (row 9) and bus #3 parked at 86-89 without `stop` (axe bounce, a bus to
+# jump or bounce over while it drives); goal at 96. Every bus lane (rows
+# 10-11, 24 tiles to the left) is clear (`levels lint`, D-070).
+# Replays: tests/replays/m4_bus_*.replay.
+
+[meta]
+id = "m4_bus"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"r" = { entity = "reisebus" }
+"s" = { entity = "reisebus", stop = 4 }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....................................................................................................
+....M...............................................................................................
+........###################........................---..................H...........................
+........##..........................................................................................
+..P...####........................r.........................s.........................r.........G...
+####################################################################################################
+####################################################################################################
+'''

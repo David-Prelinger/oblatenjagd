@@ -214,11 +214,13 @@ pub enum SpawnKind {
     /// The Durchkriechstein's tunnel (`len` cells from its cell to the
     /// right): DOWN at its mouth starts the scripted crawl (D-057).
     Durchkriechstein,
+    /// Enemy `reisebus` (stop-and-go charger, `stop`: D-070).
+    Reisebus,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 21] = [
+    pub const ALL: [SpawnKind; 22] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -240,6 +242,7 @@ impl SpawnKind {
         SpawnKind::Gams,
         SpawnKind::Steinschlag,
         SpawnKind::Durchkriechstein,
+        SpawnKind::Reisebus,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -267,6 +270,7 @@ impl SpawnKind {
             SpawnKind::Gams => "gams",
             SpawnKind::Steinschlag => "steinschlag",
             SpawnKind::Durchkriechstein => "durchkriechstein",
+            SpawnKind::Reisebus => "reisebus",
         }
     }
 
@@ -371,7 +375,14 @@ pub struct EntitySpawn {
     /// [`STEINSCHLAG_RANGE_TILES`], [`DEFAULT_STEINSCHLAG_RANGE`] by
     /// default): its counter runs while the player is this close.
     pub range: u8,
+    /// A `reisebus`'s photo stop (`stop = N`, [`REISEBUS_STOP_TILES`]):
+    /// it halts once its hitbox is N tiles left of where it was parked
+    /// (D-070). 0 = no stop (the default).
+    pub stop: u8,
 }
+
+/// Allowed `stop` of a `reisebus`, in tiles (D-070).
+pub const REISEBUS_STOP_TILES: std::ops::RangeInclusive<u8> = 1..=16;
 
 /// A `steinschlag`'s `period` without the field, in frames (D-058).
 pub const DEFAULT_STEINSCHLAG_PERIOD: u16 = 150;
@@ -583,6 +594,7 @@ enum LegendEntry {
         lead: bool,
         period: u16,
         range: u8,
+        stop: u8,
     },
 }
 
@@ -676,6 +688,7 @@ impl Level {
                         lead,
                         period,
                         range,
+                        stop,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -696,6 +709,7 @@ impl Level {
                             lead: *lead,
                             period: *period,
                             range: *range,
+                            stop: *stop,
                         });
                     }
                 }
@@ -847,6 +861,7 @@ fn parse_legend_value(
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
                 (_, Some("steinschlag")) => &["entity", "tile", "period", "phase", "range"],
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
+                (_, Some("reisebus")) => &["entity", "tile", "stop"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -1069,6 +1084,11 @@ fn parse_entity(
         i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
     )?
     .map_or(DEFAULT_STEINSCHLAG_RANGE, |n| n as u8);
+    let stop = int_field(
+        "stop",
+        i64::from(*REISEBUS_STOP_TILES.start())..=i64::from(*REISEBUS_STOP_TILES.end()),
+    )?
+    .map_or(0, |n| n as u8);
     if kind == SpawnKind::Steinschlag
         && phase != 0
         && !(STEINSCHLAG_MIN_PHASE..period).contains(&phase)
@@ -1095,6 +1115,7 @@ fn parse_entity(
         lead,
         period,
         range,
+        stop,
     })
 }
 
@@ -1156,6 +1177,7 @@ grid = '''
             lead: false,
             period: DEFAULT_STEINSCHLAG_PERIOD,
             range: DEFAULT_STEINSCHLAG_RANGE,
+            stop: 0,
         }
     }
 

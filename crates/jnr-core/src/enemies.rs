@@ -90,6 +90,14 @@ pub mod state {
     /// Stein: shattered (removed; the game spawns its debris).
     pub const SHATTERED: u8 = 1;
 
+    /// Reisebus: driving left (parked is `PARKED`, the first telegraph
+    /// `TELEGRAPH`).
+    pub const DRIVE: u8 = 2;
+    /// Reisebus: halted for the photo stop (`count` = frame of the stop).
+    pub const PHOTO_STOP: u8 = 3;
+    /// Reisebus: telegraphing after the photo stop (`count` = frame).
+    pub const RESTART: u8 = 4;
+
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
@@ -152,6 +160,14 @@ pub enum Pose {
     Wobble,
     /// Stein `fall`.
     Fall,
+    /// Reisebus `drive` (parked: `Idle`, telegraphs: `Telegraph`).
+    Drive,
+    /// Reisebus `fotostopp`: frame 0, or frame 1 (camera flashes in the
+    /// windows) while `flash`.
+    Fotostopp {
+        /// Frame 1 of `fotostopp`.
+        flash: bool,
+    },
 }
 
 impl Entity {
@@ -204,6 +220,14 @@ impl Entity {
             EntityKind::Enemy(EnemyKind::Gams) => match self.state {
                 state::CROUCH => Pose::Crouch,
                 state::HOP => Pose::Hop,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Reisebus) => match self.state {
+                state::TELEGRAPH | state::RESTART => Pose::Telegraph,
+                state::DRIVE => Pose::Drive,
+                state::PHOTO_STOP => Pose::Fotostopp {
+                    flash: (self.count.saturating_sub(1) / e.reisebus_flash_frames.max(1)) % 2 == 1,
+                },
                 _ => Pose::Idle,
             },
             // The niche is empty from the drop until the refill.
@@ -307,6 +331,10 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
         }
         EnemyKind::Gams => {
             update_gams(e, ctx);
+            None
+        }
+        EnemyKind::Reisebus => {
+            update_reisebus(e, ctx);
             None
         }
         EnemyKind::Bienenschwarm => {
@@ -702,6 +730,115 @@ fn update_fiaker(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
+/// The Reisebus (D-070). Parked until the player is within
+/// `reisebus_trigger` of its centre, then telegraphs for
+/// `reisebus_telegraph` frames (`count` = frame of the telegraph, the
+/// Fiaker's rule), then drives left at `reisebus_speed`, ignoring tiles and
+/// enemies. With a `stop` it halts exactly at its parked x − `stop` tiles:
+/// `reisebus_stop_frames` frames of photo stop (the arrival frame is the
+/// first), `reisebus_restart` frames of telegraph, then it drives on.
+/// Removed once its right edge is left of the screen.
+fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    match e.state {
+        state::PARKED => {
+            if player_distance_px(e, ctx) <= et.reisebus_trigger {
+                e.state = state::TELEGRAPH;
+                e.count = 1;
+            }
+        }
+        state::TELEGRAPH => {
+            e.count += 1;
+            if e.count > et.reisebus_telegraph {
+                e.state = state::DRIVE;
+                e.count = 0;
+            }
+        }
+        state::PHOTO_STOP => {
+            e.count += 1;
+            if e.count > et.reisebus_stop_frames {
+                e.state = state::RESTART;
+                e.count = 1;
+            }
+        }
+        state::RESTART => {
+            e.count += 1;
+            if e.count > et.reisebus_restart {
+                e.state = state::DRIVE;
+                e.count = 0;
+            }
+        }
+        _ => {}
+    }
+    if e.state != state::DRIVE {
+        e.vx = Fx::ZERO;
+        return;
+    }
+    e.vx = -et.reisebus_speed;
+    let stop = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))
+        .map_or(0, |s| s.stop);
+    let stop_x = e.base_x - TILE.mul_int(i32::from(stop));
+    if stop > 0 && e.x > stop_x {
+        e.x = (e.x + e.vx).max(stop_x);
+        if e.x == stop_x {
+            e.state = state::PHOTO_STOP;
+            e.count = 1;
+            e.vx = Fx::ZERO;
+        }
+    } else {
+        e.x += e.vx;
+    }
+    if e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+}
+
+/// How many tiles left of a parked Reisebus its lane must be free (D-070).
+pub const REISEBUS_LANE_TILES: i32 = 24;
+
+/// `levels lint` (D-070): every Reisebus's lane, the rows of its hitbox
+/// from its own cells to [`REISEBUS_LANE_TILES`] tiles left of its parked
+/// hitbox (or the level's left edge), holds no solid or one-way tile, so it
+/// is never seen driving through a wall. One problem per bus, naming the
+/// first blocked cell from the left.
+pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
+    let mut problems = Vec::new();
+    for (i, s) in level.entities.iter().enumerate() {
+        if s.kind != SpawnKind::Reisebus {
+            continue;
+        }
+        let Some(bus) = Entity::from_spawn(s, i, t) else {
+            continue;
+        };
+        let (rows, last) = (tile_of(bus.y)..=s.row, tile_of(bus.right() - Fx(1)));
+        let first = tile_of(bus.x - TILE.mul_int(REISEBUS_LANE_TILES)).max(0);
+        let blocked = (first..=last).find_map(|c| {
+            rows.clone().find_map(|r| {
+                let solid = level
+                    .tile(c, r)
+                    .is_some_and(|tile| matches!(tile.kind, TileKind::Solid | TileKind::OneWay));
+                solid.then_some((c, r))
+            })
+        });
+        if let Some((c, r)) = blocked {
+            problems.push(format!(
+                "reisebus at row {}, column {}: its lane (rows {}-{}, columns {}-{}) has a solid or one-way tile at row {}, column {} (D-070: keep it clear for {REISEBUS_LANE_TILES} tiles to the left, or to the level's left edge)",
+                s.row + 1,
+                s.col + 1,
+                rows.start() + 1,
+                rows.end() + 1,
+                first + 1,
+                last + 1,
+                r + 1,
+                c + 1
+            ));
+        }
+    }
+    problems
+}
+
 /// A thrown Mozartkugel: moves, then gravity; vanishes when it hits a
 /// solid tile (one-way tiles don't stop it) or leaves the level.
 pub(crate) fn update_thrown(e: &mut Entity, map: &TileMap, t: &Tuning) {
@@ -758,6 +895,7 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::Pilger) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
+        EntityKind::Enemy(EnemyKind::Reisebus) => e.state != state::DRIVE,
         EntityKind::Enemy(EnemyKind::EBiker) => matches!(e.state, state::PARK | state::RING),
         EntityKind::Enemy(EnemyKind::TaubeSitting) => e.state == state::SIT,
         _ => false,

@@ -152,6 +152,7 @@ pub fn lint(
         for p in jnr_core::platform::track_problems(level, tuning)
             .into_iter()
             .chain(jnr_core::platform::recovery_problems(level, tuning))
+            .chain(jnr_core::enemies::reisebus_lane_problems(level, tuning))
         {
             problems.push(format!("{shown}: {p}"));
         }
@@ -305,6 +306,41 @@ mod tests {
                 .starts_with("low.level: festungsbahn at row 6, column 2: less than 48 px free"),
             "{}",
             problems[0]
+        );
+    }
+
+    #[test]
+    fn a_reisebus_lane_must_be_clear() {
+        // A bus at column 31 (1-based) on the street row 3: its lane is
+        // rows 2-3, columns 7-34. A solid tile in row 2 at `wall` (0-based).
+        let text = |wall: usize| {
+            let mut above = vec!['.'; 39];
+            above[wall] = '#';
+            let above: String = above.into_iter().collect();
+            let street = format!("P{}r.......G", ".".repeat(29));
+            format!(
+                "[meta]\nid = \"b\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"r\" = {{ entity = \"reisebus\", stop = 4 }}\n[map]\ngrid = '''\n{}\n{above}\n{street}\n{}\n'''\n",
+                ".".repeat(39),
+                "#".repeat(39)
+            )
+        };
+        let texts = Texts::parse("").unwrap();
+        let check = |wall: usize| {
+            let levels = vec![(
+                PathBuf::from("b.level"),
+                Level::parse(&text(wall)).map_err(|e| e.to_string()),
+            )];
+            lint(&levels, &texts, &tuning(), None)
+        };
+        // 25 tiles left of the bus: outside its lane.
+        assert_eq!(check(5), Vec::<String>::new());
+        let problems = check(6);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0].starts_with(
+                "b.level: reisebus at row 3, column 31: its lane (rows 2-3, columns 7-34) has a solid or one-way tile at row 2, column 7"
+            ),
+            "{problems:?}"
         );
     }
 

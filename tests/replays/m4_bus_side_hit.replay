@@ -1,0 +1,17 @@
+# Side hit as Zuckerschock: Resi takes the Mozartkugel from the start box,
+# walks down into the street in front of bus #1 and lets the driving bus
+# hit her from the side: Hurt, back to Normal, no points.
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped score=1000 player_x>=560
+---
+R 18
+J 14
+- 50
+RJ 30
+R 24
+RJ 25
+RB 140
+- 120
+R 60

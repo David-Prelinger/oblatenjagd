@@ -70,7 +70,7 @@ impl EnemyKind {
             | EnemyKind::EBiker
             | EnemyKind::Pilger
             | EnemyKind::Gams => AxeHit::Defeat,
-            EnemyKind::Fiaker => AxeHit::Bounce,
+            EnemyKind::Fiaker | EnemyKind::Reisebus => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }

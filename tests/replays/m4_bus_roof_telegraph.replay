@@ -1,0 +1,12 @@
+# Roof bounce on bus #1 while it telegraphs: Resi runs off the terrace
+# edge with a short hop onto its roof (no damage, no points) and on.
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 player_x>=640
+---
+RB 28
+RBJ 12
+RB 120
+RBJ 24
+RB 80

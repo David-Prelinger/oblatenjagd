@@ -481,6 +481,22 @@ pub struct EnemyTuning {
     pub steinschlag_screen_top: i32,
     /// Points for a rock shattered by a projectile (the thrown Hackl).
     pub stein_points: u32,
+    /// Reisebus (D-070).
+    pub reisebus_hitbox: [i32; 2],
+    /// The parked bus telegraphs when the player is this close to its
+    /// centre (px) ...
+    pub reisebus_trigger: i32,
+    /// ... for this many frames ...
+    pub reisebus_telegraph: u16,
+    /// ... then drives left at this speed, ignoring tiles.
+    pub reisebus_speed: Fx,
+    /// Frames of the photo stop (a bus with `stop`) ...
+    pub reisebus_stop_frames: u16,
+    /// ... then this many frames of telegraph before it drives on.
+    pub reisebus_restart: u16,
+    /// Renderer: the camera flashes in its windows switch on and off every
+    /// this many frames of the photo stop (off first).
+    pub reisebus_flash_frames: u16,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -572,6 +588,37 @@ impl EnemyTuning {
             return Err(ParseError::new(
                 "tuning.toml: enemies.steinschlag_screen_top must be 0..180 px",
             ));
+        }
+        Ok(())
+    }
+
+    /// The Reisebus keys (D-070).
+    fn validate_reisebus(&self) -> Result<(), ParseError> {
+        let [w, h] = self.reisebus_hitbox;
+        if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_hitbox must be 1..=64 px in both directions",
+            ));
+        }
+        if self.reisebus_speed <= Fx::ZERO || self.reisebus_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        if !(0..=crate::camera::SCREEN_W * 2).contains(&self.reisebus_trigger) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_trigger must be 0..=640 px",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.reisebus_telegraph", self.reisebus_telegraph),
+            ("enemies.reisebus_stop_frames", self.reisebus_stop_frames),
+            ("enemies.reisebus_restart", self.reisebus_restart),
+            ("enemies.reisebus_flash_frames", self.reisebus_flash_frames),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
         }
         Ok(())
     }
@@ -693,6 +740,7 @@ impl Tuning {
             ));
         }
         self.enemies.validate_m3(self.player.max_fall_speed)?;
+        self.enemies.validate_reisebus()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1255,5 +1303,40 @@ mod tests {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");
         }
+    }
+
+    #[test]
+    fn reisebus_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        assert_eq!(t.reisebus_hitbox, [60, 28]);
+        assert_eq!(t.reisebus_trigger, 160, "< 161 px");
+        assert_eq!(t.reisebus_speed, Fx(384), "1.5 px/frame");
+        assert_eq!(
+            (
+                t.reisebus_telegraph,
+                t.reisebus_stop_frames,
+                t.reisebus_restart
+            ),
+            (60, 120, 30)
+        );
+        for (field, bad) in [
+            ("reisebus_hitbox", "[65, 28]"),
+            ("reisebus_hitbox", "[60, 0]"),
+            ("reisebus_trigger", "-1"),
+            ("reisebus_trigger", "641"),
+            ("reisebus_telegraph", "0"),
+            ("reisebus_speed", "0"),
+            ("reisebus_speed", "3072"),
+            ("reisebus_stop_frames", "0"),
+            ("reisebus_restart", "0"),
+            ("reisebus_flash_frames", "0"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+        let missing = REAL.replace("reisebus_restart = ", "#reisebus_restart = ");
+        let err = Tuning::parse(&missing).unwrap_err().to_string();
+        assert!(err.contains("reisebus_restart"), "{err}");
     }
 }

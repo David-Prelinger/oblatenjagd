@@ -564,6 +564,7 @@ mod tests {
             lead: false,
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
+            stop: 0,
         };
         assert_eq!(initial_state(&spawn([8, -5])), car::WAIT_LOWER);
         assert_eq!(initial_state(&spawn([8, 0])), car::WAIT_LOWER);

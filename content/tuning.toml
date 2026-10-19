@@ -156,6 +156,14 @@ steinschlag_telegraph = 40    # Steinschlag counter frames 0-39 wobble + pebbles
 steinschlag_refill = 30       # ... and the niche shows a resting rock again 30 frames after the drop
 steinschlag_screen_top = 24   # px: the niche counts as on screen only below the HUD (screen y >= 24)
 stein_points = 50             # a rock shattered by a thrown Hackl (D-056)
+# M4 Reisebus (D-070): parked, facing left; it ignores tiles (levels keep its lane clear, lint) and passes enemies.
+reisebus_hitbox = [60, 28]    # sprite 64x32 over 4 cells from its spawn cell
+reisebus_trigger = 160        # px (< 161, 10 tiles) to its centre: the parked bus telegraphs ...
+reisebus_telegraph = 60       # ... for 60 frames (hazard lights) ...
+reisebus_speed = 384          # ... then drives left at 1.5 px/frame until its right edge is left of the screen
+reisebus_stop_frames = 120    # `stop = N`: N tiles left of where it was parked it halts for a 120-frame photo stop ...
+reisebus_restart = 30         # ... then 30 frames of hazard lights, then on again
+reisebus_flash_frames = 16    # renderer: the photo-stop camera flashes switch every 16 frames (off first; harmless)
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

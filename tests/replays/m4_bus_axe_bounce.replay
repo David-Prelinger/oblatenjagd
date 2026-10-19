@@ -1,0 +1,29 @@
+# Axe bounce: Resi takes the Hackl from the box at 72 and throws it at
+# bus #3 as it telegraphs; the axe bounces off (AxeHit; the bus stays and
+# no points beyond the Hackl's 1000).
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 event=HacklThrown event=AxeHit no_event=Hurt score=1000
+---
+RB 28
+RBJ 12
+RB 127
+RBJ 36
+RB 28
+RBJ 33
+RB 59
+RBJ 36
+RB 34
+RBJ 36
+- 60
+L 26
+- 10
+J 14
+- 20
+RJ 20
+- 80
+R 80
+- 10
+B 1
+- 40
