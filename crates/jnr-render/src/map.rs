@@ -146,20 +146,22 @@ pub fn label_hits(x: i32, y: i32, w: i32, b: (i32, i32, i32, i32)) -> bool {
 
 /// A station's label position on a map screen that starts on station
 /// `from` and ends on the next one, with Resi in `power` (art-director,
-/// M3): the primary slot, or the station's alternate slot when Resi is big
-/// and her box at the screen's **end** dot (where she waits) intersects the
-/// primary slot; her start dot never counts (art-director: the target label
-/// stays next to its dot while she sets off). Normal Resi always keeps the
-/// primary slot (the M2 layout, whose one-row touch was approved). The
-/// choice depends only on the screen, so a label never switches slots
-/// during the walk.
+/// M3): the primary slot, or the station's alternate slot when the screen
+/// ends on one of its `label_alt_ends` (any form, D-072), or when Resi is
+/// big and her box at the screen's **end** dot (where she waits) intersects
+/// the primary slot; her start dot never counts (art-director: the target
+/// label stays next to its dot while she sets off). Otherwise Normal Resi
+/// keeps the primary slot (the M2 layout, whose one-row touch was
+/// approved). The choice depends only on the screen, so a label never
+/// switches slots during the walk.
 pub fn screen_label_pos(st: &Station, w: i32, from: usize, power: Power) -> (i32, i32) {
     let primary = station_label_pos(st, w);
     let Some(alt) = st.label_alt else {
         return primary;
     };
-    let end = STATIONS[(from + 1).min(STATIONS.len() - 1)].dot;
-    let covered = power.is_big() && label_hits(primary.0, primary.1, w, resi_box(end, power));
+    let end = &STATIONS[(from + 1).min(STATIONS.len() - 1)];
+    let covered = st.label_alt_ends.contains(&end.id)
+        || (power.is_big() && label_hits(primary.0, primary.1, w, resi_box(end.dot, power)));
     if covered {
         slot_pos(st, w, alt.top, alt.right)
     } else {
@@ -466,21 +468,14 @@ mod tests {
     }
 
     /// Normal Resi keeps the primary slots, where her box touches these
-    /// labels by its top rows / an outline column (approved in the M2 map
-    /// review; the drawn pixels only meet at the outline): (label, the dot
-    /// she stands on).
-    const NORMAL_TOUCH: [(&str, &str); 2] =
-        [("brunnwinkl", "st_gilgen"), ("falkenstein", "st_wolfgang")];
+    /// labels by its top rows (approved in the M2 map review; the drawn
+    /// pixels only meet at the outline): (label, the dot she stands on).
+    const NORMAL_TOUCH: [(&str, &str); 1] = [("brunnwinkl", "st_gilgen")];
 
-    /// Known collisions on the later stations (from St. Wolfgang on, not
+    /// Known collisions on the later stations (from Bad Ischl on, not
     /// playable yet), for every form, left for their milestones' map
     /// review: (label, the dot Resi stands on).
-    const LATER: [(&str, &str); 4] = [
-        ("st_wolfgang", "wolfgangsee"),
-        ("st_wolfgang", "strobl"),
-        ("bad_ischl", "bad_ischl"),
-        ("cafe_zauner", "bad_ischl"),
-    ];
+    const LATER: [(&str, &str); 2] = [("bad_ischl", "bad_ischl"), ("cafe_zauner", "bad_ischl")];
 
     #[test]
     fn big_resi_moves_brunnwinkl_and_falkenstein_to_their_alternate_slots() {
@@ -496,16 +491,50 @@ mod tests {
             assert_eq!(screen_label_pos(&STATIONS[2], w, 0, power), (66, 20));
             assert_eq!(screen_label_pos(&STATIONS[2], w, 1, power), (66, 43));
         }
-        // Falkenstein (60 px wide): 172 normally, 170 with a big Resi
-        // walking Falkenstein → St. Wolfgang.
+        // Falkenstein (60 px wide): 172 normally, 170 on the screen
+        // Falkenstein → St. Wolfgang, in every form since M4 (D-072).
         let right = |from, power| {
             let (x, _) = screen_label_pos(&STATIONS[3], 60, from, power);
             x + 60
         };
-        assert_eq!(right(3, Power::Normal), 172);
+        assert_eq!(right(3, Power::Normal), 170);
         assert_eq!(right(3, Power::Big), 170);
         assert_eq!(right(3, Power::Hackl), 170);
         assert_eq!(right(1, Power::Hackl), 172, "far from her: primary");
+        assert_eq!(right(4, Power::Normal), 172, "St. Wolfgang → Wolfgangsee");
+    }
+
+    #[test]
+    fn st_wolfgang_rises_on_the_screens_ending_on_wolfgangsee_and_strobl() {
+        // D-072: same x (right of its dot), top y 59 instead of 80 (69 in D-072 would touch „Café Zauner" at x 232, top 69; addendum), for
+        // every form; every other screen keeps the primary slot.
+        let w = 64;
+        let primary = screen_label_pos(&STATIONS[4], w, 0, Power::Normal);
+        assert_eq!(primary, station_label_pos(&STATIONS[4], w));
+        assert_eq!(primary.1, 80);
+        for power in [Power::Normal, Power::Big, Power::Hackl] {
+            for from in 0..STATIONS.len() - 1 {
+                let pos = screen_label_pos(&STATIONS[4], w, from, power);
+                let end = STATIONS[from + 1].id;
+                if end == "wolfgangsee" || end == "strobl" {
+                    assert_eq!(pos, (primary.0, 59), "{power:?} ending on {end}");
+                } else {
+                    assert_eq!(pos, primary, "{power:?} ending on {end}");
+                }
+            }
+        }
+        // The raised slot clears Resi on Wolfgangsee and Strobl in her big
+        // forms (the real font's width; the map test checks every screen).
+        let texts = texts();
+        let font = crate::Font::from_atlas(jnr_assets::atlas());
+        let w = font.measure(&texts.get(STATION_KEYS[4]));
+        for (from, end) in [(4, 5), (5, 6)] {
+            for power in [Power::Normal, Power::Big, Power::Hackl] {
+                let (x, y) = screen_label_pos(&STATIONS[4], w, from, power);
+                assert_eq!(y, 59);
+                assert!(!label_hits(x, y, w, resi_box(STATIONS[end].dot, power)));
+            }
+        }
     }
 
     #[test]

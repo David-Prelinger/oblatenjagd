@@ -1,0 +1,22 @@
+# E21 (D-067 risk 2): standing hops on the rising roof for the Oblaten arc
+# over the gorge. Jumps don't inherit the platform's speed, so every hop
+# lands further back on the roof: starting 44 px in (her hitbox x from the
+# roof's left edge), a 10-frame hop (~35 frames in the air) lands 22 px
+# further back each time: 44 -> 22 -> 0 (the back edge, still on it). Two
+# hops take 3 Oblaten, one more is touched riding on; she walks off at the
+# Alm. schafbergbahn_hops_off_the_back: a third hop misses the roof.
+level  = schafbergbahn
+seed   = 1
+source = handwritten
+expect = complete frames=673..673 deaths=0 no_event=Hurt oblaten>=4 state=stage_clear
+---
+R 50
+RJ 14
+R 88      # onto the roof, 44 px in
+- 200
+J 10      # hop 1: lands 22 px in
+- 40
+J 10      # hop 2: lands on the back edge
+- 40
+- 50
+R 200     # off at the top, to the goal

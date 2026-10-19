@@ -1,0 +1,13 @@
+# Written by `cargo xtask solve schafbergbahn --write`; re-create it instead of editing.
+level  = schafbergbahn
+seed   = 1
+source = solver
+expect = complete frames=281..281 deaths=0
+---
+RB 28
+RBJ 36
+RB 65
+RBJ 36
+RB 24
+RBJ 36
+RB 56

@@ -6,8 +6,10 @@
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
 //! least one goal (`time_limit` is required by `Level::parse`), every
 //! `prop` names a catalog prop sprite (`jnr_core::PROP_SPRITES`), and every
-//! moving platform track (Festungsbahn, Gondel) has 3 tiles of free space
-//! above the car (`jnr_core::platform::track_problems`) and a way back up
+//! moving platform track (Festungsbahn, Gondel, Schafbergbahn) has 3 tiles
+//! of free space above the car (`jnr_core::platform::track_problems`; for
+//! the Schafbergbahn its whole swept body and the 3 tiles above its roof
+//! are free of solid and one-way tiles, D-067) and a way back up
 //! out of the pit under it: stair-stepped floor with steps up of at most 3
 //! tiles to the upper end (`jnr_core::platform::recovery_problems`, D-027,
 //! D-044; its doc comment lists what it does not check).
@@ -31,9 +33,10 @@ Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
               sign text keys exist, a goal, prop sprites are catalog props,
-              3 free tiles above every Festungsbahn and Gondel track, and
-              a way back up (steps <= 3 tiles) from the pit under it to its
-              upper end; climbing: no 7-9 tile drops in climb levels, rock
+              3 free tiles above every Festungsbahn and Gondel track (the
+              Schafbergbahn: its swept body and 3 tiles above its roof free
+              of solid and one-way tiles), and a way back up (steps <= 3
+              tiles) from the pit under it to its upper end; climbing: no 7-9 tile drops in climb levels, rock
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
               columns (warnings never fail)
@@ -310,6 +313,43 @@ mod tests {
     }
 
     #[test]
+    fn schafbergbahn_needs_its_swept_body_free() {
+        // A [4, -1] track from cell (1, 5): the body's lower right corner
+        // enters column 5 at once, its bottom at 96 px, so a step at row 5
+        // (top 80) there cuts it; row 6 (top 96) clears it.
+        let grid = |row5: &str, row6: &str| {
+            format!(
+                "[meta]\nid = \"z\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"Z\" = {{ entity = \"schafbergbahn\", to = [4, -1] }}\n[map]\ngrid = '''\nP.........\n..........\n..........\n..........\n.........G\n{row5}\n{row6}\n##########\n'''\n"
+            )
+        };
+        let level =
+            |row5: &str, row6: &str| Level::parse(&grid(row5, row6)).map_err(|e| e.to_string());
+        let levels = vec![
+            (
+                PathBuf::from("clear.level"),
+                level(".Z........", ".....#####"),
+            ),
+            (
+                PathBuf::from("cut.level"),
+                level(".Z...#....", ".....#####"),
+            ),
+        ];
+        let texts = Texts::parse("").unwrap();
+        let problems: Vec<String> = lint(&levels, &texts, &tuning(), None)
+            .into_iter()
+            .filter(|p| !p.contains("meta.id"))
+            .collect();
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0].starts_with(
+                "cut.level: schafbergbahn at row 6, column 2: a tile overlaps the train's body"
+            ),
+            "{}",
+            problems[0]
+        );
+    }
+
+    #[test]
     fn a_reisebus_lane_must_be_clear() {
         // A bus at column 31 (1-based) on the street row 3: its lane is
         // rows 2-3, columns 7-34. A solid tile in row 2 at `wall` (0-based).
@@ -380,9 +420,10 @@ mod tests {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
-        // the M2 "Items and props" and the M3 "Props" tables that are props (not the
-        // checkpoint, Maibaum, signs or the car, which have entities of
-        // their own).
+        // the M2 "Items and props", the M3 "Props" and the M4 "Props"
+        // tables that are props (not the checkpoint, Maibaum, signs or the
+        // car, which have entities of their own; the M4 train and its steam
+        // are in the "Platforms" table, not read here).
         let catalog = include_str!("../../docs/sprite-catalog.md");
         let section = |heading: &str, end: &str| {
             let start = catalog.find(heading).expect(heading);
@@ -399,6 +440,7 @@ mod tests {
             section("## Props and goal", "\n## "),
             section("### Items and props (group `props`)", "\n### "),
             section("### Props (group `props`)", "\n### "),
+            section("### Props (group `props`, M4)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)

@@ -7,15 +7,18 @@
 //! (part of the `RenderContext`); drawing allocates nothing.
 //!
 //! Draw passes (called from `scene::render`):
-//! 1. [`draw_behind_tiles`]: power-ups still rising out of their box
+//! 1. [`draw_behind_tiles`]: Schafbergbahn tracks, power-ups still rising
+//!    out of their box
 //! 2. tiles (scene), raised by `Game::tile_bump_px` while bumped
 //! 3. [`draw_entities`]: Gondel cables first, then items, props, enemies
 //!    (animation by `Entity::pose`, facing by `Entity::dir`, the swarm's
 //!    shake by `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), the
 //!    Steinschlag niches (resting/wobbling rock and the `kiesel` trickle),
-//!    falling rocks, the Festungsbahn and the Gondel cabins
+//!    falling rocks, the Operettensänger's high-C column (`hohes_c` rings),
+//!    the Souvenirstand vendors, snow globes, the Festungsbahn, the Gondel
+//!    cabins and the Schafbergbahn with its steam puffs
 //! 4. player (scene)
-//! 5. [`draw_front`]: debris (bricks and rocks) and popups
+//! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards) and popups
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
@@ -75,6 +78,10 @@ pub const FAR_DARK: u32 = 0x8ea4ccff;
 pub const FAR_LIGHT: u32 = 0xa4bad8ff;
 /// `m` stone_grey: `kiesel` pebbles without their sprite.
 pub const STONE_GREY: u32 = 0x5d6680ff;
+/// `h` sky_haze: Schneekugel (the glass dome).
+pub const SKY_HAZE: u32 = 0xdff1f0ff;
+/// `S` sky_blue: the Souvenirstand vendor (apron).
+pub const SKY_BLUE: u32 = 0x64aee6ff;
 
 /// Pebbles in a Steinschlag's telegraph trickle (renderer only) ...
 pub const KIESEL_COUNT: i32 = 3;
@@ -84,6 +91,31 @@ pub const KIESEL_SPEED_PX: i32 = 3;
 /// The Gondel's cable grip above its feet (sprite-catalog: the cable
 /// meets the 32×52 sprite at (16, 0), origin (16, 52)).
 pub const GONDEL_GRIP_PX: i32 = 52;
+
+/// `O` oblate_brown: the Schafbergbahn track's sleepers.
+pub const SLEEPER: u32 = OBLATE_BROWN;
+/// A sleeper (2 px wide) every this many px along the track.
+pub const SLEEPER_EVERY_PX: i32 = 8;
+/// The Schafbergbahn's rails are this many px apart (the upper one runs
+/// along the body's bottom line, the rack between them).
+pub const RAIL_GAP_PX: i32 = 3;
+/// A steam puff leaves the chimney every this many frames of travel ...
+pub const DAMPF_EVERY: u16 = 20;
+/// ... and lives this many frames (`dampf` `puff`: 3 frames × 8 ticks),
+/// rising 1 px per frame.
+pub const DAMPF_FRAMES: u16 = 24;
+/// Puffs alive at once: one every 20 frames, each for 24.
+pub const MAX_PUFFS: usize = DAMPF_FRAMES.div_ceil(DAMPF_EVERY) as usize;
+/// Height of the funnel above the roof (the `schafbergbahn` sprite's funnel:
+/// x 0–5, rows 0–7 above the roof row 8, at the loco's left, downhill end;
+/// the grey box draws a stub there) ...
+pub const FUNNEL_PX: i32 = 8;
+/// ... and its width.
+pub const FUNNEL_W: i32 = 6;
+/// Where a steam puff leaves (its bottom centre) relative to the body's
+/// top-left corner: over the funnel's middle, 2 px below its cap's top, so
+/// the first puff touches the cap (art-director, M4).
+pub const DAMPF_CHIMNEY: (i32, i32) = (FUNNEL_W / 2, -FUNNEL_PX + 2);
 
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
@@ -114,6 +146,13 @@ pub struct EntityLooks<'a> {
     kiesel: Option<&'a AtlasSprite>,
     hackl: Option<&'a AtlasSprite>,
     hackl_thrown: Option<&'a AtlasSprite>,
+    operettensaenger: Option<&'a AtlasSprite>,
+    hohes_c: Option<&'a AtlasSprite>,
+    souvenirstand: Option<&'a AtlasSprite>,
+    schneekugel: Option<&'a AtlasSprite>,
+    schneekugel_scherben: Option<&'a AtlasSprite>,
+    schafbergbahn: Option<&'a AtlasSprite>,
+    dampf: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -151,6 +190,13 @@ impl<'a> EntityLooks<'a> {
             kiesel: s("kiesel"),
             hackl: s("hackl"),
             hackl_thrown: s("hackl_thrown"),
+            operettensaenger: s(EnemyKind::Operettensaenger.sprite()),
+            hohes_c: s("hohes_c"),
+            souvenirstand: s("souvenirstand"),
+            schneekugel: s(EnemyKind::Schneekugel.sprite()),
+            schneekugel_scherben: s("schneekugel_scherben"),
+            schafbergbahn: s("schafbergbahn"),
+            dampf: s("dampf"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -176,6 +222,8 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Bienenschwarm => self.bienenschwarm,
                 EnemyKind::Pilger => self.pilger,
                 EnemyKind::Gams => self.gams,
+                EnemyKind::Operettensaenger => self.operettensaenger,
+                EnemyKind::Schneekugel => self.schneekugel,
                 EnemyKind::Reisebus => self.reisebus,
             },
             EntityKind::Thrown => self.thrown,
@@ -185,6 +233,9 @@ impl<'a> EntityLooks<'a> {
             EntityKind::SteinDebris => self.stein_debris,
             EntityKind::Hackl => self.hackl,
             EntityKind::ThrownHackl => self.hackl_thrown,
+            EntityKind::Souvenirstand => self.souvenirstand,
+            EntityKind::SchneekugelScherben => self.schneekugel_scherben,
+            EntityKind::Schafbergbahn => self.schafbergbahn,
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -213,6 +264,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Bienenschwarm => MEADOW_LIGHT,
             EnemyKind::Pilger => MEADOW,
             EnemyKind::Gams => NAVY,
+            EnemyKind::Operettensaenger => SLATE_DARK,
+            EnemyKind::Schneekugel => SKY_HAZE,
             EnemyKind::Reisebus => WHITE,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
@@ -223,6 +276,9 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Gondel => SKIN_LIGHT,
         EntityKind::Hackl => PINE_DARK,
         EntityKind::ThrownHackl => SILVER_LIGHT,
+        EntityKind::Souvenirstand => SKY_BLUE,
+        EntityKind::SchneekugelScherben => WHITE,
+        EntityKind::Schafbergbahn => OUTLINE,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
@@ -238,10 +294,15 @@ pub fn solid_tile_colour(game: &Game, tile: Tile, default: u32) -> u32 {
     }
 }
 
-/// Power-ups still rising out of their box (drawn before the tiles, so the
-/// box covers them).
+/// Schafbergbahn tracks and power-ups still rising out of their box (drawn
+/// before the tiles, so the rock steps and the box cover them).
 pub fn draw_behind_tiles(game: &Game, looks: &EntityLooks, atlas: &Atlas, fb: &mut Framebuffer) {
     let cam = game.camera();
+    for e in game.entities() {
+        if e.kind == EntityKind::Schafbergbahn {
+            draw_track(game, fb, cam, e);
+        }
+    }
     for e in game.entities() {
         if e.rising(game.tuning()) {
             draw_body(game, looks, atlas, fb, cam, e);
@@ -270,9 +331,15 @@ pub fn draw_entities(
             // The Durchkriechstein is drawn by its prop (D-057).
             EntityKind::Debris
             | EntityKind::SteinDebris
+            | EntityKind::SchneekugelScherben
             | EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Durchkriechstein => {}
+            EntityKind::Enemy(EnemyKind::Operettensaenger) => {
+                draw_high_c(game, looks, atlas, fb, cam, e);
+                draw_enemy(game, looks, atlas, fb, cam, e);
+            }
+            EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
             EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
             EntityKind::Enemy(_)
@@ -284,6 +351,7 @@ pub fn draw_entities(
             EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
             EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
             EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
+            EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
             _ if e.rising(game.tuning()) => {}
             _ => draw_body(game, looks, atlas, fb, cam, e),
         }
@@ -359,6 +427,117 @@ fn draw_cable(game: &Game, fb: &mut Framebuffer, cam: Camera, e: &Entity) {
     draw_line(fb, x0 - ex, y0 - ey, x1 + ex, y1 + ey, SLATE_DARK);
 }
 
+/// The Schafbergbahn's track (the telegraph of its ride, D-067; layout by
+/// the pixel-artist, M4), drawn behind the tiles and the train. Per screen
+/// column X from one tile before the body's leftmost position to one tile
+/// past its rightmost, with u = X − L (L: the body's left edge at its
+/// spawn) and the upper rail row Y = B + 1 + [`jnr_core::platform::rail_offset`]
+/// (B: the body's bottom edge, the feet y, at the spawn; the sprite's
+/// wheels stand on that row, sprite-catalog "as built", and the train
+/// follows it pixel for pixel, `platform::track_offset`): `d` rail at Y, `m` rack
+/// at Y+1 (even u only) and Y+2, `d` rail at Y+3; `O` sleepers over
+/// Y+1..=Y+4 where u mod 8 is 0 or 1 (the rails stay on top); a `d`
+/// girder at Y+5 under the whole track (art-director, M4: one viaduct
+/// line, not a bare band like the Gondel cable). The top rail is plain
+/// `d` with no light lip, so the diagonal never reads as a walkable slope.
+fn draw_track(game: &Game, fb: &mut Framebuffer, cam: Camera, e: &Entity) {
+    let Some([a, b]) = jnr_core::platform::track_ends(e, game.level()) else {
+        return;
+    };
+    let (dx, dy) = ((b.0 - a.0).to_px(), (b.1 - a.1).to_px());
+    if dx == 0 {
+        return;
+    }
+    let (l, feet) = (e.base_x.to_px(), a.1.to_px());
+    let tile = jnr_core::level::TILE_PX;
+    let (x0, x1) = (l.min(l + dx) - tile, l.max(l + dx) + e.w.to_px() + tile);
+    for x in x0..x1 {
+        let u = x - l;
+        let y = feet + 1 + jnr_core::platform::rail_offset(u, dx, dy);
+        let (sx, sy) = (x - cam.x, y - cam.y);
+        if u.rem_euclid(2) == 0 {
+            fb.set(sx, sy + 1, STONE_GREY);
+        }
+        fb.set(sx, sy + 2, STONE_GREY);
+        if u.rem_euclid(SLEEPER_EVERY_PX) < 2 {
+            fb.fill_rect(sx, sy + 1, 1, RAIL_GAP_PX + 1, SLEEPER);
+        }
+        fb.set(sx, sy, SLATE_DARK);
+        fb.set(sx, sy + RAIL_GAP_PX, SLATE_DARK);
+        fb.set(sx, sy + RAIL_GAP_PX + 2, SLATE_DARK);
+    }
+}
+
+/// The Schafbergbahn: sprite `schafbergbahn` at its feet, never mirrored,
+/// anim `ride` while it travels and `idle` while it stands (falling back
+/// to the first anim); else the body as a grey box with a chimney stub at
+/// the loco's (left) end. Then its steam puffs ([`steam_puffs`]): `dampf`
+/// `puff`, else small white boxes.
+fn draw_schafbergbahn(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let moving = matches!(
+        e.state,
+        jnr_core::platform::car::UP | jnr_core::platform::car::DOWN
+    );
+    match looks.schafbergbahn {
+        Some(s) => {
+            let (x, y) = feet_on_screen(e, cam);
+            let name = if moving { "ride" } else { "idle" };
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+            fb.fill_rect(left, top - FUNNEL_PX, FUNNEL_W, FUNNEL_PX, SLATE_DARK);
+            draw_body(game, looks, atlas, fb, cam, e);
+        }
+    }
+    for (x, y, age) in steam_puffs(game, e).into_iter().flatten() {
+        let (x, y) = (x - cam.x, y - cam.y);
+        match looks.dampf {
+            Some(s) => {
+                let anim = s.anim("puff").unwrap_or(&s.anims[0]);
+                draw_sprite(fb, atlas, s, anim, u32::from(age), x, y, false);
+            }
+            None => fb.fill_rect(x - 3, y - 6, 6, 6, WHITE),
+        }
+    }
+}
+
+/// The train's live steam puffs as (bottom centre x, y in level px, age in
+/// frames), oldest first: while it travels, one leaves the chimney top
+/// ([`DAMPF_CHIMNEY`]) on travel frame 1 and every [`DAMPF_EVERY`] frames
+/// after, stays where it left the chimney (the train moves on) and rises
+/// 1 px per frame for [`DAMPF_FRAMES`]. Computed from the train's state and
+/// counter alone, so the renderer keeps no particles; a standing train has
+/// none. At most [`MAX_PUFFS`] live at once (no allocation).
+pub fn steam_puffs(game: &Game, e: &Entity) -> [Option<(i32, i32, u16)>; MAX_PUFFS] {
+    use jnr_core::platform::{car, car_position, car_timing};
+    let mut puffs = [None; MAX_PUFFS];
+    if !matches!(e.state, car::UP | car::DOWN) {
+        return puffs;
+    }
+    let spawn = e
+        .spawn
+        .and_then(|i| game.level().entities.get(usize::from(i)));
+    let timing = car_timing(e.kind, spawn, game.tuning());
+    let first = e.count.saturating_sub(DAMPF_FRAMES - 1).max(1);
+    let emits = (first..=e.count).filter(|c| (c - 1) % DAMPF_EVERY == 0);
+    for (slot, emit) in puffs.iter_mut().zip(emits) {
+        let (x, y) = car_position(e.kind, (e.base_x, e.base_y), spawn, e.state, emit, timing);
+        let age = e.count - emit;
+        let (cx, cy) = DAMPF_CHIMNEY;
+        *slot = Some((x.to_px() + cx, y.to_px() + cy - i32::from(age), age));
+    }
+    puffs
+}
+
 /// A 1 px line from (x0, y0) to (x1, y1), both ends included (Bresenham).
 fn draw_line(fb: &mut Framebuffer, x0: i32, y0: i32, x1: i32, y1: i32, rgba: u32) {
     let (dx, dy) = ((x1 - x0).abs(), -(y1 - y0).abs());
@@ -393,7 +572,7 @@ pub fn draw_front(
     let cam = game.camera();
     for e in game.entities() {
         match e.kind {
-            EntityKind::Debris | EntityKind::SteinDebris => {
+            EntityKind::Debris | EntityKind::SteinDebris | EntityKind::SchneekugelScherben => {
                 draw_body(game, looks, atlas, fb, cam, e)
             }
             EntityKind::Popup(p) => draw_popup(game, atlas, font, texts, fb, cam, e, p),
@@ -460,6 +639,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Rest => ("rest", None),
         Pose::Wobble => ("wobble", None),
         Pose::Fall => ("fall", None),
+        Pose::Sing => ("sing", None),
+        Pose::Roll => ("roll", None),
         Pose::Drive => ("drive", None),
         Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
     }
@@ -549,10 +730,17 @@ fn draw_enemy(
                 Some(i) => i as u32 * anim.ticks,
                 None => game.frame(),
             };
+            // These only ever move left: their art faces left.
             let fixed = matches!(
                 e.kind,
-                EntityKind::Enemy(EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Reisebus)
-                    | EntityKind::Defeated(EnemyKind::Fiaker | EnemyKind::EBiker)
+                EntityKind::Enemy(
+                    EnemyKind::Fiaker
+                        | EnemyKind::EBiker
+                        | EnemyKind::Schneekugel
+                        | EnemyKind::Reisebus
+                ) | EntityKind::Defeated(
+                    EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
+                )
             );
             let left = e.facing_left() && !fixed;
             draw_sprite(fb, atlas, s, anim, tick, x, y, left);
@@ -576,6 +764,83 @@ fn draw_enemy(
                 // small red flag.
                 fb.fill_rect(bx + w - 2, by - 8, 1, 8, OUTLINE);
                 fb.fill_rect(bx + w - 1, by - 8, 3, 2, DIRNDL_RED);
+            }
+        }
+    }
+}
+
+/// An Operettensänger's high-C column ([`jnr_core::enemies::high_c_column`])
+/// while it sounds: `hohes_c` rings (anim `ring`, 8 px slices) stacked
+/// every 8 px from his hitbox top up, alternate rings half a period apart.
+/// A column clipped by a solid tile at a height that is no multiple of 8
+/// gets one more ring hung from its top (overlapping the ring below), so
+/// every hurting pixel lies in a ring's slice and none pokes into the tile.
+/// Without the sprite: the column as a white box with an `i` outline.
+fn draw_high_c(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let Some(c) = jnr_core::enemies::high_c_column(e, game.map(), game.tuning()) else {
+        return;
+    };
+    let (x, y) = (c.x.to_px() - cam.x, c.y.to_px() - cam.y);
+    let (w, h) = (c.w.to_px(), c.h.to_px());
+    match looks.hohes_c {
+        Some(s) => {
+            let anim = s.anim("ring").unwrap_or(&s.anims[0]);
+            let cx = x + w / 2;
+            let full = h / 8;
+            for i in 0..full {
+                let tick = game.frame() + i as u32 * anim.ticks;
+                draw_sprite(fb, atlas, s, anim, tick, cx, y + h - 8 * i, false);
+            }
+            if h % 8 != 0 {
+                // The partial top: one more ring whose slice starts at the
+                // clipped top (a column under 8 px keeps it on his head).
+                let tick = game.frame() + full as u32 * anim.ticks;
+                let feet = if full > 0 { y + 8 } else { y + h };
+                draw_sprite(fb, atlas, s, anim, tick, cx, feet, false);
+            }
+        }
+        None => {
+            fb.fill_rect(x, y, w, h, WHITE);
+            fb.outline_rect(x, y, w, h, SILVER_LIGHT);
+        }
+    }
+}
+
+/// A Souvenirstand's vendor: `souvenirstand` (anim `idle`, or `telegraph`
+/// while it holds up a globe) with its origin on the top edge of the
+/// counter's first tile (one column right of the spawner cell, the spawner
+/// row's top), never mirrored; without the sprite a 12×12 `S` box there,
+/// with a 4×4 white globe above it in the telegraph.
+fn draw_souvenirstand(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let pose = e.pose(game.tuning()).unwrap_or(Pose::Idle);
+    let x = e.right().to_px() + 8 - cam.x;
+    let y = e.y.to_px() - cam.y;
+    match looks.souvenirstand {
+        Some(s) => {
+            let (name, _) = pose_anim(pose);
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            fb.fill_rect(x - 6, y - 12, 12, 12, SKY_BLUE);
+            fb.outline_rect(x - 6, y - 12, 12, 12, OUTLINE);
+            if pose == Pose::Telegraph {
+                fb.fill_rect(x - 2, y - 17, 4, 4, WHITE);
+                fb.outline_rect(x - 2, y - 17, 4, 4, OUTLINE);
             }
         }
     }
@@ -862,6 +1127,8 @@ mod tests {
             ('F', FAR_DARK),
             ('f', FAR_LIGHT),
             ('m', STONE_GREY),
+            ('h', SKY_HAZE),
+            ('S', SKY_BLUE),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }
@@ -972,6 +1239,69 @@ mod tests {
         assert!(checked > 200, "checked while moving both ways");
     }
 
+    /// A column clipped by a solid tile 26 px above the singer's head (not
+    /// a multiple of 8): with a ring sprite that fills its whole 8 px slice,
+    /// every hurting row is covered, and nothing is drawn above the column
+    /// (in the tile) or below it (on his head).
+    #[test]
+    fn a_clipped_high_c_column_is_covered_up_to_its_top() {
+        use crate::testutil::A;
+        let full = "a".repeat(16);
+        let ring = crate::testutil::sprite(
+            "hohes_c",
+            (8, 8),
+            false,
+            vec![("ring", 4, vec![crate::testutil::image(&[full.as_str(); 8])])],
+        );
+        let atlas = crate::testutil::atlas(&[ring]);
+        let texts = Texts::default();
+        let rows = [
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "..........#.........",
+            "....................",
+            "....................",
+            "..P.......o.........",
+            "####################",
+            "####################",
+        ];
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"o\" = {{ entity = \"operettensaenger\" }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        let mut g = Game::new(&Level::parse(&text).unwrap(), &tuning(), 1);
+        for _ in 0..60 {
+            g.step(InputFrame::NONE);
+        }
+        let singer = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Operettensaenger))
+            .unwrap();
+        let c = jnr_core::enemies::high_c_column(&singer, g.map(), g.tuning()).unwrap();
+        assert_eq!(c.h.to_px(), 26, "clipped at the tile, 26 % 8 = 2");
+        let ctx = RenderContext::new(&atlas, &texts, g.level());
+        let mut fb = Framebuffer::new();
+        render(&g, &ctx, &mut fb);
+        let cam = g.camera();
+        let cx = (c.x + c.w.div_int(2)).to_px() - cam.x;
+        let top = c.y.to_px() - cam.y;
+        let bottom = top + c.h.to_px();
+        for y in top..bottom {
+            assert_eq!(fb.get(cx, y), Some(A), "row {} of the column", y - top);
+        }
+        assert_ne!(fb.get(cx, top - 1), Some(A), "nothing in the tile");
+        assert_ne!(fb.get(cx, bottom), Some(A), "nothing on his head");
+    }
+
     #[test]
     fn every_pose_has_a_catalog_animation() {
         use jnr_core::Pose;
@@ -1000,6 +1330,8 @@ mod tests {
             Pose::Rest,
             Pose::Wobble,
             Pose::Fall,
+            Pose::Sing,
+            Pose::Roll,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -1230,11 +1562,164 @@ mod tests {
             EntityKind::Enemy(EnemyKind::Gams),
             EntityKind::Stein,
             EntityKind::SteinDebris,
+            EntityKind::Schafbergbahn,
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
                 assert_ne!(grey_box_colour(*a), grey_box_colour(*b), "{a:?} vs {b:?}");
             }
         }
+    }
+
+    /// A 24×10 grey-box level, ground in row 9, with a Schafbergbahn
+    /// spawned at its upper end in cell (10, 6) (body x 160..224, feet
+    /// (192, 112)) going [−8, +2] down to feet (64, 144) on the ground: it
+    /// travels down at once (no rider needed), 192 frames. A 2-column gap
+    /// in the ground at columns 12–13 (under the track's middle).
+    fn train_game() -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 24])
+            .collect();
+        rows[8][0] = 'P';
+        rows[6][10] = 'z';
+        rows[9][12] = '.';
+        rows[9][13] = '.';
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"z\" = {{ entity = \"schafbergbahn\", to = [-8, 2] }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    fn puffs(g: &Game, e: &Entity) -> Vec<(i32, i32, u16)> {
+        steam_puffs(g, e).into_iter().flatten().collect()
+    }
+
+    fn the_train(g: &Game) -> Entity {
+        *g.entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Schafbergbahn)
+            .unwrap()
+    }
+
+    /// The pixel-artist's track layout: per column, u = x − 160 (the body's
+    /// left edge at the spawn), upper rail Y = 113 (one below the feet y at
+    /// the spawn, where the sprite's wheels stand) − floor(u / 4); rails at
+    /// Y and Y+3, rack at Y+1 (even u) and
+    /// Y+2, 2 px sleepers every 8 px over Y+1..=Y+4 under the rails, a
+    /// girder at Y+5 under the whole track; from a tile
+    /// before the lower end to a tile past the upper end; behind the tiles.
+    #[test]
+    fn the_schafbergbahn_track_shows_the_whole_ride() {
+        let g = train_game();
+        let fb = rendered(&g);
+        // 1 px up per 4 px right: u −4..−1 on row 114, −8..−5 on row 115.
+        for x in 156..=159 {
+            assert_eq!(fb.get(x, 114), Some(SLATE_DARK), "x {x}");
+        }
+        for x in 152..=155 {
+            assert_eq!(fb.get(x, 115), Some(SLATE_DARK), "x {x}");
+        }
+        // u −3 (odd, no sleeper): no rack at Y+1, rack at Y+2, rail at Y+3.
+        assert_ne!(fb.get(157, 115), Some(STONE_GREY));
+        assert_eq!(fb.get(158, 115), Some(STONE_GREY), "even u: rack at Y+1");
+        assert_eq!(fb.get(157, 116), Some(STONE_GREY));
+        assert_eq!(fb.get(157, 117), Some(SLATE_DARK), "lower rail");
+        // u −8 (a sleeper, x 152–153): over Y+1..=Y+4, the rails on top.
+        assert_eq!(fb.get(152, 115), Some(SLATE_DARK));
+        assert_eq!(fb.get(153, 116), Some(SLEEPER));
+        assert_eq!(fb.get(152, 118), Some(SLATE_DARK));
+        assert_eq!(fb.get(152, 119), Some(SLEEPER));
+        assert_ne!(fb.get(154, 119), Some(SLEEPER), "2 px wide");
+        // The girder under the whole track: over the gap (x 200: u 40,
+        // Y 103) and over the ground (x 150: u −10, Y 116).
+        // (once the train has gone down: at the spawn it covers the gap).
+        let mut down = train_game();
+        for _ in 0..200 {
+            down.step(InputFrame::NONE);
+        }
+        assert_eq!(rendered(&down).get(200, 108), Some(SLATE_DARK), "girder");
+        assert_eq!(fb.get(150, 121), Some(SLATE_DARK), "over the ground too");
+        // Ends: a tile past the upper end (x 239: u 79, Y 94) and no further.
+        assert_eq!(fb.get(239, 94), Some(SLATE_DARK), "far end");
+        assert_ne!(fb.get(240, 94), Some(SLATE_DARK));
+        // Behind the tiles: under the ground at the lower end it is hidden.
+        assert_eq!(fb.get(20, 147), Some(STONE_GREY), "the ground tile");
+        assert_ne!(fb.get(20, 149), Some(SLATE_DARK));
+        // Grey-box train over it, a chimney stub at its left end.
+        assert_eq!(fb.get(192, 100), Some(OUTLINE), "body");
+        assert_eq!(fb.get(165, 76), Some(SLATE_DARK), "chimney");
+    }
+
+    #[test]
+    fn steam_puffs_leave_every_20_frames_and_rise_for_24() {
+        let mut g = train_game();
+        assert!(puffs(&g, &the_train(&g)).is_empty(), "not moving yet");
+        g.step(InputFrame::NONE);
+        let t = the_train(&g);
+        assert_eq!(t.count, 1);
+        let chimney = (t.x.to_px() + 3, t.y.to_px() - 6);
+        assert_eq!(puffs(&g, &t), [(chimney.0, chimney.1, 0)]);
+        let fb = rendered(&g);
+        assert_eq!(fb.get(chimney.0, chimney.1 - 3), Some(WHITE), "grey box");
+        for _ in 0..20 {
+            g.step(InputFrame::NONE);
+        }
+        let t = the_train(&g);
+        let next = (t.x.to_px() + 3, t.y.to_px() - 6);
+        assert_eq!(
+            puffs(&g, &t),
+            [(chimney.0, chimney.1 - 20, 20), (next.0, next.1, 0)],
+            "the first stays behind and rises"
+        );
+        for _ in 0..4 {
+            g.step(InputFrame::NONE);
+        }
+        assert_eq!(
+            puffs(&g, &the_train(&g)),
+            [(next.0, next.1 - 4, 4)],
+            "gone after 24 frames"
+        );
+        // Arrived at its lower end and waiting: no steam.
+        for _ in 0..200 {
+            g.step(InputFrame::NONE);
+        }
+        let t = the_train(&g);
+        assert_eq!(t.state, jnr_core::platform::car::WAIT_LOWER);
+        assert!(puffs(&g, &t).is_empty());
+    }
+
+    /// With its sprite: `ride` while it travels, `idle` while it stands,
+    /// never mirrored (it travels left here).
+    #[test]
+    fn the_schafbergbahn_rides_and_idles_with_its_sprite() {
+        use crate::testutil::{A, B, atlas, image, sprite};
+        let frame = |c: &str| image(&vec![c.repeat(64).as_str(); 40]);
+        let train = sprite(
+            "schafbergbahn",
+            (32, 40),
+            false,
+            vec![("idle", 0, vec![frame("a")]), ("ride", 0, vec![frame("b")])],
+        );
+        let atlas = atlas(&[train]);
+        let texts = Texts::default();
+        let mut g = train_game();
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let (x, y) = feet_on_screen(&the_train(g), g.camera());
+            fb.get(x, y - 20)
+        };
+        assert_eq!(shown(&g), Some(B), "spawned at the upper end: riding down");
+        for _ in 0..200 {
+            g.step(InputFrame::NONE);
+        }
+        assert_eq!(shown(&g), Some(A), "waiting at the lower end");
     }
 }

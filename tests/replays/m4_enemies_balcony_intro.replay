@@ -1,0 +1,12 @@
+# The safe introduction of the Operettensänger (D-068): Resi walks under
+# balcony singer #1 and waits under the balcony through a whole cycle;
+# his high C rises from the balcony into the sky over her head and never
+# touches her. Singer #2 is still out of range.
+level  = m4_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=260
+---
+R 120
+- 200
+R 40

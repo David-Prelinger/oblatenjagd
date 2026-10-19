@@ -69,7 +69,9 @@ impl EnemyKind {
             | EnemyKind::Blasmusiker
             | EnemyKind::EBiker
             | EnemyKind::Pilger
-            | EnemyKind::Gams => AxeHit::Defeat,
+            | EnemyKind::Gams
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schneekugel => AxeHit::Defeat,
             EnemyKind::Fiaker | EnemyKind::Reisebus => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
@@ -101,9 +103,12 @@ impl Entity {
             | EntityKind::Defeated(_)
             | EntityKind::Festungsbahn
             | EntityKind::Gondel
+            | EntityKind::Schafbergbahn
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
-            | EntityKind::SteinDebris => AxeHit::Pass,
+            | EntityKind::SteinDebris
+            | EntityKind::Souvenirstand
+            | EntityKind::SchneekugelScherben => AxeHit::Pass,
             EntityKind::Stein => AxeHit::Shatter,
         }
     }
@@ -211,6 +216,7 @@ mod tests {
             EntityKind::Oblate,
             EntityKind::Defeated(SelfieTourist),
             EntityKind::Gondel,
+            EntityKind::Schafbergbahn,
         ] {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }
