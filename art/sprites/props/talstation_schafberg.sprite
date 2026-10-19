@@ -1,0 +1,104 @@
+# Schafbergbahn valley station (back layer, D-031: no k, no outlines):
+# the old station hall - a w/i plaster ground floor with a wooden door
+# and four windows, a timber upper storey o/O/l with four windows, a
+# shallow m/d roof with a small white clock gable (clock face i/w/d, no
+# text) - then a platform canopy on two wooden posts O/l (dark d/l roof
+# and valance, no light lip: D-038) and the water tower for the steam
+# locos (o/O/l staves, d hoops, m/d cone roof, m spout).
+# Placed behind cols 42..50 (cell 46, dx 0: x 0 = col 42 + 8 px). The
+# stone platform (cols 45..51, top 2 tiles up) covers x >= 40 below
+# y 56; the step (col 44) covers x 24..39 below y 72.
+sprite = talstation_schafberg
+size   = 128x88
+origin = 64,88
+anim   = idle frames=1
+---
+frame idle 0
+................................................................................................................................
+................................................................................................................................
+........................................d.......................................................................................
+.......................................d.d......................................................................................
+......................................dmwwd.....................................................................................
+.....................................dmwwwwd....................................................................................
+....................................dmwwwwwwd...................................................................................
+...................................dmwwwwwwwwd..................................................................................
+..................................dmwwwwwwwwwwd...........................................................................d.....
+.................................dmwwwwwwwwwwwwd..........................................................................d.....
+................................dmwwwwwwwwwwwwwwd.......................................................................mmmdd...
+...............................dmwwwwwwwwwwwwwwwwd......................................................................mmmdd...
+..............................dmwwwwwwiiiiiwwwwwwid....................................................................mmmmddd..
+.....mmmmmmmmmmmmmmmmmmmmmmmmdmwwwwwwiwwdwwiwwwwwimdmmmmmmmmmmmmmmmmmmmmddddddddddd....................................mmmmddd..
+....mmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwiwwdwwiwwwwwimmmmmmmmmmmmmmmmmmmmmmmddddddddddd..................................mmmmmdddd.
+....mmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwiwwddwiwwwwwimmmmmmmmmmmmmmmmmmmmmmmddddddddddd..................................mmmmmdddd.
+...mmmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwiwwwwwiwwwwwimmmmmmmmmmmmmmmmmmmmmmmmddddddddddd................................mmmmmmddddd
+...mmmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwiwwwwwiwwwwwimmmmmmmmmmmmmmmmmmmmmmmmddddddddddd................................mmmmmmddddd
+..mmmmddmmmmddmmmmddmmmmddmmmmdwwwwwwwiiiiiwwwwwwimmmmddmmmmddmmmmddmmmmddmddddddddddd..............................mmmmmmmddddd
+..mmmmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwwwwwwwwwwwwwimmmmmmmmmmmmmmmmmmmmmmmmmddddddddddd..............................dddddddddddd
+.mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwwwwwwwwwwwwwimmmmmmmmmmmmmmmmmmmmmmmmmmddddddddddd...............................oOOlOOlOOl
+.mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmwwwwwwwwwwwwwwwwwwimmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddddddd..........................oOOlOOlOOl
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddllddddddddddddd.....................oOOlOOlOOl
+ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddlllllddddddddddddddd................oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOlllllll..lllllddddddddddddddd..........ddddddddddd
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...l..l.lllllddddddddddddddd......oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll......l..l.OlllllldddddddddddddddloOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll.......l...Ol..ll.llllldddddddddddoOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll........l..Ol..l..l..l.lllllddddddoOOlOOlOOl
+....oOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOOlOOOlOOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOllllll.........l.Ol.l.........ll.lllllldoOOlOOlOOl
+....oOOlOwsswbbwOOOlOOOlOwsswbbwOOOlOOOlOOOlOOOlOwsswbbwOOOlOOOlOwsswbbwOOOlOOllllll..........lOll............lOlll..loOOlOOlOOl
+....oOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOOlOOOlOOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOllllll...........ll..............ll....loOOlOOlOOl
+....oOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOOlOOOlOOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOOlOOOlOOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOllllll...........Ol..............Ol....ddddddddddd
+....oOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOOlOOOlOOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOOlOOOlOOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOOlOOOlOOOlOwbbwbbwOOOlOOOlOwbbwbbwOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOOlOOOlOOOlOwwwwwwwOOOlOOOlOwwwwwwwOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOOOOOOOOOlOOOlOOOOOOOOOOOlOOOlOOOlOOOlOOOOOOOOOOOlOOOlOOOOOOOOOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol....ddddddddddd
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+....oOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOOlOOllllll...........Ol..............Ol.....oOOlOOlOOl
+..llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll...........Ol..............Ol.....oOOlOOlOOl
+..llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll...........Ol..............Ol....moOOlOOlOOl
+..llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll...........Ol..............Ol...mdoOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.mmd.oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Olmdd..oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Omd....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Od....ddddddddddd
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.............Ol..............Ol.....oOOlOOlOOl
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwwwwwwwwwwwwwwwwwwwssbwbbwwwwwwwssbwbbwwwwwwwssbwbbwwwwwwwssbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwwwwwwwwwwwwwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwiiiiiiiiiiiiiiwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwllllllllllllwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwwwwwbbbwbbwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwiiiiiiiiiiwwwiiiiiiiiiiwwwiiiiiiiiiiwwwiiiiiiiiiiwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....wwwwwwlOOOOOlOOOOlwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiiiii.....................................mmmmmmmm.
+....mmmmmmlOOOOOlOOOOlmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.
+....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimmmmm.....................................mmmmmmmm.

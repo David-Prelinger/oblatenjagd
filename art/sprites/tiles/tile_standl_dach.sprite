@@ -1,0 +1,284 @@
+# Souvenir stand awning (one-way; top 5 px = walking surface): a k-outlined
+# o/O/l rod, wine-and-white canvas in 4 px vertical stripes (w with an i
+# shadow under the rod, R - never Resi's r), a scalloped k-outlined lower
+# edge (one tongue per stripe). End tiles: a 2 px R side flap with a k edge.
+# Transparent below the scallops (the vendor stands in the gap under it).
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_standl_dach
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+kkkkkkkkkkkkkkkk
+kooooooooooooook
+kOOOOOOOOOOOOOOk
+kllllllllllllllk
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRk
+kRRiRRRRwwiiRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kkkkkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 1
+kkkkkkkkkkkkkkkk
+kooooooooooooook
+kOOOOOOOOOOOOOOk
+kllllllllllllllk
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRk
+kRRiRRRRwwiiRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kkkkkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 2
+kkkkkkkkkkkkkkkk
+kooooooooooooooo
+kOOOOOOOOOOOOOOO
+klllllllllllllll
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRR
+kRRiRRRRwwiiRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kkkkkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 3
+kkkkkkkkkkkkkkkk
+kooooooooooooooo
+kOOOOOOOOOOOOOOO
+klllllllllllllll
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRR
+kRRiRRRRwwiiRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kkkkkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 4
+kkkkkkkkkkkkkkkk
+kooooooooooooook
+kOOOOOOOOOOOOOOk
+kllllllllllllllk
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRk
+kRRiRRRRwwiiRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kkkkkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 5
+kkkkkkkkkkkkkkkk
+kooooooooooooook
+kOOOOOOOOOOOOOOk
+kllllllllllllllk
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRk
+kRRiRRRRwwiiRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kRRwRRRRwwwwRRRk
+kkkkkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 6
+kkkkkkkkkkkkkkkk
+kooooooooooooooo
+kOOOOOOOOOOOOOOO
+klllllllllllllll
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRR
+kRRiRRRRwwiiRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kkkkkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 7
+kkkkkkkkkkkkkkkk
+kooooooooooooooo
+kOOOOOOOOOOOOOOO
+klllllllllllllll
+kkkkkkkkkkkkkkkk
+kRRiRRRRiiiiRRRR
+kRRiRRRRwwiiRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kRRwRRRRwwwwRRRR
+kkkkkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 8
+kkkkkkkkkkkkkkkk
+oooooooooooooook
+OOOOOOOOOOOOOOOk
+lllllllllllllllk
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRk
+wwiiRRRRwwiiRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+kiikkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 9
+kkkkkkkkkkkkkkkk
+oooooooooooooook
+OOOOOOOOOOOOOOOk
+lllllllllllllllk
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRk
+wwiiRRRRwwiiRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+kiikkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 10
+kkkkkkkkkkkkkkkk
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRR
+wwiiRRRRwwiiRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+kiikkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 11
+kkkkkkkkkkkkkkkk
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRR
+wwiiRRRRwwiiRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+kiikkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 12
+kkkkkkkkkkkkkkkk
+oooooooooooooook
+OOOOOOOOOOOOOOOk
+lllllllllllllllk
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRk
+wwiiRRRRwwiiRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+kiikkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 13
+kkkkkkkkkkkkkkkk
+oooooooooooooook
+OOOOOOOOOOOOOOOk
+lllllllllllllllk
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRk
+wwiiRRRRwwiiRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+wwwwRRRRwwwwRRRk
+kiikkRRkkiikkkkk
+.kk..kk..kk..kk.
+................
+frame auto 14
+kkkkkkkkkkkkkkkk
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRR
+wwiiRRRRwwiiRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+kiikkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
+frame auto 15
+kkkkkkkkkkkkkkkk
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+kkkkkkkkkkkkkkkk
+iiiiRRRRiiiiRRRR
+wwiiRRRRwwiiRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+wwwwRRRRwwwwRRRR
+kiikkRRkkiikkRRk
+.kk..kk..kk..kk.
+................
