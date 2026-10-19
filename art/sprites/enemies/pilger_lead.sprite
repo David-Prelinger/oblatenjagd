@@ -1,0 +1,113 @@
+# Pilger leader (lead = true): the same pilgrim as `pilger`, but his walking
+# stick is taller and carries a small red-white-red pennant r/w above his hat
+# (the group leader, like a tour guide's umbrella). The pennant flies back
+# over his head, at most 8 rows above the hat; decoration only - the
+# hitbox is the plain pilgrim's (rows 10-31). Same anims and poses as
+# `pilger` (sprite moved down 8 rows). Faces right; mirror = auto.
+sprite = pilger_lead
+size   = 16x32
+origin = 8,32
+hitbox = 2,10,12,22
+mirror = auto
+anim   = walk     frames=2 ticks=12 loop
+anim   = squished frames=1
+---
+frame walk 0
+................
+..........kk.k..
+........kkrrkOk.
+......kkrrrrkOk.
+.....kwwwwwwkOk.
+......kkrrrrkOk.
+........kkrrkOk.
+..........kkkOk.
+..kkk.......kOk.
+.kiiikkk....kOk.
+kiiikGGGk...kOk.
+kiikkGGGYkk.kOk.
+kikgGGGGGGjkkOk.
+.kdkkiieeeekkOk.
+.kkkkieeekekkOk.
+kggGkieeeeeEkOk.
+kgGGkieewwwwkOk.
+kGGGGkkkkkikkOk.
+kGGGjkOkkOk.kOk.
+kGGGklkOOkOkkOk.
+kGGjklkOOkkkkkk.
+kGjjklklOOOOeek.
+.kjjklOkkkkkeEk.
+..kkkOOOOOlkkkk.
+....kkkkkklkkOk.
+....kmmmmdk.kOk.
+...kmkkmmdk.kOk.
+..kmmdkkmmdkkOk.
+..kiimkkiimkkOk.
+.kiimk.kiimkkOk.
+.kOOllkkOOllkOk.
+..kkkk..kkkk.k..
+frame walk 1
+.........kkk.k..
+.......kkrrrkOk.
+......krrrrrkOk.
+.....kwwwwwwkOk.
+......kkkrrrkOk.
+.........kkrkOk.
+...........kkOk.
+............kOk.
+..kkk.......kOk.
+.kiiikkk....kOk.
+kiiikGGGk...kOk.
+kiikkGGGYkk.kOk.
+kikgGGGGGGjkkOk.
+.kdkkiieeeekkOk.
+.kkkkieeekekkOk.
+kggGkieeeeeEkOk.
+kgGGkieewwwwkOk.
+kGGGGkkkkkikkOk.
+kGGGjkOkkOk.kOk.
+kGGGklkOOkOkkOk.
+kGGjklkOOkkkkkk.
+kGjjklklOOOOeek.
+.kjjklOkkkkkeEk.
+..kkkOOOOOlkkkk.
+....kllkkkkkkOk.
+....kkkmmmdkkOk.
+....kmmkmmdkkOk.
+....kmmkmmdkkOk.
+....kiikiimkkOk.
+....kiikOOllkk..
+....kOOlkkkk....
+.....kkkk.......
+frame squished 0
+................
+...........kk.k.
+.........kkrrkOk
+.......kkrrrrkOk
+......kwwwwwwkOk
+.......kkrrrrkOk
+.........kkrrkOk
+...........kkkOk
+.............kOk
+.............kOk
+.............kOk
+.............kOk
+.............kOk
+........kk...kOk
+......kkGGk..kOk
+.....kGGGGGk.kOk
+....kgGGGGYjkkOk
+....kiieeeek.kOk
+....kieeekek.kOk
+....kieeeeeEkkOk
+....kieewwwwkkOk
+.....kkkkkik.kOk
+.....kOOkkkkkkOk
+....klOkOOOOeekk
+...kklOOkkkkeEkk
+.kkiklOOkkkkkkOk
+kiiikllkmmmmdkOk
+kiimmkkkkkkmmkOk
+kmmmmddk..kiikOk
+.kmddddk..kiikOk
+..kkkkk...kOOkOk
+...........kkkk.
