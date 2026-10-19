@@ -9,7 +9,7 @@ seed   = 1
 source = handwritten
 expect = dies_at frames=1817..1817 deaths=1 lives=2 event=Respawned event=CheckpointReached power=normal player_x>=1856 state=playing
 ---
-# --- the first 746 frames of falkenstein_solver.replay ---
+# --- the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38

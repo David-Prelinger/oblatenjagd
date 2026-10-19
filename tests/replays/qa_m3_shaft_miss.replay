@@ -11,7 +11,7 @@ seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt state=playing player_y>=346 player_y<=346 player_x>=1936
 ---
-# --- the first 812 frames of falkenstein_solver.replay ---
+# --- the first 812 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -50,7 +50,7 @@ RJ 12
 R 5
 LB 8
 LBJ 1
-# --- end of the first 812 frames of falkenstein_solver.replay ---
+# --- end of the first 812 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30      # landed back on the row-20 plank at 836
 J 5       # tap hop: lands on the same plank
 - 40

@@ -229,6 +229,12 @@ pub struct Game {
     /// Climb camera (D-054): the feet height (whole px) of the last
     /// grounded frame; unused (0) in side levels.
     ground_feet: i32,
+    /// Climb camera (D-065): the feet height (whole px) the ground framing
+    /// is anchored on ([`ClimbFocus::settle_feet`]); unused (0) in side
+    /// levels.
+    settle_feet: i32,
+    /// Climb camera (D-065): [`ClimbFocus::slack_x`]; 0 in side levels.
+    slack_x: i32,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
@@ -324,6 +330,8 @@ impl Game {
             player,
             camera: Camera { x: 0, y: 0 },
             ground_feet: 0,
+            settle_feet: 0,
+            slack_x: 0,
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
@@ -535,9 +543,13 @@ impl Game {
             feet: (p.y + p.h).to_px(),
             grounded: p.on_ground,
             ground_feet: self.ground_feet,
+            settle_feet: self.settle_feet,
+            slack_x: self.slack_x,
         };
         self.camera.follow_climb(&mut focus, w, h, t);
         self.ground_feet = focus.ground_feet;
+        self.settle_feet = focus.settle_feet;
+        self.slack_x = focus.slack_x;
     }
 
     /// D-051: the player's own movement stops at the screen's left edge,
@@ -666,9 +678,13 @@ impl Game {
             let feet = (self.player.y + self.player.h).to_px();
             self.camera = Camera::new_climb(self.player.center_px().0, feet, w, h, t);
             self.ground_feet = feet;
+            self.settle_feet = feet;
+            self.slack_x = self.player.center_px().0;
         } else {
             self.camera = Camera::new(self.player.center_px(), w, h, t);
             self.ground_feet = 0;
+            self.settle_feet = 0;
+            self.slack_x = 0;
         }
     }
 
@@ -1287,6 +1303,8 @@ impl Game {
         self.player.hash(&mut h);
         self.camera.hash(&mut h);
         h.i32(self.ground_feet);
+        h.i32(self.settle_feet);
+        h.i32(self.slack_x);
         h.u64(self.rng.state());
         h.u32(self.deaths);
         self.hash_tiles(&mut h);

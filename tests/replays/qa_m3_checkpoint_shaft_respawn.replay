@@ -16,7 +16,7 @@ seed   = 1
 source = handwritten
 expect = dies_at frames=15330..15330 deaths=1 lives=2 event=Respawned event=CheckpointReached power=big player_x>=1880 state=playing
 ---
-# --- the first 746 frames of falkenstein_solver.replay ---
+# --- the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -48,7 +48,7 @@ RBJ 1
 RB 44
 RBJ 36
 RB 25
-# --- end of the first 746 frames of falkenstein_solver.replay ---
+# --- end of the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 20      # past the checkpoint (116), sliding to a stop
 L 26      # back under the M-box
 - 12

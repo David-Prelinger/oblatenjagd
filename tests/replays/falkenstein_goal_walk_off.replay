@@ -9,7 +9,7 @@ seed   = 1
 source = handwritten
 expect = complete frames=1583..1583 deaths=0
 ---
-# --- the first 1480 frames of falkenstein_solver.replay ---
+# --- the first 1480 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -66,7 +66,7 @@ RB 40
 RBJ 20
 RB 9
 RBJ 24
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 60       # stand on the Aberseeblick
 R 40       # walk off its right edge
 - 60

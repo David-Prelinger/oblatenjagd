@@ -6,14 +6,16 @@
 # she lands on the box. Facing right from the box top she throws an axe
 # every 31 frames (new RUN presses): the first takes the Wolfgang pigeon off
 # the statue, later ones defeat pilger group C (3 x 100, outside the stomp
-# chain) on the saddle's clear axe lane. No hurt.
+# chain) on the saddle's clear axe lane. No hurt. E20 (D-065): on the box
+# top the climb camera keeps the plateau's framing, so the lane and group C
+# are on screen (shot box_lane: two pilgrims left, an axe in flight).
 level  = falkenstein
 seed   = 1
 source = handwritten
 expect = event=PowerUp no_event=Hurt deaths=0 score=6000
-shots  = 1172:bump 1305:pickup 1680:axes
+shots  = 1172:bump 1305:pickup 1680:axes 1700:box_lane
 ---
-# --- the first 1080 frames of falkenstein_solver.replay ---
+# --- the first 1080 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -59,7 +61,7 @@ RBJ 20
 RB 101
 RBJ 36
 RB 38
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30
 R 38       # under the H-box
 - 20

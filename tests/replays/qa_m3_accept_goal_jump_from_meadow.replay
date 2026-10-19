@@ -11,7 +11,7 @@ seed   = 1
 source = handwritten
 expect = complete frames=1643..1643 deaths=0 player_y>=230 state=stage_clear
 ---
-# --- the first 1480 frames of falkenstein_solver.replay ---
+# --- the first 1480 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38

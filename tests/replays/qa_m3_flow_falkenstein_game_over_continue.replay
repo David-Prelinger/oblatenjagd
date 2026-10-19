@@ -18,7 +18,7 @@ expect = state=playing stage=falkenstein lives=3 score=0 oblaten=0 power=normal 
 - 20
 S 1       # title -> Falkenstein intro
 - 150
-# --- the first 1366 frames of falkenstein_solver.replay ---
+# --- the first 1366 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -70,7 +70,7 @@ RBJ 36
 RB 43
 RBJ 36
 RB 26
-# --- end of the first 1366 frames of falkenstein_solver.replay ---
+# --- end of the first 1366 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 R 100     # into the saddle cleft: death 1 (1625)
 - 250     # intro, respawn at the checkpoint (col 116, behind the curb)
 L 6       # left: the curb (115) stops a walk ...

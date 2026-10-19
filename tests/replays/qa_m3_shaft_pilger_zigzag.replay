@@ -10,7 +10,7 @@ seed   = 1
 source = handwritten
 expect = event=Stomped deaths=0
 ---
-# --- the first 746 frames of falkenstein_solver.replay ---
+# --- the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -42,7 +42,7 @@ RBJ 1
 RB 44
 RBJ 36
 RB 25
-# --- end of the first 746 frames of falkenstein_solver.replay ---
+# --- end of the first 746 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 R 90      # into the shaft, to the floor's right side
 J 14      # hop in place: the zigzag pilgrim gets stomped when he reaches the floor
 - 26

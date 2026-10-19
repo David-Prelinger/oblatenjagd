@@ -6,44 +6,45 @@
 # the Maibaum sequence, the tally, the route map to St. Wolfgang, which has
 # no level yet, so the teaser („Fortsetzung folgt …") and the title, with
 # the run reset to its first stage (here Falkenstein, the `level` it started
-# at). The solver route takes the Hackl box; the Durchkriechstein, axe
-# throws, rocks and Gams stomps are in the falkenstein_* mechanic replays.
+# at). The solver route (re-solved in E20, D-065) bumps the Hackl box and
+# leaves the Hackl on it; the Durchkriechstein, axe throws, rocks and Gams
+# stomps are in the falkenstein_* mechanic replays.
 level  = falkenstein
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=1713..1713 deaths=0
-shots  = 0:title 60:intro 175:fuerberg 470:kreuzweg 730:steinschlag_net 891:checkpoint 970:shaft_low 1030:shaft_high 1140:kirche 1310:hackelwurf 1713:maibaum 1938:tally 2388:teaser
+expect = complete frames=1711..1711 deaths=0
+shots  = 0:title 60:intro 175:fuerberg 470:kreuzweg 730:steinschlag_net 891:checkpoint 970:shaft_low 1030:shaft_high 1139:kirche 1340:hackelwurf 1711:maibaum 1936:tally 2386:teaser
 ---
 - 20
 S 1       # START: stage intro
 - 150     # stage intro; play starts at frame 171
+RB 36
+RBJ 36
+RB 57
+RBJ 36
+RB 43
+RBJ 20
 RB 40
-RBJ 36
-RB 38
-RBJ 36
-RB 56
-RBJ 36
-RB 27
 RBJ 12
 RB 30
 RBJ 36
-RB 14
+RB 16
 RBJ 20
-RB 44
+RB 28
 RBJ 36
-RB 40
-RBJ 36
-RB 10
-RBJ 1
 RB 8
+RBJ 36
+RB 28
+RBJ 20
+RB 2
 L 4
-RB 22
-RJ 11
-R 3
-RBJ 18
-RB 4
-R 14
+RB 38
+RBJ 11
+RB 10
+RBJ 6
+RB 19
+L 4
 RB 8
 RBJ 1
 RB 44
@@ -51,28 +52,29 @@ RBJ 36
 RB 40
 LBJ 12
 LB 2
-RB 11
-RJ 12
-R 5
-LB 8
-LBJ 33
-LB 5
+RB 13
+LBJ 12
+LB 2
+RB 8
+LBJ 36
+LB 2
+RB 3
 RBJ 20
-RB 16
+RB 13
 RBJ 20
-RB 101
+RB 95
 RBJ 36
-RB 44
-RBJ 20
-RB 119
+RB 80
+RBJ 2
+RB 108
 RBJ 36
-RB 43
+RB 40
 RBJ 36
-RB 27
+RB 28
 RBJ 20
 RB 40
 RBJ 20
-RB 9
+RB 8
 RBJ 36
-RB 50
+RB 51
 - 800     # Maibaum sequence, tally, route map, teaser, title
