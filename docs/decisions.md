@@ -415,3 +415,11 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - `levels lint`'s Steinschlag niche rule (D-058, implemented in D-059) measures the niche bottom's height to the first **solid** tile below the niche, skipping one-way tiles (`netz`, `steig`, `steig_wall`, any one-way). The range stays 4–6 tiles.
 - Reason: Falkenstein rock #1's niche is 6 tiles above the path with a rockfall net 3 tiles up (game-design.md, sec. 3). Measured to the first solid-or-one-way tile, that niche was only 3 tiles high and failed the lint, and so did E16's test level. The rule exists so that a player standing on the path sees the whole niche below the HUD; that is the path, not the shelter the rock shatters on.
 - Implementation: `climblint::niche_problem`; tests `rock_niches_are_4_to_6_tiles_above_their_solid_ground` and `rock_niches_skip_one_way_shelters_and_planks`. Supersedes D-059's "first solid or one-way tile" for this lint only (the fall-depth lint still lands on one-way tiles).
+
+## D-063 `kalkfels_bg` joins only the drawn tile above it (engine, M3 task E18b, code review of E18)
+- Supersedes the join list of D-059's "Art-review add-on" (and E18's "every drawn neighbour on every side"). The one-way autotile joins (`jnr-render` `tiles::one_way_join`) are now:
+  - `kalkfels_bg` ↔ `steig_wall`: the back wall counts the plank as the same on all four sides; the plank still sees only itself (art-director approved, double-shadow fix).
+  - `kalkfels_bg` counts any other drawn neighbour **above** it (any name except air and `invisible`: rock, plank, box, brick, any solid or one-way) as the same for the N bit only.
+  - `kalkfels` counts solid ground above it (`forest_path`, `meadow`, `stone`, `ground`) as the same for N, and `kalkfels_bg` below it for S.
+- Reason: the sprite's only transparent pixels are the row-0 notches of frames with the N bit open, so joins on E/S/W fixed nothing and removed designed shading, e.g. the ragged left `d` shadow column of the back wall beside a shaft's side wall. The top shadow and notches now show only against air/sky above.
+- Tests: `kalkfels_bg_joins_any_drawn_tile_above_it_only`, `kalkfels_joins_kalkfels_bg_below_it_only` (the back wall beside rock keeps its W shadow), `kalkfels_bg_joins_a_steig_wall_plank_one_way` (unchanged).
