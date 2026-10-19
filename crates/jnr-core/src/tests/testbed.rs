@@ -52,5 +52,7 @@ const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame (changes whenever the hashed tuning gains keys
 /// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
 /// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach`/`climb_top_min`/`climb_catch_up_speed` and the hashed
-/// `settle_feet`/`slack_x`).
-const FINISH_HASH: u64 = 0x48e7_462e_4b19_6515;
+/// `settle_feet`/`slack_x`; M4 E21: `platforms.schafbergbahn_*`; M4 E22:
+/// the Operettensänger and Souvenirstand `[enemies]` keys; M4 E23: the
+/// `enemies.reisebus_*` keys).
+const FINISH_HASH: u64 = 0x625a_614f_0c12_3dd7;

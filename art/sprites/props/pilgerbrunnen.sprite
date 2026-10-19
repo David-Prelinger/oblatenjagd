@@ -1,0 +1,164 @@
+# Pilgerbrunnen (1515), the pilgrims' fountain on the Markt (front layer,
+# k outline): a hipped canopy roof m/d with a lit i ridge, a stone cornice
+# and a Gothic pointed-arch frieze i/m on two slim corner columns (w/i/m),
+# a central stone pier with a bronze bowl o/O/l (t patina), water jets
+# t/s/w falling from the bowl into the bronze basin o/O/l on its i/m step.
+# Drawn = solid (D-038), placed with its centre on col 165: the canopy's
+# k top edge is row 8 = 64 px (4 tiles) above the street, on the
+# invisible tiles 164..166 (row 11), over x 1..46 (only x 0/47 chamfered);
+# the pier covers the stone column
+# (x 16..31, rows 24..55); the basin rim's k edge is row 56 = the basin
+# tiles' top (row 14). The finial tip, the taube_sitting's seat, is
+# pixel (23..24, 0): 0/1 px left of the origin, 72 px above the street
+# (8 px above the canopy top).
+sprite = pilgerbrunnen
+size   = 48x72
+origin = 24,72
+anim   = idle frames=2 ticks=12 loop
+---
+frame idle 0
+.......................kk.......................
+......................kiik......................
+......................kimk......................
+......................kmmk......................
+......................kmdk......................
+.....................kmmmmk.....................
+......................kmmk......................
+......................kmmk......................
+.kkkkkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkkkkk.
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiidk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kddddddddddddddddddddddddddddddddddddddddddddddk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiimmiiiiiiiiiiiiiiiiiiiiiimmiiiiiiiiimk
+kiiiiiiiiimkkmiiiiiiiiiiiiiiiiiiiimkkmiiiiiiiimk
+kiiiiiiiimk..kmiiiwiiiiiiiimmmiiimk..kmiiiiiiimk
+kiiiiiiimk....kmiiwiiiiiiiimmmiimk....kmiiiiiimk
+kiiiiiimk......kiiwiiiiiiiimmmimk......kiiiiiimk
+kiiiiiimk......kmiwiiiiiiiimmmimk......kmiiiiimk
+kiiiiiik........kiwiiiiiiiimmmmk........kiiiiiik
+kiiiiiik........kmwiiiiiiiimmmmk........kiiiiiik
+kmmmmmmk.........kwiiiiiiiimmmk.........kmmmmmmk
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk...kkkkkkkkwiiiiiiiimmmkkkkkkkk...kwiimk.
+.kwiimk..kooooooooooooooooooooooooooook..kwiimk.
+.kwiimk..kOOOttOOOOOOOOOOOOOOOOttOOOOOk..kwiimk.
+.kwiimk..sOOOOOOOOOOOOOOOOOOOOOOOOOOOOs..kwiimk.
+.kwiimk.w.kkllllllllllllllllllllllllkk.w.kwiimk.
+.kwiimk....kllllllllllllllllllllllllk....kwiimk.
+.kwiimkt....kkkllllllllllllllllllkkk....tkwiimk.
+.kwiimk........kkkwiiiiiiiimmmkkk........kwiimk.
+.kwiimks.........kwiiiiiiiimmmk.........skwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimkt.........kwiiiiiiiimmmk.........tkwiimk.
+.kwiimk.........kiiiiiiiiiiiiiik.........kwiimk.
+.kwiimkw........kiiiiiiiiiiiiiik........wkwiimk.
+.kwiimk.........kmmmmmmmmmmmmmmk.........kwiimk.
+.kwiimk.s........kwiiiiiiiimmmk........s.kwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk.t........kwimmmmmmimmmk........t.kwiimk.
+.kwiimk..........kwimddddmimmmk..........kwiimk.
+.kwiimk.t........kwimddddmimmmk........t.kwiimk.
+kiiiiimk.........kwimddddmimmmk.........kiiiiimk
+kiiiiimkw........kwiiiiiiiimmmk........wkiiiiimk
+kiiiiimk.........kwiiiiiiiimmmk.........kiiiiimk
+kmmmmmwk.w.......kwiiiiiiiimmmk.......w.kwmmmmmk
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+.kooooooooooooooooooooooooooooooooooooooooooook.
+.koOOOttOOOOOOOOOOttOOOOOOOOOOOOOttOOOOOOttOOOk.
+.koOOOOTOOOOlOOOOOOTOOOOlOOOOOOOOOTOlOOOOOTOOOk.
+.koOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOk.
+.koOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOk.
+..kkOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOkk..
+...kllllllllllllllllllllllllllllllllllllllllk...
+....kkkllllllllllllllllllllllllllllllllllkkk....
+.kkkkkkllllllllllllllllllllllllllllllllllkkkkkk.
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+frame idle 1
+.......................kk.......................
+......................kiik......................
+......................kimk......................
+......................kmmk......................
+......................kmdk......................
+.....................kmmmmk.....................
+......................kmmk......................
+......................kmmk......................
+.kkkkkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkkkkk.
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiidk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kddddddddddddddddddddddddddddddddddddddddddddddk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiimmiiiiiiiiiiiiiiiiiiiiiimmiiiiiiiiimk
+kiiiiiiiiimkkmiiiiiiiiiiiiiiiiiiiimkkmiiiiiiiimk
+kiiiiiiiimk..kmiiiwiiiiiiiimmmiiimk..kmiiiiiiimk
+kiiiiiiimk....kmiiwiiiiiiiimmmiimk....kmiiiiiimk
+kiiiiiimk......kiiwiiiiiiiimmmimk......kiiiiiimk
+kiiiiiimk......kmiwiiiiiiiimmmimk......kmiiiiimk
+kiiiiiik........kiwiiiiiiiimmmmk........kiiiiiik
+kiiiiiik........kmwiiiiiiiimmmmk........kiiiiiik
+kmmmmmmk.........kwiiiiiiiimmmk.........kmmmmmmk
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk...kkkkkkkkwiiiiiiiimmmkkkkkkkk...kwiimk.
+.kwiimk..kooooooooooooooooooooooooooook..kwiimk.
+.kwiimk..kOOOttOOOOOOOOOOOOOOOOttOOOOOk..kwiimk.
+.kwiimk..wOOOOOOOOOOOOOOOOOOOOOOOOOOOOw..kwiimk.
+.kwiimk.t.kkllllllllllllllllllllllllkk.t.kwiimk.
+.kwiimk....kllllllllllllllllllllllllk....kwiimk.
+.kwiimks....kkkllllllllllllllllllkkk....skwiimk.
+.kwiimk........kkkwiiiiiiiimmmkkk........kwiimk.
+.kwiimkt.........kwiiiiiiiimmmk.........tkwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimkw.........kwiiiiiiiimmmk.........wkwiimk.
+.kwiimk.........kiiiiiiiiiiiiiik.........kwiimk.
+.kwiimks........kiiiiiiiiiiiiiik........skwiimk.
+.kwiimk.........kmmmmmmmmmmmmmmk.........kwiimk.
+.kwiimk.t........kwiiiiiiiimmmk........t.kwiimk.
+.kwiimk..........kwiiiiiiiimmmk..........kwiimk.
+.kwiimk.t........kwimmmmmmimmmk........t.kwiimk.
+.kwiimk..........kwimddddmimmmk..........kwiimk.
+.kwiimk.w........kwimddddmimmmk........w.kwiimk.
+kiiiiimk.........kwimddddmimmmk.........kiiiiimk
+kiiiiimkt........kwiiiiiiiimmmk........tkiiiiimk
+kiiiiimk.........kwiiiiiiiimmmk.........kiiiiimk
+kmmmmsmks........kwiiiiiiiimmmk........skmsmmmmk
+.kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+.kooooooooooooooooooooooooooooooooooooooooooook.
+.koOOOttOOOOOOOOOOttOOOOOOOOOOOOOttOOOOOOttOOOk.
+.koOOOOTOOOOlOOOOOOTOOOOlOOOOOOOOOTOlOOOOOTOOOk.
+.koOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOk.
+.koOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOk.
+..kkOOOOOOOOlOOOOOOOOOOOlOOOOOOOOOOOlOOOOOOOkk..
+...kllllllllllllllllllllllllllllllllllllllllk...
+....kkkllllllllllllllllllllllllllllllllllkkk....
+.kkkkkkllllllllllllllllllllllllllllllllllkkkkkk.
+kwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwmk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiimk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk
+kmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmk

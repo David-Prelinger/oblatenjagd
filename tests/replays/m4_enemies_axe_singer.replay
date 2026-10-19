@@ -1,0 +1,22 @@
+# Resi bumps the H-box, jumps onto it for the Hackl (1000), walks
+# towards street singer #2 and throws one axe while he sings: it hits
+# him at hand height (Defeat, 200 outside the chain, „Bravo!", D-071);
+# no need to wait out the high C.
+level  = m4_enemies
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=AxeHit score=1200 power=hackl deaths=0 no_event=Hurt state=playing
+---
+R 38
+- 24
+J 20
+- 4
+L 20
+- 20
+RJ 24
+R 6
+- 60
+R 175
+- 20
+B 1
+- 60

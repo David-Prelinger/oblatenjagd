@@ -1,0 +1,64 @@
+# QA M4 (acceptance bug, fixed in the level): Resi standing still on the
+# stone bench at the Markt entrance (col 152) next to Selfie-Tourist #3's pen.
+# The bug: the tourist's hitbox is 20 px tall and the bench was 1 tile (16
+# px), so his head poked 4 px above the bench top when he turned at it; with
+# her hitbox even 0.2 px past the bench's right edge his head touched her
+# feet while she stood (vy 0): a hurt, as Normal death (was: Died at 1971).
+# Fix (D-066 addendum, "Pen walls"): every wall a walker turns at and Resi
+# can stand on is >= 2 tiles above the walker's floor; the bench is now 2
+# high (rows 13-14), so his head stays 12 px below her feet.
+# Steps: st_wolfgang_solver inputs to 1160 (on the road before the
+# checkpoint), walk to the bench, jump onto it, step right until her hitbox
+# overhangs the bench's right edge by 6 px (x 2442, right edge 2454; the
+# tourist turns with his left edge at 2448), wait while he comes back and
+# turns under her (twice in the wait).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing
+expect = player_x>=2441 player_y>=186 player_y<=186
+---
+# st_wolfgang_solver inputs to 1160
+RB 56
+RBJ 36
+RB 30
+RBJ 20
+RB 24
+RBJ 36
+RB 2
+RBJ 20
+RB 40
+RBJ 36
+RB 56
+DJ 1
+- 3
+RB 22
+LBJ 36
+LB 2
+RB 6
+R 38
+- 16
+L 4
+- 148
+RBJ 20
+RB 10
+RBJ 20
+RB 27
+LBJ 12
+LB 2
+RB 98
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 37
+R 40
+RJ 14     # jump onto the stone bench (col 152, x 2432-2447, top y 208)
+- 30
+R 12      # step right: she stands at x 2442, her right edge 6 px past the bench
+- 800     # wait on the bench: tourist #3 turns under her feet, no hurt

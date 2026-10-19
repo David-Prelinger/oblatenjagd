@@ -156,6 +156,27 @@ steinschlag_telegraph = 40    # Steinschlag counter frames 0-39 wobble + pebbles
 steinschlag_refill = 30       # ... and the niche shows a resting rock again 30 frames after the drop
 steinschlag_screen_top = 24   # px: the niche counts as on screen only below the HUD (screen y >= 24)
 stein_points = 50             # a rock shattered by a thrown Hackl (D-056)
+# M4 enemies (D-068, D-069).
+operettensaenger_hitbox = [12, 22]  # sprite 16x24
+operettensaenger_range = 160  # px (< 161, 10 tiles): his 180-frame counter runs while the player is this close
+operettensaenger_cycle = 180  # frames per cycle (starts at 0 on first entering range, pauses outside) ...
+operettensaenger_inhale = 40  # ... frames 0-39 inhale (the telegraph) ...
+operettensaenger_sing = 48    # ... frames 40-87 the high C sounds; idle 88-179 (the 92-frame window)
+hohes_c_width = 12            # px: the sound column, centred on him, grows up from his hitbox top ...
+hohes_c_speed = 8             # ... 8 px per frame ...
+hohes_c_height = 80           # ... to 80 px; passes one-way tiles, stops at the first solid tile
+souvenirstand_telegraph = 30  # stand counter frames 0-29 telegraph (vendor holds up a globe), the globe spawns at frame 30
+souvenirstand_max_alive = 2   # a cycle that starts with this many of its globes alive shows nothing and spawns nothing
+schneekugel_hitbox = [10, 10] # the rolling snow globe (sprite 12x12)
+schneekugel_speed = 256       # 1.0 px/frame to the left; gravity and max fall are the player's; shatters on walls
+# M4 Reisebus (D-070): parked, facing left; it ignores tiles (levels keep its lane clear, lint) and passes enemies.
+reisebus_hitbox = [60, 28]    # sprite 64x32 over 4 cells from its spawn cell
+reisebus_trigger = 160        # px (< 161, 10 tiles) to its centre: the parked bus telegraphs ...
+reisebus_telegraph = 60       # ... for 60 frames (hazard lights) ...
+reisebus_speed = 384          # ... then drives left at 1.5 px/frame until its right edge is left of the screen
+reisebus_stop_frames = 120    # `stop = N`: N tiles left of where it was parked it halts for a 120-frame photo stop ...
+reisebus_restart = 30         # ... then 30 frames of hazard lights, then on again
+reisebus_flash_frames = 16    # renderer: the photo-stop camera flashes switch every 16 frames (off first; harmless)
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
@@ -164,6 +185,9 @@ festungsbahn_wait = 60          # frames standing at the upper end (at the lower
 gondel_size = [32, 24]          # px [w, h]: the cabin; its roof carries the player (the 28 px hanger is drawn above)
 gondel_wait = 30                # frames at each end; it never waits for a rider (D-044)
 gondel_frames_per_tile = 16     # 1 px/frame along the major axis: travel = max(|dx|, |dy|) × 16 frames
+schafbergbahn_size = [64, 32]   # px [w, h], whole tiles: the train body; its roof is flush with the station platforms (D-067)
+schafbergbahn_frames_per_tile = 24  # travel = max(|dx|, |dy|) × 24 frames: 0.67 px/frame across a 1:4 track
+schafbergbahn_wait = 90         # frames standing at the upper end (at the lower end it waits for its rider)
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)

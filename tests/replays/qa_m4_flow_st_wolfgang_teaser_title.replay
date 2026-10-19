@@ -1,0 +1,117 @@
+# QA M4 flow (D-047, D-072): St. Wolfgang clear -> teaser to the Wolfgangsee
+# (no level yet) -> title with the run reset. Title flow with the run
+# started at St. Wolfgang, the qa_st_wolfgang_relaxed inputs from 171
+# (Maibaum at 5491; 5413 before the pen-wall re-cut of the relaxed run),
+# then idle: tally, route map / teaser (from ~5960), title (~6200) with
+# score 0, 3 lives, Normal.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=5491..5491 deaths=0 no_event=Hurt
+expect = state=title score=0 lives=3 oblaten=0
+---
+# title -> intro
+- 20
+S 1
+- 150
+# the qa_st_wolfgang_relaxed inputs
+R 150      # Ried: walk, 5 Oblaten
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152      # stand on the curb (col 25): stand #1's globe shatters on it
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16      # stomp Selfie-Tourist #1 at the station
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95       # walk onto the waiting train (it starts)
+- 570      # ride the whole 24-tile track standing
+R 225      # walk off at the Alm halt; stepping down stomps Selfie-Tourist #2
+RJ 10
+R 70
+- 180      # watch bus #1 drive under the terrace into the tunnel
+R 200
+RJ 18
+R 6
+- 345      # on the shelter roof: bus #2's photo stop, then it drives under
+R 45
+R 220      # walk to the bench at the Markt entrance (col 152)
+RJ 12      # hop the bench: stomp Selfie-Tourist #3 in his pen (153-162); checkpoint on the way
+R 20
+- 40
+R 16       # under the M-box (col 156)
+- 20
+J 14       # M-box; the Mozartkugel turns at the 2-high basin end (col 163) and comes back
+- 230
+R 40
+RJ 12      # onto the basin end (col 163, 2 high)
+R 10
+- 20
+RJ 16
+R 6
+- 30
+RJ 12      # onto the Pilgerbrunnen canopy
+R 8
+- 30
+R 30       # down onto the basin's right end (col 167), overhanging the globe lane
+- 255      # wait: Selfie-Tourist #4 paces the sunken lane (168-177) and turns under her
+R 6        # step off onto him: stomp
+- 30
+R 40
+- 52
+J 12       # hop over stand #2's globe
+- 60
+R 30
+RJ 14      # up onto the awning
+R 40       # over it, down into the dip at 181-183
+- 20
+RJ 16      # up the church steps
+R 16
+RJ 8
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+- 68
+RJ 16      # church terrace: stomp the Pilger pair (chain)
+R 40
+- 35
+J 10       # H-box (col 194)
+- 5
+L 14
+- 16
+RJ 20      # onto the box: the Hackl
+- 34
+R 300
+- 20
+B 1        # axe on Operettensaenger #2
+- 30
+R 259
+RJ 14      # Seebad: the 2-gap
+R 60
+RJ 30      # the 4-gap onto the quay
+R 50
+- 80
+RJ 16      # hop over stand #3's globe
+R 52
+RJ 8
+R 82
+RJ 16
+R 16
+RJ 16      # onto the landing hall, walk off to the Maibaum (100)
+R 120
+# tally, map, teaser, title
+- 900

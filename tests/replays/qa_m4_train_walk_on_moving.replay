@@ -1,0 +1,45 @@
+# QA M4 Schafbergbahn (D-067, D-034): walk onto the train while it moves,
+# ride it back down and up again. The relaxed run to the top (1366), walk
+# off onto the halt, wait; as the empty train starts down (1450) walk LEFT
+# off the halt onto its sinking roof (lands at 1477), ride it down to the
+# lower end (2032): she is standing on it, so it leaves again at once and
+# carries her back up (D-051 keeps the camera on her while she is carried
+# left, so she can't step back onto the lower platform). Walk off at the
+# halt at the top.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=1300 player_y<=90 state=playing
+---
+# the qa_st_wolfgang_relaxed inputs to 1366 (the train at the top)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+# onto the halt, wait for the descent
+R 40
+- 34
+# walk back onto the descending train
+L 30
+# ride down, and up again
+- 1150
+# walk off at the halt
+R 60

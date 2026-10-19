@@ -2,8 +2,10 @@
 //! Stage 1–4): per-kind update functions for [`EntityKind::Enemy`], the
 //! projectiles (thrown Mozartkugel [`EntityKind::Thrown`], Blasmusik note
 //! [`EntityKind::Note`]), the Steinschlag spawner and its falling rocks
-//! ([`EntityKind::Steinschlag`], [`EntityKind::Stein`]) and defeated
-//! enemies ([`EntityKind::Defeated`]),
+//! ([`EntityKind::Steinschlag`], [`EntityKind::Stein`]), the Souvenirstand
+//! spawner and its snow globes ([`EntityKind::Souvenirstand`],
+//! [`EnemyKind::Schneekugel`]), the Operettensänger's high-C column
+//! ([`high_c_column`]) and defeated enemies ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -18,7 +20,7 @@
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::level::{Level, SpawnKind, TILE_PX, TileKind};
-use crate::physics::{TILE, TileMap, YHit, tile_of};
+use crate::physics::{Aabb, TILE, TileMap, YHit, tile_of};
 use crate::tuning::Tuning;
 
 /// `Entity::state` values per enemy kind.
@@ -87,8 +89,28 @@ pub mod state {
 
     /// Stein: falling.
     pub const FALLING: u8 = 0;
-    /// Stein: shattered (removed; the game spawns its debris).
+    /// Stein / Schneekugel: shattered (removed; the game spawns its
+    /// debris or shards).
     pub const SHATTERED: u8 = 1;
+
+    /// Operettensänger: the high C sounds (the column hurts). Inhaling is
+    /// `INHALE`, idle (also before the player first came in range) `STAND`.
+    pub const SING: u8 = 2;
+
+    /// Souvenirstand: counting, but this cycle started with
+    /// `souvenirstand_max_alive` of its globes alive: no telegraph, no
+    /// globe. Waiting is `WAITING`, a normal cycle `COUNTING`.
+    pub const SKIPPING: u8 = 2;
+
+    /// Schneekugel: rolling left (its only state until it shatters).
+    pub const ROLL: u8 = 0;
+    /// Reisebus: driving left (parked is `PARKED`, the first telegraph
+    /// `TELEGRAPH`).
+    pub const DRIVE: u8 = 2;
+    /// Reisebus: halted for the photo stop (`count` = frame of the stop).
+    pub const PHOTO_STOP: u8 = 3;
+    /// Reisebus: telegraphing after the photo stop (`count` = frame).
+    pub const RESTART: u8 = 4;
 
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
@@ -152,6 +174,18 @@ pub enum Pose {
     Wobble,
     /// Stein `fall`.
     Fall,
+    /// Operettensänger `sing` (the high C sounds).
+    Sing,
+    /// Schneekugel `roll`.
+    Roll,
+    /// Reisebus `drive` (parked: `Idle`, telegraphs: `Telegraph`).
+    Drive,
+    /// Reisebus `fotostopp`: frame 0, or frame 1 (camera flashes in the
+    /// windows) while `flash`.
+    Fotostopp {
+        /// Frame 1 of `fotostopp`.
+        flash: bool,
+    },
 }
 
 impl Entity {
@@ -201,9 +235,30 @@ impl Entity {
                 _ => Pose::Waggle,
             },
             EntityKind::Enemy(EnemyKind::Pilger) => Pose::Walk,
+            EntityKind::Enemy(EnemyKind::Operettensaenger) => match self.state {
+                state::INHALE => Pose::Inhale,
+                state::SING => Pose::Sing,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Schneekugel) => Pose::Roll,
+            // The vendor holds up a globe in a normal cycle's telegraph.
+            EntityKind::Souvenirstand
+                if self.state == state::COUNTING && self.count < e.souvenirstand_telegraph =>
+            {
+                Pose::Telegraph
+            }
+            EntityKind::Souvenirstand => Pose::Idle,
             EntityKind::Enemy(EnemyKind::Gams) => match self.state {
                 state::CROUCH => Pose::Crouch,
                 state::HOP => Pose::Hop,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Reisebus) => match self.state {
+                state::TELEGRAPH | state::RESTART => Pose::Telegraph,
+                state::DRIVE => Pose::Drive,
+                state::PHOTO_STOP => Pose::Fotostopp {
+                    flash: (self.count.saturating_sub(1) / e.reisebus_flash_frames.max(1)) % 2 == 1,
+                },
                 _ => Pose::Idle,
             },
             // The niche is empty from the drop until the refill.
@@ -307,6 +362,18 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
         }
         EnemyKind::Gams => {
             update_gams(e, ctx);
+            None
+        }
+        EnemyKind::Operettensaenger => {
+            update_singer(e, ctx);
+            None
+        }
+        EnemyKind::Schneekugel => {
+            update_globe(e, ctx);
+            None
+        }
+        EnemyKind::Reisebus => {
+            update_reisebus(e, ctx);
             None
         }
         EnemyKind::Bienenschwarm => {
@@ -702,6 +769,126 @@ fn update_fiaker(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
+/// The Reisebus (D-070). Parked until the player is within
+/// `reisebus_trigger` of its centre, then telegraphs for
+/// `reisebus_telegraph` frames (`count` = frame of the telegraph, the
+/// Fiaker's rule), then drives left at `reisebus_speed`, ignoring tiles and
+/// enemies. With a `stop` it halts exactly at its parked x − `stop` tiles:
+/// `reisebus_stop_frames` frames of photo stop (the arrival frame is the
+/// first), `reisebus_restart` frames of telegraph, then it drives on.
+/// Removed once its right edge is left of the screen.
+fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    match e.state {
+        state::PARKED => {
+            if player_distance_px(e, ctx) <= et.reisebus_trigger {
+                e.state = state::TELEGRAPH;
+                e.count = 1;
+            }
+        }
+        state::TELEGRAPH => {
+            e.count += 1;
+            if e.count > et.reisebus_telegraph {
+                e.state = state::DRIVE;
+                e.count = 0;
+            }
+        }
+        state::PHOTO_STOP => {
+            e.count += 1;
+            if e.count > et.reisebus_stop_frames {
+                e.state = state::RESTART;
+                e.count = 1;
+            }
+        }
+        state::RESTART => {
+            e.count += 1;
+            if e.count > et.reisebus_restart {
+                e.state = state::DRIVE;
+                e.count = 0;
+            }
+        }
+        _ => {}
+    }
+    if e.state != state::DRIVE {
+        e.vx = Fx::ZERO;
+        return;
+    }
+    e.vx = -et.reisebus_speed;
+    let stop = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))
+        .map_or(0, |s| s.stop);
+    let stop_x = e.base_x - TILE.mul_int(i32::from(stop));
+    if stop > 0 && e.x > stop_x {
+        e.x = (e.x + e.vx).max(stop_x);
+        if e.x == stop_x {
+            e.state = state::PHOTO_STOP;
+            e.count = 1;
+            e.vx = Fx::ZERO;
+        }
+    } else {
+        e.x += e.vx;
+    }
+    if e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+}
+
+/// How many tiles left of a parked Reisebus its lane must be free (D-070).
+pub const REISEBUS_LANE_TILES: i32 = 24;
+
+/// `levels lint` (D-070): every Reisebus's lane, the rows of its hitbox
+/// from its own cells to [`REISEBUS_LANE_TILES`] tiles left of its parked
+/// hitbox (or the level's left edge), holds no solid or one-way tile, so it
+/// is never seen driving through a wall (one problem per bus, naming the
+/// first blocked cell from the left); and a bus's photo stop (`stop`)
+/// must not lie left of the level's left edge.
+pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
+    let mut problems = Vec::new();
+    for (i, s) in level.entities.iter().enumerate() {
+        if s.kind != SpawnKind::Reisebus {
+            continue;
+        }
+        let Some(bus) = Entity::from_spawn(s, i, t) else {
+            continue;
+        };
+        let (rows, last) = (tile_of(bus.y)..=s.row, tile_of(bus.right() - Fx(1)));
+        let first = tile_of(bus.x - TILE.mul_int(REISEBUS_LANE_TILES)).max(0);
+        let blocked = (first..=last).find_map(|c| {
+            rows.clone().find_map(|r| {
+                let solid = level
+                    .tile(c, r)
+                    .is_some_and(|tile| matches!(tile.kind, TileKind::Solid | TileKind::OneWay));
+                solid.then_some((c, r))
+            })
+        });
+        let stop_x = bus.x - TILE.mul_int(i32::from(s.stop));
+        if stop_x < Fx::ZERO {
+            problems.push(format!(
+                "reisebus at row {}, column {}: its photo stop (stop = {}) would be {} px left of the level's left edge",
+                s.row + 1,
+                s.col + 1,
+                s.stop,
+                (-stop_x).to_px()
+            ));
+        }
+        if let Some((c, r)) = blocked {
+            problems.push(format!(
+                "reisebus at row {}, column {}: its lane (rows {}-{}, columns {}-{}) has a solid or one-way tile at row {}, column {} (D-070: keep it clear for {REISEBUS_LANE_TILES} tiles to the left, or to the level's left edge)",
+                s.row + 1,
+                s.col + 1,
+                rows.start() + 1,
+                rows.end() + 1,
+                first + 1,
+                last + 1,
+                r + 1,
+                c + 1
+            ));
+        }
+    }
+    problems
+}
+
 /// A thrown Mozartkugel: moves, then gravity; vanishes when it hits a
 /// solid tile (one-way tiles don't stop it) or leaves the level.
 pub(crate) fn update_thrown(e: &mut Entity, map: &TileMap, t: &Tuning) {
@@ -732,6 +919,9 @@ pub(crate) fn update_defeated(e: &mut Entity, t: &Tuning) {
 /// (Tauben always tumble; `knocked` starts with an upward hop).
 pub(crate) fn defeat(e: &mut Entity, kind: EnemyKind, knocked: bool, t: &Tuning) {
     e.kind = EntityKind::Defeated(kind);
+    // A snow globe is never drawn defeated: it shatters at once (the game
+    // spawns its shards, D-069).
+    e.removed |= kind == EnemyKind::Schneekugel;
     e.timer = 0;
     e.count = 0;
     e.vx = Fx::ZERO;
@@ -755,9 +945,11 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer)
         | EntityKind::Enemy(EnemyKind::NordicWalker)
         | EntityKind::Enemy(EnemyKind::Blasmusiker)
-        | EntityKind::Enemy(EnemyKind::Pilger) => true,
+        | EntityKind::Enemy(EnemyKind::Pilger)
+        | EntityKind::Enemy(EnemyKind::Operettensaenger) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
+        EntityKind::Enemy(EnemyKind::Reisebus) => e.state != state::DRIVE,
         EntityKind::Enemy(EnemyKind::EBiker) => matches!(e.state, state::PARK | state::RING),
         EntityKind::Enemy(EnemyKind::TaubeSitting) => e.state == state::SIT,
         _ => false,
@@ -1048,6 +1240,17 @@ pub(crate) fn update_stein(e: &mut Entity, map: &TileMap, t: &Tuning) {
 /// The four `stein_debris` pieces of a shattered rock (8×8, like a broken
 /// brick's: the upper pair flies higher), around its hitbox centre.
 pub(crate) fn stein_debris(e: &Entity, t: &Tuning) -> [Entity; 4] {
+    pieces(e, EntityKind::SteinDebris, t)
+}
+
+/// The four `schneekugel_scherben` shards of a shattered snow globe (on a
+/// wall, stomped or hit by an axe), like a rock's debris.
+pub(crate) fn globe_shards(e: &Entity, t: &Tuning) -> [Entity; 4] {
+    pieces(e, EntityKind::SchneekugelScherben, t)
+}
+
+/// Four 8×8 pieces of `kind` flying apart from `e`'s hitbox centre.
+fn pieces(e: &Entity, kind: EntityKind, t: &Tuning) -> [Entity; 4] {
     let it = &t.items;
     let half = TILE.div_int(2);
     let (cx, cy) = (e.x + e.w.div_int(2), e.y + e.h.div_int(2));
@@ -1058,7 +1261,7 @@ pub(crate) fn stein_debris(e: &Entity, t: &Tuning) -> [Entity; 4] {
         (Fx::ZERO, Fx::ZERO, it.debris_speed_x, -it.debris_speed_low),
     ]
     .map(|(dx, dy, vx, vy)| {
-        let mut d = Entity::new(EntityKind::SteinDebris, cx + dx, cy + dy, half, half);
+        let mut d = Entity::new(kind, cx + dx, cy + dy, half, half);
         d.vx = vx;
         d.vy = vy;
         d
@@ -1076,6 +1279,182 @@ pub fn rock_column_bottom(e: &Entity, map: &TileMap) -> Fx {
     (start..height)
         .find(|&r| matches!(map.kind_at(col, r), TileKind::Solid | TileKind::OneWay))
         .map_or(map.height_fx(), |r| TILE.mul_int(r))
+}
+
+// ------------------------------------------------------- M4 (D-068, D-069)
+
+/// Faces the player. While the player is within `operettensaenger_range`
+/// his cycle counter (`count`, frame of the cycle) runs; outside it pauses
+/// and he keeps his pose (and a sounding column), like the Blasmusiker. It
+/// starts at 0 on the first frame in range: inhale for the first
+/// `operettensaenger_inhale` frames, the high C for the next
+/// `operettensaenger_sing` ([`high_c_column`]), idle to the cycle's end.
+fn update_singer(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let cx = e.x + e.w.div_int(2);
+    if ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    if player_distance_px(e, ctx) > et.operettensaenger_range {
+        return;
+    }
+    let f = e.count;
+    e.count = (f + 1) % et.operettensaenger_cycle;
+    e.state = if f < et.operettensaenger_inhale {
+        state::INHALE
+    } else if f < et.operettensaenger_inhale + et.operettensaenger_sing {
+        state::SING
+    } else {
+        state::STAND
+    };
+}
+
+/// The high-C sound column of a singing Operettensänger (`None` for every
+/// other entity and while he doesn't sing): `hohes_c_width` px wide,
+/// centred on him, from his hitbox top straight up, `hohes_c_speed` px
+/// taller per frame of the C up to `hohes_c_height`. It passes one-way
+/// tiles and ends at the bottom of the first solid tile above him in its
+/// columns (above the level, row 0's solid tiles count, as for the player).
+/// Any contact hurts, checked before the stomp (D-068).
+pub fn high_c_column(e: &Entity, map: &TileMap, t: &Tuning) -> Option<Aabb> {
+    let et = &t.enemies;
+    if e.kind != EntityKind::Enemy(EnemyKind::Operettensaenger) || e.state != state::SING {
+        return None;
+    }
+    // `count` is already the next frame: the shown frame is one before.
+    let cycle = et.operettensaenger_cycle.max(1);
+    let f = (e.count + cycle - 1) % cycle;
+    let k = i32::from(f.saturating_sub(et.operettensaenger_inhale)) + 1;
+    let height = Fx::from_px((et.hohes_c_speed * k).min(et.hohes_c_height));
+    let w = Fx::from_px(et.hohes_c_width);
+    let x = e.x + e.w.div_int(2) - w.div_int(2);
+    let bottom = e.y;
+    let (c0, c1) = (tile_of(x), tile_of(x + w - Fx(1)));
+    let mut top = bottom - height;
+    // The lowest solid tile above his top within reach ends the column.
+    let mut row = tile_of(bottom - Fx(1));
+    while TILE.mul_int(row + 1) > top {
+        if (c0..=c1).any(|c| map.kind_at(c, row) == TileKind::Solid) {
+            top = top.max(TILE.mul_int(row + 1));
+            break;
+        }
+        row -= 1;
+    }
+    (top < bottom).then_some(Aabb {
+        x,
+        y: top,
+        w,
+        h: bottom - top,
+    })
+}
+
+/// Where stand `e`'s globes start (hitbox top left): the
+/// `schneekugel_hitbox` with its bottom centre on the stand cell's bottom
+/// centre. A globe keeps it as `base_x`/`base_y`, which tells its stand.
+fn globe_spawn_point(e: &Entity, t: &Tuning) -> (Fx, Fx) {
+    let [w, h] = t.enemies.schneekugel_hitbox;
+    let (fx, fy) = e.feet();
+    (fx - Fx::from_px(w).div_int(2), fy - Fx::from_px(h))
+}
+
+/// A new snow globe from stand `e`, rolling left.
+fn new_globe(e: &Entity, t: &Tuning) -> Entity {
+    let [w, h] = t.enemies.schneekugel_hitbox;
+    let (x, y) = globe_spawn_point(e, t);
+    let mut g = Entity::new(
+        EntityKind::Enemy(EnemyKind::Schneekugel),
+        x,
+        y,
+        Fx::from_px(w),
+        Fx::from_px(h),
+    );
+    g.dir = -1;
+    g.vx = -t.enemies.schneekugel_speed;
+    g
+}
+
+/// The Souvenirstand spawner (D-069). Its counter (`count`, frame of its
+/// `period`) runs only while the player's centre is left of the stand
+/// cell's centre, within `range` tiles (horizontally, centre to centre),
+/// and the stand cell is fully on screen; otherwise it pauses with its pose
+/// kept. On the first such frame it starts at `phase` (0 or ≥ 31). At the
+/// start of each cycle (and on that first frame) it counts its globes
+/// alive (`UpdateCtx::globes`, by their spawn point): with
+/// `souvenirstand_max_alive` of them the cycle is skipped (no telegraph, no
+/// globe). Otherwise frames 0..`souvenirstand_telegraph` are the telegraph,
+/// and at frame `souvenirstand_telegraph` it returns the globe to spawn.
+pub(crate) fn update_souvenirstand(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let t = ctx.tuning;
+    let et = &t.enemies;
+    let s = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))?;
+    let left_of = ctx.player_cx < e.x + e.w.div_int(2);
+    let in_range = player_distance_px(e, ctx) <= i32::from(s.range) * TILE_PX;
+    let screen_w = Fx::from_px(crate::camera::SCREEN_W);
+    let screen_h = Fx::from_px(crate::camera::SCREEN_H);
+    let on_screen = e.x >= ctx.screen_left
+        && e.right() <= ctx.screen_left + screen_w
+        && e.y >= ctx.screen_top
+        && e.y + e.h <= ctx.screen_top + screen_h;
+    if !(left_of && in_range && on_screen) {
+        return None;
+    }
+    let period = s.period.max(1);
+    let first = e.state == state::WAITING;
+    e.count = if first {
+        s.phase % period
+    } else {
+        (e.count + 1) % period
+    };
+    if first || e.count == 0 {
+        let origin = globe_spawn_point(e, t);
+        let alive = ctx.globes.iter().filter(|&&g| g == origin).count();
+        e.state = if alive >= usize::from(et.souvenirstand_max_alive) {
+            state::SKIPPING
+        } else {
+            state::COUNTING
+        };
+    }
+    (e.state == state::COUNTING && e.count == et.souvenirstand_telegraph).then(|| new_globe(e, t))
+}
+
+/// A snow globe rolls left at `schneekugel_speed` with the player's
+/// gravity and max fall speed: off ledges, landing on solid and one-way
+/// tops (passing one-way tiles from below), never turning. A solid wall
+/// shatters it (state [`state::SHATTERED`], removed; the game spawns its
+/// shards); water and hazard tiles remove it, and so does its right edge
+/// leaving the screen on the left. It ignores enemies and items.
+fn update_globe(e: &mut Entity, ctx: &UpdateCtx) {
+    let t = ctx.tuning;
+    e.vx = -t.enemies.schneekugel_speed;
+    e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
+    let mut b = e.hitbox();
+    let wall = ctx.map.move_x(&mut b, e.vx);
+    if ctx.map.move_y(&mut b, e.vy, false) != YHit::None {
+        e.vy = Fx::ZERO;
+    }
+    e.x = b.x;
+    e.y = b.y;
+    if wall {
+        e.state = state::SHATTERED;
+        e.removed = true;
+    } else if ctx.map.touches_lethal(&b) || e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+}
+
+/// The „Bravo!" popup for a defeated Operettensänger (D-068), stacked
+/// above the score popup whose top is `top` (centred on `x`); `None` for
+/// every other kind.
+pub(crate) fn bravo(kind: EnemyKind, x: Fx, top: Fx) -> Option<Entity> {
+    (kind == EnemyKind::Operettensaenger).then(|| {
+        popup(
+            Popup::Bravo,
+            x,
+            top - Fx::from_px(crate::entity::POPUP_STACK_PX),
+        )
+    })
 }
 
 /// **Defeat by projectile** (the one path for the thrown Hackl, D-056,

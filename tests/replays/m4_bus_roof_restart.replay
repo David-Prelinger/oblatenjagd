@@ -1,0 +1,18 @@
+# Roof bounce on bus #2 in its restart telegraph (after the photo stop):
+# Resi waits on the shelter roof until the hazard lights blink again and
+# jumps onto its roof (no damage, no points) and over it.
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 player_x>=1000
+---
+RB 28
+RBJ 12
+RB 108
+- 280
+R 250
+RJ 20
+R 6
+- 190
+RJ 20
+R 120

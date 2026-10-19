@@ -123,6 +123,49 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Falkenstein filmstrip, the climb-camera framing at the foot, in the shaft and at the summit, the Hackl and crawl replays, and all new German text.
 
+## M4 – Stage 5 St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse
+
+Scope as in `game-design.md` → "Stage 5: St. Wolfgang" (incl. "Difficulty and reach rules (stage 5)") and "Route map"; decisions D-066 … D-072; sprites in `sprite-catalog.md` → "M4 additions". One stage only; extras are in the backlog (D-066). Branch `m4-st-wolfgang`.
+
+Design
+- [x] Stage 5 spec: shape (side-scrolling with one long ride), difficulty and reach rules, sections with columns, section details, entities and behaviour, axe classification, new-mechanics table, sources (game-designer)
+- [x] Decisions D-066 … D-072 (scope, Schafbergbahn, Operettensänger, Souvenirstand/Schneekugel, Reisebus, Hackl in Stage 5, route-map labels)
+- [x] German text for Stage 5 (title, tagline, next, 14 signs) and the popup `popup.bravo` in `content/text/de.toml`
+- [x] Sprite catalog "M4 additions"
+
+Engine (parallel worktrees, D-009)
+- [x] (E21) Schafbergbahn: `{ entity = "schafbergbahn", to = [dx, dy] }` (4 ≤ |dx| ≤ 32) on the Festungsbahn state machine with `schafbergbahn_size` 64×32, `schafbergbahn_frames_per_tile` 24, `schafbergbahn_wait` 90; renderer: drawn track (rails, rack, sleepers, + 1 tile at each end) and `dampf` puffs; `levels lint`: swept-body clearance (body and 3 tiles above its roof free along the whole track), pit recovery skipped over lethal pits; tuning keys validated in `Tuning::parse` (fallbacks in D-067: tile track, or stepped Festungsbahn cars)
+- [x] (E22) Operettensänger: range counter (inhale 0–39, column 40–87, idle to 179, pauses out of range), the column (12 px, grows 8 px/frame to 80, passes one-way, stops at solid), column checked before the stomp, stomp 200 / chain start 200, knocked off by a bumped block, „Bravo!" popup on defeat (fallback D-068: fixed column + lint)
+- [x] (E22) Souvenirstand + Schneekugel: spawner fields `period`/`phase`/`range` (parse validation like the Steinschlag), counter only left of it, in range and on screen, telegraph 0–29, spawn at 30, max 2 alive; globe roll 1.0 with gravity, off ledges, shatters on walls (`schneekugel_scherben`), removed in water/off screen, passes enemies and items, stomp 100 in the chain (fallback D-069: not stompable)
+- [x] Reisebus: trigger < 161 px to its centre, telegraph 60, drive 1.5 ignoring tiles, optional `stop` (120-frame photo stop + 30-frame telegraph), roof bounce without damage or points in every state, side hurt in every state, removed off screen left; `levels lint`: lane clear 24 tiles (fallback D-070: no `stop`)
+- [x] Axe classification for every new kind (D-071) in the exhaustive `axe_hit` match; renderer: shatter look for a defeated Schneekugel
+- [x] (E21) New tiles and kinds: `standl` (solid), `standl_dach`, `wartehaus_dach` (one-way), `strasse` (solid), `tunnel_bg` (decorative), fallback `zahnrad_gleis_0..3` (decorative); new `PROP_SPRITES` (the catalog's "Props (group `props`, M4)" table; extend the catalog test in `xtask/src/levels.rs` to read it); `popup.bravo` in `screens::TEXT_KEYS`
+- [x] (E21; slot at top y 59, D-072 addendum) Route-map labels (D-072): St. Wolfgang's alternate slot (top y 69) on screens ending on Wolfgangsee or Strobl for every form; Falkenstein's alternate slot (x 170) on the screen ending on St. Wolfgang for every form; remove the two `st_wolfgang` pairs from `LATER` and the Falkenstein pair from `NORMAL_TOUCH` in the map test; all other map screens unchanged
+- [x] Solver handles the new kinds (`world_hash` covers singer counters, stand counters and globes, bus state, train state); a grey-box level `00_m4_enemies` with handwritten `m4_enemies_*` replays and its solver replay
+- [x] Unit tests for every behaviour in the Stage 5 "New mechanics" table
+
+Art (pixel-artist, art-director APPROVED)
+- [x] Enemies package: `operettensaenger`, `hohes_c`, `souvenirstand`, `schneekugel`, `schneekugel_scherben`, `reisebus`
+- [x] Schafbergbahn package: `schafbergbahn`, `dampf`, the drawn-track colours (and the fallback `zahnrad_gleis_*` tiles only if D-067's fallback is taken)
+- [x] St. Wolfgang package: tiles `standl`, `standl_dach`, `wartehaus_dach`, `strasse`, `tunnel_bg`; props `talstation_schafberg`, `haltestelle_alm`, `tunnelportal`, `wartehaus`, `pilgerbrunnen`, `wallfahrtskirche`, `weisses_roessl`, `roessl_pferd`, `schiffsstation`; layers `bg_schafberg_sued`, `bg_stwolfgang`
+
+Levels (level-designer)
+- [x] `05_st_wolfgang.level` (300 × 17, `camera = "side"`) with the 6 sections as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds and the design target is met (narrowest 5–7, ≥ 3 required jumps ≤ 8), or the gap is recorded for the game-designer
+- [x] `levels lint` clean (train clearance, bus lanes); every bus has its dodge in view; stand #1's globes shatter on the curb; nothing reaches the train track while ridden
+- [x] `time_limit` set from the measured relaxed run (D-045); Oblaten 75 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
+
+Replays and goldens
+- [x] Mechanic replays from the Stage 5 "New mechanics" table: train ride up and off at the Alm, fall off over the steps and re-board, fall into the gorge, Oblaten hops; stand #1 globes on the curb, globe stomp, globe hit as Normal; Markt lane with the tourist; bus #1 watched from the Alm, bounce over bus #2 at its photo stop, wait it out on the shelter, bus side hit as Zuckerschock; singer #2 stomp in the window, column hit as Zuckerschock, axe on #2; H-box as Normal, axes on the pilgrims and a globe, axe bounces off a bus; Zaunerstollen on the Kaiserterrasse; checkpoint respawn at 150 (buses parked again, boxes fresh)
+- [x] Flow replays: Falkenstein clear → map (Wait, Falkenstein label in its alternate slot) → St. Wolfgang intro with carry-over incl. the Hackl (`player_hackl` in the intro); St. Wolfgang clear → teaser to Wolfgangsee (St. Wolfgang label raised) → title; game over in St. Wolfgang → continue restarts St. Wolfgang
+- [x] Tour `st_wolfgang_tour` (`start = title`, solver inputs, shots per section incl. the train over the gorge, the bus at its photo stop, the pigeon on the Pilgerbrunnen, a high C, the H-box and the checkpoint bus joke) — art-director APPROVED; add it to the xtask tour coupling test
+- [x] M3 replays and goldens whose ending changes because St. Wolfgang is now playable re-cut with an art-director verdict (`falkenstein_tour` ends on the route map in Wait instead of the teaser; the M3 flow replays that end in the Falkenstein teaser now end on the St. Wolfgang intro); orphaned teaser goldens deleted
+- [x] Route-map label goldens: the Falkenstein → St. Wolfgang Wait screen and the St. Wolfgang → Wolfgangsee teaser in Normal and Hackl form (D-072); plus the M3 backlog shot of St. Gilgen → Brunnwinkl Wait with a big Resi (art-director)
+
+Platform
+- [x] wasm build plays the route through St. Wolfgang; `wasm-smoke` still green; verify runtime stays within budget (record it: it grows with every stage)
+
+**Acceptance:** see "Milestone acceptance" below; the game-designer review includes the St. Wolfgang filmstrip, the train ride, a bus photo stop, a high C over the street, the Hackl replays, the route-map label screens and all new German text.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.
@@ -134,8 +177,8 @@ Platform
 
 ## Later milestones (order can change)
 
-- **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (in progress, section above)
-- **M4** St. Wolfgang
+- **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (accepted, docs/reports/M3.md)
+- **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (in progress, section above)
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming
 - **M6** Strobl + Bad Ischl
 - **M7** Café Zauner finale + ending

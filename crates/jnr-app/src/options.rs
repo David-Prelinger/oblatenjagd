@@ -39,12 +39,24 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_m3_enemies.level"),
     ),
     (
+        "m4_bus",
+        include_str!("../../../content/levels/00_m4_bus.level"),
+    ),
+    (
+        "m4_enemies",
+        include_str!("../../../content/levels/00_m4_enemies.level"),
+    ),
+    (
         "route_a",
         include_str!("../../../content/levels/00_route_a.level"),
     ),
     (
         "route_b",
         include_str!("../../../content/levels/00_route_b.level"),
+    ),
+    (
+        "schafbergbahn",
+        include_str!("../../../content/levels/00_schafbergbahn.level"),
     ),
     (
         "testbed",
@@ -65,6 +77,10 @@ pub const LEVELS: &[(&str, &str)] = &[
     (
         "falkenstein",
         include_str!("../../../content/levels/04_falkenstein.level"),
+    ),
+    (
+        "st_wolfgang",
+        include_str!("../../../content/levels/05_st_wolfgang.level"),
     ),
 ];
 

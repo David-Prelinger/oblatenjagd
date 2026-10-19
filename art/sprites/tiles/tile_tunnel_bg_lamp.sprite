@@ -1,0 +1,26 @@
+# Tunnel ceiling cell with a lamp (decorative, non-solid): the
+# tunnel_bg ceiling look plus a small m housing with a Y light and an
+# o glow. Not autotiled (one look: the ceiling row). The level puts
+# one every 4 tiles in the tunnel's ceiling row instead of tunnel_bg.
+sprite = tile_tunnel_bg_lamp
+size   = 16x16
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+mmmmmmmmmmmmmmmm
+mdddddmmmmdddddm
+mdddddYYYYdddddd
+mddddddooddddddd
+dmdddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd
+dddddddddddddddd

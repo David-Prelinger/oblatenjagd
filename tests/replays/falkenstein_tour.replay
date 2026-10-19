@@ -3,18 +3,18 @@
 # frame 21, stage intro 21..170, then the inputs of falkenstein_solver.replay
 # unchanged from frame 171 (re-copy them after `cargo xtask solve falkenstein
 # --write`; the xtask tour coupling test checks it), then 800 idle frames:
-# the Maibaum sequence, the tally, the route map to St. Wolfgang, which has
-# no level yet, so the teaser („Fortsetzung folgt …") and the title, with
-# the run reset to its first stage (here Falkenstein, the `level` it started
-# at). The solver route (re-solved in E20, D-065) bumps the Hackl box and
+# the Maibaum sequence, the tally and the route map to St. Wolfgang, which
+# is playable since M4 (D-066): the tour ends with Resi waiting on St.
+# Wolfgang with the „Weiter mit START" prompt (was: the teaser and the
+# title). Shot `route_map` replaces the old `teaser` shot. The solver route (re-solved in E20, D-065) bumps the Hackl box and
 # leaves the Hackl on it; the Durchkriechstein, axe throws, rocks and Gams
 # stomps are in the falkenstein_* mechanic replays.
 level  = falkenstein
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=1711..1711 deaths=0
-shots  = 0:title 60:intro 175:fuerberg 470:kreuzweg 730:steinschlag_net 891:checkpoint 970:shaft_low 1030:shaft_high 1139:kirche 1340:hackelwurf 1711:maibaum 1936:tally 2386:teaser
+expect = complete frames=1711..1711 deaths=0 state=route_map score=19200 lives=3
+shots  = 0:title 60:intro 175:fuerberg 470:kreuzweg 730:steinschlag_net 891:checkpoint 970:shaft_low 1030:shaft_high 1139:kirche 1340:hackelwurf 1711:maibaum 1936:tally 2340:route_map
 ---
 - 20
 S 1       # START: stage intro
@@ -77,4 +77,4 @@ RBJ 20
 RB 8
 RBJ 36
 RB 51
-- 800     # Maibaum sequence, tally, route map, teaser, title
+- 800     # Maibaum sequence, tally, route map (Wait on St. Wolfgang)

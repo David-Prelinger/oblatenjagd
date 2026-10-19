@@ -1,0 +1,77 @@
+# QA M4 H-box (D-071) as Normal: the solver route (Normal) onto the church
+# terrace (1440), a step right under the H-box (col 194, row 8), bump it
+# (the Hackl rises onto its top), a jump that lands on the approaching
+# Pilger pair (stomp chain 100/200), back left and a jump to the Hackl on
+# the box: PowerUp (1000), power Hackl. Re-cut after the M4 level fixes
+# (new solver route; it no longer stomps the pilgrims for her).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=PowerUp score=7700 power=hackl
+---
+# st_wolfgang_solver inputs to 1440 (landing on the church terrace)
+# (the route as of the M4 acceptance; the pen-wall fix changed the solver
+# route, this prefix still plays the same way)
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+RBJ 36
+RB 13
+RBJ 36
+RB 16
+RBJ 36
+RB 13
+# under the box, bump, stomp the pilgrims, grab the Hackl
+- 14
+R 14
+J 10
+- 12
+L 14
+- 6
+RJ 16
+- 60
+L 14
+- 6
+J 24
+- 40

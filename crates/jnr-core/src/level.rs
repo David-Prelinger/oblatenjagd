@@ -45,19 +45,25 @@ impl TileKind {
     /// under a rockfall net) are `Empty`: drawn,
     /// never collide. M3: `kalkfels` is solid, the shaft planks `steig` (and
     /// `steig_wall`, the same plank drawn over the `kalkfels_bg` back wall) and
-    /// the rockfall net `netz` are one-way (D-055, D-058).
+    /// the rockfall net `netz` are one-way (D-055, D-058). M4: the
+    /// souvenir stand's counter `standl` and the road `strasse` are solid,
+    /// its awning `standl_dach` and the bus shelter roof `wartehaus_dach`
+    /// one-way, the bypass tunnel's inside `tunnel_bg` (and `tunnel_bg_lamp`,
+    /// the same with a lamp) and the fallback
+    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
-            | "netz_post" => Some(TileKind::Empty),
+            | "netz_post" | "terrasse_post_l" | "terrasse_post_r" | "tunnel_bg"
+            | "tunnel_bg_lamp" | "zahnrad_gleis_0" | "zahnrad_gleis_1" | "zahnrad_gleis_2"
+            | "zahnrad_gleis_3" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
-            | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" => {
-                Some(TileKind::Solid)
-            }
+            | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
+            | "strasse" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" => Some(TileKind::OneWay),
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" => Some(TileKind::OneWay),
             "hazard" => Some(TileKind::Hazard),
             "salzach_water"
             | "salzach_water_deep"
@@ -214,11 +220,21 @@ pub enum SpawnKind {
     /// The Durchkriechstein's tunnel (`len` cells from its cell to the
     /// right): DOWN at its mouth starts the scripted crawl (D-057).
     Durchkriechstein,
+    /// Enemy `operettensaenger` (sings a vertical high-C column, D-068).
+    Operettensaenger,
+    /// A `souvenirstand` snow-globe spawner in front of its counter
+    /// (`period`, `phase`, `range`; D-069).
+    Souvenirstand,
+    /// The Schafbergbahn steam train (`to`): the Festungsbahn's waiting
+    /// state machine with a 64×32 body on a long track (D-067).
+    Schafbergbahn,
+    /// Enemy `reisebus` (stop-and-go charger, `stop`: D-070).
+    Reisebus,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 21] = [
+    pub const ALL: [SpawnKind; 25] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -240,6 +256,10 @@ impl SpawnKind {
         SpawnKind::Gams,
         SpawnKind::Steinschlag,
         SpawnKind::Durchkriechstein,
+        SpawnKind::Operettensaenger,
+        SpawnKind::Souvenirstand,
+        SpawnKind::Schafbergbahn,
+        SpawnKind::Reisebus,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -267,6 +287,10 @@ impl SpawnKind {
             SpawnKind::Gams => "gams",
             SpawnKind::Steinschlag => "steinschlag",
             SpawnKind::Durchkriechstein => "durchkriechstein",
+            SpawnKind::Operettensaenger => "operettensaenger",
+            SpawnKind::Souvenirstand => "souvenirstand",
+            SpawnKind::Schafbergbahn => "schafbergbahn",
+            SpawnKind::Reisebus => "reisebus",
         }
     }
 
@@ -328,7 +352,8 @@ pub struct EntitySpawn {
     /// Board style (signs only; default street).
     pub style: SignStyle,
     /// The other end point `[dx, dy]` in tiles, relative to the spawn cell
-    /// (`to = [dx, dy]`, required for `festungsbahn` and `gondel`, `None`
+    /// (`to = [dx, dy]`, required for `festungsbahn`, `gondel` and
+    /// `schafbergbahn`, `None`
     /// otherwise).
     pub to: Option<[i32; 2]>,
     /// `still = true` on a `selfie_tourist`: it never walks (a fixed
@@ -363,15 +388,24 @@ pub struct EntitySpawn {
     /// `lead = true` on a `pilger`: the group leader's sprite
     /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
     pub lead: bool,
-    /// A `steinschlag`'s counter period in frames (`period = N`,
-    /// [`STEINSCHLAG_PERIOD_RANGE`], [`DEFAULT_STEINSCHLAG_PERIOD`] by
-    /// default; with `phase` = 0 or [`STEINSCHLAG_MIN_PHASE`]..period).
+    /// A `steinschlag`'s or `souvenirstand`'s counter period in frames
+    /// (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
+    /// [`DEFAULT_STEINSCHLAG_PERIOD`] by default; with `phase` = 0 or
+    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period).
     pub period: u16,
-    /// A `steinschlag`'s range in tiles (`range = N`,
-    /// [`STEINSCHLAG_RANGE_TILES`], [`DEFAULT_STEINSCHLAG_RANGE`] by
-    /// default): its counter runs while the player is this close.
+    /// A `steinschlag`'s or `souvenirstand`'s range in tiles (`range = N`,
+    /// [`STEINSCHLAG_RANGE_TILES`]; [`DEFAULT_STEINSCHLAG_RANGE`] /
+    /// [`DEFAULT_SOUVENIRSTAND_RANGE`] by default): its counter runs while
+    /// the player is this close.
     pub range: u8,
+    /// A `reisebus`'s photo stop (`stop = N`, [`REISEBUS_STOP_TILES`]):
+    /// it halts once its hitbox is N tiles left of where it was parked
+    /// (D-070). 0 = no stop (the default).
+    pub stop: u8,
 }
+
+/// Allowed `stop` of a `reisebus`, in tiles (D-070).
+pub const REISEBUS_STOP_TILES: std::ops::RangeInclusive<u8> = 1..=16;
 
 /// A `steinschlag`'s `period` without the field, in frames (D-058).
 pub const DEFAULT_STEINSCHLAG_PERIOD: u16 = 150;
@@ -386,6 +420,14 @@ pub const STEINSCHLAG_MIN_PHASE: u16 = 41;
 pub const DEFAULT_STEINSCHLAG_RANGE: u8 = 6;
 /// Allowed `range` of a `steinschlag`, in tiles.
 pub const STEINSCHLAG_RANGE_TILES: std::ops::RangeInclusive<u8> = 4..=10;
+/// A `souvenirstand`'s `range` without the field, in tiles (D-069; its
+/// `period` defaults to [`DEFAULT_STEINSCHLAG_PERIOD`] and takes
+/// [`STEINSCHLAG_PERIOD_RANGE`], its `range` [`STEINSCHLAG_RANGE_TILES`]).
+pub const DEFAULT_SOUVENIRSTAND_RANGE: u8 = 8;
+/// A `souvenirstand`'s `phase` is 0 or at least this (and below its
+/// `period`), so the first globe of an approach always follows the whole
+/// 30-frame telegraph (`enemies.souvenirstand_telegraph` < this, validated).
+pub const SOUVENIRSTAND_MIN_PHASE: u16 = 31;
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -405,6 +447,9 @@ pub const STONE_LEN_RANGE: std::ops::RangeInclusive<u8> = 2..=6;
 /// Largest `|dx|` of a `gondel`'s `to`, in tiles (D-044: a rider carried
 /// back left never reaches the screen's left edge).
 pub const MAX_GONDEL_DX_TILES: i32 = 8;
+/// Allowed `|dx|` of a `schafbergbahn`'s `to`, in tiles (D-067: a long
+/// ride, at least one body length across).
+pub const SCHAFBERGBAHN_DX_TILES: std::ops::RangeInclusive<i32> = 4..=32;
 
 /// Largest `|dx|` of a `prop`, in px.
 pub const MAX_PROP_DX_PX: i32 = 64;
@@ -458,6 +503,15 @@ pub const PROP_SPRITES: &[&str] = &[
     "brunnkapelle",
     "hackelwurfkapelle",
     "durchkriechstein",
+    "talstation_schafberg",
+    "haltestelle_alm",
+    "tunnelportal",
+    "wartehaus",
+    "pilgerbrunnen",
+    "wallfahrtskirche",
+    "weisses_roessl",
+    "roessl_pferd",
+    "schiffsstation",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -583,6 +637,7 @@ enum LegendEntry {
         lead: bool,
         period: u16,
         range: u8,
+        stop: u8,
     },
 }
 
@@ -676,6 +731,7 @@ impl Level {
                         lead,
                         period,
                         range,
+                        stop,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -696,6 +752,7 @@ impl Level {
                             lead: *lead,
                             period: *period,
                             range: *range,
+                            stop: *stop,
                         });
                     }
                 }
@@ -838,15 +895,18 @@ fn parse_legend_value(
             let allowed: &[&str] = match (tile, entity) {
                 (Some(_), None) => &["tile", "contains"],
                 (_, Some("sign")) => &["entity", "tile", "text", "style"],
-                (_, Some("festungsbahn")) => &["entity", "tile", "to"],
+                (_, Some("festungsbahn" | "schafbergbahn")) => &["entity", "tile", "to"],
                 (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
                 (_, Some("durchkriechstein")) => &["entity", "tile", "len"],
                 (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
-                (_, Some("steinschlag")) => &["entity", "tile", "period", "phase", "range"],
+                (_, Some("steinschlag" | "souvenirstand")) => {
+                    &["entity", "tile", "period", "phase", "range"]
+                }
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
+                (_, Some("reisebus")) => &["entity", "tile", "stop"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -962,15 +1022,26 @@ fn parse_entity(
         }
     }
     let mut to = None;
-    if matches!(kind, SpawnKind::Festungsbahn | SpawnKind::Gondel) {
-        let max_dx = if kind == SpawnKind::Gondel {
-            MAX_GONDEL_DX_TILES
-        } else {
-            MAX_TRACK_TILES
+    if matches!(
+        kind,
+        SpawnKind::Festungsbahn | SpawnKind::Gondel | SpawnKind::Schafbergbahn
+    ) {
+        let (min_dx, max_dx) = match kind {
+            SpawnKind::Gondel => (0, MAX_GONDEL_DX_TILES),
+            SpawnKind::Schafbergbahn => (
+                *SCHAFBERGBAHN_DX_TILES.start(),
+                *SCHAFBERGBAHN_DX_TILES.end(),
+            ),
+            _ => (0, MAX_TRACK_TILES),
         };
         let bad = || {
+            let dx_rule = if min_dx > 0 {
+                format!("{min_dx} <= |dx| <= {max_dx}, |dy| <= |dx|")
+            } else {
+                format!("dx within ±{max_dx}")
+            };
             ParseError::new(format!(
-                "legend \"{key}\": a {name} needs to = [dx, dy] (its other end point in tiles relative to its cell, not both 0, dx within ±{max_dx}, dy within ±{MAX_TRACK_TILES})"
+                "legend \"{key}\": a {name} needs to = [dx, dy] (its other end point in tiles relative to its cell, not both 0, {dx_rule}, dy within ±{MAX_TRACK_TILES})"
             ))
         };
         let Some(toml::Value::Array(a)) = t.get("to") else {
@@ -983,6 +1054,8 @@ fn parse_entity(
             &[dx, dy]
                 if a.len() == 2
                     && range_x.contains(&dx)
+                    && dx.abs() >= i64::from(min_dx)
+                    && (kind != SpawnKind::Schafbergbahn || dy.abs() <= dx.abs())
                     && range.contains(&dy)
                     && (dx, dy) != (0, 0) =>
             {
@@ -1068,13 +1141,34 @@ fn parse_entity(
         "range",
         i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
     )?
-    .map_or(DEFAULT_STEINSCHLAG_RANGE, |n| n as u8);
+    .map_or(
+        if kind == SpawnKind::Souvenirstand {
+            DEFAULT_SOUVENIRSTAND_RANGE
+        } else {
+            DEFAULT_STEINSCHLAG_RANGE
+        },
+        |n| n as u8,
+    );
+    let stop = int_field(
+        "stop",
+        i64::from(*REISEBUS_STOP_TILES.start())..=i64::from(*REISEBUS_STOP_TILES.end()),
+    )?
+    .map_or(0, |n| n as u8);
     if kind == SpawnKind::Steinschlag
         && phase != 0
         && !(STEINSCHLAG_MIN_PHASE..period).contains(&phase)
     {
         return Err(ParseError::new(format!(
             "legend \"{key}\": a steinschlag's phase must be 0 or {STEINSCHLAG_MIN_PHASE}..={} (below its period {period}), so its first rock shows the whole telegraph",
+            period - 1
+        )));
+    }
+    if kind == SpawnKind::Souvenirstand
+        && phase != 0
+        && !(SOUVENIRSTAND_MIN_PHASE..period).contains(&phase)
+    {
+        return Err(ParseError::new(format!(
+            "legend \"{key}\": a souvenirstand's phase must be 0 or {SOUVENIRSTAND_MIN_PHASE}..={} (below its period {period}), so its first globe shows the whole telegraph",
             period - 1
         )));
     }
@@ -1095,6 +1189,7 @@ fn parse_entity(
         lead,
         period,
         range,
+        stop,
     })
 }
 
@@ -1156,6 +1251,7 @@ grid = '''
             lead: false,
             period: DEFAULT_STEINSCHLAG_PERIOD,
             range: DEFAULT_STEINSCHLAG_RANGE,
+            stop: 0,
         }
     }
 
@@ -1644,6 +1740,77 @@ P.sSC.tfG
     }
 
     #[test]
+    fn schafbergbahn_needs_to_with_4_to_32_tiles_across() {
+        let with = |fields: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!(
+                        "\"G\" = {{ entity = \"goal\" }}\n\"z\" = {{ entity = \"schafbergbahn\"{fields} }}"
+                    ),
+                )
+                .replace(".P.--..", ".Pz--..")
+        };
+        let train = |fields: &str| {
+            Level::parse(&with(fields))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.kind == SpawnKind::Schafbergbahn)
+                .unwrap()
+        };
+        assert_eq!(train(", to = [24, -6]").to, Some([24, -6]));
+        assert_eq!(train(", to = [4, 0]").to, Some([4, 0]));
+        assert_eq!(train(", to = [-32, -8]").to, Some([-32, -8]));
+        assert_eq!(train(", to = [8, -8]").to, Some([8, -8]), "45° at most");
+        for bad in [
+            "",
+            ", to = [3, -1]",
+            ", to = [-3, 0]",
+            ", to = [0, -6]",
+            ", to = [33, -8]",
+            ", to = [-33, 0]",
+            ", to = [8, 65]",
+            ", to = [8, 9]",
+            ", to = [4, -5]",
+            ", to = [8]",
+        ] {
+            let e = err(&with(bad));
+            assert!(
+                e.contains("a schafbergbahn needs to = [dx, dy]")
+                    && e.contains("4 <= |dx| <= 32, |dy| <= |dx|"),
+                "{bad}: {e}"
+            );
+        }
+        let e = err(&with(", to = [8, -2], phase = 1"));
+        assert!(e.contains("field \"phase\" is not allowed"), "{e}");
+        assert_eq!(
+            SpawnKind::from_name("schafbergbahn"),
+            Some(SpawnKind::Schafbergbahn)
+        );
+    }
+
+    #[test]
+    fn m4_tile_names_have_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("standl", Solid),
+            ("strasse", Solid),
+            ("standl_dach", OneWay),
+            ("wartehaus_dach", OneWay),
+            ("tunnel_bg", Empty),
+            ("tunnel_bg_lamp", Empty),
+            ("zahnrad_gleis_0", Empty),
+            ("zahnrad_gleis_1", Empty),
+            ("zahnrad_gleis_2", Empty),
+            ("zahnrad_gleis_3", Empty),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        assert_eq!(TileKind::from_tile_name("zahnrad_gleis_4"), None);
+    }
+
+    #[test]
     fn m3_enemies_take_lead_period_phase_and_range() {
         let with = |entity: &str| {
             SMALL
@@ -1711,6 +1878,78 @@ P.sSC.tfG
             ("{ entity = \"steinschlag\", lead = true }", "lead"),
             ("{ entity = \"steinschlag\", len = 3 }", "len"),
             ("{ entity = \"selfie_tourist\", range = 5 }", "range"),
+        ] {
+            let e = err(&with(entity));
+            assert!(
+                e.contains(&format!("field \"{field}\" is not allowed")),
+                "{entity}: {e}"
+            );
+        }
+    }
+
+    #[test]
+    fn m4_singer_and_stand_take_their_fields() {
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"b\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pb--..")
+        };
+        let spawn = |entity: &str| {
+            Level::parse(&with(entity))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.col == 2)
+                .unwrap()
+        };
+        assert_eq!(
+            spawn("{ entity = \"operettensaenger\" }").kind,
+            SpawnKind::Operettensaenger
+        );
+        let stand = |fields: &str| {
+            let s = spawn(&format!("{{ entity = \"souvenirstand\"{fields} }}"));
+            assert_eq!(s.kind, SpawnKind::Souvenirstand);
+            (s.period, s.phase, s.range)
+        };
+        assert_eq!(stand(""), (150, 0, 8), "defaults (D-069)");
+        assert_eq!(stand(", period = 90, phase = 31, range = 4"), (90, 31, 4));
+        assert_eq!(
+            stand(", period = 300, phase = 299, range = 10"),
+            (300, 299, 10)
+        );
+        let stand_err =
+            |fields: &str| err(&with(&format!("{{ entity = \"souvenirstand\"{fields} }}")));
+        for (bad, field) in [
+            (", period = 89", "period"),
+            (", period = 301", "period"),
+            (", range = 3", "range"),
+            (", range = 11", "range"),
+            (", phase = -1", "phase"),
+        ] {
+            let e = stand_err(bad);
+            assert!(
+                e.contains(&format!("field \"{field}\" must be")),
+                "{bad}: {e}"
+            );
+        }
+        // The phase must not skip into the telegraph or past the period.
+        for bad in [
+            ", phase = 1",
+            ", phase = 30",
+            ", phase = 150",
+            ", period = 100, phase = 100",
+        ] {
+            let e = stand_err(bad);
+            assert!(e.contains("phase must be 0 or 31..="), "{bad}: {e}");
+        }
+        for (entity, field) in [
+            ("{ entity = \"operettensaenger\", range = 5 }", "range"),
+            ("{ entity = \"operettensaenger\", phase = 5 }", "phase"),
+            ("{ entity = \"souvenirstand\", len = 3 }", "len"),
+            ("{ entity = \"souvenirstand\", dir = 1 }", "dir"),
         ] {
             let e = err(&with(entity));
             assert!(
@@ -1850,6 +2089,8 @@ P.sSC.tfG
             ("kalkfels", Solid),
             ("kalkfels_bg", Empty),
             ("netz_post", Empty),
+            ("terrasse_post_l", Empty),
+            ("terrasse_post_r", Empty),
             ("steig", OneWay),
             ("steig_wall", OneWay),
             ("netz", OneWay),

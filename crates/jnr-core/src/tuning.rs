@@ -149,6 +149,17 @@ pub struct PlatformTuning {
     /// Travel frames per tile along the track's major axis (16 = 1 px per
     /// frame): travel = max(|dx|, |dy|) × this.
     pub gondel_frames_per_tile: u16,
+    /// Schafbergbahn train body `[w, h]` in whole pixels, whole tiles
+    /// (so with whole-tile `to` both roofs lie on the tile grid, flush with
+    /// the station platforms; D-067). Left-aligned in its spawn cell, bottom
+    /// on the cell's bottom edge, like the Festungsbahn.
+    pub schafbergbahn_size: [i32; 2],
+    /// Travel frames per tile along the track's major axis: travel =
+    /// max(|dx|, |dy|) × this (24: 0.67 px/frame).
+    pub schafbergbahn_frames_per_tile: u16,
+    /// Frames standing at the upper end (at the lower end the train waits
+    /// for its rider, like the Festungsbahn).
+    pub schafbergbahn_wait: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -481,6 +492,48 @@ pub struct EnemyTuning {
     pub steinschlag_screen_top: i32,
     /// Points for a rock shattered by a projectile (the thrown Hackl).
     pub stein_points: u32,
+    /// Operettensänger (D-068).
+    pub operettensaenger_hitbox: [i32; 2],
+    /// His counter runs while the player is this close (px) ...
+    pub operettensaenger_range: i32,
+    /// ... frames per cycle ...
+    pub operettensaenger_cycle: u16,
+    /// ... the first this many frames inhale (the telegraph) ...
+    pub operettensaenger_inhale: u16,
+    /// ... then the high C sounds for this many frames; idle to the end.
+    pub operettensaenger_sing: u16,
+    /// The high-C column: width (px, centred on him) ...
+    pub hohes_c_width: i32,
+    /// ... growth per frame from his hitbox top (px) ...
+    pub hohes_c_speed: i32,
+    /// ... and full height (px), unless a solid tile stops it first.
+    pub hohes_c_height: i32,
+    /// Souvenirstand counter frames of the telegraph; the globe spawns at
+    /// this frame of each period. At most
+    /// [`crate::level::SOUVENIRSTAND_MIN_PHASE`] − 1 (D-069).
+    pub souvenirstand_telegraph: u16,
+    /// At most this many of a stand's globes are alive at once.
+    pub souvenirstand_max_alive: u16,
+    /// The rolling snow globe.
+    pub schneekugel_hitbox: [i32; 2],
+    /// Its rolling speed (always to the left; gravity is the player's).
+    pub schneekugel_speed: Fx,
+    /// Reisebus (D-070).
+    pub reisebus_hitbox: [i32; 2],
+    /// The parked bus telegraphs when the player is this close to its
+    /// centre (px) ...
+    pub reisebus_trigger: i32,
+    /// ... for this many frames ...
+    pub reisebus_telegraph: u16,
+    /// ... then drives left at this speed, ignoring tiles.
+    pub reisebus_speed: Fx,
+    /// Frames of the photo stop (a bus with `stop`) ...
+    pub reisebus_stop_frames: u16,
+    /// ... then this many frames of telegraph before it drives on.
+    pub reisebus_restart: u16,
+    /// Renderer: the camera flashes in its windows switch on and off every
+    /// this many frames of the photo stop (off first).
+    pub reisebus_flash_frames: u16,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -571,6 +624,99 @@ impl EnemyTuning {
         if !(0..crate::camera::SCREEN_H).contains(&self.steinschlag_screen_top) {
             return Err(ParseError::new(
                 "tuning.toml: enemies.steinschlag_screen_top must be 0..180 px",
+            ));
+        }
+        Ok(())
+    }
+
+    /// The Reisebus keys (D-070).
+    fn validate_reisebus(&self) -> Result<(), ParseError> {
+        let [w, h] = self.reisebus_hitbox;
+        if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_hitbox must be 1..=64 px in both directions",
+            ));
+        }
+        if self.reisebus_speed <= Fx::ZERO || self.reisebus_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        if !(0..=crate::camera::SCREEN_W * 2).contains(&self.reisebus_trigger) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.reisebus_trigger must be 0..=640 px",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.reisebus_telegraph", self.reisebus_telegraph),
+            ("enemies.reisebus_stop_frames", self.reisebus_stop_frames),
+            ("enemies.reisebus_restart", self.reisebus_restart),
+            ("enemies.reisebus_flash_frames", self.reisebus_flash_frames),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        Ok(())
+    }
+}
+
+impl EnemyTuning {
+    /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
+    /// D-069).
+    fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
+        for (name, [w, h]) in [
+            (
+                "enemies.operettensaenger_hitbox",
+                self.operettensaenger_hitbox,
+            ),
+            ("enemies.schneekugel_hitbox", self.schneekugel_hitbox),
+        ] {
+            if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=16 px wide and 1..=32 px high"
+                )));
+            }
+        }
+        if !(TILE_PX..=crate::camera::SCREEN_W).contains(&self.operettensaenger_range) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.operettensaenger_range must be 16..=320 px",
+            ));
+        }
+        // Inhale, then the C, then at least one idle frame.
+        if self.operettensaenger_inhale == 0
+            || self.operettensaenger_sing == 0
+            || self.operettensaenger_inhale + self.operettensaenger_sing
+                >= self.operettensaenger_cycle
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.operettensaenger_inhale >= 1, operettensaenger_sing >= 1 and inhale + sing < operettensaenger_cycle",
+            ));
+        }
+        if !(1..=32).contains(&self.hohes_c_width)
+            || !(1..=TILE_PX).contains(&self.hohes_c_speed)
+            || !(1..=160).contains(&self.hohes_c_height)
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.hohes_c_width 1..=32, hohes_c_speed 1..=16 and hohes_c_height 1..=160 px",
+            ));
+        }
+        // The level's `phase` is 0 or SOUVENIRSTAND_MIN_PHASE.., so the first
+        // globe of an approach always follows the whole telegraph.
+        let min_phase = crate::level::SOUVENIRSTAND_MIN_PHASE;
+        if self.souvenirstand_telegraph == 0 || self.souvenirstand_telegraph >= min_phase {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need 1 <= enemies.souvenirstand_telegraph < {min_phase}"
+            )));
+        }
+        if !(1..=8).contains(&self.souvenirstand_max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.souvenirstand_max_alive must be 1..=8",
+            ));
+        }
+        if self.schneekugel_speed <= Fx::ZERO || self.schneekugel_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.schneekugel_speed must be > 0 and < 12 px/frame (3072)",
             ));
         }
         Ok(())
@@ -693,6 +839,8 @@ impl Tuning {
             ));
         }
         self.enemies.validate_m3(self.player.max_fall_speed)?;
+        self.enemies.validate_singer_and_stand()?;
+        self.enemies.validate_reisebus()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -717,6 +865,10 @@ impl Tuning {
                 self.platforms.festungsbahn_size,
             ),
             ("platforms.gondel_size", self.platforms.gondel_size),
+            (
+                "platforms.schafbergbahn_size",
+                self.platforms.schafbergbahn_size,
+            ),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -785,6 +937,10 @@ impl Tuning {
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
             ),
+            (
+                "platforms.schafbergbahn_frames_per_tile",
+                self.platforms.schafbergbahn_frames_per_tile,
+            ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
             (
@@ -845,6 +1001,25 @@ impl Tuning {
         if gondel_period > u32::from(u16::MAX) || pl.gondel_frames_per_tile > 64 {
             return Err(ParseError::new(
                 "tuning.toml: need platforms.gondel_frames_per_tile <= 64 and 2 × (gondel_wait + 64 × gondel_frames_per_tile) <= 65535 frames",
+            ));
+        }
+        // The train's body is whole tiles (both roofs on the tile grid,
+        // D-067); its travel (longest `to`: 64 tiles) plus the top wait fit
+        // the counter like the Festungsbahn's, and `frames_per_tile` <= 64
+        // keeps the delta × progress product inside i32 (as for the Gondel).
+        let [sw, sh] = pl.schafbergbahn_size;
+        if sw % TILE_PX != 0 || sh % TILE_PX != 0 {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.schafbergbahn_size must be whole tiles (multiples of 16 px)",
+            ));
+        }
+        if pl.schafbergbahn_frames_per_tile > 64
+            || u32::from(pl.schafbergbahn_wait)
+                + u32::from(pl.schafbergbahn_frames_per_tile) * crate::level::MAX_TRACK_TILES as u32
+                > 32_767
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.schafbergbahn_frames_per_tile <= 64 and schafbergbahn_wait + 64 × schafbergbahn_frames_per_tile <= 32767 frames",
             ));
         }
         let n = e.blasmusiker_notes;
@@ -1099,6 +1274,36 @@ mod tests {
     }
 
     #[test]
+    fn schafbergbahn_numbers_are_whole_tiles_and_fit_the_counter() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.schafbergbahn_size, [64, 32]);
+        assert_eq!(pl.schafbergbahn_frames_per_tile, 24);
+        assert_eq!(pl.schafbergbahn_wait, 90);
+        let size = |s: &str| {
+            Tuning::parse(&REAL.replace(
+                "schafbergbahn_size = [64, 32]",
+                &format!("schafbergbahn_size = {s}"),
+            ))
+        };
+        assert!(size("[48, 32]").is_ok());
+        assert!(size("[64, 64]").is_ok());
+        for bad in ["[60, 32]", "[64, 24]", "[80, 32]", "[0, 32]"] {
+            assert!(size(bad).is_err(), "{bad}");
+        }
+        let wait = |n: u32| {
+            Tuning::parse(&REAL.replace(
+                "schafbergbahn_wait = 90",
+                &format!("schafbergbahn_wait = {n}"),
+            ))
+        };
+        // 64 tiles × 24 frames = 1536 frames of travel at most.
+        assert!(wait(0).is_ok());
+        assert!(wait(32_767 - 1536).is_ok());
+        assert!(wait(32_767 - 1535).is_err());
+    }
+
+    #[test]
     fn rejects_unordered_goal_zones() {
         let t = REAL.replace("zone_heights = [32, 64,", "zone_heights = [32, 32,");
         assert!(Tuning::parse(&t).is_err());
@@ -1158,6 +1363,10 @@ mod tests {
             ("gondel_frames_per_tile", 0),
             ("gondel_frames_per_tile", 65),
             ("gondel_wait", 32000),
+            ("schafbergbahn_size", 0),
+            ("schafbergbahn_frames_per_tile", 0),
+            ("schafbergbahn_frames_per_tile", 65),
+            ("schafbergbahn_wait", 31300),
             ("nordic_walker_hitbox", 65),
             ("blasmusiker_hitbox", 0),
             ("note_hitbox", 0),
@@ -1216,6 +1425,27 @@ mod tests {
             ("steinschlag_refill", 50),
             ("steinschlag_screen_top", -1),
             ("steinschlag_screen_top", 180),
+            ("operettensaenger_hitbox", 0),
+            ("operettensaenger_hitbox", 17),
+            ("operettensaenger_range", 15),
+            ("operettensaenger_range", 321),
+            ("operettensaenger_cycle", 88),
+            ("operettensaenger_inhale", 0),
+            ("operettensaenger_sing", 0),
+            ("operettensaenger_sing", 140),
+            ("hohes_c_width", 0),
+            ("hohes_c_speed", 0),
+            ("hohes_c_speed", 17),
+            ("hohes_c_height", 0),
+            ("hohes_c_height", 161),
+            ("souvenirstand_telegraph", 0),
+            ("souvenirstand_telegraph", 31),
+            ("souvenirstand_max_alive", 0),
+            ("souvenirstand_max_alive", 9),
+            ("schneekugel_hitbox", 0),
+            ("schneekugel_hitbox", 33),
+            ("schneekugel_speed", 0),
+            ("schneekugel_speed", 3072),
             ("climb_feet_y", 181),
             ("climb_feet_y", 40),
             ("climb_top", -1),
@@ -1255,5 +1485,40 @@ mod tests {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");
         }
+    }
+
+    #[test]
+    fn reisebus_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        assert_eq!(t.reisebus_hitbox, [60, 28]);
+        assert_eq!(t.reisebus_trigger, 160, "< 161 px");
+        assert_eq!(t.reisebus_speed, Fx(384), "1.5 px/frame");
+        assert_eq!(
+            (
+                t.reisebus_telegraph,
+                t.reisebus_stop_frames,
+                t.reisebus_restart
+            ),
+            (60, 120, 30)
+        );
+        for (field, bad) in [
+            ("reisebus_hitbox", "[65, 28]"),
+            ("reisebus_hitbox", "[60, 0]"),
+            ("reisebus_trigger", "-1"),
+            ("reisebus_trigger", "641"),
+            ("reisebus_telegraph", "0"),
+            ("reisebus_speed", "0"),
+            ("reisebus_speed", "3072"),
+            ("reisebus_stop_frames", "0"),
+            ("reisebus_restart", "0"),
+            ("reisebus_flash_frames", "0"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+        let missing = REAL.replace("reisebus_restart = ", "#reisebus_restart = ");
+        let err = Tuning::parse(&missing).unwrap_err().to_string();
+        assert!(err.contains("reisebus_restart"), "{err}");
     }
 }

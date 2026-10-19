@@ -1,0 +1,230 @@
+# Stage 5: St. Wolfgang (docs/game-design.md "Stage 5: St. Wolfgang",
+# D-066 ... D-072). 300 columns x 17 rows, side camera; the street top is
+# row 15 (rows 15-16 ground, road or jetty), the goal meadow row 16.
+#   1 Ried            0-39    jetty 0-5 (start col 2), Bus 150 / kommt nicht
+#                             5, 5 Oblaten 7-11, M-box 14 (row 11) between
+#                             bricks, garden wall (stone, 2 high) 18 turns the
+#                             Mozartkugel; Weg 28 sign 21, an Oblaten arc 21-
+#                             23; Souvenirstand #1: curb 25 (globes shatter on
+#                             it), lane 26-28, spawner 29, counter 30-32
+#                             (standl), awning 29-32 (row 12, 3 Oblaten on
+#                             it); Selfie-Tourist #1 37 paces a dip at
+#                             33-43 (floor row 16, so the counter at 32 and
+#                             the step at 44 are 2 high to him).
+#   2 Schafbergbahn  40-104   Zahnradbahn sign 41, talstation_schafberg
+#                             (back, centre col 46), step 44, platform 45-51
+#                             (stone, top row 13), 26 % sign 48. The train
+#                             in (52, 14), to = [24, -6]: body 52-55, roof
+#                             flush with the platform; upper end 76-79, roof
+#                             flush with the halt (row 7). Under the track
+#                             (swept-body lint): rock 52-59 (street level),
+#                             60-63 (row 14), 64-67 (row 13): a fall before
+#                             the gorge lands on these steps and walks back
+#                             to the station (or jumps up through the
+#                             passing train). Gorge 68-77, empty to the
+#                             bottom (lethal). Shelf 78-79 (row 10, 3 below
+#                             the halt): the pit-recovery lint needs a way
+#                             up to the halt, and this is the least of one.
+#                             8 Oblaten over the gorge in a line rising with
+#                             the track (68 row 7, 69-72 row 6, 73-75 row
+#                             5): 29-45 px above the roof under a rider on
+#                             its front (uphill) half, so a tap hop takes
+#                             them and standing doesn't (D-067: 1-2 hops).
+#                             Shortcut (D-067, accepted): a running jump
+#                             off the roof's front reaches the shelf once
+#                             the front is over col ~68, skipping the
+#                             gorge half of the ride (the solver does it).
+#                             Halt platform 80-87 (stone row 7 over rock),
+#                             haltestelle_alm 82, Zum Gipfel sign 86. The
+#                             Alm (meadow): 88-91 row 8, 92-97 row 11 with
+#                             Selfie-Tourist #2 at 95 penned between the
+#                             step at 91 (3 high) and the hump at 98 (2 high
+#                             above the terrace; it never reaches the bus
+#                             lane), 99-104 row 12 over the
+#                             tunnel portal. Bypass tunnel rows 13-14,
+#                             88-104 (tunnel_bg, a lamp every 4 columns),
+#                             road (strasse) row 15 from 88.
+#   3 Busparkplatz  105-154   tunnelportal (back) 104-107. Reisebus #1 at
+#                             112 (no stop): it triggers as Resi reaches
+#                             the terrace edge (col 104) and drives under
+#                             her into the tunnel (lane 88-115 clear).
+#                             Oblaten 117-119; Fotostopp sign 122; shelter
+#                             roof (wartehaus_dach, row 12) 125-127 with
+#                             the wartehaus prop and 3 Oblaten; Reisebus #2
+#                             at 134, stop = 4: triggered from the shelter,
+#                             photo stop at 130-133 under an Oblaten arc
+#                             (130-133, rows 9-10: a roof bounce takes
+#                             them), then on under the shelter and off.
+#                             ?-box 142 (row 11), Bus 546 / auch voll 147
+#                             (left of the stop, clear of the bench),
+#                             checkpoint 150. Selfie-Tourist #3 (159) is
+#                             penned at the Markt entrance (153-162,
+#                             between a 2-high stone bench at 152 and the
+#                             basin's 2-high left end at 163): he never
+#                             waits behind bus
+#                             #2, and a respawned Resi holding LEFT walks
+#                             to the screen edge (x 2264) on open road;
+#                             bus #2 (parked 2144-2208, stopped right edge
+#                             2142) stays off screen left of her.
+#   4 Markt/Kirche  155-209   cobbles from 155. M-box 156 (row 11) between
+#                             bricks 155/157 (6 columns after the
+#                             checkpoint; moved from 158 so the running
+#                             leap over the fountain isn't squeezed under
+#                             the bricks); Pilgerwasser sign 160 (clear of
+#                             the basin end); Pilgerbrunnen: basin 163-167
+#                             (row 14, 163 also row 13),
+#                             column 165 (rows 12-13), canopy invisible
+#                             164-166 (row 11, 4 up) under the prop, the
+#                             pigeon on the finial (165, row 10, dy -8: 72
+#                             px above the street). Globe lane 168-177
+#                             sunk one tile (floor row 16) with Selfie-
+#                             Tourist #4 (173); Souvenirstand #2 (legend
+#                             y, range 7) spawner 177, counter 178-180 on
+#                             the street level, awning 177-180, Advent
+#                             sign 171 (in the lowered lane, clear of both
+#                             dips' walls); a dip at 181-183 (floor row
+#                             16); steps 184-186,
+#                             church terrace (kalkfels) 187-205 top row 11,
+#                             wallfahrtskirche (back) 191-200, Hier landete
+#                             sign 191, H-box 194 (row 8), 4 Oblaten
+#                             197-200, Pilger pair 203 (lead)/204, steps
+#                             down 206-208 with Oblaten.
+#   5 Weisses Roessl 210-256  Zahlkellner sign 211; weisses_roessl (back)
+#                             217-228; balcony B1 217-220 (row 11, starts
+#                             at the hotel's left edge, art-director note)
+#                             with Operettensänger #1 at 219 (sings into
+#                             the sky; 2 tiles of floor left of him for a
+#                             landing from the street, 220 right of him
+#                             for the jump up to B2) and an Oblate at 217;
+#                             Glück sign 223, roessl_pferd 226
+#                             (row 12); Operettensänger #2 at 228 on the
+#                             street (222-232 free; B2 above is one-way:
+#                             his C ends 10 px under it). Upper route: B2
+#                             223-228 (row 8, 3 Oblaten) -> 4-tile gap ->
+#                             Kaiserterrasse (oneway_wood row 8) 233-242
+#                             on decorative posts (terrasse_post_l/_r, no
+#                             collision) at 233/242, stoppers: stone 233 and
+#                             chimney 242 (row 7), Z-box 237 (row 5),
+#                             Operettensänger #3 at 240, 3 Oblaten.
+#                             Seebad: jetty 244-252 (row 15) with gaps
+#                             247-248 (2) and 253-256 (4); the landing is
+#                             the promenade quay one tile higher (row 14),
+#                             which tightens the long leap (see below).
+#   6 Seepromenade  257-299   quay (ground, top row 14) 257-279, 4 Oblaten
+#                             261-264; Souvenirstand #3: spawner 268
+#                             (starts once Resi's centre is at col >= 260.5,
+#                             past the water), counter 269-271, awning
+#                             268-271 (row 11, 3 Oblaten); its globes roll
+#                             off the quay into the 4-gap. Schifffahrt
+#                             sign 274; step 278-279 (top row 12); the
+#                             landing hall: invisible 280-285 x rows 10-15
+#                             under the schiffsstation prop (back), roof 6
+#                             above the meadow; meadow row 16 from 280,
+#                             Maibaum 290, Ortsende 293.
+# Oblaten: 75 placed + 1 in the ?-box.
+# time_limit 260: QA's relaxed run is 87.4 s (x 3 = 262, D-045); 88.7 s (x 3 =
+# 266) since the pen-wall re-cut, 260 kept (see the D-066 addendum).
+# Pen walls (QA acceptance bug, D-066 addendum): walkers are 20-22 px
+# tall, so every wall a walker turns at and Resi can stand on is >= 2 tiles
+# above the walker's floor (a 1-tile wall let his head touch her feet).
+# Solver (D-073: narrowest 5-7, gate 5): narrowest 5, the leap from the
+# first jetty over both Seebad gaps onto the quay (two jumps via the middle
+# jetty are the relaxed way); the next are 7, 7 and 8.
+# Replays: tests/replays/st_wolfgang_*.replay.
+
+[meta]
+id = "st_wolfgang"
+title_key = "stage.st_wolfgang.title"
+time_limit = 260
+min_jump_window = 5
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_schafberg_sued", factor = 3 },
+  { sprite = "bg_stwolfgang", factor = 13 },
+]
+
+[legend]
+"=" = "ground"
+"," = "meadow"
+"R" = "rock"
+"K" = "stone"
+"#" = "kalkfels"
+"_" = "strasse"
+"[" = "standl"
+"^" = "standl_dach"
+"-" = "wartehaus_dach"
+":" = "tunnel_bg"
+";" = "tunnel_bg_lamp"
+"&" = "balcony"
+"+" = "oneway_wood"
+"Q" = "chimney"
+"j" = "jetty"
+"J" = "jetty_post"
+"~" = "wolfgangsee_water"
+"w" = "wolfgangsee_water_deep"
+"B" = "brick"
+"I" = "invisible"
+"(" = "terrasse_post_l"
+")" = "terrasse_post_r"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"o" = { entity = "oblate" }
+"P" = { entity = "player_start" }
+"C" = { entity = "checkpoint" }
+"G" = { entity = "goal_maibaum" }
+"T" = { entity = "selfie_tourist" }
+"L" = { entity = "pilger", lead = true }
+"p" = { entity = "pilger" }
+"q" = { entity = "taube_sitting", dy = -8 }
+"s" = { entity = "souvenirstand", range = 8 }
+"y" = { entity = "souvenirstand", range = 7 }
+"e" = { entity = "operettensaenger" }
+"r" = { entity = "reisebus" }
+"x" = { entity = "reisebus", stop = 4 }
+"z" = { entity = "schafbergbahn", to = [24, -6] }
+"1" = { entity = "prop", sprite = "talstation_schafberg", dx = 48, layer = "back" }
+"2" = { entity = "prop", sprite = "haltestelle_alm", layer = "back" }
+"3" = { entity = "prop", sprite = "tunnelportal", dx = 8, layer = "back" }
+"4" = { entity = "prop", sprite = "wartehaus", layer = "back" }
+"5" = { entity = "prop", sprite = "pilgerbrunnen", dx = 48 }
+"6" = { entity = "prop", sprite = "wallfahrtskirche", dx = 8, layer = "back" }
+"7" = { entity = "prop", sprite = "weisses_roessl", dx = 8, layer = "back" }
+"8" = { entity = "prop", sprite = "roessl_pferd" }
+"9" = { entity = "prop", sprite = "schiffsstation", dx = -56, layer = "back" }
+"a" = { entity = "sign", text = "stage.st_wolfgang.sign_bus", style = "bus" }
+"c" = { entity = "sign", text = "stage.st_wolfgang.sign_weg" }
+"d" = { entity = "sign", text = "stage.st_wolfgang.sign_zahnradbahn" }
+"f" = { entity = "sign", text = "stage.st_wolfgang.sign_steil" }
+"g" = { entity = "sign", text = "stage.st_wolfgang.sign_gipfel" }
+"h" = { entity = "sign", text = "stage.st_wolfgang.sign_fotostopp" }
+"i" = { entity = "sign", text = "stage.st_wolfgang.sign_checkpoint", style = "bus" }
+"k" = { entity = "sign", text = "stage.st_wolfgang.sign_brunnen" }
+"l" = { entity = "sign", text = "stage.st_wolfgang.sign_advent" }
+"m" = { entity = "sign", text = "stage.st_wolfgang.sign_hackl" }
+"n" = { entity = "sign", text = "stage.st_wolfgang.sign_zahlkellner" }
+"u" = { entity = "sign", text = "stage.st_wolfgang.sign_glueck" }
+"v" = { entity = "sign", text = "stage.st_wolfgang.sign_schiff" }
+"O" = { entity = "sign", text = "stage.st_wolfgang.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+............................................................................................................................................................................................................................................................................................................
+............................................................................................................................................................................................................................................................................................................
+............................................................................................................................................................................................................................................................................................................
+............................................................................................................................................................................................................................................................................................................
+............................................................................................................................................................................................................................................................................................................
+.........................................................................ooo.................................................................................................................................................................Z..............................................................
+.....................................................................oooo.........2...g.....................................................................................................................................................................................................................
+....................................................................o...........KKKKKKKK.oo.....................................................................................................................................ooo......K.oo.o.e.Q.........................................................
+................................................................................RRRRRRRR,,,,......o...............................................................................................H............................&&&&&&....++++++++++.........................................................
+................................................................................RRRRRRRR,,,,......,................................oo....................................................................................................(........).........................................................
+..............................................................................RRRRRRRRRR,,,,.ooT..,...............................o..o...............................q.........................m...6.oooo..Lp............o.e.............(........)..........................ooo........IIIIII..............
+.............BMB......o.......ooo.............................................RRRRRRRRRR,,,,,,,,,,,.ooo......................ooo..............?............BMB......III..ooo......ooo......###################o..........&&&&............(........).........................^^^^........IIIIII..............
+.....................o.o.....^^^^.............o.f.o...........................RRRRRRRRRR,,,,,,,,,,,,,,,,,....................---...................................o.K...........^^^^.....K####################o..................8......(........)...........oo......................KKIIIIII..............
+..................K..........................KKKKKKK............RRRR..........RRRRRRRRRR:;:::;:::;:::;:::...............................................K..........K.K.o.................KK#####################o........................(........)....oo............oooo...s[[[..v...KKIIIIII..............
+..P..a.ooooo......K..c...K...s[[[..........1KKKKKKKKz.......RRRRRRRR..........RRRRRRRRRR:::::::::::::::::3......r....ooo..h...4.......x............i..C.K......Tk.5KKKKK.........y[[[...KKK######################..n..........7u....e....(ooo.....)..............=======================IIIIII..............
+jjjjjj===========================....T...d..========RRRRRRRRRRRRRRRR..........RRRRRRRRRR___________________________________________________________________=============...l.T....===...===######################===================================jjj~~jjjj~~~~=======================IIIIII9...G..O......
+JwwJwJ==============================================RRRRRRRRRRRRRRRR..........RRRRRRRRRR___________________________________________________________________================================######################===================================JJJwwJJJJwwww=======================,,,,,,,,,,,,,,,,,,,,
+'''

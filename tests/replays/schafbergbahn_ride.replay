@@ -1,0 +1,17 @@
+# E21 (D-067): walk from the street up the step onto the lower station, on
+# along the flush platform onto the waiting Schafbergbahn (it leaves with
+# her at frame ~126), a few steps forward on the moving roof, then stand
+# still for the 384-frame ride (1:4, 2/3 px per frame), walk off onto the
+# flush Alm platform during the 90-frame wait at the top (never airborne)
+# and on to the goal. One Oblate of the arc is touched just by riding
+# under it.
+level  = schafbergbahn
+seed   = 1
+source = handwritten
+expect = complete frames=693..693 deaths=0 no_event=Hurt oblaten>=1 state=stage_clear
+---
+R 50
+RJ 14     # onto the step and the lower station
+R 88      # onto the roof (flush), a few steps on it
+- 400     # the ride up
+R 200     # off at the top, to the goal

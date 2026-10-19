@@ -1,0 +1,60 @@
+# Bus shelter (back layer, no outlines) under the wartehaus_dach tiles:
+# two thin d posts, a faint glass back panel s with h reflections and
+# m rails, a timetable case without text (d frame, i paper, m lines), a
+# low dark bench (d seat, m backrest: not a platform, D-038), m/d plinth.
+# Rows 0..15 sit behind the roof tiles (row 12 when the bottom is on the
+# street top, row 15).
+sprite = wartehaus
+size   = 48x48
+origin = 24,48
+anim   = idle frames=1
+---
+frame idle 0
+................................................
+................................................
+................................................
+................................................
+................................................
+................................................
+................................................
+................................................
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..dd........................................dd..
+..ddmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..
+..ddssssssssssssssssssssssssssssssssssssssssdd..
+..ddssssssssssssssssssssssssssssddddddddddssdd..
+..ddssssssssssssssssssssssssssssdiiiiiiiidssdd..
+..ddssssssssssssssssssssssssssssdiiiiiiiidssdd..
+..ddssssssssssssssssssssssssssssdimmmmmmidssdd..
+..ddssssssssssssssssssssssssssssdiiiiiiiidssdd..
+..ddssssssssshhsssssssssssshhsssdimmmmmmidssdd..
+..ddsssssssshhsssssssssssshhssssdiiiiiiiidssdd..
+..ddssssssshhsssssssssssshhsssssdimmmmmmidssdd..
+..ddsssssshhsssssssssssshhssssssdiiiiiiiidssdd..
+..ddssssshhsssssssssssshhsssssssdimmmmmmidssdd..
+..ddsssshhsssssssssssshhssssssssdiiiiiiiidssdd..
+..ddssssssssssssssssssssssssssssdimmmmmmidssdd..
+..ddssssssssssssssssssssssssssssdiiiiiiiidssdd..
+..ddssssssssssssssssssssssssssssddddddddddssdd..
+..ddssmmmmmmmmmmmmmmmmmmmmmmmsssssssssssssssdd..
+..ddssmmmmmmmmmmmmmmmmmmmmmmmsssssssssssssssdd..
+..ddssssssssssssssssssssssssssssssssssssssssdd..
+..ddssssssssssssssssssssssssssssssssssssssssdd..
+..ddssdddddddddddddddddddddddsssssssssssssssdd..
+..ddssdddddddddddddddddddddddsssssssssssssssdd..
+..ddssssdsssssssssssssssssdsssssssssssssssssdd..
+..ddssssdsssssssssssssssssdsssssssssssssssssdd..
+..ddssssdsssssssssssssssssdsssssssssssssssssdd..
+..ddmmmmdmmmmmmmmmmmmmmmmmdmmmmmmmmmmmmmmmmmdd..
+..dddddddddddddddddddddddddddddddddddddddddddd..
+..ddmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..
+..ddmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..
+..ddmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..

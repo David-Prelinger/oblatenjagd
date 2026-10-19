@@ -1,0 +1,18 @@
+# Bus #2 (stop = 4) at its photo stop: Resi waits on the shelter roof,
+# the bus halts 2 tiles to its right with flashes in the windows, she
+# jumps onto its roof (a bounce, no damage, no points) and over it.
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 player_x>=1000
+---
+RB 28
+RBJ 12
+RB 108
+- 280
+R 250
+RJ 20
+R 6
+- 132
+RJ 20
+R 120
