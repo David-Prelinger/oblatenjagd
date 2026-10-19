@@ -2,16 +2,16 @@
 # Salzburg (solver route) -> route map (auto-continue) -> St. Gilgen with the
 # carried 22300 / 37 Oblaten / 3 lives (play from 2926). Three times: past the
 # M-box (not bumped), over the shelter wall into Nordic-Walker #1 as Normal ->
-# death (3316, 3916, 4516); every respawn is at St. Gilgen's start (the
+# death (3302, 3888, 4474); every respawn is at St. Gilgen's start (the
 # Salzburg checkpoint does not carry over), score and Oblaten kept. GameOver at
-# 4576; START at 4657 restarts St. Gilgen (not Salzburg) with score 0,
+# 4534; START at 4628 restarts St. Gilgen (not Salzburg) with score 0,
 # Oblaten 0, 3 lives, Normal.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 event=GameOver event=Respawned deaths=3
-expect = dies_at frames=3316..3316
+expect = dies_at frames=3302..3302
 expect = state=playing stage=st_gilgen score=0 oblaten=0 lives=3
 ---
 - 20
@@ -71,19 +71,19 @@ R 128
 R 50
 RJ 30
 R 50
-- 210
+- 196
 R 128
 - 132
 R 50
 RJ 30
 R 50
-- 210
+- 196
 R 128
 - 132
 R 50
 RJ 30
 R 50
-- 140       # GameOver at 4576
-S 1         # 4657: continue
+- 140       # GameOver at 4534
+S 1         # 4628: continue
 - 151
 R 30

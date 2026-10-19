@@ -3,18 +3,19 @@
 # 0, Oblaten 0. The run starts at Salzburg (start = title), plays
 # salzburg_solver.replay unchanged from frame 171, waits on the route map
 # and starts St. Gilgen with START at frame 2561 (like
-# flow_m2_salzburg_to_st_gilgen). In St. Gilgen it replays the first 375
-# frames of st_gilgen_solver.replay (onto the knoll after Gondel A) and then
-# holds right off the knoll into the death ravine, three times; START on
-# the game-over screen (frame 5037) continues. If either solver route
-# changes, re-copy it and re-check the frames.
+# flow_m2_salzburg_to_st_gilgen). In St. Gilgen it replays the first 380
+# frames of st_gilgen_solver.replay (it runs through Gondel A's trench and
+# lands on the knoll) and then holds right off the knoll into the death
+# ravine, three times (deaths 3139, 3777, 4415; play resumes 210 frames
+# after each); START on the game-over screen (frame 4967) continues. If
+# either solver route changes, re-copy it and re-check the frames.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=3 event=GameOver
 expect = state=playing stage=st_gilgen lives=3 score=0 oblaten=0
-shots  = 5200:restart
+shots  = 5130:restart
 ---
 - 20
 S 1       # frame 21: title → Salzburg intro
@@ -71,51 +72,51 @@ RB 40
 - 788     # Maibaum sequence, tally, route map
 S 1       # frame 2561: START in Wait → St. Gilgen intro
 - 150     # St. Gilgen intro, play from frame 2711
-# --- the first 375 frames of st_gilgen_solver.replay ---
-RB 96
+# --- the first 380 frames of st_gilgen_solver.replay ---
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
+RB 32
 RBJ 34
-RB 58
+RB 66
 RBJ 36
-RB 24
-# --- end of the first 375 frames of st_gilgen_solver.replay ---
+RB 23
+# --- end of the first 380 frames of st_gilgen_solver.replay ---
 R 200     # off the knoll into the ravine (death 1)
-- 100     # dying, intro
-# --- the first 375 frames of st_gilgen_solver.replay ---
-RB 96
+- 58      # dying (death 3139), intro; play again from 3349
+# --- the first 380 frames of st_gilgen_solver.replay ---
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
+RB 32
 RBJ 34
-RB 58
+RB 66
 RBJ 36
-RB 24
-# --- end of the first 375 frames of st_gilgen_solver.replay ---
-R 200     # death 2
-- 100
-# --- the first 375 frames of st_gilgen_solver.replay ---
-RB 96
+RB 23
+# --- end of the first 380 frames of st_gilgen_solver.replay ---
+R 200     # death 2 (3777)
+- 58
+# --- the first 380 frames of st_gilgen_solver.replay ---
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
+RB 32
 RBJ 34
-RB 58
+RB 66
 RBJ 36
-RB 24
-# --- end of the first 375 frames of st_gilgen_solver.replay ---
-R 200     # death 3: game over
+RB 23
+# --- end of the first 380 frames of st_gilgen_solver.replay ---
+R 200     # death 3 (4415): game over (4475)
 - 400     # „Aus is'! Spiel vorbei." / „Weiter?"
-S 1       # frame 5037: continue → St. Gilgen intro, not Salzburg
+S 1       # frame 4967: continue → St. Gilgen intro, not Salzburg
 - 150
 R 20      # a few steps into the restarted St. Gilgen

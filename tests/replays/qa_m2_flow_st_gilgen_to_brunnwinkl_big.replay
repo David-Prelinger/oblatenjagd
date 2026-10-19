@@ -1,21 +1,21 @@
 # QA (M2 route flow, D-042 power carry-over): dev entry at St. Gilgen in the
 # title flow (`level = st_gilgen`, start = title). The relaxed St. Gilgen run
 # (qa_st_gilgen_relaxed, play from 172) ends as Zuckerschock (Maibaum at
-# 4251), the map auto-continues (Arrive 4722, 24 px walk, Wait) into the
-# Brunnwinkl intro at 5086 and play at 5236: Resi is still Zuckerschock
-# (player_y 210 = the 30 px hitbox on the path), score 26700, 75 Oblaten,
+# 4155), the map auto-continues (Arrive 4593, 24 px walk, Wait) into the
+# Brunnwinkl intro at 4957 and play at 5107: Resi is still Zuckerschock
+# (player_y 210 = the 30 px hitbox on the path), score 25100, 72 Oblaten,
 # 3 lives, timer 200, no checkpoint.
 level  = st_gilgen
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=4251..4251 deaths=0 no_event=Respawned
-expect = state=playing stage=brunnwinkl score=26700 oblaten=75 lives=3 player_y<=210 player_x>=60
+expect = complete frames=4155..4155 deaths=0 no_event=Respawned
+expect = state=playing stage=brunnwinkl score=25100 oblaten=72 lives=3 player_y<=210 player_x>=60
 ---
 - 20
 S 1         # title -> St. Gilgen intro
 - 150
-# qa_st_gilgen_relaxed (play 172-4316)
+# qa_st_gilgen_relaxed (play 172-4200)
 R 128
 - 20
 J 12
@@ -25,31 +25,32 @@ RJ 30
 R 28
 RJ 20
 R 40
-- 95
-RJ 20
+- 12
+RJ 18
+- 26
+R 30
 R 84
 RJ 14
-R 30
-- 20
-RJ 10
 R 20
-- 90
-RJ 8
-R 14
-- 120
-R 85
-- 80
-R 12
+- 30
+R 16
 - 140
+RJ 8
+R 6
+- 120
+R 60
+- 68
+R 40
+- 120
 R 30
-- 132
+- 25
 RJ 8
 R 10
 - 130
 R 40
 - 20
 R 100
-- 20
+- 140
 R 30
 - 40
 RJ 8
@@ -58,74 +59,77 @@ R 6
 RJ 30
 R 10
 - 30
-R 120
-RJ 40
-R 69
-R 8
+R 10
 RJ 20
-R 148
+R 30
+R 50
 RJ 16
-R 70
-- 16
-J 12
-- 110
-- 30
-R 30
-RJ 10
-R 70
-- 10
-RJ 8
-R 4
-- 20
-RJ 24
-- 12
-J 14
-- 40
-RJ 24
 R 6
-- 10
-J 14
-R 10
-R 90
-RJ 24
-R 22
-RJ 20
-L 6
-- 10
-RB 4
-RBJ 30
-RB 10
-R 160
-RJ 12
-R 10
-L 4
-- 162
-RB 22
-RBJ 20
-RB 20
-R 100
 - 20
-R 26
-RJ 20
-R 4
-- 50
-R 10
-RJ 26
-R 10
-RJ 20
-R 20
-- 10
-RJ 20
 R 30
-- 10
-R 26
-RJ 24
-R 10
-- 10
-RJ 20
-R 30
-RJ 24
-R 80
 - 30
-- 920       # goal sequence, map, Brunnwinkl intro; play from 5236
+R 16
+RJ 12
+R 28
+- 10
+R 150
+RJ 12
+R 20
+- 30
+R 18
+- 6
+J 12
+- 100
+R 14
+RJ 16
+R 50
+RJ 30
+R 2
+RJ 14
+R 2
+RJ 20
+R 2
+RJ 20
+R 2
+RJ 30
+R 26
+RJ 20
+R 2
+RJ 20
+R 18
+R 32
+RJ 30
+R 26
+R 64
+RJ 14
+R 34
+R 128
+RJ 30
+R 2
+RJ 20
+R 6
+- 180
+R 32
+RJ 30
+R 34
+RJ 8
+R 2
+R 128
+RJ 30
+R 34
+RJ 30
+R 42
+RJ 30
+R 34
+J 20
+- 2
+RJ 8
+R 2
+J 8
+- 2
+R 16
+- 20
+R 100
+- 30
+- 907       # goal sequence, map, Brunnwinkl intro; play from 5107
 R 30

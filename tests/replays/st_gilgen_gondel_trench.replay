@@ -1,6 +1,6 @@
 # Stage 2 (D-027/D-028/D-044): the first gondola runs over a trench, never
 # over a pit. Resi walks off the station platform while Gondel A is away
-# (~frame 330), drops via the left stair onto the trench floor (feet 256),
+# (~frame 318), drops via the left stair onto the trench floor (feet 256),
 # walks to the right stair (53-54, feet 240) and climbs out onto the knoll
 # (feet 208, x >= 900) without the cabin: falling off means climbing, not
 # dying.
@@ -10,22 +10,21 @@ source = handwritten
 expect = deaths=0 no_event=Died state=playing player_x>=900 player_y>=186 player_y<=186
 expect = event=Landed
 ---
-# solver opening, onto the station platform (frames 0-278)
-RB 96
+# solver opening, onto the station platform (frames 0-280)
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
-R 20
-R 16
-RJ 14
-L 6
+RB 32
+RBJ 34
+RB 25
+L 4         # brake on the platform
 - 20
-R 30        # walk off the platform edge into the trench
+R 30        # walk off the platform edge into the trench (A is still away)
 - 20
-R 60        # along the trench floor to the right stair
+R 60        # along the trench floor to the right stair (A passes overhead)
 RJ 12       # onto the stair
 R 6
 - 10

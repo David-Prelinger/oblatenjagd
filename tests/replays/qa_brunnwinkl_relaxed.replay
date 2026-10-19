@@ -1,25 +1,29 @@
 # QA (M2, D-045): a relaxed full run of Stage 3 at walking pace (handwritten,
-# no solver prefix). Uferweg: bumps the M-box, waits for the Mozartkugel
-# (PowerUp), over the rock wall, waits on the boulder until E-Biker #1 crashes
-# into it, stomps walker #1. Kornmuehle: over the mill race, onto the hive and
-# under swarm #1, climbs the mill and takes bonus 1 on the ridge, stomps the
-# tourist below, bumps the ?-box from below as Zuckerschock. Bienenhaus: stops
-# left of swarm #2's reach, waits ~3 s, walks under it to the free column 102,
-# hops on the 1-high hive, onto the stack behind walker #2 and stomps it, up
-# onto the right bee-house roof (6 Oblaten) and drops off past swarm #3.
-# Fuenf Haeuser: checkpoint, stomps the charging E-Biker #2, climbs house 2
-# behind walker #3 and stomps it, stomps the garden tourist, over house 3,
-# through the garden while swarm #4 dances up-right, onto house 4, bumps the
-# Zaunerstollen box (ExtraLife; E-Biker #3 crashes into house 4 below: no
-# harm), over the chimney, stomps walker #4 on house 5. Badesteg: walking
-# jumps, waits for swarm #5 to rise, under it and over the 3-gap, climbs the
-# boathouse and walks off its roof to the pole (100). Never hurt.
-# Maibaum touch at frame 3839 = 64 s (D-045: 3 x 64 = 192 -> 200 s).
+# no solver prefix, never runs). Uferweg: bumps the M-box, waits for the
+# Mozartkugel (PowerUp), over the rock wall, waits on the boulder until
+# E-Biker #1 crashes into it, stomps walker #1. Kornmuehle: over the mill
+# race, onto the hive and under swarm #1, climbs the mill and takes bonus 1
+# on the ridge, stomps the tourist below, bumps the ?-box from below as
+# Zuckerschock. Bienenhaus: stops left of swarm #2's reach, waits ~3 s,
+# walks under it to the free column 102, hops on the 1-high hive, onto the
+# stack behind walker #2 and stomps it, up onto the right bee-house roof (6
+# Oblaten). Re-cut from here in the M2 level pass (tourist moved from the
+# garden to the paved path, chimney, boathouse, 3-gap at 215-217; the rest
+# found with a walking-only search, so it waits less than the original QA
+# run): Fuenf Haeuser: drops off the roof, checkpoint, stomps the
+# Selfie-Tourist on the paved path and the charging E-Biker #2, climbs
+# house 2 and stomps walker #3, over house 3 and the garden while swarm #4
+# dances up-right, onto house 4, bumps the Zaunerstollen box (it rolls into
+# the chimney and back: ExtraLife), stomps E-Biker #3 in the garden, over
+# house 5 behind walker #4. Badesteg: walking jumps over both gaps, climbs
+# the boathouse and walks off its roof to the pole (100). Never hurt.
+# Maibaum touch at frame 3586 = 59.8 s (D-045: 3 x 59.8 -> 180, clamped
+# to the 200 s minimum: Brunnwinkl keeps 200).
 level  = brunnwinkl
 seed   = 1
 source = handwritten
-expect = complete frames=3839..3839 deaths=0 lives=4 state=stage_clear no_event=Hurt
-expect = oblaten=38 score=9550
+expect = complete frames=3586..3586 deaths=0 lives=4 state=stage_clear no_event=Hurt
+expect = oblaten=34 score=8850
 expect = event=PowerUp event=ExtraLife event=CheckpointReached event=Stomped
 ---
 R 150
@@ -83,68 +87,46 @@ J 14
 R 20
 RJ 24
 R 60
-R 270
-RJ 24
-R 30
-R 60
-- 30
-J 10
-R 6
-- 12
-J 16
-R 8
-- 40
+R 90
+R 40
+RJ 30
+R 98
+RJ 30
+R 82
+R 16
+RJ 30
+R 2
+RJ 8
+R 66
+RJ 30
+R 130
+RJ 30
+R 10
+- 10
 J 14
-- 30
+- 140
+RJ 30
+R 74
+J 30
+- 2
+RJ 30
 R 34
-RJ 16
-R 30
-R 30
-- 6
+RJ 30
+R 2
 RJ 20
-R 30
-- 10
-RJ 14
-R 60
-R 60
+R 2
+RJ 30
+R 98
+RJ 30
+R 2
 RJ 20
-R 4
-- 10
-J 10
+R 2
+RJ 30
+R 2
+RJ 4
+R 2
+RJ 8
 R 10
-- 10
-J 20
 - 20
-R 20
-- 20
-RJ 20
-R 60
-R 14
-- 20
-J 10
-R 6
-- 12
-J 16
-R 8
-- 10
-J 14
-- 20
-R 96
-- 10
-RJ 18
-R 6
-L 6
-- 30
-R 86
-RJ 26
-R 20
-- 10
-RJ 14
-R 10
-- 6
-RJ 14
-R 10
-- 6
-RJ 14
-R 60
+R 80
 - 20

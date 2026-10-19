@@ -4,52 +4,53 @@
 # left past the screen edge and the camera follows her left by the same
 # amount.
 # Steps: st_gilgen_gondeln (A -> B -> C, off C onto the ledge/street at
-# x 1401, frame 1133), walk on to x 1433 (camera x 1295, a few steps past the
-# ledge), walk back onto the ledge 83-85 and hop onto Gondel C waiting at its
-# lower end (x 1296, frame 1342), then stand still on its roof. C travels
-# up-left to the pylon (x 1184); from frame ~1377 Resi's hitbox is carried
-# past the old camera edge (x 1295) and the camera follows her left.
-# Before the fix: held at x 1295 = camera.x, she dropped off the cabin's
-# left end at ~1398 and died in the ravine at 1424 (DeathCause::Pit).
-# Now: she rides on (x ~1190 at the end, camera x = her x), no death.
+# x 1412, frame 1126), walk on to x 1438 (camera x 1301, a few steps past
+# the ledge), walk back onto the ledge 83-85 and hop onto Gondel C waiting
+# at its lower end (x 1296, landing ~1330), then stand still on its roof.
+# C travels up-left to the pylon (x 1184); from frame ~1368 Resi's hitbox
+# is carried past the old camera edge (x 1301) and the camera follows her
+# left.
+# Before the fix: held at camera.x, she dropped off the cabin's left end
+# and died in the ravine (DeathCause::Pit; the original bug run: death at
+# 1424).
+# Now: she rides on (x ~1205 at the end, camera x = her x), no death.
 # Filmstrip: cargo xtask filmstrip qa_m2_gondel_camera_edge_push --every 10
 level  = st_gilgen
 seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Died state=playing
 ---
-# st_gilgen_gondeln (frames 0-1133)
-RB 96
+# st_gilgen_gondeln (frames 0-1126)
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
-R 20
-R 16
-RJ 14
-L 6
-- 72
-RJ 8
+RB 32
+RBJ 34
+RB 25
+L 4         # brake at the platform edge (x 737; Gondel C activates)
+- 70        # wait for Gondel A to come back
+RJ 8        # hop onto its roof (~frame 356)
 R 6
-- 125
+- 125       # ride A up to the knoll
 R 60
-- 205
-R 40
-- 110
-R 14
-RJ 10
-R 4
-- 130
-R 60
+- 197       # wait on the knoll for Gondel B
+R 40        # walk off the edge onto B (~790)
+- 110       # ride B across the ravine
+R 24        # onto the pylon (918)
+RJ 4        # tap jump onto Gondel C, just leaving the pylon (~950)
+R 8
+- 100       # ride C down to its lower end
+R 70        # walk off onto the ledge and the street
 - 20
-R 14        # a few steps further right: camera x 1295
+R 14        # a few steps further right: camera x 1301
 - 10
 L 30
 LJ 10       # back up onto the ledge 83-85
 L 14
 - 90        # Gondel C arrives at its lower end (x 1296)
-LJ 8        # hop onto its roof (frame 1342)
+LJ 8        # hop onto its roof (lands ~1330)
 L 10
 - 150       # stand still and ride up towards the pylon

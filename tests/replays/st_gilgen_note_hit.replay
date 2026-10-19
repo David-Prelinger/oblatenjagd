@@ -9,31 +9,31 @@ source = handwritten
 expect = dies_at frames=1490..1490 deaths=1 lives=2 event=Respawned
 ---
 # solver route (frames 0-1366)
-RB 96
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
+RB 32
 RBJ 34
-RB 58
+RB 66
 RBJ 36
 RB 40
 RBJ 36
 RB 40
 RBJ 36
-RB 126
+RB 94
 RBJ 36
-RB 14
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
 RBJ 36
 RB 18
 RBJ 12
-RB 16
-RBJ 12
-RB 2
-RBJ 36
-RB 120
+RB 88
 RBJ 36
 RB 48
 RBJ 36
@@ -45,7 +45,8 @@ RB 46
 RBJ 36
 RB 88
 RBJ 36
-RB 24
+RB 23
+RB 1
 L 10        # brake on the bench
 - 90
 R 12        # step down into the train

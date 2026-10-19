@@ -1,31 +1,36 @@
-# Fuenf Haeuser: the solver route up to frame 840 (past the checkpoint at
-# col 122), then Resi walks on without jumping into E-Biker #2 (col 146):
-# a side hit as Normal, death at 963. She respawns at the checkpoint
-# (x >= 1952) with the level reset, keeps her score and Oblaten, and
-# walks on.
+# Fuenf Haeuser: the solver route up to frame 884 (past the checkpoint at
+# col 122 and over the Selfie-Tourist on the paved path), then Resi walks
+# on without jumping into E-Biker #2 (col 146), which is already riding at
+# her: a side hit as Normal, death at 931. She respawns at the checkpoint
+# (x >= 1952, frame 991) with the level reset, keeps her score and
+# Oblaten, and walks on.
 level  = brunnwinkl
 seed   = 1
 source = handwritten
-expect = event=CheckpointReached event=Respawned dies_at frames=963..963 deaths=1 lives=2 state=playing player_x>=1952
-# review shots (enable with goldens after an art-director verdict): 963:hit 1040:respawned
+expect = event=CheckpointReached event=Respawned dies_at frames=931..931 deaths=1 lives=2 state=playing player_x>=1952
+# review shots (enable with goldens after an art-director verdict): 931:hit 1008:respawned
 ---
-RB 108
+RB 104
 RBJ 36
-RB 47
+RB 27
 RBJ 36
-RB 40
+RB 2
+RBJ 36
+RB 24
 RBJ 36
 RB 18
 RBJ 36
+RB 10
+RBJ 20
 RB 40
-RBJ 36
-RB 188
-RBJ 1
-RB 18
-L 4
-RJ 36
-R 2
-RB 3
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
 RBJ 12
-RB 143
-R 200
+RB 37
+R 100       # walks on into the riding E-Biker #2: side hit, death at 931
+- 100       # dying; respawn at the checkpoint (991)
+R 60        # walks on

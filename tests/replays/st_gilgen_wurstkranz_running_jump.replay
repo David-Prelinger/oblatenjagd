@@ -2,38 +2,38 @@
 # (frame 1646), a hop onto the Schiffskassa roof (its three Oblaten, +600),
 # then a run along the roof and a running held jump (RBJ) off its edge
 # towards the pole: she touches it with the feet >= 7 tiles above its base
-# -> Wurstkranz, 5000 (10000 + 600 + 5000). Ends during the slide.
+# -> Wurstkranz, 5000 (8500 + 600 + 5000). Ends during the slide.
 level  = st_gilgen
 seed   = 1
 source = handwritten
-expect = event=LevelComplete deaths=0 state=stage_clear score=15600
+expect = event=LevelComplete deaths=0 state=stage_clear score=14100
 ---
 # solver route (frames 0-1646)
-RB 96
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
+RB 32
 RBJ 34
-RB 58
+RB 66
 RBJ 36
 RB 40
 RBJ 36
 RB 40
 RBJ 36
-RB 126
+RB 94
 RBJ 36
-RB 14
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
 RBJ 36
 RB 18
 RBJ 12
-RB 16
-RBJ 12
-RB 2
-RBJ 36
-RB 120
+RB 88
 RBJ 36
 RB 48
 RBJ 36
@@ -55,7 +55,8 @@ RB 24
 RBJ 36
 RB 18
 RBJ 33
-RB 13
+RB 12
+RB 1
 L 8         # brake on the steps
 - 10
 RJ 14       # onto the kiosk roof
