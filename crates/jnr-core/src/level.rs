@@ -36,14 +36,14 @@ impl TileKind {
     /// (`solid`, `oneway`, `hazard`, `empty`) and the M1 art tile names of
     /// `docs/sprite-catalog.md` (M1 and M2) map to a kind; unknown names
     /// return `None`. Decorative back tiles (`railing_bg`,
-    /// `wall_village_bg`) are `Empty`: drawn, never collide.
+    /// `wall_village_bg`, `roof_bg`) are `Empty`: drawn, never collide.
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
-            "empty" | "railing_bg" | "wall_village_bg" => Some(TileKind::Empty),
+            "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
-            | "jetty_post" | "forest_path" | "beute" => Some(TileKind::Solid),
+            | "jetty_post" | "forest_path" | "beute" | "chimney" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" => {
                 Some(TileKind::OneWay)
             }
@@ -364,6 +364,7 @@ pub const PROP_SPRITES: &[&str] = &[
     "muehlrad",
     "bienenhaus",
     "futterschaelchen",
+    "boathouse",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.

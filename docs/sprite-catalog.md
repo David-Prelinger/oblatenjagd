@@ -111,13 +111,6 @@ All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); col
 | `muehlrad` (water wheel of the Kornmühle) | 48×48 | bottom centre | `turn` 4f/12t loop — front layer, wood `o O l`, water `t T` + `w` drops |
 | `bienenhaus` (bee house) | ≤ 128×80 | bottom centre | `idle` held — `layer = "back"`; open wooden shed with rows of painted hive fronts (small folk-art panels, no text) |
 | `futterschaelchen` (bee bonus marker) | 16×8 | bottom centre | `idle` held — a small glass dish (`i w`) on a blue card (`S b`); front layer. Never gold and round |
-
-### Props pending engine registration
-
-Art is in `art/sprites/props/`; move the row into the table above when the name is added to `PROP_SPRITES` (the `props_must_name_a_catalog_prop_sprite` test keeps the two in sync).
-
-| Sprite | Size | Origin | Animations / notes |
-|---|---|---|---|
 | `boathouse` (Brunnwinkl Bootshaus) | 96×80 | 48,80 (bottom centre) | `idle` held — `layer = "back"`; steep wooden-shingle roof, plank wall with a cross window, `o O l` stilts over the dark `d` slip with a white rowing boat hung on two `l` hoist slings; a stair tower and a woodpile on its left. Drawn = solid (D-038): placed at col 223 with `dx = 8`, bottom on the top of the jetty row, its outline matches the shore block 221–226: woodpile top 2 tiles, stair tower 4 tiles, roof ridge (4 tiles, `o` lip) 5 tiles = the launch. Collision stays with tiles (`invisible` under it); under it the level puts `jetty` (row 15: the lake surface 4 px below the deck line, as on the bathing jetty) and `jetty_post` (row 16) |
 
 ### Tiles (group `tiles`, 16×16, `tile_<name>`)
