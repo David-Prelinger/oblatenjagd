@@ -227,11 +227,13 @@ pub enum SpawnKind {
     /// The Schafbergbahn steam train (`to`): the Festungsbahn's waiting
     /// state machine with a 64×32 body on a long track (D-067).
     Schafbergbahn,
+    /// Enemy `reisebus` (stop-and-go charger, `stop`: D-070).
+    Reisebus,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 24] = [
+    pub const ALL: [SpawnKind; 25] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -256,6 +258,7 @@ impl SpawnKind {
         SpawnKind::Operettensaenger,
         SpawnKind::Souvenirstand,
         SpawnKind::Schafbergbahn,
+        SpawnKind::Reisebus,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -286,6 +289,7 @@ impl SpawnKind {
             SpawnKind::Operettensaenger => "operettensaenger",
             SpawnKind::Souvenirstand => "souvenirstand",
             SpawnKind::Schafbergbahn => "schafbergbahn",
+            SpawnKind::Reisebus => "reisebus",
         }
     }
 
@@ -393,7 +397,14 @@ pub struct EntitySpawn {
     /// [`DEFAULT_SOUVENIRSTAND_RANGE`] by default): its counter runs while
     /// the player is this close.
     pub range: u8,
+    /// A `reisebus`'s photo stop (`stop = N`, [`REISEBUS_STOP_TILES`]):
+    /// it halts once its hitbox is N tiles left of where it was parked
+    /// (D-070). 0 = no stop (the default).
+    pub stop: u8,
 }
+
+/// Allowed `stop` of a `reisebus`, in tiles (D-070).
+pub const REISEBUS_STOP_TILES: std::ops::RangeInclusive<u8> = 1..=16;
 
 /// A `steinschlag`'s `period` without the field, in frames (D-058).
 pub const DEFAULT_STEINSCHLAG_PERIOD: u16 = 150;
@@ -625,6 +636,7 @@ enum LegendEntry {
         lead: bool,
         period: u16,
         range: u8,
+        stop: u8,
     },
 }
 
@@ -718,6 +730,7 @@ impl Level {
                         lead,
                         period,
                         range,
+                        stop,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -738,6 +751,7 @@ impl Level {
                             lead: *lead,
                             period: *period,
                             range: *range,
+                            stop: *stop,
                         });
                     }
                 }
@@ -891,6 +905,7 @@ fn parse_legend_value(
                     &["entity", "tile", "period", "phase", "range"]
                 }
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
+                (_, Some("reisebus")) => &["entity", "tile", "stop"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -1133,6 +1148,11 @@ fn parse_entity(
         },
         |n| n as u8,
     );
+    let stop = int_field(
+        "stop",
+        i64::from(*REISEBUS_STOP_TILES.start())..=i64::from(*REISEBUS_STOP_TILES.end()),
+    )?
+    .map_or(0, |n| n as u8);
     if kind == SpawnKind::Steinschlag
         && phase != 0
         && !(STEINSCHLAG_MIN_PHASE..period).contains(&phase)
@@ -1168,6 +1188,7 @@ fn parse_entity(
         lead,
         period,
         range,
+        stop,
     })
 }
 
@@ -1229,6 +1250,7 @@ grid = '''
             lead: false,
             period: DEFAULT_STEINSCHLAG_PERIOD,
             range: DEFAULT_STEINSCHLAG_RANGE,
+            stop: 0,
         }
     }
 

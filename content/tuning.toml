@@ -169,6 +169,14 @@ souvenirstand_telegraph = 30  # stand counter frames 0-29 telegraph (vendor hold
 souvenirstand_max_alive = 2   # a cycle that starts with this many of its globes alive shows nothing and spawns nothing
 schneekugel_hitbox = [10, 10] # the rolling snow globe (sprite 12x12)
 schneekugel_speed = 256       # 1.0 px/frame to the left; gravity and max fall are the player's; shatters on walls
+# M4 Reisebus (D-070): parked, facing left; it ignores tiles (levels keep its lane clear, lint) and passes enemies.
+reisebus_hitbox = [60, 28]    # sprite 64x32 over 4 cells from its spawn cell
+reisebus_trigger = 160        # px (< 161, 10 tiles) to its centre: the parked bus telegraphs ...
+reisebus_telegraph = 60       # ... for 60 frames (hazard lights) ...
+reisebus_speed = 384          # ... then drives left at 1.5 px/frame until its right edge is left of the screen
+reisebus_stop_frames = 120    # `stop = N`: N tiles left of where it was parked it halts for a 120-frame photo stop ...
+reisebus_restart = 30         # ... then 30 frames of hazard lights, then on again
+reisebus_flash_frames = 16    # renderer: the photo-stop camera flashes switch every 16 frames (off first; harmless)
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

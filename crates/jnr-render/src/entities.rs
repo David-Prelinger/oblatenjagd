@@ -140,6 +140,7 @@ pub struct EntityLooks<'a> {
     pilger: Option<&'a AtlasSprite>,
     pilger_lead: Option<&'a AtlasSprite>,
     gams: Option<&'a AtlasSprite>,
+    reisebus: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -183,6 +184,7 @@ impl<'a> EntityLooks<'a> {
             pilger: s(EnemyKind::Pilger.sprite()),
             pilger_lead: s("pilger_lead"),
             gams: s(EnemyKind::Gams.sprite()),
+            reisebus: s(EnemyKind::Reisebus.sprite()),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -222,6 +224,7 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Gams => self.gams,
                 EnemyKind::Operettensaenger => self.operettensaenger,
                 EnemyKind::Schneekugel => self.schneekugel,
+                EnemyKind::Reisebus => self.reisebus,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -263,6 +266,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Gams => NAVY,
             EnemyKind::Operettensaenger => SLATE_DARK,
             EnemyKind::Schneekugel => SKY_HAZE,
+            EnemyKind::Reisebus => WHITE,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -637,6 +641,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Fall => ("fall", None),
         Pose::Sing => ("sing", None),
         Pose::Roll => ("roll", None),
+        Pose::Drive => ("drive", None),
+        Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
     }
 }
 
@@ -727,10 +733,14 @@ fn draw_enemy(
             // These only ever move left: their art faces left.
             let fixed = matches!(
                 e.kind,
-                EntityKind::Enemy(EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel)
-                    | EntityKind::Defeated(
-                        EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
-                    )
+                EntityKind::Enemy(
+                    EnemyKind::Fiaker
+                        | EnemyKind::EBiker
+                        | EnemyKind::Schneekugel
+                        | EnemyKind::Reisebus
+                ) | EntityKind::Defeated(
+                    EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
+                )
             );
             let left = e.facing_left() && !fixed;
             draw_sprite(fb, atlas, s, anim, tick, x, y, left);
@@ -746,6 +756,9 @@ fn draw_enemy(
             let by = e.y.to_px() - cam.y + full - h + sy;
             fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
             fb.outline_rect(bx, by, w, h, OUTLINE);
+            if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
+                draw_bus_marks(fb, bx, by, w, h, pose, game.frame());
+            }
             if lead && pose != Pose::Squished {
                 // The leader's pennant: a 1 px stick above the box with a
                 // small red flag.
@@ -832,6 +845,31 @@ fn draw_souvenirstand(
         }
     }
 }
+
+/// The Reisebus grey box's marks (until its art arrives, D-070): a dark
+/// window band along the top half, hazard lights (`Y`) at both lower
+/// corners that blink every [`BUS_HAZARD_TICKS`] frames while it
+/// telegraphs, and three white camera flashes in the windows on the photo
+/// stop's flash frames.
+fn draw_bus_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Pose, tick: u32) {
+    fb.fill_rect(x + 2, y + 3, w - 4, h / 3, SLATE_DARK);
+    match pose {
+        Pose::Telegraph if (tick / BUS_HAZARD_TICKS).is_multiple_of(2) => {
+            fb.fill_rect(x + 1, y + h - 5, 3, 3, MOZART_YELLOW);
+            fb.fill_rect(x + w - 4, y + h - 5, 3, 3, MOZART_YELLOW);
+        }
+        Pose::Fotostopp { flash: true } => {
+            for i in 1..=3 {
+                fb.fill_rect(x + i * w / 4 - 1, y + 4, 3, 3, WHITE);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Frames per blink of the grey-box bus's hazard lights (the catalog's
+/// `telegraph` anim: 2 frames of 6 ticks).
+pub const BUS_HAZARD_TICKS: u32 = 6;
 
 /// Haltestelle: anim `active` once reached (`idle` before), else a pole
 /// with a yellow disc (filled green once reached).
@@ -1310,6 +1348,49 @@ mod tests {
             pose_anim(Pose::Selfie { flash: false }),
             ("selfie", Some(0))
         );
+    }
+
+    #[test]
+    fn the_grey_box_bus_shows_hazard_lights_and_photo_flashes() {
+        use jnr_core::Pose;
+        let catalog = include_str!("../../../docs/sprite-catalog.md");
+        for p in [Pose::Drive, Pose::Fotostopp { flash: false }] {
+            let n = pose_anim(p).0;
+            assert!(
+                catalog.contains(&format!("`{n}`")),
+                "`{n}` not in the catalog"
+            );
+        }
+        assert_eq!(
+            pose_anim(Pose::Fotostopp { flash: true }),
+            ("fotostopp", Some(1))
+        );
+        assert_eq!(
+            grey_box_colour(EntityKind::Enemy(EnemyKind::Reisebus)),
+            WHITE
+        );
+        // A 60×28 box at (100, 100): lights at its lower corners, flashes
+        // in the window band.
+        let marks = |pose: Pose, tick: u32| {
+            let mut fb = Framebuffer::new();
+            draw_bus_marks(&mut fb, 100, 100, 60, 28, pose, tick);
+            (
+                fb.get(102, 124),
+                fb.get(157, 124),
+                fb.get(115, 105),
+                fb.get(130, 105),
+            )
+        };
+        let (l, r, w1, w2) = marks(Pose::Telegraph, 0);
+        assert_eq!((l, r), (Some(MOZART_YELLOW), Some(MOZART_YELLOW)));
+        assert_eq!((w1, w2), (Some(SLATE_DARK), Some(SLATE_DARK)));
+        let (l, _, _, _) = marks(Pose::Telegraph, BUS_HAZARD_TICKS);
+        assert_ne!(l, Some(MOZART_YELLOW), "blinks");
+        let (l, _, w1, w2) = marks(Pose::Fotostopp { flash: true }, 0);
+        assert_ne!(l, Some(MOZART_YELLOW));
+        assert_eq!((w1, w2), (Some(WHITE), Some(WHITE)), "flashes");
+        let (_, _, w1, _) = marks(Pose::Fotostopp { flash: false }, 0);
+        assert_eq!(w1, Some(SLATE_DARK));
     }
 
     /// A grey-box level with `marks` (row, col, legend char) on a 20x10

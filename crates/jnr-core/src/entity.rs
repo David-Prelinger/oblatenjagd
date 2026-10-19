@@ -97,13 +97,19 @@ pub enum EnemyKind {
     /// `schneekugel`: a snow globe from a Souvenirstand, rolls left and
     /// shatters on walls.
     Schneekugel,
+    /// `reisebus`: parked, then drives left (optional photo stop); not
+    /// stompable, its roof only bounces (D-070).
+    Reisebus,
 }
 
 impl EnemyKind {
     /// True if a stomp defeats it (the Fiaker only bounces the player, a
     /// swarm hurts from above too).
     pub const fn stompable(self) -> bool {
-        !matches!(self, EnemyKind::Fiaker | EnemyKind::Bienenschwarm)
+        !matches!(
+            self,
+            EnemyKind::Fiaker | EnemyKind::Bienenschwarm | EnemyKind::Reisebus
+        )
     }
 
     /// True if touching it from above hurts like any other contact (no
@@ -143,6 +149,7 @@ impl EnemyKind {
             EnemyKind::Gams => "gams",
             EnemyKind::Operettensaenger => "operettensaenger",
             EnemyKind::Schneekugel => "schneekugel",
+            EnemyKind::Reisebus => "reisebus",
         }
     }
 
@@ -161,6 +168,7 @@ impl EnemyKind {
             EnemyKind::Gams => 10,
             EnemyKind::Operettensaenger => 11,
             EnemyKind::Schneekugel => 12,
+            EnemyKind::Reisebus => 13,
         }
     }
 }
@@ -553,6 +561,15 @@ impl Entity {
             SpawnKind::Souvenirstand => {
                 Entity::at_feet(EntityKind::Souvenirstand, feet_x, feet_y, [16, 16])
             }
+            // The 4-tile (64 px) bus starts in its cell and covers the 3
+            // to its right; the hitbox is centred under the sprite and
+            // `base_x` keeps where it was parked (its photo stop, D-070).
+            SpawnKind::Reisebus => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Reisebus),
+                cell_x + tile.mul_int(2),
+                feet_y,
+                e.reisebus_hitbox,
+            ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -907,6 +924,7 @@ mod tests {
                 EnemyKind::Gams => 10,
                 EnemyKind::Operettensaenger => 11,
                 EnemyKind::Schneekugel => 12,
+                EnemyKind::Reisebus => 13,
             }
         }
         let enemies = [
@@ -923,6 +941,7 @@ mod tests {
             EnemyKind::Gams,
             EnemyKind::Operettensaenger,
             EnemyKind::Schneekugel,
+            EnemyKind::Reisebus,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1021,6 +1040,7 @@ mod tests {
             lead: false,
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
+            stop: 0,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());

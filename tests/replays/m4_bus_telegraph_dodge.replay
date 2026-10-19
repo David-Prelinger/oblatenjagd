@@ -1,0 +1,13 @@
+# Bus #1 (no stop) from the terrace: Resi stops at the terrace edge, the
+# bus telegraphs for 60 frames and drives beneath her through the
+# underpass and off screen; she drops to the street behind it.
+level  = m4_bus
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_x>=560
+---
+RB 28
+RBJ 12
+RB 108
+- 300
+R 120
