@@ -1,0 +1,15 @@
+# E21 (D-067): onto the train, then walking off its front end over the
+# gorge (columns 22-29, bottomless) mid-ride: a fall to death (frame 357).
+# The respawn puts her back at the start and the train back at its lower
+# end, waiting.
+level  = schafbergbahn
+seed   = 1
+source = handwritten
+expect = dies_at frames=357..357 deaths=1 lives=2 state=playing
+---
+R 50
+RJ 14
+R 88      # onto the roof
+- 150
+R 40      # off the front end, into the gorge
+- 100

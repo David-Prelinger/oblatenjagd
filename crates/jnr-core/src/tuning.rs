@@ -149,6 +149,17 @@ pub struct PlatformTuning {
     /// Travel frames per tile along the track's major axis (16 = 1 px per
     /// frame): travel = max(|dx|, |dy|) × this.
     pub gondel_frames_per_tile: u16,
+    /// Schafbergbahn train body `[w, h]` in whole pixels, whole tiles
+    /// (so with whole-tile `to` both roofs lie on the tile grid, flush with
+    /// the station platforms; D-067). Left-aligned in its spawn cell, bottom
+    /// on the cell's bottom edge, like the Festungsbahn.
+    pub schafbergbahn_size: [i32; 2],
+    /// Travel frames per tile along the track's major axis: travel =
+    /// max(|dx|, |dy|) × this (24: 0.67 px/frame).
+    pub schafbergbahn_frames_per_tile: u16,
+    /// Frames standing at the upper end (at the lower end the train waits
+    /// for its rider, like the Festungsbahn).
+    pub schafbergbahn_wait: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -806,6 +817,10 @@ impl Tuning {
                 self.platforms.festungsbahn_size,
             ),
             ("platforms.gondel_size", self.platforms.gondel_size),
+            (
+                "platforms.schafbergbahn_size",
+                self.platforms.schafbergbahn_size,
+            ),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -874,6 +889,10 @@ impl Tuning {
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
             ),
+            (
+                "platforms.schafbergbahn_frames_per_tile",
+                self.platforms.schafbergbahn_frames_per_tile,
+            ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
             (
@@ -934,6 +953,25 @@ impl Tuning {
         if gondel_period > u32::from(u16::MAX) || pl.gondel_frames_per_tile > 64 {
             return Err(ParseError::new(
                 "tuning.toml: need platforms.gondel_frames_per_tile <= 64 and 2 × (gondel_wait + 64 × gondel_frames_per_tile) <= 65535 frames",
+            ));
+        }
+        // The train's body is whole tiles (both roofs on the tile grid,
+        // D-067); its travel (longest `to`: 64 tiles) plus the top wait fit
+        // the counter like the Festungsbahn's, and `frames_per_tile` <= 64
+        // keeps the delta × progress product inside i32 (as for the Gondel).
+        let [sw, sh] = pl.schafbergbahn_size;
+        if sw % TILE_PX != 0 || sh % TILE_PX != 0 {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.schafbergbahn_size must be whole tiles (multiples of 16 px)",
+            ));
+        }
+        if pl.schafbergbahn_frames_per_tile > 64
+            || u32::from(pl.schafbergbahn_wait)
+                + u32::from(pl.schafbergbahn_frames_per_tile) * crate::level::MAX_TRACK_TILES as u32
+                > 32_767
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.schafbergbahn_frames_per_tile <= 64 and schafbergbahn_wait + 64 × schafbergbahn_frames_per_tile <= 32767 frames",
             ));
         }
         let n = e.blasmusiker_notes;
@@ -1188,6 +1226,36 @@ mod tests {
     }
 
     #[test]
+    fn schafbergbahn_numbers_are_whole_tiles_and_fit_the_counter() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.schafbergbahn_size, [64, 32]);
+        assert_eq!(pl.schafbergbahn_frames_per_tile, 24);
+        assert_eq!(pl.schafbergbahn_wait, 90);
+        let size = |s: &str| {
+            Tuning::parse(&REAL.replace(
+                "schafbergbahn_size = [64, 32]",
+                &format!("schafbergbahn_size = {s}"),
+            ))
+        };
+        assert!(size("[48, 32]").is_ok());
+        assert!(size("[64, 64]").is_ok());
+        for bad in ["[60, 32]", "[64, 24]", "[80, 32]", "[0, 32]"] {
+            assert!(size(bad).is_err(), "{bad}");
+        }
+        let wait = |n: u32| {
+            Tuning::parse(&REAL.replace(
+                "schafbergbahn_wait = 90",
+                &format!("schafbergbahn_wait = {n}"),
+            ))
+        };
+        // 64 tiles × 24 frames = 1536 frames of travel at most.
+        assert!(wait(0).is_ok());
+        assert!(wait(32_767 - 1536).is_ok());
+        assert!(wait(32_767 - 1535).is_err());
+    }
+
+    #[test]
     fn rejects_unordered_goal_zones() {
         let t = REAL.replace("zone_heights = [32, 64,", "zone_heights = [32, 32,");
         assert!(Tuning::parse(&t).is_err());
@@ -1247,6 +1315,10 @@ mod tests {
             ("gondel_frames_per_tile", 0),
             ("gondel_frames_per_tile", 65),
             ("gondel_wait", 32000),
+            ("schafbergbahn_size", 0),
+            ("schafbergbahn_frames_per_tile", 0),
+            ("schafbergbahn_frames_per_tile", 65),
+            ("schafbergbahn_wait", 31300),
             ("nordic_walker_hitbox", 65),
             ("blasmusiker_hitbox", 0),
             ("note_hitbox", 0),

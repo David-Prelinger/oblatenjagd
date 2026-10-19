@@ -177,6 +177,9 @@ festungsbahn_wait = 60          # frames standing at the upper end (at the lower
 gondel_size = [32, 24]          # px [w, h]: the cabin; its roof carries the player (the 28 px hanger is drawn above)
 gondel_wait = 30                # frames at each end; it never waits for a rider (D-044)
 gondel_frames_per_tile = 16     # 1 px/frame along the major axis: travel = max(|dx|, |dy|) × 16 frames
+schafbergbahn_size = [64, 32]   # px [w, h], whole tiles: the train body; its roof is flush with the station platforms (D-067)
+schafbergbahn_frames_per_tile = 24  # travel = max(|dx|, |dy|) × 24 frames: 0.67 px/frame across a 1:4 track
+schafbergbahn_wait = 90         # frames standing at the upper end (at the lower end it waits for its rider)
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)

@@ -227,6 +227,9 @@ pub enum EntityKind {
     Souvenirstand,
     /// A shard of a shattered snow globe (no collision).
     SchneekugelScherben,
+    /// The Schafbergbahn steam train: the Festungsbahn's waiting state
+    /// machine with its own body and timing ([`crate::platform`], D-067).
+    Schafbergbahn,
 }
 
 impl EntityKind {
@@ -250,6 +253,7 @@ impl EntityKind {
             EntityKind::ThrownHackl => Some("hackl_thrown"),
             EntityKind::Souvenirstand => Some("souvenirstand"),
             EntityKind::SchneekugelScherben => Some("schneekugel_scherben"),
+            EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -257,15 +261,19 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel): one-way tops that
-    /// carry the player and never despawn (D-027).
+    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn):
+    /// one-way tops that carry the player and never despawn (D-027).
     pub const fn is_platform(self) -> bool {
-        matches!(self, EntityKind::Festungsbahn | EntityKind::Gondel)
+        matches!(
+            self,
+            EntityKind::Festungsbahn | EntityKind::Gondel | EntityKind::Schafbergbahn
+        )
     }
 
-    /// The kind's leading byte in the state hash; distinct per variant
-    /// (unit-tested). A new kind takes the next free number.
-    const fn tag(self) -> u8 {
+    /// The kind's tag in `state_hash` (unique per variant: the test
+    /// `hash_tags_are_distinct` guards it; enemies and popups add their own
+    /// sub-tag).
+    pub(crate) const fn hash_tag(self) -> u8 {
         match self {
             EntityKind::Oblate => 0,
             EntityKind::PoppedOblate => 1,
@@ -290,11 +298,12 @@ impl EntityKind {
             EntityKind::Durchkriechstein => 20,
             EntityKind::Souvenirstand => 21,
             EntityKind::SchneekugelScherben => 22,
+            EntityKind::Schafbergbahn => 23,
         }
     }
 
     fn hash(self, h: &mut Fnv) {
-        h.u8(self.tag());
+        h.u8(self.hash_tag());
         match self {
             EntityKind::Popup(p) => match p {
                 Popup::Score(n) => {
@@ -463,6 +472,20 @@ impl Entity {
                 car.base_x = cell_x;
                 car.state = crate::platform::initial_state(s);
                 car
+            }
+            SpawnKind::Schafbergbahn => {
+                // Left-aligned in its cell like the Festungsbahn (4 tiles
+                // wide), waiting at its lower end or travelling down to it.
+                let mut train = Entity::at_feet(
+                    EntityKind::Schafbergbahn,
+                    feet_x,
+                    feet_y,
+                    t.platforms.schafbergbahn_size,
+                );
+                train.x = cell_x;
+                train.base_x = cell_x;
+                train.state = crate::platform::initial_state(s);
+                train
             }
             SpawnKind::Gondel => {
                 // Left-aligned in its cell like the Festungsbahn, then at
@@ -639,7 +662,7 @@ impl Entity {
                 crate::enemies::update_thrown(self, map, t);
                 None
             }
-            EntityKind::Festungsbahn => {
+            EntityKind::Festungsbahn | EntityKind::Schafbergbahn => {
                 crate::platform::update_car(self, ctx);
                 None
             }
@@ -796,6 +819,120 @@ pub fn bump_offset_px(timer: u16, t: &Tuning) -> i32 {
 
 #[cfg(test)]
 mod tests {
+    /// Every `EntityKind` variant has its own hash tag and every
+    /// `EnemyKind` its own id (guards merges of parallel tasks that add
+    /// kinds). The exhaustive matches make a new variant a compile error
+    /// here until it is listed.
+    #[test]
+    fn hash_tags_are_distinct() {
+        use super::{EnemyKind, EntityKind, Popup};
+        const fn listed(k: EntityKind) -> usize {
+            match k {
+                EntityKind::Oblate => 0,
+                EntityKind::PoppedOblate => 1,
+                EntityKind::Mozartkugel => 2,
+                EntityKind::Zaunerstollen => 3,
+                EntityKind::Debris => 4,
+                EntityKind::Popup(_) => 5,
+                EntityKind::Bump => 6,
+                EntityKind::Checkpoint => 7,
+                EntityKind::Sign => 8,
+                EntityKind::Enemy(_) => 9,
+                EntityKind::Festungsbahn => 10,
+                EntityKind::Defeated(_) => 11,
+                EntityKind::Thrown => 12,
+                EntityKind::Note => 13,
+                EntityKind::Gondel => 14,
+                EntityKind::Steinschlag => 15,
+                EntityKind::Stein => 16,
+                EntityKind::SteinDebris => 17,
+                EntityKind::Hackl => 18,
+                EntityKind::ThrownHackl => 19,
+                EntityKind::Durchkriechstein => 20,
+                EntityKind::Schafbergbahn => 21,
+                EntityKind::Souvenirstand => 22,
+                EntityKind::SchneekugelScherben => 23,
+            }
+        }
+        let e = EnemyKind::SelfieTourist;
+        let kinds = [
+            EntityKind::Oblate,
+            EntityKind::PoppedOblate,
+            EntityKind::Mozartkugel,
+            EntityKind::Zaunerstollen,
+            EntityKind::Debris,
+            EntityKind::Popup(Popup::ExtraLife),
+            EntityKind::Bump,
+            EntityKind::Checkpoint,
+            EntityKind::Sign,
+            EntityKind::Enemy(e),
+            EntityKind::Festungsbahn,
+            EntityKind::Defeated(e),
+            EntityKind::Thrown,
+            EntityKind::Note,
+            EntityKind::Gondel,
+            EntityKind::Steinschlag,
+            EntityKind::Stein,
+            EntityKind::SteinDebris,
+            EntityKind::Hackl,
+            EntityKind::ThrownHackl,
+            EntityKind::Durchkriechstein,
+            EntityKind::Schafbergbahn,
+            EntityKind::Souvenirstand,
+            EntityKind::SchneekugelScherben,
+        ];
+        for (i, k) in kinds.iter().enumerate() {
+            assert_eq!(listed(*k), i, "{k:?} listed in order");
+        }
+        let mut tags: Vec<u8> = kinds.iter().map(|k| k.hash_tag()).collect();
+        tags.sort_unstable();
+        tags.dedup();
+        assert_eq!(
+            tags.len(),
+            kinds.len(),
+            "an EntityKind hash tag is used twice"
+        );
+        const fn enemy_listed(k: EnemyKind) -> usize {
+            match k {
+                EnemyKind::SelfieTourist => 0,
+                EnemyKind::Taube => 1,
+                EnemyKind::TaubeSitting => 2,
+                EnemyKind::MozartkugelVerkaeufer => 3,
+                EnemyKind::Fiaker => 4,
+                EnemyKind::NordicWalker => 5,
+                EnemyKind::Blasmusiker => 6,
+                EnemyKind::EBiker => 7,
+                EnemyKind::Bienenschwarm => 8,
+                EnemyKind::Pilger => 9,
+                EnemyKind::Gams => 10,
+                EnemyKind::Operettensaenger => 11,
+                EnemyKind::Schneekugel => 12,
+            }
+        }
+        let enemies = [
+            EnemyKind::SelfieTourist,
+            EnemyKind::Taube,
+            EnemyKind::TaubeSitting,
+            EnemyKind::MozartkugelVerkaeufer,
+            EnemyKind::Fiaker,
+            EnemyKind::NordicWalker,
+            EnemyKind::Blasmusiker,
+            EnemyKind::EBiker,
+            EnemyKind::Bienenschwarm,
+            EnemyKind::Pilger,
+            EnemyKind::Gams,
+            EnemyKind::Operettensaenger,
+            EnemyKind::Schneekugel,
+        ];
+        for (i, k) in enemies.iter().enumerate() {
+            assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
+        }
+        let mut ids: Vec<u8> = enemies.iter().map(|k| k.id()).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), enemies.len(), "an EnemyKind id is used twice");
+    }
+
     use super::*;
 
     fn tuning() -> Tuning {
@@ -911,133 +1048,6 @@ mod tests {
         }
     }
 
-    /// Every enemy kind. The match below fails to compile when a kind is
-    /// added, so the list can't silently fall behind.
-    fn all_enemy_kinds() -> Vec<EnemyKind> {
-        let all = vec![
-            EnemyKind::SelfieTourist,
-            EnemyKind::Taube,
-            EnemyKind::TaubeSitting,
-            EnemyKind::MozartkugelVerkaeufer,
-            EnemyKind::Fiaker,
-            EnemyKind::NordicWalker,
-            EnemyKind::Blasmusiker,
-            EnemyKind::EBiker,
-            EnemyKind::Bienenschwarm,
-            EnemyKind::Pilger,
-            EnemyKind::Gams,
-            EnemyKind::Operettensaenger,
-            EnemyKind::Schneekugel,
-        ];
-        for k in &all {
-            match k {
-                EnemyKind::SelfieTourist
-                | EnemyKind::Taube
-                | EnemyKind::TaubeSitting
-                | EnemyKind::MozartkugelVerkaeufer
-                | EnemyKind::Fiaker
-                | EnemyKind::NordicWalker
-                | EnemyKind::Blasmusiker
-                | EnemyKind::EBiker
-                | EnemyKind::Bienenschwarm
-                | EnemyKind::Pilger
-                | EnemyKind::Gams
-                | EnemyKind::Operettensaenger
-                | EnemyKind::Schneekugel => {}
-            }
-        }
-        all
-    }
-
-    /// Every entity kind (one representative per tuple variant), guarded
-    /// by an exhaustive match like [`all_enemy_kinds`].
-    fn all_entity_kinds() -> Vec<EntityKind> {
-        let all = vec![
-            EntityKind::Oblate,
-            EntityKind::PoppedOblate,
-            EntityKind::Mozartkugel,
-            EntityKind::Zaunerstollen,
-            EntityKind::Debris,
-            EntityKind::Popup(Popup::ExtraLife),
-            EntityKind::Bump,
-            EntityKind::Checkpoint,
-            EntityKind::Sign,
-            EntityKind::Enemy(EnemyKind::SelfieTourist),
-            EntityKind::Defeated(EnemyKind::SelfieTourist),
-            EntityKind::Thrown,
-            EntityKind::Festungsbahn,
-            EntityKind::Note,
-            EntityKind::Gondel,
-            EntityKind::Steinschlag,
-            EntityKind::Stein,
-            EntityKind::SteinDebris,
-            EntityKind::Hackl,
-            EntityKind::ThrownHackl,
-            EntityKind::Durchkriechstein,
-            EntityKind::Souvenirstand,
-            EntityKind::SchneekugelScherben,
-        ];
-        for k in &all {
-            match k {
-                EntityKind::Oblate
-                | EntityKind::PoppedOblate
-                | EntityKind::Mozartkugel
-                | EntityKind::Zaunerstollen
-                | EntityKind::Debris
-                | EntityKind::Popup(_)
-                | EntityKind::Bump
-                | EntityKind::Checkpoint
-                | EntityKind::Sign
-                | EntityKind::Enemy(_)
-                | EntityKind::Defeated(_)
-                | EntityKind::Thrown
-                | EntityKind::Festungsbahn
-                | EntityKind::Note
-                | EntityKind::Gondel
-                | EntityKind::Steinschlag
-                | EntityKind::Stein
-                | EntityKind::SteinDebris
-                | EntityKind::Hackl
-                | EntityKind::ThrownHackl
-                | EntityKind::Durchkriechstein
-                | EntityKind::Souvenirstand
-                | EntityKind::SchneekugelScherben => {}
-            }
-        }
-        all
-    }
-
-    #[test]
-    fn hash_tags_are_distinct() {
-        let mut ids: Vec<u8> = all_enemy_kinds().into_iter().map(EnemyKind::id).collect();
-        let n = ids.len();
-        ids.sort_unstable();
-        ids.dedup();
-        assert_eq!(ids.len(), n, "two EnemyKinds share a hash id");
-        let mut tags: Vec<u8> = all_entity_kinds()
-            .into_iter()
-            .map(EntityKind::tag)
-            .collect();
-        let n = tags.len();
-        tags.sort_unstable();
-        tags.dedup();
-        assert_eq!(tags.len(), n, "two EntityKinds share a hash tag");
-        // The tuple variants still tell their contents apart.
-        let hash = |k: EntityKind| {
-            let mut h = Fnv::new();
-            k.hash(&mut h);
-            h.finish()
-        };
-        assert_ne!(
-            hash(EntityKind::Enemy(EnemyKind::Operettensaenger)),
-            hash(EntityKind::Enemy(EnemyKind::Schneekugel))
-        );
-        assert_ne!(
-            hash(EntityKind::Popup(Popup::Bravo)),
-            hash(EntityKind::Popup(Popup::Ballast))
-        );
-    }
-
     #[test]
     fn enemy_rules() {
         assert!(EnemyKind::SelfieTourist.stompable());
@@ -1059,6 +1069,7 @@ mod tests {
         assert_eq!(EnemyKind::EBiker.chain_start(), 1);
         assert_eq!(Popup::Hoppala.text_key(), Some("popup.hoppala"));
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
+        assert!(EntityKind::Schafbergbahn.is_platform());
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);

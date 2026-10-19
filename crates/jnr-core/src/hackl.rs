@@ -103,6 +103,7 @@ impl Entity {
             | EntityKind::Defeated(_)
             | EntityKind::Festungsbahn
             | EntityKind::Gondel
+            | EntityKind::Schafbergbahn
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
             | EntityKind::SteinDebris
@@ -215,6 +216,7 @@ mod tests {
             EntityKind::Oblate,
             EntityKind::Defeated(SelfieTourist),
             EntityKind::Gondel,
+            EntityKind::Schafbergbahn,
         ] {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }

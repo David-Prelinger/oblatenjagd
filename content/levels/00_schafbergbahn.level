@@ -1,0 +1,51 @@
+# Grey-box test level for the Schafbergbahn (M4 task E21, D-067; not part
+# of the journey). 17 rows like Stage 5 (street top row 15). Start on the
+# street at column 2; a 1-tile step at 8 up to the lower station (columns
+# 9-13, top row 13). The train waits in cell (14, 14): body columns 14-17,
+# its roof (y 208) flush with the station, so Resi walks on and that calls
+# it. It rides `to = [16, -4]` (a 1:4 track, 16 × 24 = 384 frames, 2/3 px
+# per frame across) to cell (30, 10): roof y 144, flush with the upper
+# station (the Alm, columns 34-49, top row 9), waits 90 frames there and
+# goes back down. Under the track (`levels lint`: the swept body and 3 tiles
+# above its roof stay free; the body's lowest point over column c is where
+# its lower right corner enters it, bottom 312 - 4c px from column 18 on):
+# the street (14-21), the lethal gorge (22-29, bottomless, 8 wide) and a
+# rock step on row 12 (30-33), 3 tiles below the Alm. A fall before the
+# gorge lands on the street under the track, from where the station is a
+# jump away (or jump up through the waiting train); the train comes back.
+# Oblaten in an arc 3-4 tiles above the roof over the gorge (hops, D-067
+# risk 2). Goal on the Alm at 46. The solver runs along the moving roof and
+# jumps off its front across the gorge (a running jump clears 8 columns).
+# Replays: tests/replays/schafbergbahn_*.replay.
+
+[meta]
+id = "schafbergbahn"
+time_limit = 200
+
+[legend]
+"#" = "solid"
+"Z" = { entity = "schafbergbahn", to = [16, -4] }
+"o" = { entity = "oblate" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+...........................ooo....................
+..........................o...o...............G...
+..................................################
+..................................################
+..................................################
+..............................####################
+.........#####................####################
+..P.....######Z...............####################
+######################........####################
+######################........####################
+'''
