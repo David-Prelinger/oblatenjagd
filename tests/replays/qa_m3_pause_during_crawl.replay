@@ -13,7 +13,7 @@ expect = event=CrawlStarted event=ExtraLife lives=4 deaths=0 state=playing power
 - 20
 S 1
 - 150
-# --- the first 1000 frames of falkenstein_solver.replay ---
+# --- the first 1000 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -57,7 +57,7 @@ RBJ 20
 RB 16
 RBJ 20
 RB 95
-# --- end of the first 1000 frames of falkenstein_solver.replay ---
+# --- end of the first 1000 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30
 R 50      # into the boulder's face at the mouth
 D 4       # crawl (1252)

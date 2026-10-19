@@ -9,7 +9,7 @@ seed   = 1
 source = handwritten
 expect = dies_at frames=746..746 player_y<=540
 ---
-# --- the first 686 frames of falkenstein_solver.replay ---
+# --- the first 686 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -40,5 +40,5 @@ RB 8
 RBJ 1
 RB 44
 RBJ 1
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 R 80       # walk into the cleft

@@ -8,7 +8,7 @@ source = handwritten
 expect = event=Stomped no_event=Hurt deaths=0
 shots  = 1462:stomp
 ---
-# --- the first 1290 frames of falkenstein_solver.replay ---
+# --- the first 1290 frames of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 RB 40
 RBJ 36
 RB 38
@@ -58,7 +58,7 @@ RBJ 20
 RB 119
 RBJ 36
 RB 29
-# --- end of falkenstein_solver.replay ---
+# --- end of falkenstein_solver.replay (M3 route, before the E20 re-solve) ---
 - 30
 R 18       # to the dip's edge
 L 20       # back for a run-up

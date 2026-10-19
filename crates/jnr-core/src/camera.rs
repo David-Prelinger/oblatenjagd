@@ -5,14 +5,23 @@
 //! - `side` (default, Stages 1–3): [`Camera::follow`] keeps the player's
 //!   centre inside the dead zone `camera.deadzone_top..=deadzone_bottom`;
 //! - `climb`: [`Camera::follow_climb`], SMW style. Grounded, the camera
-//!   settles towards the feet at screen y `climb_feet_y` by at most
-//!   `climb_settle_speed` px per frame; in the air it follows up at once
-//!   when the hitbox top rises above screen y `climb_top`, and down while
-//!   the feet are below `climb_feet_y`, but never more than
-//!   `climb_fall_follow` px below the settle framing of the last ground
-//!   ([`ClimbFocus::ground_feet`]). `Game` kills the player when her hitbox
-//!   top is below the screen (the death line), and level entities activate
-//!   only near the screen vertically ([`Camera::row_near`]).
+//!   settles by at most `climb_settle_speed` px per frame towards the
+//!   framing with the *settle feet* ([`ClimbFocus::settle_feet`]) at
+//!   screen y `climb_feet_y`. The settle feet follow the ground down at
+//!   once, but up only by what a step exceeds `climb_up_slack` (D-065), so
+//!   standing on a box or plank up to 3 tiles high keeps the ground she
+//!   came from on screen; once she walks more than `climb_up_reach` px
+//!   away from where she stepped up, they catch up with her feet. In the
+//!   air it follows up at once when the hitbox top rises above screen y
+//!   `climb_top` (while the slack holds, that line moves up by the slack's
+//!   lag, but stays at least `climb_top_min` on screen; grounded again
+//!   above `climb_top`, it catches up `climb_catch_up_speed` px per frame
+//!   faster), and down while the feet are below `climb_feet_y`, but
+//!   never more than `climb_fall_follow` px below the framing of the last
+//!   ground itself ([`ClimbFocus::ground_feet`], so the death line is
+//!   where it was without the slack). `Game` kills the player when her
+//!   hitbox top is below the screen (the death line), and level entities
+//!   activate only near the screen vertically ([`Camera::row_near`]).
 
 use crate::hash::Fnv;
 use crate::level::TILE_PX;
@@ -45,8 +54,18 @@ pub struct ClimbFocus {
     /// Standing on a tile, a one-way tile or a moving platform.
     pub grounded: bool,
     /// Feet height of the last grounded frame (set by
-    /// [`Camera::follow_climb`] while grounded).
+    /// [`Camera::follow_climb`] while grounded): the fall-follow limit's
+    /// reference.
     pub ground_feet: i32,
+    /// The feet height the ground framing is anchored on (D-065): the
+    /// camera settles with these feet at `climb_feet_y`. Updated by
+    /// [`Camera::follow_climb`] while grounded; start and respawn set it to
+    /// the feet.
+    pub settle_feet: i32,
+    /// Hitbox centre x where she stepped up onto the ground she stands on
+    /// while `settle_feet` is held below her feet (D-065); start and
+    /// respawn set it to `cx`.
+    pub slack_x: i32,
 }
 
 impl Camera {
@@ -101,13 +120,18 @@ impl Camera {
         }
     }
 
-    /// One frame of the climb camera (module docs, D-054). Horizontally
-    /// like [`Camera::follow`]. Grounded: remembers the feet in
-    /// `f.ground_feet` and settles towards them. In the air: up at once
-    /// when the top is above `climb_top`, down with the feet below
-    /// `climb_feet_y` but at most `climb_fall_follow` px below the last
-    /// ground's settle target (never up because of that limit). Clamped
-    /// to the level.
+    /// One frame of the climb camera (module docs, D-054, D-065).
+    /// Horizontally like [`Camera::follow`]. Grounded: remembers the feet
+    /// in `f.ground_feet`, moves `f.settle_feet` down to the feet at once
+    /// but up only once the feet are more than `climb_up_slack` px above it
+    /// (and then by the excess) or she is more than `climb_up_reach` px
+    /// (horizontally) away from where she stepped up (`f.slack_x`), and
+    /// settles towards it. In the air: up at once when the top is above
+    /// `climb_top` (while the slack holds: `climb_top` minus the lag of the
+    /// settle feet below the last ground, at least `climb_top_min`), down
+    /// with the feet below `climb_feet_y` but at most
+    /// `climb_fall_follow` px below the last ground's own framing (never
+    /// up because of that limit). Clamped to the level.
     pub fn follow_climb(
         &mut self,
         f: &mut ClimbFocus,
@@ -117,12 +141,37 @@ impl Camera {
     ) {
         self.follow_x(f.cx, level_w, t);
         if f.grounded {
+            let new_ground = f.feet != f.ground_feet;
             f.ground_feet = f.feet;
-            self.settle_y(f.feet - t.climb_feet_y, level_h, t);
+            if f.feet >= f.settle_feet || f.settle_feet - f.feet > t.climb_up_slack {
+                // On or below the settle ground, or more than the slack
+                // above it: max = settle down onto lower ground at once;
+                // min = keep the settle feet at most the slack below her.
+                f.settle_feet = f.settle_feet.max(f.feet).min(f.feet + t.climb_up_slack);
+                f.slack_x = f.cx;
+            } else if new_ground {
+                f.slack_x = f.cx;
+            } else if (f.cx - f.slack_x).abs() > t.climb_up_reach {
+                f.settle_feet = f.feet;
+            }
+            self.settle_y(f.settle_feet - t.climb_feet_y, level_h, t);
+            // A landing after a jump the lowered up-follow line didn't
+            // follow can leave the top above `climb_top`: catch up faster
+            // (`climb_catch_up_speed` more px per frame) until it is below.
+            if f.top - self.y < t.climb_top {
+                let up = (self.y - t.climb_catch_up_speed).max(f.top - t.climb_top);
+                self.y = clamp_y(up, level_h);
+            }
             return;
         }
-        if f.top - self.y < t.climb_top {
-            self.y = f.top - t.climb_top;
+        // While the slack holds (D-065) the framing is `lag` px lower than
+        // the last ground's own, so the up-follow line moves up by as much
+        // (no bob when she jumps from a held box), but never above
+        // `climb_top_min`: her top always stays that far on screen.
+        let lag = (f.settle_feet - f.ground_feet).max(0);
+        let top_line = (t.climb_top - lag).max(t.climb_top_min);
+        if f.top - self.y < top_line {
+            self.y = f.top - top_line;
         } else if f.feet - self.y > t.climb_feet_y {
             let limit = f.ground_feet - t.climb_feet_y + t.climb_fall_follow;
             self.y = self.y.max((f.feet - t.climb_feet_y).min(limit));
@@ -184,7 +233,11 @@ mod tests {
         deadzone_bottom: 120,
         climb_feet_y: 148,
         climb_settle_speed: 2,
+        climb_up_slack: 48,
+        climb_up_reach: 48,
         climb_top: 40,
+        climb_top_min: 11,
+        climb_catch_up_speed: 6,
         climb_fall_follow: 80,
         climb_goal_feet_y: 164,
         climb_activate_y: 64,
@@ -250,13 +303,16 @@ mod tests {
         assert_eq!(c, Camera { x: 300, y: 16 });
     }
 
-    fn focus(feet: i32, grounded: bool, ground_feet: i32) -> ClimbFocus {
+    /// The focus with `ground` as both the last ground and the settle feet.
+    fn focus(feet: i32, grounded: bool, ground: i32) -> ClimbFocus {
         ClimbFocus {
             cx: 100,
             top: feet - 22,
             feet,
             grounded,
-            ground_feet,
+            ground_feet: ground,
+            settle_feet: ground,
+            slack_x: 100,
         }
     }
 
@@ -277,7 +333,7 @@ mod tests {
         let mut c = Camera { x: 0, y: 300 };
         let mut f = focus(400, true, 0);
         c.follow_climb(&mut f, W, TALL, &T);
-        assert_eq!(f.ground_feet, 400, "remembers the ground");
+        assert_eq!((f.ground_feet, f.settle_feet), (400, 400), "the ground");
         assert_eq!(c.y, 298, "moves up by 2");
         for _ in 0..30 {
             c.follow_climb(&mut f, W, TALL, &T);
@@ -293,13 +349,171 @@ mod tests {
     }
 
     #[test]
+    fn climb_keeps_the_framing_on_a_step_up_of_up_to_3_tiles() {
+        // Settled on the ground (feet 400), she stands on a box 3 tiles up:
+        // the camera stays, so the ground below stays on screen.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = focus(352, true, 400);
+        for _ in 0..60 {
+            c.follow_climb(&mut f, W, TALL, &T);
+        }
+        assert_eq!(f.settle_feet, 400, "still anchored on the ground");
+        assert_eq!(f.ground_feet, 352, "but stands on the box");
+        assert_eq!(c.y, 252);
+        assert_eq!(400 - c.y, T.climb_feet_y, "the ground's framing");
+        // Back down on the ground: nothing to do.
+        let mut f = focus(400, true, f.settle_feet);
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!((c.y, f.settle_feet), (252, 400));
+    }
+
+    #[test]
+    fn climb_settles_up_only_by_the_excess_over_the_slack() {
+        // A 4-tile step-up: 16 px more than the slack.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = focus(336, true, 400);
+        for _ in 0..60 {
+            c.follow_climb(&mut f, W, TALL, &T);
+        }
+        assert_eq!(f.settle_feet, 384);
+        assert_eq!(c.y, 252 - 16, "settled up by 16 px");
+        // A shaft of planks 3 tiles apart: the first keeps the framing,
+        // every further one moves it by 3 tiles.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut settle = 400;
+        for (feet, want) in [(352, 252), (304, 204), (256, 156)] {
+            let mut f = focus(feet, true, settle);
+            for _ in 0..60 {
+                c.follow_climb(&mut f, W, TALL, &T);
+            }
+            settle = f.settle_feet;
+            assert_eq!(c.y, want, "plank at feet {feet}");
+            assert!(f.top - c.y >= T.climb_top, "the top stays below climb_top");
+        }
+    }
+
+    #[test]
+    fn climb_slack_holds_only_within_the_reach_of_the_step_up() {
+        // Settled on the ground (feet 400), she steps up 2 tiles at x 100
+        // and walks on along the higher ground.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = focus(400, true, 400);
+        f.feet = 368;
+        f.top = 346;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!((f.slack_x, f.settle_feet), (100, 400), "stepped up");
+        f.cx = 148;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!((f.settle_feet, c.y), (400, 252), "48 px on: still held");
+        f.cx = 149;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(f.settle_feet, 368, "49 px on: catches up");
+        assert_eq!(c.y, 250, "settling at 2 px per frame");
+        // Back the other way it counts too, and every new ground (here a
+        // jump onto a step 1 tile higher) starts the reach again.
+        let mut f = focus(400, true, 400);
+        f.feet = 384;
+        f.cx = 60;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(f.slack_x, 60);
+        f.feet = 368;
+        f.cx = 70;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!((f.slack_x, f.settle_feet), (70, 400), "new ground");
+        f.cx = 22;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(f.settle_feet, 400, "48 px to the left of the step");
+        f.cx = 21;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(f.settle_feet, 368, "49 px to the left of the step");
+    }
+
+    #[test]
+    fn climb_settles_down_at_once_below_the_settle_feet() {
+        // Anchored on the ground below a box, she steps down 1 tile: the
+        // framing follows down.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = focus(416, true, 400);
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(f.settle_feet, 416);
+        assert_eq!(c.y, 254);
+    }
+
+    #[test]
+    fn climb_fall_follow_limit_is_measured_from_the_last_ground() {
+        // On a box 3 tiles above the settle ground (camera at the ground's
+        // framing) she walks off into a deep hole: the limit is 80 px below
+        // the box's own framing, as without the slack (D-065), so the death
+        // line doesn't move.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = ClimbFocus {
+            ground_feet: 352,
+            ..focus(352 + 400, false, 400)
+        };
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(c.y, 352 - 148 + 80);
+    }
+
+    #[test]
     fn climb_holds_still_for_a_jump_that_stays_inside_the_band() {
         let mut c = Camera { x: 0, y: 252 };
         // A 3-tile jump: feet 48 px up, top at screen y 78 > 40.
         let mut f = focus(352, false, 400);
         c.follow_climb(&mut f, W, TALL, &T);
         assert_eq!(c.y, 252);
-        assert_eq!(f.ground_feet, 400, "only grounded frames update it");
+        assert_eq!(
+            (f.ground_feet, f.settle_feet),
+            (400, 400),
+            "only grounded frames update them"
+        );
+    }
+
+    #[test]
+    fn climb_up_follow_line_moves_up_by_the_slack_lag() {
+        // On a box 3 tiles up, held at the ground's framing (lag 48): the
+        // line is 40 - 48, floored at `climb_top_min` 11.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = ClimbFocus {
+            ground_feet: 352,
+            ..focus(352 - 60, false, 400)
+        };
+        // Top at screen y 270 - 252 = 18: above climb_top, but no follow.
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(c.y, 252);
+        f.top = 252 + 11;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(c.y, 252, "11 px: still none");
+        f.top = 252 + 3;
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(c.y, 244, "follows only to keep the top at 11");
+        // A lag of 16 (a 1-tile step) moves the line to 24.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = ClimbFocus {
+            ground_feet: 384,
+            top: 252 + 20,
+            ..focus(330, false, 400)
+        };
+        c.follow_climb(&mut f, W, TALL, &T);
+        assert_eq!(c.y, 248);
+    }
+
+    #[test]
+    fn climb_grounded_top_above_climb_top_catches_up_at_8_px_per_frame() {
+        // Landing on a plank 6 tiles above the settle feet with the camera
+        // still low (top at screen y 12): the excess settle moves 2 px and
+        // the catch-up 6 more per frame until the top is at climb_top.
+        let mut c = Camera { x: 0, y: 252 };
+        let mut f = focus(304, true, 400);
+        f.ground_feet = 352;
+        f.top = 252 + 12;
+        let mut ys = Vec::new();
+        for _ in 0..5 {
+            c.follow_climb(&mut f, W, TALL, &T);
+            ys.push(c.y);
+        }
+        assert_eq!(f.settle_feet, 352);
+        assert_eq!(ys, [244, 236, 228, 224, 222], "8 px, then the settle");
+        assert_eq!(f.top - 224, 40);
     }
 
     #[test]
