@@ -5,7 +5,8 @@
 # t/s/w falling from the bowl into the bronze basin o/O/l on its i/m step.
 # Drawn = solid (D-038), placed with its centre on col 165: the canopy's
 # k top edge is row 8 = 64 px (4 tiles) above the street, on the
-# invisible tiles 164..166 (row 11); the pier covers the stone column
+# invisible tiles 164..166 (row 11), over x 1..46 (only x 0/47 chamfered);
+# the pier covers the stone column
 # (x 16..31, rows 24..55); the basin rim's k edge is row 56 = the basin
 # tiles' top (row 14). The finial tip, the taube_sitting's seat, is
 # pixel (23..24, 0): 0/1 px left of the origin, 72 px above the street
@@ -24,10 +25,10 @@ frame idle 0
 .....................kmmmmk.....................
 ......................kmmk......................
 ......................kmmk......................
-....kkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkk....
-...kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik...
-..kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk..
-.kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk.
+.kkkkkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkkkkk.
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiidk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
 kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
 kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
 kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
@@ -97,10 +98,10 @@ frame idle 1
 .....................kmmmmk.....................
 ......................kmmk......................
 ......................kmmk......................
-....kkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkk....
-...kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik...
-..kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk..
-.kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk.
+.kkkkkkkkkkkkkkkkkkkkkkmmkkkkkkkkkkkkkkkkkkkkkk.
+kmiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiidk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
+kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
 kimmddmmddmmddmmddmmddmmddmmddmmddmmdddddddddddk
 kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
 kimmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdddddddddddk
