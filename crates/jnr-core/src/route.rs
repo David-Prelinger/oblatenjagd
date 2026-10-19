@@ -65,6 +65,10 @@ pub struct Station {
     /// (`label_top`, `label_right`) at that screen's start or end dot
     /// (art-director, M3; chosen by the renderer once per screen).
     pub label_alt: Option<LabelSlot>,
+    /// End stations (ids) of the map screens that use `label_alt` for
+    /// every form of Resi, not only a big one (D-072: she waits on that
+    /// dot right next to this label).
+    pub label_alt_ends: &'static [&'static str],
     /// Waypoints of the route from the previous station's dot to this one
     /// (both dots excluded); empty for the first station.
     pub path_in: &'static [(i32, i32)],
@@ -80,6 +84,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: None,
         label_right: None,
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[],
     },
     Station {
@@ -89,6 +94,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: None,
         label_right: None,
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[(48, 40), (68, 52), (88, 62)],
     },
     Station {
@@ -105,6 +111,7 @@ pub const STATIONS: [Station; 9] = [
             top: Some(20),
             right: Some(114),
         }),
+        label_alt_ends: &[],
         path_in: &[(108, 64), (116, 58)],
     },
     Station {
@@ -113,7 +120,9 @@ pub const STATIONS: [Station; 9] = [
         // Clear of the St. Wolfgang marker (art-director, M2). Alternate
         // (M3): ending at x 170 when a big Resi stands on St. Wolfgang (the
         // teaser), so the outline (x 170) keeps a 1 px gap to her 16×32 box
-        // (x 172..) and never touches it (QA, M3 task E19).
+        // (x 172..) and never touches it (QA, M3 task E19). M4 (D-072):
+        // the screen ending on St. Wolfgang uses it for every form (Resi
+        // waits there now).
         label: LabelSide::Below,
         label_top: None,
         label_right: Some(172),
@@ -121,15 +130,24 @@ pub const STATIONS: [Station; 9] = [
             top: None,
             right: Some(170),
         }),
+        label_alt_ends: &["st_wolfgang"],
         path_in: &[(136, 58), (144, 62)],
     },
     Station {
         id: "st_wolfgang",
         dot: (180, 84),
+        // Alternate (M4, D-072 + addendum): raised to top y 59 on the
+        // screens ending on Wolfgangsee or Strobl, for every form (Resi on
+        // either dot would cover the primary slot; y 69 would touch „Café
+        // Zauner").
         label: LabelSide::Right,
         label_top: None,
         label_right: None,
-        label_alt: None,
+        label_alt: Some(LabelSlot {
+            top: Some(59),
+            right: None,
+        }),
+        label_alt_ends: &["wolfgangsee", "strobl"],
         path_in: &[(164, 74), (172, 80)],
     },
     Station {
@@ -139,6 +157,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: None,
         label_right: None,
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[(186, 94)],
     },
     Station {
@@ -148,6 +167,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: None,
         label_right: None,
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[(212, 116)],
     },
     Station {
@@ -159,6 +179,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: None,
         label_right: None,
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[(252, 112), (264, 104)],
     },
     Station {
@@ -169,6 +190,7 @@ pub const STATIONS: [Station; 9] = [
         label_top: Some(69),
         label_right: Some(290),
         label_alt: None,
+        label_alt_ends: &[],
         path_in: &[(288, 88)],
     },
 ];

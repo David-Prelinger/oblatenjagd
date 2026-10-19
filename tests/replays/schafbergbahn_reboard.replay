@@ -1,0 +1,22 @@
+# E21 (D-067): onto the train as in schafbergbahn_ride, then off its back
+# end over the street before the gorge (frame ~260). She waits on the
+# street under the track while the train rides up, waits at the top and
+# comes back down past her (no crush, no carry, frames ~600..1000) and
+# waits at its lower end; she jumps up through it from below (one-way,
+# frame 1072) onto its roof: it leaves with its rider again, she rides up
+# and walks off at the Alm to the goal. Falling off before the gorge only
+# means waiting.
+level  = schafbergbahn
+seed   = 1
+source = handwritten
+expect = complete frames=1683..1683 deaths=0 no_event=Hurt state=stage_clear
+---
+R 50
+RJ 14
+R 88      # onto the roof
+- 60
+L 40      # off the back end, down to the street
+- 820     # the train rides up, waits and comes back
+J 20      # up through the waiting train onto its roof
+- 450     # the ride up
+R 200     # off at the top, to the goal

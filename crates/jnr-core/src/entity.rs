@@ -206,6 +206,9 @@ pub enum EntityKind {
     /// the boulder is a prop): `state` is [`crate::crawl::stone::UNUSED`]
     /// until crawled through ([`crate::crawl::stone::USED`]).
     Durchkriechstein,
+    /// The Schafbergbahn steam train: the Festungsbahn's waiting state
+    /// machine with its own body and timing ([`crate::platform`], D-067).
+    Schafbergbahn,
 }
 
 impl EntityKind {
@@ -227,6 +230,7 @@ impl EntityKind {
             EntityKind::SteinDebris => Some("stein_debris"),
             EntityKind::Hackl => Some("hackl"),
             EntityKind::ThrownHackl => Some("hackl_thrown"),
+            EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -234,10 +238,13 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel): one-way tops that
-    /// carry the player and never despawn (D-027).
+    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn):
+    /// one-way tops that carry the player and never despawn (D-027).
     pub const fn is_platform(self) -> bool {
-        matches!(self, EntityKind::Festungsbahn | EntityKind::Gondel)
+        matches!(
+            self,
+            EntityKind::Festungsbahn | EntityKind::Gondel | EntityKind::Schafbergbahn
+        )
     }
 
     fn hash(self, h: &mut Fnv) {
@@ -283,6 +290,7 @@ impl EntityKind {
             EntityKind::Hackl => h.u8(18),
             EntityKind::ThrownHackl => h.u8(19),
             EntityKind::Durchkriechstein => h.u8(20),
+            EntityKind::Schafbergbahn => h.u8(21),
         }
     }
 }
@@ -435,6 +443,20 @@ impl Entity {
                 car.base_x = cell_x;
                 car.state = crate::platform::initial_state(s);
                 car
+            }
+            SpawnKind::Schafbergbahn => {
+                // Left-aligned in its cell like the Festungsbahn (4 tiles
+                // wide), waiting at its lower end or travelling down to it.
+                let mut train = Entity::at_feet(
+                    EntityKind::Schafbergbahn,
+                    feet_x,
+                    feet_y,
+                    t.platforms.schafbergbahn_size,
+                );
+                train.x = cell_x;
+                train.base_x = cell_x;
+                train.state = crate::platform::initial_state(s);
+                train
             }
             SpawnKind::Gondel => {
                 // Left-aligned in its cell like the Festungsbahn, then at
@@ -601,7 +623,7 @@ impl Entity {
                 crate::enemies::update_thrown(self, map, t);
                 None
             }
-            EntityKind::Festungsbahn => {
+            EntityKind::Festungsbahn | EntityKind::Schafbergbahn => {
                 crate::platform::update_car(self, ctx);
                 None
             }
@@ -888,6 +910,7 @@ mod tests {
         assert_eq!(EnemyKind::EBiker.chain_start(), 1);
         assert_eq!(Popup::Hoppala.text_key(), Some("popup.hoppala"));
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
+        assert!(EntityKind::Schafbergbahn.is_platform());
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);

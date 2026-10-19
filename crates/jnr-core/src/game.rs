@@ -1049,6 +1049,7 @@ impl Game {
                 | EntityKind::Sign
                 | EntityKind::Festungsbahn
                 | EntityKind::Gondel
+                | EntityKind::Schafbergbahn
                 | EntityKind::ThrownHackl
                 | EntityKind::Durchkriechstein => {}
             }
@@ -1368,6 +1369,7 @@ impl Game {
                     | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
+                    | EntityKind::Schafbergbahn
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {

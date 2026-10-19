@@ -45,19 +45,23 @@ impl TileKind {
     /// under a rockfall net) are `Empty`: drawn,
     /// never collide. M3: `kalkfels` is solid, the shaft planks `steig` (and
     /// `steig_wall`, the same plank drawn over the `kalkfels_bg` back wall) and
-    /// the rockfall net `netz` are one-way (D-055, D-058).
+    /// the rockfall net `netz` are one-way (D-055, D-058). M4: the
+    /// souvenir stand's counter `standl` and the road `strasse` are solid,
+    /// its awning `standl_dach` and the bus shelter roof `wartehaus_dach`
+    /// one-way, the bypass tunnel's inside `tunnel_bg` and the fallback
+    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
-            | "netz_post" => Some(TileKind::Empty),
+            | "netz_post" | "tunnel_bg" | "zahnrad_gleis_0" | "zahnrad_gleis_1"
+            | "zahnrad_gleis_2" | "zahnrad_gleis_3" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
-            | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" => {
-                Some(TileKind::Solid)
-            }
+            | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
+            | "strasse" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" => Some(TileKind::OneWay),
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" => Some(TileKind::OneWay),
             "hazard" => Some(TileKind::Hazard),
             "salzach_water"
             | "salzach_water_deep"
@@ -214,11 +218,14 @@ pub enum SpawnKind {
     /// The Durchkriechstein's tunnel (`len` cells from its cell to the
     /// right): DOWN at its mouth starts the scripted crawl (D-057).
     Durchkriechstein,
+    /// The Schafbergbahn steam train (`to`): the Festungsbahn's waiting
+    /// state machine with a 64×32 body on a long track (D-067).
+    Schafbergbahn,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 21] = [
+    pub const ALL: [SpawnKind; 22] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -240,6 +247,7 @@ impl SpawnKind {
         SpawnKind::Gams,
         SpawnKind::Steinschlag,
         SpawnKind::Durchkriechstein,
+        SpawnKind::Schafbergbahn,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -267,6 +275,7 @@ impl SpawnKind {
             SpawnKind::Gams => "gams",
             SpawnKind::Steinschlag => "steinschlag",
             SpawnKind::Durchkriechstein => "durchkriechstein",
+            SpawnKind::Schafbergbahn => "schafbergbahn",
         }
     }
 
@@ -328,7 +337,8 @@ pub struct EntitySpawn {
     /// Board style (signs only; default street).
     pub style: SignStyle,
     /// The other end point `[dx, dy]` in tiles, relative to the spawn cell
-    /// (`to = [dx, dy]`, required for `festungsbahn` and `gondel`, `None`
+    /// (`to = [dx, dy]`, required for `festungsbahn`, `gondel` and
+    /// `schafbergbahn`, `None`
     /// otherwise).
     pub to: Option<[i32; 2]>,
     /// `still = true` on a `selfie_tourist`: it never walks (a fixed
@@ -405,6 +415,9 @@ pub const STONE_LEN_RANGE: std::ops::RangeInclusive<u8> = 2..=6;
 /// Largest `|dx|` of a `gondel`'s `to`, in tiles (D-044: a rider carried
 /// back left never reaches the screen's left edge).
 pub const MAX_GONDEL_DX_TILES: i32 = 8;
+/// Allowed `|dx|` of a `schafbergbahn`'s `to`, in tiles (D-067: a long
+/// ride, at least one body length across).
+pub const SCHAFBERGBAHN_DX_TILES: std::ops::RangeInclusive<i32> = 4..=32;
 
 /// Largest `|dx|` of a `prop`, in px.
 pub const MAX_PROP_DX_PX: i32 = 64;
@@ -458,6 +471,15 @@ pub const PROP_SPRITES: &[&str] = &[
     "brunnkapelle",
     "hackelwurfkapelle",
     "durchkriechstein",
+    "talstation_schafberg",
+    "haltestelle_alm",
+    "tunnelportal",
+    "wartehaus",
+    "pilgerbrunnen",
+    "wallfahrtskirche",
+    "weisses_roessl",
+    "roessl_pferd",
+    "schiffsstation",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -838,7 +860,7 @@ fn parse_legend_value(
             let allowed: &[&str] = match (tile, entity) {
                 (Some(_), None) => &["tile", "contains"],
                 (_, Some("sign")) => &["entity", "tile", "text", "style"],
-                (_, Some("festungsbahn")) => &["entity", "tile", "to"],
+                (_, Some("festungsbahn" | "schafbergbahn")) => &["entity", "tile", "to"],
                 (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
                 (_, Some("durchkriechstein")) => &["entity", "tile", "len"],
@@ -962,15 +984,26 @@ fn parse_entity(
         }
     }
     let mut to = None;
-    if matches!(kind, SpawnKind::Festungsbahn | SpawnKind::Gondel) {
-        let max_dx = if kind == SpawnKind::Gondel {
-            MAX_GONDEL_DX_TILES
-        } else {
-            MAX_TRACK_TILES
+    if matches!(
+        kind,
+        SpawnKind::Festungsbahn | SpawnKind::Gondel | SpawnKind::Schafbergbahn
+    ) {
+        let (min_dx, max_dx) = match kind {
+            SpawnKind::Gondel => (0, MAX_GONDEL_DX_TILES),
+            SpawnKind::Schafbergbahn => (
+                *SCHAFBERGBAHN_DX_TILES.start(),
+                *SCHAFBERGBAHN_DX_TILES.end(),
+            ),
+            _ => (0, MAX_TRACK_TILES),
         };
         let bad = || {
+            let dx_rule = if min_dx > 0 {
+                format!("{min_dx} <= |dx| <= {max_dx}")
+            } else {
+                format!("dx within ±{max_dx}")
+            };
             ParseError::new(format!(
-                "legend \"{key}\": a {name} needs to = [dx, dy] (its other end point in tiles relative to its cell, not both 0, dx within ±{max_dx}, dy within ±{MAX_TRACK_TILES})"
+                "legend \"{key}\": a {name} needs to = [dx, dy] (its other end point in tiles relative to its cell, not both 0, {dx_rule}, dy within ±{MAX_TRACK_TILES})"
             ))
         };
         let Some(toml::Value::Array(a)) = t.get("to") else {
@@ -983,6 +1016,7 @@ fn parse_entity(
             &[dx, dy]
                 if a.len() == 2
                     && range_x.contains(&dx)
+                    && dx.abs() >= i64::from(min_dx)
                     && range.contains(&dy)
                     && (dx, dy) != (0, 0) =>
             {
@@ -1641,6 +1675,73 @@ P.sSC.tfG
         }
         let e = err(&with(", to = [1, 0], dir = 1"));
         assert!(e.contains("field \"dir\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn schafbergbahn_needs_to_with_4_to_32_tiles_across() {
+        let with = |fields: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!(
+                        "\"G\" = {{ entity = \"goal\" }}\n\"z\" = {{ entity = \"schafbergbahn\"{fields} }}"
+                    ),
+                )
+                .replace(".P.--..", ".Pz--..")
+        };
+        let train = |fields: &str| {
+            Level::parse(&with(fields))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.kind == SpawnKind::Schafbergbahn)
+                .unwrap()
+        };
+        assert_eq!(train(", to = [24, -6]").to, Some([24, -6]));
+        assert_eq!(train(", to = [4, 0]").to, Some([4, 0]));
+        assert_eq!(train(", to = [-32, -8]").to, Some([-32, -8]));
+        assert_eq!(train(", to = [8, 64]").to, Some([8, 64]));
+        for bad in [
+            "",
+            ", to = [3, -1]",
+            ", to = [-3, 0]",
+            ", to = [0, -6]",
+            ", to = [33, -8]",
+            ", to = [-33, 0]",
+            ", to = [8, 65]",
+            ", to = [8]",
+        ] {
+            let e = err(&with(bad));
+            assert!(
+                e.contains("a schafbergbahn needs to = [dx, dy]") && e.contains("4 <= |dx| <= 32"),
+                "{bad}: {e}"
+            );
+        }
+        let e = err(&with(", to = [8, -2], phase = 1"));
+        assert!(e.contains("field \"phase\" is not allowed"), "{e}");
+        assert_eq!(
+            SpawnKind::from_name("schafbergbahn"),
+            Some(SpawnKind::Schafbergbahn)
+        );
+    }
+
+    #[test]
+    fn m4_tile_names_have_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("standl", Solid),
+            ("strasse", Solid),
+            ("standl_dach", OneWay),
+            ("wartehaus_dach", OneWay),
+            ("tunnel_bg", Empty),
+            ("zahnrad_gleis_0", Empty),
+            ("zahnrad_gleis_1", Empty),
+            ("zahnrad_gleis_2", Empty),
+            ("zahnrad_gleis_3", Empty),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        assert_eq!(TileKind::from_tile_name("zahnrad_gleis_4"), None);
     }
 
     #[test]

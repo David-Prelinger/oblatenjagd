@@ -53,4 +53,4 @@ const FINISH_FRAME: u32 = 731;
 /// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
 /// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach`/`climb_top_min`/`climb_catch_up_speed` and the hashed
 /// `settle_feet`/`slack_x`).
-const FINISH_HASH: u64 = 0x48e7_462e_4b19_6515;
+const FINISH_HASH: u64 = 0x2278_5ef0_95da_ee0b;
