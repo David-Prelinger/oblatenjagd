@@ -109,17 +109,17 @@ Art (pixel-artist, art-director APPROVED)
 - [x] Falkenstein package: tiles `kalkfels`, `kalkfels_bg`, `steig`, `netz`; props `gasthof_fuerberg`, `bildstock`, `steinhaufen`, `falkensteinkirche`, `brunnkapelle`, `hackelwurfkapelle`, `durchkriechstein`; layer `bg_falkenstein`
 
 Levels (level-designer)
-- [ ] `04_falkenstein.level` (240 × 42, `camera = "climb"`) with the 6 sections, the shaft and the Durchkriechstein as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; fall-depth lint clean
-- [ ] `time_limit` set from the measured relaxed run (D-045); Oblaten 70 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz); D-029 crown check with a shot at the touch
+- [x] `04_falkenstein.level` (240 × 42, `camera = "climb"`) with the 6 sections, the shaft and the Durchkriechstein as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; fall-depth lint clean
+- [x] `time_limit` set from the measured relaxed run (D-045); Oblaten 70 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz); D-029 crown check with a shot at the touch
 
 Replays and goldens
-- [ ] Mechanic replays from the Stage 4 "New mechanics" table (cleft death at the death line, 6-tile drop survives, shaft miss, pilgrims down the zigzag, rock shelter + rock hit + Hackl vs rock, Gams stomp + Gams hit, Hackl pickup from Normal, axes on group C, Hackl hit → Zuckerschock, crawl as Normal / Zuckerschock / Hackl, big Resi at the mouth without DOWN, checkpoint respawn in the shaft)
-- [ ] Flow replays: Brunnwinkl clear → map → Falkenstein intro with carry-over; Falkenstein clear with the Hackl → teaser to St. Wolfgang (`player_hackl` on the map) → title; game over in Falkenstein → continue restarts Falkenstein
-- [ ] Tour `falkenstein_tour` (`start = title`, solver inputs, shots per section incl. the shaft, the church with the stone, the Hackl throw and the checkpoint bus joke) — art-director APPROVED
-- [ ] M2 replays and goldens whose ending changes because Falkenstein is now playable re-cut with an art-director verdict: re-cut (level-designer, M3): `brunnwinkl_tour` (ends on the route map in Wait; shot `teaser` → `route_map`, golden pending), `flow_m2_brunnwinkl_teaser_title` → `flow_m2_brunnwinkl_to_falkenstein` and `qa_m2_flow_full_route_teaser` → `qa_m2_flow_full_route_to_falkenstein` (both end on the Falkenstein intro with the run carried over); open: art-director verdict on `brunnwinkl_tour_route_map`, then delete the orphaned `tests/golden/brunnwinkl_tour_teaser.png`
+- [x] Mechanic replays from the Stage 4 "New mechanics" table (cleft death at the death line, 6-tile drop survives, shaft miss, pilgrims down the zigzag, rock shelter + rock hit + Hackl vs rock, Gams stomp + Gams hit, Hackl pickup from Normal, axes on group C, Hackl hit → Zuckerschock, crawl as Normal / Zuckerschock / Hackl, big Resi at the mouth without DOWN, checkpoint respawn in the shaft)
+- [x] Flow replays: Brunnwinkl clear → map → Falkenstein intro with carry-over; Falkenstein clear with the Hackl → teaser to St. Wolfgang (`player_hackl` on the map) → title; game over in Falkenstein → continue restarts Falkenstein
+- [x] Tour `falkenstein_tour` (`start = title`, solver inputs, shots per section incl. the shaft, the church with the stone, the Hackl throw and the checkpoint bus joke) — art-director APPROVED
+- [x] M2 replays and goldens whose ending changes because Falkenstein is now playable re-cut with an art-director verdict: re-cut (level-designer, M3): `brunnwinkl_tour` (ends on the route map in Wait; shot `teaser` → `route_map`, golden pending), `flow_m2_brunnwinkl_teaser_title` → `flow_m2_brunnwinkl_to_falkenstein` and `qa_m2_flow_full_route_teaser` → `qa_m2_flow_full_route_to_falkenstein` (both end on the Falkenstein intro with the run carried over); `brunnwinkl_tour_route_map` APPROVED and accepted, orphaned `brunnwinkl_tour_teaser.png` deleted
 
 Platform
-- [ ] wasm build plays the route through Falkenstein; `wasm-smoke` still green; verify runtime stays within budget (backlog: it grows with every stage)
+- [x] wasm build plays the route through Falkenstein; `wasm-smoke` still green; verify runtime stays within budget (backlog: it grows with every stage)
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Falkenstein filmstrip, the climb-camera framing at the foot, in the shaft and at the summit, the Hackl and crawl replays, and all new German text.
 
