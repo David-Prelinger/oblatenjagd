@@ -1,0 +1,65 @@
+# Stage 2 goal, Wurstkranz (D-038): the solver's route to the kiosk steps
+# (frame 1646), a hop onto the Schiffskassa roof (its three Oblaten, +600),
+# then a run along the roof and a running held jump (RBJ) off its edge
+# towards the pole: she touches it with the feet >= 7 tiles above its base
+# -> Wurstkranz, 5000 (10000 + 600 + 5000). Ends during the slide.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = event=LevelComplete deaths=0 state=stage_clear score=15600
+---
+# solver route (frames 0-1646)
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+RBJ 34
+RB 58
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 126
+RBJ 36
+RB 14
+RBJ 36
+RB 18
+RBJ 12
+RB 16
+RBJ 12
+RB 2
+RBJ 36
+RB 120
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 13
+L 8         # brake on the steps
+- 10
+RJ 14       # onto the kiosk roof
+- 30
+RB 30       # run along the roof
+RBJ 30      # running held jump off the edge
+RB 60

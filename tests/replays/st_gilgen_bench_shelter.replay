@@ -1,0 +1,50 @@
+# Stage 2 (D-046, game-design "New mechanics": shelter behind the bench):
+# the solver's route past the bandstand lands on the park bench (214-215,
+# 1 tile) at frame 1366, brakes and stands there for 300 frames while
+# Blasmusiker #2 (col 223, in range) plays: each train flies at 10 px above
+# the street, below her feet, and vanishes on the bench's side. Never hurt.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing player_x>=3440 player_y>=202 player_y<=202
+---
+# solver route (frames 0-1366)
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+RBJ 34
+RB 58
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 126
+RBJ 36
+RB 14
+RBJ 36
+RB 18
+RBJ 12
+RB 16
+RBJ 12
+RB 2
+RBJ 36
+RB 120
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+L 10        # brake on the bench
+- 290

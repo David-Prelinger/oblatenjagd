@@ -1,0 +1,41 @@
+# Stage 2 (D-044): rides all three Zwölferhorn gondolas, A -> B -> C.
+# Solver opening to the forecourt, hops onto the station platform and waits
+# at its edge (x 734) for Gondel A to come back; hops onto its roof (~frame
+# 360) and rides it up to the knoll; waits on the knoll for Gondel B
+# (boards ~frame 780 by walking off the knoll edge), rides it across the
+# ravine to the pylon (~906, feet 184); walks onto the pylon and jumps onto
+# Gondel C, which is back at the pylon then (phase 245, D-048: C activates
+# while Resi stands on the station platform), rides it down to its lower
+# end (feet 216), walks off over the ledge onto the street beyond the
+# ravine (x 1401, col 87).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=1390 player_y>=218 player_y<=218
+---
+# solver opening (frames 0-241)
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+R 20
+R 16
+RJ 14       # onto the station platform
+L 6
+- 72        # wait at the edge for Gondel A
+RJ 8        # hop onto the roof
+R 6
+- 125       # ride A up to the knoll
+R 60
+- 205       # wait on the knoll for Gondel B
+R 40        # walk off the edge onto B
+- 110       # ride B across the ravine
+R 14        # onto the pylon
+RJ 10       # jump onto Gondel C
+R 4
+- 130       # ride C down
+R 60        # walk off onto the ledge
+- 20
