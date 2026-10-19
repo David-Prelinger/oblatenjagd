@@ -1,4 +1,4 @@
-//! The camera: follows the player like SMB (never scrolls left).
+//! The camera: follows the player like SMB (never scrolls left, except to follow a rider carried left by a platform, D-051).
 
 use crate::hash::Fnv;
 use crate::tuning::CameraTuning;
