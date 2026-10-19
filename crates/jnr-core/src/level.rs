@@ -41,15 +41,15 @@ impl TileKind {
     /// (`solid`, `oneway`, `hazard`, `empty`) and the M1 art tile names of
     /// `docs/sprite-catalog.md` (M1 and M2) map to a kind; unknown names
     /// return `None`. Decorative back tiles (`railing_bg`,
-    /// `wall_village_bg`, `roof_bg`, `kalkfels_bg`) are `Empty`: drawn,
+    /// `wall_village_bg`, `roof_bg`, `kalkfels_bg`, `netz_post`: the post
+    /// under a rockfall net) are `Empty`: drawn,
     /// never collide. M3: `kalkfels` is solid, the shaft planks `steig` (and
     /// `steig_wall`, the same plank drawn over the `kalkfels_bg` back wall) and
     /// the rockfall net `netz` are one-way (D-055, D-058).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
-            "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg" => {
-                Some(TileKind::Empty)
-            }
+            "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
+            | "netz_post" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
@@ -1628,6 +1628,7 @@ P.sSC.tfG
         for (name, kind) in [
             ("kalkfels", Solid),
             ("kalkfels_bg", Empty),
+            ("netz_post", Empty),
             ("steig", OneWay),
             ("steig_wall", OneWay),
             ("netz", OneWay),
