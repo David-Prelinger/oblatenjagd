@@ -15,6 +15,7 @@ const LEGEND: &str = r##"
 "t" = { entity = "selfie_tourist" }
 "u" = { entity = "taube" }
 "s" = { entity = "taube_sitting" }
+"S" = { entity = "taube_sitting", dy = -8 }
 "v" = { entity = "mozartkugel_verkaeufer" }
 "f" = { entity = "fiaker" }
 "F" = { entity = "festungsbahn", to = [8, -5] }
@@ -336,6 +337,35 @@ fn sitting_taube_waits_rises_16_px_over_16_frames_then_flies() {
     let e = first(&g, EntityKind::Enemy(EnemyKind::TaubeSitting));
     assert_eq!(e.x, sit.x - Fx::from_raw(192));
     assert_eq!(e.pose(&t), Some(Pose::Fly));
+}
+
+#[test]
+fn sitting_taube_dy_moves_its_perch_and_it_rises_from_there() {
+    // `dy = -8`: feet 8 px above its cell bottom (a perch between two cell
+    // bottoms, like St. Wolfgang's mitre); x and behaviour are unchanged.
+    let at = |c| {
+        let g = game(&world(40, &[(11, 14, c)]));
+        first(&g, EntityKind::Enemy(EnemyKind::TaubeSitting))
+    };
+    let (ground, perch) = (at('s'), at('S'));
+    assert_eq!(
+        ground.y + ground.h,
+        Fx::from_px(12 * 16),
+        "feet on the cell bottom"
+    );
+    assert_eq!(perch.x, ground.x);
+    assert_eq!(perch.y, ground.y - Fx::from_px(8));
+    assert_eq!(perch.base_y, perch.y);
+    // Sits there until the player comes close, then rises 16 px from the perch.
+    let mut g = game(&world(40, &[(11, 14, 'S')]));
+    hold(&mut g, "-", 30);
+    let e = first(&g, EntityKind::Enemy(EnemyKind::TaubeSitting));
+    assert_eq!((e.x, e.y, e.state), (perch.x, perch.y, state::SIT));
+    until(&mut g, "R", 300, |g| {
+        first(g, EntityKind::Enemy(EnemyKind::TaubeSitting)).state == state::FLY
+    });
+    let e = first(&g, EntityKind::Enemy(EnemyKind::TaubeSitting));
+    assert_eq!(e.base_y, perch.y - Fx::from_px(16));
 }
 
 #[test]
