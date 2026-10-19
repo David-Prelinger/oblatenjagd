@@ -99,13 +99,18 @@ pub const DAMPF_EVERY: u16 = 20;
 /// ... and lives this many frames (`dampf` `puff`: 3 frames × 8 ticks),
 /// rising 1 px per frame.
 pub const DAMPF_FRAMES: u16 = 24;
-/// Height of the funnel above the roof (the `schafbergbahn` sprite's 6 px
-/// funnel at the loco's left, downhill end; the grey box draws a stub).
-pub const FUNNEL_PX: i32 = 6;
+/// Puffs alive at once: one every 20 frames, each for 24.
+pub const MAX_PUFFS: usize = DAMPF_FRAMES.div_ceil(DAMPF_EVERY) as usize;
+/// Height of the funnel above the roof (the `schafbergbahn` sprite's funnel:
+/// x 0–5, rows 0–7 above the roof row 8, at the loco's left, downhill end;
+/// the grey box draws a stub there) ...
+pub const FUNNEL_PX: i32 = 8;
+/// ... and its width.
+pub const FUNNEL_W: i32 = 6;
 /// Where a steam puff leaves (its bottom centre) relative to the body's
-/// top-left corner: 2 px below the funnel cap's top, so the first puff
-/// touches the cap (art-director, M4).
-pub const DAMPF_CHIMNEY: (i32, i32) = (6, -FUNNEL_PX + 2);
+/// top-left corner: over the funnel's middle, 2 px below its cap's top, so
+/// the first puff touches the cap (art-director, M4).
+pub const DAMPF_CHIMNEY: (i32, i32) = (FUNNEL_W / 2, -FUNNEL_PX + 2);
 
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
@@ -393,9 +398,10 @@ fn draw_cable(game: &Game, fb: &mut Framebuffer, cam: Camera, e: &Entity) {
 /// the pixel-artist, M4), drawn behind the tiles and the train. Per screen
 /// column X from one tile before the body's leftmost position to one tile
 /// past its rightmost, with u = X − L (L: the body's left edge at its
-/// spawn) and the upper rail row Y = F + [`jnr_core::platform::rail_offset`]
-/// (F: the feet row at the spawn, the row right under the body; the train
-/// rides exactly on it, `platform::track_offset`): `d` rail at Y, `m` rack
+/// spawn) and the upper rail row Y = B + 1 + [`jnr_core::platform::rail_offset`]
+/// (B: the body's bottom edge, the feet y, at the spawn; the sprite's
+/// wheels stand on that row, sprite-catalog "as built", and the train
+/// follows it pixel for pixel, `platform::track_offset`): `d` rail at Y, `m` rack
 /// at Y+1 (even u only) and Y+2, `d` rail at Y+3; `O` sleepers over
 /// Y+1..=Y+4 where u mod 8 is 0 or 1 (the rails stay on top); a `d`
 /// girder at Y+5 under the whole track (art-director, M4: one viaduct
@@ -414,7 +420,7 @@ fn draw_track(game: &Game, fb: &mut Framebuffer, cam: Camera, e: &Entity) {
     let (x0, x1) = (l.min(l + dx) - tile, l.max(l + dx) + e.w.to_px() + tile);
     for x in x0..x1 {
         let u = x - l;
-        let y = feet + jnr_core::platform::rail_offset(u, dx, dy);
+        let y = feet + 1 + jnr_core::platform::rail_offset(u, dx, dy);
         let (sx, sy) = (x - cam.x, y - cam.y);
         if u.rem_euclid(2) == 0 {
             fb.set(sx, sy + 1, STONE_GREY);
@@ -454,13 +460,12 @@ fn draw_schafbergbahn(
             draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
         }
         None => {
-            let (cx, _) = DAMPF_CHIMNEY;
             let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
-            fb.fill_rect(left + cx - 2, top - FUNNEL_PX, 4, FUNNEL_PX, SLATE_DARK);
+            fb.fill_rect(left, top - FUNNEL_PX, FUNNEL_W, FUNNEL_PX, SLATE_DARK);
             draw_body(game, looks, atlas, fb, cam, e);
         }
     }
-    for (x, y, age) in steam_puffs(game, e) {
+    for (x, y, age) in steam_puffs(game, e).into_iter().flatten() {
         let (x, y) = (x - cam.x, y - cam.y);
         match looks.dampf {
             Some(s) => {
@@ -478,10 +483,10 @@ fn draw_schafbergbahn(
 /// after, stays where it left the chimney (the train moves on) and rises
 /// 1 px per frame for [`DAMPF_FRAMES`]. Computed from the train's state and
 /// counter alone, so the renderer keeps no particles; a standing train has
-/// none.
-pub fn steam_puffs(game: &Game, e: &Entity) -> Vec<(i32, i32, u16)> {
+/// none. At most [`MAX_PUFFS`] live at once (no allocation).
+pub fn steam_puffs(game: &Game, e: &Entity) -> [Option<(i32, i32, u16)>; MAX_PUFFS] {
     use jnr_core::platform::{car, car_position, car_timing};
-    let mut puffs = Vec::new();
+    let mut puffs = [None; MAX_PUFFS];
     if !matches!(e.state, car::UP | car::DOWN) {
         return puffs;
     }
@@ -490,11 +495,12 @@ pub fn steam_puffs(game: &Game, e: &Entity) -> Vec<(i32, i32, u16)> {
         .and_then(|i| game.level().entities.get(usize::from(i)));
     let timing = car_timing(e.kind, spawn, game.tuning());
     let first = e.count.saturating_sub(DAMPF_FRAMES - 1).max(1);
-    for emit in (first..=e.count).filter(|c| (c - 1) % DAMPF_EVERY == 0) {
-        let (x, y) = car_position((e.base_x, e.base_y), spawn, e.state, emit, timing);
+    let emits = (first..=e.count).filter(|c| (c - 1) % DAMPF_EVERY == 0);
+    for (slot, emit) in puffs.iter_mut().zip(emits) {
+        let (x, y) = car_position(e.kind, (e.base_x, e.base_y), spawn, e.state, emit, timing);
         let age = e.count - emit;
         let (cx, cy) = DAMPF_CHIMNEY;
-        puffs.push((x.to_px() + cx, y.to_px() + cy - i32::from(age), age));
+        *slot = Some((x.to_px() + cx, y.to_px() + cy - i32::from(age), age));
     }
     puffs
 }
@@ -1331,6 +1337,10 @@ mod tests {
         Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
     }
 
+    fn puffs(g: &Game, e: &Entity) -> Vec<(i32, i32, u16)> {
+        steam_puffs(g, e).into_iter().flatten().collect()
+    }
+
     fn the_train(g: &Game) -> Entity {
         *g.entities()
             .iter()
@@ -1339,8 +1349,9 @@ mod tests {
     }
 
     /// The pixel-artist's track layout: per column, u = x − 160 (the body's
-    /// left edge at the spawn), upper rail Y = 112 (the feet row at the
-    /// spawn) − floor(u / 4); rails at Y and Y+3, rack at Y+1 (even u) and
+    /// left edge at the spawn), upper rail Y = 113 (one below the feet y at
+    /// the spawn, where the sprite's wheels stand) − floor(u / 4); rails at
+    /// Y and Y+3, rack at Y+1 (even u) and
     /// Y+2, 2 px sleepers every 8 px over Y+1..=Y+4 under the rails, a
     /// girder at Y+5 under the whole track; from a tile
     /// before the lower end to a tile past the upper end; behind the tiles.
@@ -1348,39 +1359,39 @@ mod tests {
     fn the_schafbergbahn_track_shows_the_whole_ride() {
         let g = train_game();
         let fb = rendered(&g);
-        // 1 px up per 4 px right: u −4..−1 on row 113, −8..−5 on row 114.
+        // 1 px up per 4 px right: u −4..−1 on row 114, −8..−5 on row 115.
         for x in 156..=159 {
-            assert_eq!(fb.get(x, 113), Some(SLATE_DARK), "x {x}");
-        }
-        for x in 152..=155 {
             assert_eq!(fb.get(x, 114), Some(SLATE_DARK), "x {x}");
         }
+        for x in 152..=155 {
+            assert_eq!(fb.get(x, 115), Some(SLATE_DARK), "x {x}");
+        }
         // u −3 (odd, no sleeper): no rack at Y+1, rack at Y+2, rail at Y+3.
-        assert_ne!(fb.get(157, 114), Some(STONE_GREY));
-        assert_eq!(fb.get(158, 114), Some(STONE_GREY), "even u: rack at Y+1");
-        assert_eq!(fb.get(157, 115), Some(STONE_GREY));
-        assert_eq!(fb.get(157, 116), Some(SLATE_DARK), "lower rail");
+        assert_ne!(fb.get(157, 115), Some(STONE_GREY));
+        assert_eq!(fb.get(158, 115), Some(STONE_GREY), "even u: rack at Y+1");
+        assert_eq!(fb.get(157, 116), Some(STONE_GREY));
+        assert_eq!(fb.get(157, 117), Some(SLATE_DARK), "lower rail");
         // u −8 (a sleeper, x 152–153): over Y+1..=Y+4, the rails on top.
-        assert_eq!(fb.get(152, 114), Some(SLATE_DARK));
-        assert_eq!(fb.get(153, 115), Some(SLEEPER));
-        assert_eq!(fb.get(152, 117), Some(SLATE_DARK));
-        assert_eq!(fb.get(152, 118), Some(SLEEPER));
-        assert_ne!(fb.get(154, 118), Some(SLEEPER), "2 px wide");
+        assert_eq!(fb.get(152, 115), Some(SLATE_DARK));
+        assert_eq!(fb.get(153, 116), Some(SLEEPER));
+        assert_eq!(fb.get(152, 118), Some(SLATE_DARK));
+        assert_eq!(fb.get(152, 119), Some(SLEEPER));
+        assert_ne!(fb.get(154, 119), Some(SLEEPER), "2 px wide");
         // The girder under the whole track: over the gap (x 200: u 40,
-        // Y 102) and over the ground (x 150: u −10, Y 115).
+        // Y 103) and over the ground (x 150: u −10, Y 116).
         // (once the train has gone down: at the spawn it covers the gap).
         let mut down = train_game();
         for _ in 0..200 {
             down.step(InputFrame::NONE);
         }
-        assert_eq!(rendered(&down).get(200, 107), Some(SLATE_DARK), "girder");
-        assert_eq!(fb.get(150, 120), Some(SLATE_DARK), "over the ground too");
-        // Ends: a tile past the upper end (x 239: u 79, Y 93) and no further.
-        assert_eq!(fb.get(239, 93), Some(SLATE_DARK), "far end");
-        assert_ne!(fb.get(240, 93), Some(SLATE_DARK));
+        assert_eq!(rendered(&down).get(200, 108), Some(SLATE_DARK), "girder");
+        assert_eq!(fb.get(150, 121), Some(SLATE_DARK), "over the ground too");
+        // Ends: a tile past the upper end (x 239: u 79, Y 94) and no further.
+        assert_eq!(fb.get(239, 94), Some(SLATE_DARK), "far end");
+        assert_ne!(fb.get(240, 94), Some(SLATE_DARK));
         // Behind the tiles: under the ground at the lower end it is hidden.
         assert_eq!(fb.get(20, 147), Some(STONE_GREY), "the ground tile");
-        assert_ne!(fb.get(20, 148), Some(SLATE_DARK));
+        assert_ne!(fb.get(20, 149), Some(SLATE_DARK));
         // Grey-box train over it, a chimney stub at its left end.
         assert_eq!(fb.get(192, 100), Some(OUTLINE), "body");
         assert_eq!(fb.get(165, 76), Some(SLATE_DARK), "chimney");
@@ -1389,21 +1400,21 @@ mod tests {
     #[test]
     fn steam_puffs_leave_every_20_frames_and_rise_for_24() {
         let mut g = train_game();
-        assert!(steam_puffs(&g, &the_train(&g)).is_empty(), "not moving yet");
+        assert!(puffs(&g, &the_train(&g)).is_empty(), "not moving yet");
         g.step(InputFrame::NONE);
         let t = the_train(&g);
         assert_eq!(t.count, 1);
-        let chimney = (t.x.to_px() + 6, t.y.to_px() - 4);
-        assert_eq!(steam_puffs(&g, &t), [(chimney.0, chimney.1, 0)]);
+        let chimney = (t.x.to_px() + 3, t.y.to_px() - 6);
+        assert_eq!(puffs(&g, &t), [(chimney.0, chimney.1, 0)]);
         let fb = rendered(&g);
         assert_eq!(fb.get(chimney.0, chimney.1 - 3), Some(WHITE), "grey box");
         for _ in 0..20 {
             g.step(InputFrame::NONE);
         }
         let t = the_train(&g);
-        let next = (t.x.to_px() + 6, t.y.to_px() - 4);
+        let next = (t.x.to_px() + 3, t.y.to_px() - 6);
         assert_eq!(
-            steam_puffs(&g, &t),
+            puffs(&g, &t),
             [(chimney.0, chimney.1 - 20, 20), (next.0, next.1, 0)],
             "the first stays behind and rises"
         );
@@ -1411,7 +1422,7 @@ mod tests {
             g.step(InputFrame::NONE);
         }
         assert_eq!(
-            steam_puffs(&g, &the_train(&g)),
+            puffs(&g, &the_train(&g)),
             [(next.0, next.1 - 4, 4)],
             "gone after 24 frames"
         );
@@ -1421,7 +1432,7 @@ mod tests {
         }
         let t = the_train(&g);
         assert_eq!(t.state, jnr_core::platform::car::WAIT_LOWER);
-        assert!(steam_puffs(&g, &t).is_empty());
+        assert!(puffs(&g, &t).is_empty());
     }
 
     /// With its sprite: `ride` while it travels, `idle` while it stands,

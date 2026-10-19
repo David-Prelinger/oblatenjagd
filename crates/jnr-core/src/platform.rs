@@ -275,6 +275,7 @@ pub fn track_offset(kind: SpawnKind, delta: (Fx, Fx), k: i32, n: i32) -> (Fx, Fx
 /// recomputed from the spawn point ([`track_offset`]), so it never drifts.
 /// The renderer uses it for the steam puffs left behind.
 pub fn car_position(
+    kind: EntityKind,
     base: (Fx, Fx),
     spawn: Option<&EntitySpawn>,
     state: u8,
@@ -286,7 +287,10 @@ pub fn car_position(
     let (k, n) = height_fraction(state, count, timing);
     // `k` counts from the lower end, the position from the spawn point.
     let k = if from_upper { n - k } else { k };
-    let kind = spawn.map_or(SpawnKind::Festungsbahn, |s| s.kind);
+    let kind = match kind {
+        EntityKind::Schafbergbahn => SpawnKind::Schafbergbahn,
+        _ => SpawnKind::Festungsbahn,
+    };
     let (dx, dy) = track_offset(kind, delta, k, n);
     (base.0 + dx, base.1 + dy)
 }
@@ -299,7 +303,14 @@ pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
         .player_standing
         .is_some_and(|p| stands_on(&p, &e.hitbox()));
     (e.state, e.count) = next_state(e.state, e.count, rider, timing);
-    let (x, y) = car_position((e.base_x, e.base_y), spawn, e.state, e.count, timing);
+    let (x, y) = car_position(
+        e.kind,
+        (e.base_x, e.base_y),
+        spawn,
+        e.state,
+        e.count,
+        timing,
+    );
     e.vx = x - e.x;
     e.vy = y - e.y;
     e.x = x;

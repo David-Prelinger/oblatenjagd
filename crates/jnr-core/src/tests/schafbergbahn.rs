@@ -96,7 +96,7 @@ fn travel_is_24_frames_per_tile_along_the_major_axis() {
     let mut stage = spawn.clone();
     stage.to = Some([24, -6]);
     assert_eq!(schafbergbahn_travel(&stage, &t), 576);
-    stage.to = Some([-4, -8]);
+    stage.to = Some([-8, -4]);
     assert_eq!(schafbergbahn_travel(&stage, &t), 8 * 24, "major axis");
     let g = Game::new(&level, &t, 1);
     let c = train(&g);

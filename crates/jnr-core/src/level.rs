@@ -48,13 +48,14 @@ impl TileKind {
     /// the rockfall net `netz` are one-way (D-055, D-058). M4: the
     /// souvenir stand's counter `standl` and the road `strasse` are solid,
     /// its awning `standl_dach` and the bus shelter roof `wartehaus_dach`
-    /// one-way, the bypass tunnel's inside `tunnel_bg` and the fallback
+    /// one-way, the bypass tunnel's inside `tunnel_bg` (and `tunnel_bg_lamp`,
+    /// the same with a lamp) and the fallback
     /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
-            | "netz_post" | "tunnel_bg" | "zahnrad_gleis_0" | "zahnrad_gleis_1"
-            | "zahnrad_gleis_2" | "zahnrad_gleis_3" => Some(TileKind::Empty),
+            | "netz_post" | "tunnel_bg" | "tunnel_bg_lamp" | "zahnrad_gleis_0"
+            | "zahnrad_gleis_1" | "zahnrad_gleis_2" | "zahnrad_gleis_3" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
@@ -998,7 +999,7 @@ fn parse_entity(
         };
         let bad = || {
             let dx_rule = if min_dx > 0 {
-                format!("{min_dx} <= |dx| <= {max_dx}")
+                format!("{min_dx} <= |dx| <= {max_dx}, |dy| <= |dx|")
             } else {
                 format!("dx within ±{max_dx}")
             };
@@ -1017,6 +1018,7 @@ fn parse_entity(
                 if a.len() == 2
                     && range_x.contains(&dx)
                     && dx.abs() >= i64::from(min_dx)
+                    && (kind != SpawnKind::Schafbergbahn || dy.abs() <= dx.abs())
                     && range.contains(&dy)
                     && (dx, dy) != (0, 0) =>
             {
@@ -1700,7 +1702,7 @@ P.sSC.tfG
         assert_eq!(train(", to = [24, -6]").to, Some([24, -6]));
         assert_eq!(train(", to = [4, 0]").to, Some([4, 0]));
         assert_eq!(train(", to = [-32, -8]").to, Some([-32, -8]));
-        assert_eq!(train(", to = [8, 64]").to, Some([8, 64]));
+        assert_eq!(train(", to = [8, -8]").to, Some([8, -8]), "45° at most");
         for bad in [
             "",
             ", to = [3, -1]",
@@ -1709,11 +1711,14 @@ P.sSC.tfG
             ", to = [33, -8]",
             ", to = [-33, 0]",
             ", to = [8, 65]",
+            ", to = [8, 9]",
+            ", to = [4, -5]",
             ", to = [8]",
         ] {
             let e = err(&with(bad));
             assert!(
-                e.contains("a schafbergbahn needs to = [dx, dy]") && e.contains("4 <= |dx| <= 32"),
+                e.contains("a schafbergbahn needs to = [dx, dy]")
+                    && e.contains("4 <= |dx| <= 32, |dy| <= |dx|"),
                 "{bad}: {e}"
             );
         }
@@ -1734,6 +1739,7 @@ P.sSC.tfG
             ("standl_dach", OneWay),
             ("wartehaus_dach", OneWay),
             ("tunnel_bg", Empty),
+            ("tunnel_bg_lamp", Empty),
             ("zahnrad_gleis_0", Empty),
             ("zahnrad_gleis_1", Empty),
             ("zahnrad_gleis_2", Empty),
