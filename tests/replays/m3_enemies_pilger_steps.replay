@@ -1,0 +1,9 @@
+# Resi waits at the start: the pilgrim group (leader with the pennant
+# first) walks left at activation and comes down the three steps one by
+# one, in file, until the leader walks into her (Normal: a death).
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=745..745 deaths=1 score=0
+---
+- 750

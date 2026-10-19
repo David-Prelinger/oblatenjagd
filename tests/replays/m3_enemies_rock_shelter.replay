@@ -1,0 +1,19 @@
+# After the Gams, Resi walks under the one-way rockfall net below
+# niche #1 and waits there: two rocks shatter on the net above her.
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=870 score=500
+---
+RB 56
+RBJ 20
+RB 15
+RBJ 36
+RB 18
+RBJ 31
+RB 45
+RBJ 20
+RB 2
+RBJ 36
+R 80
+- 300

@@ -363,6 +363,105 @@ pub struct EnemyTuning {
     /// or hazard tile was in the way, D-027 fallback). At least 2 (it is
     /// counted down in the frame it is set).
     pub bounce_grace_frames: u16,
+    /// Pilger (both looks; `lead` only changes the sprite).
+    pub pilger_hitbox: [i32; 2],
+    /// Pilger walking speed (towards the player at activation).
+    pub pilger_speed: Fx,
+    /// Gams.
+    pub gams_hitbox: [i32; 2],
+    /// Frames a Gams stands before each crouch ...
+    pub gams_stand: u16,
+    /// ... and crouches (the telegraph) before each hop.
+    pub gams_crouch: u16,
+    /// Horizontal speed of a hop.
+    pub gams_hop_speed_x: Fx,
+    /// Upward speed at the start of a hop.
+    pub gams_hop_speed_y: Fx,
+    /// Gravity of a Gams (in a hop and when it falls).
+    pub gams_gravity: Fx,
+    /// How many tiles ahead the landing check looks (the hop's length).
+    pub gams_hop_tiles: i32,
+    /// The falling rock (`stein`).
+    pub stein_hitbox: [i32; 2],
+    /// Gravity of a falling rock ...
+    pub stein_gravity: Fx,
+    /// ... and its max fall speed.
+    pub stein_max_fall: Fx,
+    /// Steinschlag counter frames of the telegraph; the rock drops at this
+    /// frame of each period. At most [`crate::level::STEINSCHLAG_MIN_PHASE`]
+    /// − 1, so a level `phase` never skips into a telegraph.
+    pub steinschlag_telegraph: u16,
+    /// Frames after a drop until the niche shows a resting rock again.
+    pub steinschlag_refill: u16,
+    /// The niche counts as on screen only when its top is at least this
+    /// many px below the screen top (the HUD).
+    pub steinschlag_screen_top: i32,
+    /// Points for a rock shattered by a projectile (the thrown Hackl).
+    pub stein_points: u32,
+}
+
+impl EnemyTuning {
+    /// The M3 enemy keys (Pilger, Gams, Steinschlag; D-058).
+    fn validate_m3(&self) -> Result<(), ParseError> {
+        for (name, [w, h]) in [
+            ("enemies.pilger_hitbox", self.pilger_hitbox),
+            ("enemies.gams_hitbox", self.gams_hitbox),
+            ("enemies.stein_hitbox", self.stein_hitbox),
+        ] {
+            if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=64 px in both directions"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.pilger_speed", self.pilger_speed),
+            ("enemies.gams_hop_speed_x", self.gams_hop_speed_x),
+            ("enemies.gams_hop_speed_y", self.gams_hop_speed_y),
+            ("enemies.gams_gravity", self.gams_gravity),
+            ("enemies.stein_gravity", self.stein_gravity),
+            ("enemies.stein_max_fall", self.stein_max_fall),
+        ] {
+            if v <= Fx::ZERO || v >= Fx::from_px(12) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.gams_stand", self.gams_stand),
+            ("enemies.gams_crouch", self.gams_crouch),
+            ("enemies.steinschlag_refill", self.steinschlag_refill),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if !(1..=4).contains(&self.gams_hop_tiles) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.gams_hop_tiles must be 1..=4",
+            ));
+        }
+        // The level's `phase` is 0 or STEINSCHLAG_MIN_PHASE.., so the first
+        // rock of an approach always shows the whole telegraph; drop and
+        // refill fit the shortest period.
+        let min_phase = crate::level::STEINSCHLAG_MIN_PHASE;
+        let min_period = *crate::level::STEINSCHLAG_PERIOD_RANGE.start();
+        if self.steinschlag_telegraph == 0
+            || self.steinschlag_telegraph >= min_phase
+            || self.steinschlag_telegraph + self.steinschlag_refill >= min_period
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need 1 <= enemies.steinschlag_telegraph < {min_phase} and steinschlag_telegraph + steinschlag_refill < {min_period}"
+            )));
+        }
+        if !(0..crate::camera::SCREEN_H).contains(&self.steinschlag_screen_top) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.steinschlag_screen_top must be 0..180 px",
+            ));
+        }
+        Ok(())
+    }
 }
 
 impl Tuning {
@@ -480,6 +579,7 @@ impl Tuning {
                 "tuning.toml: game.activate_margin and game.despawn_margin must be >= 0",
             ));
         }
+        self.enemies.validate_m3()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -861,6 +961,25 @@ mod tests {
             ("walk_px", 9),
             ("wait_frames", 0),
             ("teaser_frames", 0),
+            ("pilger_hitbox", 0),
+            ("gams_hitbox", 65),
+            ("stein_hitbox", 0),
+            ("pilger_speed", 0),
+            ("gams_hop_speed_x", 0),
+            ("gams_hop_speed_y", 3072),
+            ("gams_gravity", 0),
+            ("stein_gravity", 0),
+            ("stein_max_fall", 3072),
+            ("gams_stand", 0),
+            ("gams_crouch", 0),
+            ("gams_hop_tiles", 0),
+            ("gams_hop_tiles", 5),
+            ("steinschlag_telegraph", 0),
+            ("steinschlag_telegraph", 41),
+            ("steinschlag_refill", 0),
+            ("steinschlag_refill", 50),
+            ("steinschlag_screen_top", -1),
+            ("steinschlag_screen_top", 180),
         ]
         .map(|(f, v)| (f, v.to_string()))
         .into_iter()
