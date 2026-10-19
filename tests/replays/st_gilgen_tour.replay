@@ -10,7 +10,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1894..1894 deaths=0 state=route_map stage=st_gilgen
-shots  = 0:title 60:intro 210:busbahnhof 440:talstation 700:gondel 810:mozartplatz 1090:checkpoint 1240:ischler_strasse 1420:seepromenade 1700:anlegestelle 1894:maibaum 2160:tally 2520:map
+shots  = 0:title 60:intro 172:busbahnhof 436:talstation 700:gondel 810:mozartplatz 1082:checkpoint 1240:ischler_strasse 1430:seepromenade 1700:anlegestelle 1894:maibaum 2160:tally 2520:map
 ---
 - 20
 S 1       # START: stage intro
