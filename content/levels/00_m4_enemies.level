@@ -1,0 +1,47 @@
+# Grey-box test level for the M4 enemies (M4 task E22; not part of the
+# journey; side camera). Sections (columns): start 0-11 with an optional
+# H-box at 6 (row 9, 3 tiles up: a standing jump bumps it, a walking
+# jump lands on it and takes the Hackl) for the axe replays; balcony
+# singer #1 (one-way balcony at 12-17, row 8, 4 tiles above the street;
+# Operettensänger at 15): his high C rises into the sky over Resi's head
+# (the safe introduction, D-068); street singer #2 at 30 on flat street
+# (24-36 free): stomp him or jump him in his 92-frame idle window, the
+# column hurts also from above; Souvenirstand #1 (D-069): a 1-high curb
+# at 43, the lane 44-49 (6 tiles, room for an axe's descending arc), the
+# stand cell at 50 (range 8, period 150) in
+# front of its counter (grey-box solid at 51-53, row 11) under the
+# awning (grey-box one-way at 50-53, row 9): its globes roll left down
+# the lane and shatter on the curb; goal at 66. The real stage builds
+# the stand from `standl`/`standl_dach` tiles.
+# Replays: tests/replays/m4_enemies_*.replay.
+
+[meta]
+id = "m4_enemies"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"o" = { entity = "operettensaenger" }
+"s" = { entity = "souvenirstand" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+........................................................................
+........................................................................
+........................................................................
+........................................................................
+........................................................................
+........................................................................
+........................................................................
+...............o........................................................
+............------......................................................
+......H...........................................----..................
+........................................................................
+..P...........................o............#......s###............G.....
+########################################################################
+########################################################################
+'''

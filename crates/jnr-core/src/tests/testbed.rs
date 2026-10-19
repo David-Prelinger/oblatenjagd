@@ -52,5 +52,6 @@ const FINISH_FRAME: u32 = 731;
 /// `state_hash` at that frame (changes whenever the hashed tuning gains keys
 /// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
 /// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach`/`climb_top_min`/`climb_catch_up_speed` and the hashed
-/// `settle_feet`/`slack_x`).
-const FINISH_HASH: u64 = 0x48e7_462e_4b19_6515;
+/// `settle_feet`/`slack_x`; M4 E22: the Operettensänger and Souvenirstand
+/// `[enemies]` keys).
+const FINISH_HASH: u64 = 0x1e75_cb3c_8060_9734;

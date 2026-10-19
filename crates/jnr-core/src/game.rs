@@ -767,10 +767,11 @@ impl Game {
     /// it are knocked off for `score.bump_enemy` each, items on it hop.
     fn knock_enemies_on(&mut self, col: i32, row: i32) {
         let knocked = crate::enemies::knock_off_block(&mut self.entities, col, row, &self.tuning);
-        for (_, x, y) in knocked {
+        for (kind, x, y) in knocked {
             let points = self.tuning.score.bump_enemy;
             self.add_score(points);
             self.entities.push(popup(Popup::Score(points), x, y));
+            self.entities.extend(crate::enemies::bravo(kind, x, y));
         }
     }
 
@@ -887,6 +888,13 @@ impl Game {
         let level = &self.level;
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
+        // Every Souvenirstand counts its own globes by their spawn point.
+        let globes: Vec<(Fx, Fx)> = self
+            .entities
+            .iter()
+            .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Schneekugel) && !e.removed)
+            .map(|e| (e.base_x, e.base_y))
+            .collect();
         let ctx = UpdateCtx {
             map: &self.map,
             tuning: &self.tuning,
@@ -895,6 +903,7 @@ impl Game {
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
+            globes: &globes,
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -930,6 +939,11 @@ impl Game {
             }
             if e.kind == EntityKind::Stein && e.state == crate::enemies::state::SHATTERED {
                 spawned.extend(crate::enemies::stein_debris(e, ctx.tuning));
+            }
+            if e.kind == EntityKind::Enemy(EnemyKind::Schneekugel)
+                && e.state == crate::enemies::state::SHATTERED
+            {
+                spawned.extend(crate::enemies::globe_shards(e, ctx.tuning));
             }
             if e.kind.is_platform() {
                 crate::platform::carry(
@@ -981,7 +995,18 @@ impl Game {
         let hitbox = self.player.hitbox();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
-            if !e.active || e.removed || !e.hitbox().overlaps(&hitbox) {
+            if !e.active || e.removed {
+                continue;
+            }
+            // A sounding high C hurts on any contact, before the stomp rule
+            // (falling onto a singing Operettensänger hurts, D-068).
+            if crate::enemies::high_c_column(&e, &self.map, &self.tuning)
+                .is_some_and(|c| c.overlaps(&hitbox))
+            {
+                hurt = true;
+                continue;
+            }
+            if !e.hitbox().overlaps(&hitbox) {
                 continue;
             }
             let (fx, _) = e.feet();
@@ -1031,6 +1056,10 @@ impl Game {
                                 &self.tuning,
                             );
                             spawned.extend(self.stomp_reward(kind, fx, e.y));
+                            spawned.extend(crate::enemies::bravo(kind, fx, e.y));
+                            if kind == EnemyKind::Schneekugel {
+                                spawned.extend(crate::enemies::globe_shards(&e, &self.tuning));
+                            }
                         }
                     } else if kind.stompable() || self.player.bounce_grace == 0 {
                         hurt = true;
@@ -1040,6 +1069,8 @@ impl Game {
                 EntityKind::Thrown | EntityKind::Note | EntityKind::Stein => hurt = true,
                 EntityKind::PoppedOblate
                 | EntityKind::Steinschlag
+                | EntityKind::Souvenirstand
+                | EntityKind::SchneekugelScherben
                 | EntityKind::SteinDebris
                 | EntityKind::Defeated(_)
                 | EntityKind::Debris
@@ -1128,9 +1159,16 @@ impl Game {
             self.entities
                 .extend(crate::enemies::stein_debris(&e, &self.tuning));
         }
+        if e.kind == EntityKind::Defeated(EnemyKind::Schneekugel) {
+            self.entities
+                .extend(crate::enemies::globe_shards(&e, &self.tuning));
+        }
         self.add_score(points);
         let (fx, _) = e.feet();
         self.entities.push(popup(Popup::Score(points), fx, e.y));
+        if let EntityKind::Defeated(kind) = e.kind {
+            self.entities.extend(crate::enemies::bravo(kind, fx, e.y));
+        }
         true
     }
 
@@ -1349,6 +1387,7 @@ impl Game {
                 EntityKind::Popup(_)
                     | EntityKind::Debris
                     | EntityKind::SteinDebris
+                    | EntityKind::SchneekugelScherben
                     | EntityKind::Bump
                     | EntityKind::Defeated(_)
             ) {
@@ -1365,6 +1404,7 @@ impl Game {
                     | EntityKind::Thrown
                     | EntityKind::Note
                     | EntityKind::Steinschlag
+                    | EntityKind::Souvenirstand
                     | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel

@@ -1,0 +1,26 @@
+# As Hackl (H-box, axe on singer #2, see m4_enemies_axe_singer), Resi
+# walks up to the curb and throws as the stand's first globe leaves the
+# stand: the descending arc meets it in the lane (Defeat, 100 outside
+# the chain, drawn as a shatter, D-071). Total 1000 + 200 + 100.
+level  = m4_enemies
+seed   = 1
+source = handwritten
+expect = event=AxeHit score=1300 power=hackl deaths=0 no_event=Hurt state=playing
+---
+R 38
+- 24
+J 20
+- 4
+L 20
+- 20
+RJ 24
+R 6
+- 60
+R 175
+- 20
+B 1
+- 30
+R 220
+- 1
+B 1
+- 80

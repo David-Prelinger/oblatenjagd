@@ -214,11 +214,16 @@ pub enum SpawnKind {
     /// The Durchkriechstein's tunnel (`len` cells from its cell to the
     /// right): DOWN at its mouth starts the scripted crawl (D-057).
     Durchkriechstein,
+    /// Enemy `operettensaenger` (sings a vertical high-C column, D-068).
+    Operettensaenger,
+    /// A `souvenirstand` snow-globe spawner in front of its counter
+    /// (`period`, `phase`, `range`; D-069).
+    Souvenirstand,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 21] = [
+    pub const ALL: [SpawnKind; 23] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -240,6 +245,8 @@ impl SpawnKind {
         SpawnKind::Gams,
         SpawnKind::Steinschlag,
         SpawnKind::Durchkriechstein,
+        SpawnKind::Operettensaenger,
+        SpawnKind::Souvenirstand,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -267,6 +274,8 @@ impl SpawnKind {
             SpawnKind::Gams => "gams",
             SpawnKind::Steinschlag => "steinschlag",
             SpawnKind::Durchkriechstein => "durchkriechstein",
+            SpawnKind::Operettensaenger => "operettensaenger",
+            SpawnKind::Souvenirstand => "souvenirstand",
         }
     }
 
@@ -363,13 +372,15 @@ pub struct EntitySpawn {
     /// `lead = true` on a `pilger`: the group leader's sprite
     /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
     pub lead: bool,
-    /// A `steinschlag`'s counter period in frames (`period = N`,
-    /// [`STEINSCHLAG_PERIOD_RANGE`], [`DEFAULT_STEINSCHLAG_PERIOD`] by
-    /// default; with `phase` = 0 or [`STEINSCHLAG_MIN_PHASE`]..period).
+    /// A `steinschlag`'s or `souvenirstand`'s counter period in frames
+    /// (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
+    /// [`DEFAULT_STEINSCHLAG_PERIOD`] by default; with `phase` = 0 or
+    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period).
     pub period: u16,
-    /// A `steinschlag`'s range in tiles (`range = N`,
-    /// [`STEINSCHLAG_RANGE_TILES`], [`DEFAULT_STEINSCHLAG_RANGE`] by
-    /// default): its counter runs while the player is this close.
+    /// A `steinschlag`'s or `souvenirstand`'s range in tiles (`range = N`,
+    /// [`STEINSCHLAG_RANGE_TILES`]; [`DEFAULT_STEINSCHLAG_RANGE`] /
+    /// [`DEFAULT_SOUVENIRSTAND_RANGE`] by default): its counter runs while
+    /// the player is this close.
     pub range: u8,
 }
 
@@ -386,6 +397,14 @@ pub const STEINSCHLAG_MIN_PHASE: u16 = 41;
 pub const DEFAULT_STEINSCHLAG_RANGE: u8 = 6;
 /// Allowed `range` of a `steinschlag`, in tiles.
 pub const STEINSCHLAG_RANGE_TILES: std::ops::RangeInclusive<u8> = 4..=10;
+/// A `souvenirstand`'s `range` without the field, in tiles (D-069; its
+/// `period` defaults to [`DEFAULT_STEINSCHLAG_PERIOD`] and takes
+/// [`STEINSCHLAG_PERIOD_RANGE`], its `range` [`STEINSCHLAG_RANGE_TILES`]).
+pub const DEFAULT_SOUVENIRSTAND_RANGE: u8 = 8;
+/// A `souvenirstand`'s `phase` is 0 or at least this (and below its
+/// `period`), so the first globe of an approach always follows the whole
+/// 30-frame telegraph (`enemies.souvenirstand_telegraph` < this, validated).
+pub const SOUVENIRSTAND_MIN_PHASE: u16 = 31;
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -845,7 +864,9 @@ fn parse_legend_value(
                 (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
-                (_, Some("steinschlag")) => &["entity", "tile", "period", "phase", "range"],
+                (_, Some("steinschlag" | "souvenirstand")) => {
+                    &["entity", "tile", "period", "phase", "range"]
+                }
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
@@ -1068,13 +1089,29 @@ fn parse_entity(
         "range",
         i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
     )?
-    .map_or(DEFAULT_STEINSCHLAG_RANGE, |n| n as u8);
+    .map_or(
+        if kind == SpawnKind::Souvenirstand {
+            DEFAULT_SOUVENIRSTAND_RANGE
+        } else {
+            DEFAULT_STEINSCHLAG_RANGE
+        },
+        |n| n as u8,
+    );
     if kind == SpawnKind::Steinschlag
         && phase != 0
         && !(STEINSCHLAG_MIN_PHASE..period).contains(&phase)
     {
         return Err(ParseError::new(format!(
             "legend \"{key}\": a steinschlag's phase must be 0 or {STEINSCHLAG_MIN_PHASE}..={} (below its period {period}), so its first rock shows the whole telegraph",
+            period - 1
+        )));
+    }
+    if kind == SpawnKind::Souvenirstand
+        && phase != 0
+        && !(SOUVENIRSTAND_MIN_PHASE..period).contains(&phase)
+    {
+        return Err(ParseError::new(format!(
+            "legend \"{key}\": a souvenirstand's phase must be 0 or {SOUVENIRSTAND_MIN_PHASE}..={} (below its period {period}), so its first globe shows the whole telegraph",
             period - 1
         )));
     }
@@ -1711,6 +1748,78 @@ P.sSC.tfG
             ("{ entity = \"steinschlag\", lead = true }", "lead"),
             ("{ entity = \"steinschlag\", len = 3 }", "len"),
             ("{ entity = \"selfie_tourist\", range = 5 }", "range"),
+        ] {
+            let e = err(&with(entity));
+            assert!(
+                e.contains(&format!("field \"{field}\" is not allowed")),
+                "{entity}: {e}"
+            );
+        }
+    }
+
+    #[test]
+    fn m4_singer_and_stand_take_their_fields() {
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"b\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pb--..")
+        };
+        let spawn = |entity: &str| {
+            Level::parse(&with(entity))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.col == 2)
+                .unwrap()
+        };
+        assert_eq!(
+            spawn("{ entity = \"operettensaenger\" }").kind,
+            SpawnKind::Operettensaenger
+        );
+        let stand = |fields: &str| {
+            let s = spawn(&format!("{{ entity = \"souvenirstand\"{fields} }}"));
+            assert_eq!(s.kind, SpawnKind::Souvenirstand);
+            (s.period, s.phase, s.range)
+        };
+        assert_eq!(stand(""), (150, 0, 8), "defaults (D-069)");
+        assert_eq!(stand(", period = 90, phase = 31, range = 4"), (90, 31, 4));
+        assert_eq!(
+            stand(", period = 300, phase = 299, range = 10"),
+            (300, 299, 10)
+        );
+        let stand_err =
+            |fields: &str| err(&with(&format!("{{ entity = \"souvenirstand\"{fields} }}")));
+        for (bad, field) in [
+            (", period = 89", "period"),
+            (", period = 301", "period"),
+            (", range = 3", "range"),
+            (", range = 11", "range"),
+            (", phase = -1", "phase"),
+        ] {
+            let e = stand_err(bad);
+            assert!(
+                e.contains(&format!("field \"{field}\" must be")),
+                "{bad}: {e}"
+            );
+        }
+        // The phase must not skip into the telegraph or past the period.
+        for bad in [
+            ", phase = 1",
+            ", phase = 30",
+            ", phase = 150",
+            ", period = 100, phase = 100",
+        ] {
+            let e = stand_err(bad);
+            assert!(e.contains("phase must be 0 or 31..="), "{bad}: {e}");
+        }
+        for (entity, field) in [
+            ("{ entity = \"operettensaenger\", range = 5 }", "range"),
+            ("{ entity = \"operettensaenger\", phase = 5 }", "phase"),
+            ("{ entity = \"souvenirstand\", len = 3 }", "len"),
+            ("{ entity = \"souvenirstand\", dir = 1 }", "dir"),
         ] {
             let e = err(&with(entity));
             assert!(

@@ -1,0 +1,16 @@
+# The Souvenirstand's safe introduction (D-069): after stomping singer
+# #2, Resi walks up to the curb and waits left of it. Entering the
+# stand's range starts its counter; three globes follow the 30-frame
+# telegraph, roll left down the lane and shatter on the curb in front of
+# her (shards, no harm).
+level  = m4_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing score=200 player_x>=670
+---
+R 250
+- 40
+R 20
+RJ 20
+R 140
+- 400
