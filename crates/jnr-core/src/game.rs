@@ -36,6 +36,13 @@ use crate::tuning::Tuning;
 /// How many columns left and right [`Game::teleport_player`] searches for a floor.
 pub const TELEPORT_SEARCH_COLS: i32 = 8;
 
+/// The „Zwischenstopp" popup spawns with its text top this many px above
+/// the checkpoint's ground. Its lowest drawn row (8 glyph rows + the 1 px
+/// outline) is then 44 px above the ground, ≥ 2 px clear of the 40 px bus
+/// board beside the checkpoint, and it only rises from there (E12 art
+/// review: it used to spawn at 40 and cover the board).
+pub const CHECKPOINT_POPUP_ABOVE_GROUND_PX: i32 = 52;
+
 /// Highest score (the HUD shows 6 digits).
 pub const MAX_SCORE: u32 = 999_999;
 
@@ -1026,7 +1033,7 @@ impl Game {
                 self.checkpoint = Some(i as u16);
                 self.events.push(Event::CheckpointReached);
                 let x = TILE.mul_int(s.col) + TILE.div_int(2);
-                let y = TILE.mul_int(s.row + 1) - Fx::from_px(40);
+                let y = TILE.mul_int(s.row + 1) - Fx::from_px(CHECKPOINT_POPUP_ABOVE_GROUND_PX);
                 self.entities.push(popup(Popup::Checkpoint, x, y));
             }
         }

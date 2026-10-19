@@ -21,6 +21,7 @@ const LEGEND: &str = r##"
 "T" = { entity = "selfie_tourist", still = true }
 "s" = { entity = "bienenschwarm", dir = 0, len = 2 }
 "S" = { entity = "bienenschwarm", dir = 0, len = 2, phase = 50 }
+"u" = { entity = "bienenschwarm", dir = 0, len = 2, dy = -8 }
 "g" = { entity = "gondel", to = [6, -1] }
 "h" = { entity = "gondel", to = [6, -1], phase = 100 }
 "v" = { entity = "gondel", to = [0, -4] }
@@ -644,6 +645,12 @@ fn a_swarm_in_the_level_follows_its_path_from_its_phase() {
     for k in 0..300 {
         assert_eq!(at(&b), path[k + 50], "phase 50, frame {k}");
         safe_step(&mut b, "-");
+    }
+    // `dy = -8` moves the anchor (and so the whole path) 8 px up.
+    let mut c = game(&world(40, &[(5, 10, 'u')]));
+    for (k, &(x, y)) in path.iter().enumerate().take(300) {
+        assert_eq!(at(&c), (x, y - Fx::from_px(8)), "dy -8, frame {k}");
+        safe_step(&mut c, "-");
     }
 }
 #[test]

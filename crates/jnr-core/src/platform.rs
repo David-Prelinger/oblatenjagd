@@ -559,6 +559,7 @@ mod tests {
             phase: 0,
             dir: 0,
             len: crate::level::DEFAULT_SWARM_LEN,
+            dy: 0,
         };
         assert_eq!(initial_state(&spawn([8, -5])), car::WAIT_LOWER);
         assert_eq!(initial_state(&spawn([8, 0])), car::WAIT_LOWER);

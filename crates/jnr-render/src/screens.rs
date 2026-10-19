@@ -97,7 +97,9 @@ pub const TEXT_KEYS: [&str; 31] = [
 // Layout (y = top of the text line).
 const LOGO_Y: i32 = 24;
 const TITLE_NAME_Y: i32 = 20;
-const SUBTITLE_Y: i32 = 84;
+/// In the plain sky band under the logo, clear of every station's start
+/// tiles (the Brunnwinkl ?-boxes start at y 84; art review of E12).
+const SUBTITLE_Y: i32 = 60;
 /// Top of the title prompt line (also the band `cargo xtask wasm-smoke` watches).
 pub const PRESS_START_Y: i32 = 128;
 const INTRO_TITLE_Y: i32 = 64;
@@ -413,6 +415,44 @@ mod tests {
         assert_ne!(fb.get(px, PRESS_START_Y), Some(WHITE), "prompt off");
         // No HUD on the title screen.
         assert_ne!(fb.get(16, 4), Some(WHITE));
+    }
+
+    /// The subtitle (y 60..=68 with its shadow) sits in plain sky on every
+    /// shipped stage's title view: no tile is drawn behind it.
+    #[test]
+    fn subtitle_band_is_clear_of_tiles_on_every_stage_title() {
+        let line = crate::font::LINE_HEIGHT;
+        assert!(SUBTITLE_Y >= 60 && SUBTITLE_Y + line <= 69);
+        for (name, text) in [
+            (
+                "salzburg",
+                include_str!("../../../content/levels/01_salzburg.level"),
+            ),
+            (
+                "st_gilgen",
+                include_str!("../../../content/levels/02_st_gilgen.level"),
+            ),
+            (
+                "brunnwinkl",
+                include_str!("../../../content/levels/03_brunnwinkl.level"),
+            ),
+        ] {
+            let level = Level::parse(text).unwrap();
+            let g = Game::new_at(&level, &tuning(), 1, Start::Title);
+            let cam = g.camera();
+            let tile = jnr_core::level::TILE_PX;
+            for y in (cam.y + SUBTITLE_Y - 1)..=(cam.y + SUBTITLE_Y + line) {
+                for x in (cam.x + 48)..(cam.x + WIDTH as i32 - 48) {
+                    let t = level.tile(x.div_euclid(tile), y.div_euclid(tile));
+                    assert!(
+                        t.is_none_or(|t| t.name == 0),
+                        "{name}: a tile is drawn behind the title subtitle at screen ({}, {})",
+                        x - cam.x,
+                        y - cam.y
+                    );
+                }
+            }
+        }
     }
 
     #[test]

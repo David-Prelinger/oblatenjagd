@@ -313,7 +313,15 @@ pub struct EntitySpawn {
     /// Length of a `bienenschwarm`'s waggle run in tiles (`len = 2..=4`,
     /// [`DEFAULT_SWARM_LEN`] by default).
     pub len: u8,
+    /// Vertical offset of a `bienenschwarm`'s anchor from its cell centre
+    /// in px (`dy = N`, within ±[`MAX_SWARM_DY_PX`], 0 by default; negative
+    /// is up), e.g. -8 so a swarm anchored above the ground never dips
+    /// its bees into it.
+    pub dy: i32,
 }
+
+/// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
+pub const MAX_SWARM_DY_PX: i32 = 8;
 
 /// A `bienenschwarm`'s waggle run without `len`, in tiles.
 pub const DEFAULT_SWARM_LEN: u8 = 3;
@@ -467,6 +475,7 @@ enum LegendEntry {
         phase: u16,
         dir: u8,
         len: u8,
+        dy: i32,
     },
 }
 
@@ -556,6 +565,7 @@ impl Level {
                         phase,
                         dir,
                         len,
+                        dy,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -572,6 +582,7 @@ impl Level {
                             phase: *phase,
                             dir: *dir,
                             len: *len,
+                            dy: *dy,
                         });
                     }
                 }
@@ -710,7 +721,7 @@ fn parse_legend_value(
                 (_, Some("sign")) => &["entity", "tile", "text", "style"],
                 (_, Some("festungsbahn")) => &["entity", "tile", "to"],
                 (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
-                (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase"],
+                (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
                 (_, Some(_)) => &["entity", "tile"],
@@ -915,6 +926,11 @@ fn parse_entity(
         i64::from(*SWARM_LEN_RANGE.start())..=i64::from(*SWARM_LEN_RANGE.end()),
     )?
     .map_or(DEFAULT_SWARM_LEN, |n| n as u8);
+    let dy = int_field(
+        "dy",
+        -i64::from(MAX_SWARM_DY_PX)..=i64::from(MAX_SWARM_DY_PX),
+    )?
+    .unwrap_or(0) as i32;
     Ok(LegendEntry::Entity {
         tile,
         kind,
@@ -928,6 +944,7 @@ fn parse_entity(
         phase,
         dir,
         len,
+        dy,
     })
 }
 
@@ -982,6 +999,7 @@ grid = '''
             phase: 0,
             dir: 0,
             len: DEFAULT_SWARM_LEN,
+            dy: 0,
         }
     }
 
@@ -1486,11 +1504,13 @@ P.sSC.tfG
                 .into_iter()
                 .find(|e| e.kind == SpawnKind::Bienenschwarm)
                 .unwrap();
-            (s.dir, s.len, s.phase)
+            (s.dir, s.len, s.phase, s.dy)
         };
-        assert_eq!(swarm(""), (0, DEFAULT_SWARM_LEN, 0), "defaults");
-        assert_eq!(swarm(", dir = 7, len = 4, phase = 99"), (7, 4, 99));
-        assert_eq!(swarm(", dir = 2, len = 2"), (2, 2, 0));
+        assert_eq!(swarm(""), (0, DEFAULT_SWARM_LEN, 0, 0), "defaults");
+        assert_eq!(swarm(", dir = 7, len = 4, phase = 99"), (7, 4, 99, 0));
+        assert_eq!(swarm(", dir = 2, len = 2"), (2, 2, 0, 0));
+        assert_eq!(swarm(", dir = 1, dy = -8"), (1, DEFAULT_SWARM_LEN, 0, -8));
+        assert_eq!(swarm(", dy = 8"), (0, DEFAULT_SWARM_LEN, 0, 8));
         for (bad, field) in [
             (", dir = 8", "dir"),
             (", dir = -1", "dir"),
@@ -1498,6 +1518,8 @@ P.sSC.tfG
             (", len = 5", "len"),
             (", len = \"3\"", "len"),
             (", phase = 70000", "phase"),
+            (", dy = -9", "dy"),
+            (", dy = 9", "dy"),
         ] {
             let e = err(&with(bad));
             assert!(
