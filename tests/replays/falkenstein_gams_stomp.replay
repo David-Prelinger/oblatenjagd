@@ -6,7 +6,7 @@ level  = falkenstein
 seed   = 1
 source = handwritten
 expect = event=Stomped no_event=Hurt deaths=0
-shots  = 1405:stomp
+shots  = 1430:stomp
 ---
 # --- the first 1270 frames of falkenstein_solver.replay ---
 RB 28
