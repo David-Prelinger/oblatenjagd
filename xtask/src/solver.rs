@@ -602,6 +602,8 @@ impl Trace {
             return self.feet[f];
         }
         let before = (0..f).rev().find(|&i| self.ground[i]);
+        // The next ground may lie past the deadline; taking the lower of
+        // the two grounds can only relax the goal, never tighten it.
         let after = (f + 1..self.feet.len()).find(|&i| self.ground[i]);
         match (before, after) {
             (Some(b), Some(a)) => self.feet[b].max(self.feet[a]),
