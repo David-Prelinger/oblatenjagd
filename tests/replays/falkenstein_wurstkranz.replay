@@ -1,0 +1,78 @@
+# Stage 4 goal, Wurstkranz zone (D-038; game-design.md sec. 6): the solver
+# route onto the Aberseeblick (row 10, 6 tiles above the meadow), where
+# Resi stops, walks back to the rock's left end and takes a held running
+# jump off its right edge: she grabs the Maibaum high enough for the
+# Wurstkranz, 5000 points (complete at 1640, score 11000; walking off the
+# same rock scores 100, falkenstein_goal_walk_off). Run-ups of 16 to 24
+# frames all reach it. If the solver route changes, re-copy the prefix and
+# re-check the frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = complete frames=1640..1640 score=11000 deaths=0 state=stage_clear
+---
+# --- the first 1480 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 101
+RBJ 36
+RB 44
+RBJ 20
+RB 119
+RBJ 36
+RB 43
+RBJ 36
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 9
+RBJ 24
+# --- end of the first 1480 frames of falkenstein_solver.replay ---
+- 60      # stand on the Aberseeblick
+L 30      # back to its left end
+- 10
+RB 20     # run-up
+RBJ 30    # held running jump off the right edge
+RB 60
+- 20
