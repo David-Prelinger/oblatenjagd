@@ -69,7 +69,9 @@ impl EnemyKind {
             | EnemyKind::Blasmusiker
             | EnemyKind::EBiker
             | EnemyKind::Pilger
-            | EnemyKind::Gams => AxeHit::Defeat,
+            | EnemyKind::Gams
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schneekugel => AxeHit::Defeat,
             EnemyKind::Fiaker => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
@@ -104,7 +106,9 @@ impl Entity {
             | EntityKind::Schafbergbahn
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
-            | EntityKind::SteinDebris => AxeHit::Pass,
+            | EntityKind::SteinDebris
+            | EntityKind::Souvenirstand
+            | EntityKind::SchneekugelScherben => AxeHit::Pass,
             EntityKind::Stein => AxeHit::Shatter,
         }
     }

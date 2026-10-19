@@ -89,9 +89,10 @@ pub const TEXT_KEYS: [&str; 34] = [
         Some(k) => k,
         None => "",
     },
-    // The Operettensänger's defeat popup (D-068; its `Popup` comes with the
-    // singer, task E22).
-    "popup.bravo",
+    match Popup::Bravo.text_key() {
+        Some(k) => k,
+        None => "",
+    },
     crate::map::NEXT_STOP_KEY,
     crate::map::CONTINUE_KEY,
     crate::map::STATION_KEYS[0],

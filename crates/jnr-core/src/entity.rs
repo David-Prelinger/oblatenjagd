@@ -46,6 +46,8 @@ pub enum Popup {
     /// `popup.ballast` („Ballast weg!"), a big Resi shed to Normal by the
     /// Durchkriechstein.
     Ballast,
+    /// `popup.bravo` („Bravo!"), a defeated Operettensänger (D-068).
+    Bravo,
 }
 
 impl Popup {
@@ -59,11 +61,12 @@ impl Popup {
             Popup::Hoppala => Some("popup.hoppala"),
             Popup::Hackl => Some("popup.hackl"),
             Popup::Ballast => Some("popup.ballast"),
+            Popup::Bravo => Some("popup.bravo"),
         }
     }
 }
 
-/// The enemy types of Stages 1–4.
+/// The enemy types of Stages 1–5.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -88,6 +91,12 @@ pub enum EnemyKind {
     Pilger,
     /// `gams`: stands, crouches, hops; never leaves its ledge.
     Gams,
+    /// `operettensaenger`: stands, sings a vertical high-C column
+    /// ([`crate::enemies::high_c_column`]) that hurts on any contact.
+    Operettensaenger,
+    /// `schneekugel`: a snow globe from a Souvenirstand, rolls left and
+    /// shatters on walls.
+    Schneekugel,
 }
 
 impl EnemyKind {
@@ -105,14 +114,16 @@ impl EnemyKind {
 
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker, Gams; D-046, D-058), else 0. Also the index of
+    /// Blasmusiker, E-Biker, Gams, Operettensänger; D-046, D-058, D-068),
+    /// else 0. Also the index of
     /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
         match self {
             EnemyKind::MozartkugelVerkaeufer
             | EnemyKind::Blasmusiker
             | EnemyKind::EBiker
-            | EnemyKind::Gams => 1,
+            | EnemyKind::Gams
+            | EnemyKind::Operettensaenger => 1,
             _ => 0,
         }
     }
@@ -130,6 +141,8 @@ impl EnemyKind {
             EnemyKind::Bienenschwarm => "bienenschwarm",
             EnemyKind::Pilger => "pilger",
             EnemyKind::Gams => "gams",
+            EnemyKind::Operettensaenger => "operettensaenger",
+            EnemyKind::Schneekugel => "schneekugel",
         }
     }
 
@@ -146,6 +159,8 @@ impl EnemyKind {
             EnemyKind::Bienenschwarm => 8,
             EnemyKind::Pilger => 9,
             EnemyKind::Gams => 10,
+            EnemyKind::Operettensaenger => 11,
+            EnemyKind::Schneekugel => 12,
         }
     }
 }
@@ -206,6 +221,12 @@ pub enum EntityKind {
     /// the boulder is a prop): `state` is [`crate::crawl::stone::UNUSED`]
     /// until crawled through ([`crate::crawl::stone::USED`]).
     Durchkriechstein,
+    /// A Souvenirstand: the snow-globe spawner in the air cell in front of
+    /// its counter (no collision; its hitbox is that cell), see
+    /// [`crate::enemies::update_souvenirstand`].
+    Souvenirstand,
+    /// A shard of a shattered snow globe (no collision).
+    SchneekugelScherben,
     /// The Schafbergbahn steam train: the Festungsbahn's waiting state
     /// machine with its own body and timing ([`crate::platform`], D-067).
     Schafbergbahn,
@@ -230,6 +251,8 @@ impl EntityKind {
             EntityKind::SteinDebris => Some("stein_debris"),
             EntityKind::Hackl => Some("hackl"),
             EntityKind::ThrownHackl => Some("hackl_thrown"),
+            EntityKind::Souvenirstand => Some("souvenirstand"),
+            EntityKind::SchneekugelScherben => Some("schneekugel_scherben"),
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Popup(_)
             | EntityKind::Bump
@@ -273,7 +296,8 @@ impl EntityKind {
             EntityKind::Hackl => 18,
             EntityKind::ThrownHackl => 19,
             EntityKind::Durchkriechstein => 20,
-            // 21 and 22 are E22's (Souvenirstand, Schneekugel).
+            EntityKind::Souvenirstand => 21,
+            EntityKind::SchneekugelScherben => 22,
             EntityKind::Schafbergbahn => 23,
         }
     }
@@ -292,6 +316,7 @@ impl EntityKind {
                 Popup::Hoppala => h.u8(4),
                 Popup::Hackl => h.u8(5),
                 Popup::Ballast => h.u8(6),
+                Popup::Bravo => h.u8(7),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -518,6 +543,16 @@ impl Entity {
             SpawnKind::Steinschlag => {
                 crate::enemies::resting_rock(EntityKind::Steinschlag, s.col, s.row, t)
             }
+            SpawnKind::Operettensaenger => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Operettensaenger),
+                feet_x,
+                feet_y,
+                e.operettensaenger_hitbox,
+            ),
+            // The spawner cell (the globes start at its bottom centre).
+            SpawnKind::Souvenirstand => {
+                Entity::at_feet(EntityKind::Souvenirstand, feet_x, feet_y, [16, 16])
+            }
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -640,6 +675,7 @@ impl Entity {
                 None
             }
             EntityKind::Steinschlag => crate::enemies::update_steinschlag(self, ctx),
+            EntityKind::Souvenirstand => crate::enemies::update_souvenirstand(self, ctx),
             EntityKind::Stein => {
                 crate::enemies::update_stein(self, map, t);
                 None
@@ -653,7 +689,7 @@ impl Entity {
                 self.update_power_up(map, t, t.items.zaunerstollen_speed);
                 None
             }
-            EntityKind::Debris | EntityKind::SteinDebris => {
+            EntityKind::Debris | EntityKind::SteinDebris | EntityKind::SchneekugelScherben => {
                 self.vy = (self.vy + t.player.gravity).min(t.player.max_fall_speed);
                 self.x += self.vx;
                 self.y += self.vy;
@@ -745,6 +781,10 @@ pub(crate) struct UpdateCtx<'a> {
     pub screen_left: Fx,
     /// The top screen edge (camera y).
     pub screen_top: Fx,
+    /// Where every snow globe alive at the start of the update started
+    /// (`base_x`, `base_y`): a Souvenirstand counts its own by its spawn
+    /// point (D-069: at most `souvenirstand_max_alive`).
+    pub globes: &'a [(Fx, Fx)],
 }
 
 /// A popup centred on `x` with its top at `y`.
@@ -810,6 +850,8 @@ mod tests {
                 EntityKind::ThrownHackl => 19,
                 EntityKind::Durchkriechstein => 20,
                 EntityKind::Schafbergbahn => 21,
+                EntityKind::Souvenirstand => 22,
+                EntityKind::SchneekugelScherben => 23,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -836,6 +878,8 @@ mod tests {
             EntityKind::ThrownHackl,
             EntityKind::Durchkriechstein,
             EntityKind::Schafbergbahn,
+            EntityKind::Souvenirstand,
+            EntityKind::SchneekugelScherben,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -861,6 +905,8 @@ mod tests {
                 EnemyKind::Bienenschwarm => 8,
                 EnemyKind::Pilger => 9,
                 EnemyKind::Gams => 10,
+                EnemyKind::Operettensaenger => 11,
+                EnemyKind::Schneekugel => 12,
             }
         }
         let enemies = [
@@ -875,6 +921,8 @@ mod tests {
             EnemyKind::Bienenschwarm,
             EnemyKind::Pilger,
             EnemyKind::Gams,
+            EnemyKind::Operettensaenger,
+            EnemyKind::Schneekugel,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -936,6 +984,7 @@ mod tests {
             player_standing: None,
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
+            globes: &[],
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());

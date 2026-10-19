@@ -14,10 +14,11 @@
 //!    (animation by `Entity::pose`, facing by `Entity::dir`, the swarm's
 //!    shake by `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), the
 //!    Steinschlag niches (resting/wobbling rock and the `kiesel` trickle),
-//!    falling rocks, the Festungsbahn, the Gondel cabins and the
-//!    Schafbergbahn with its steam puffs
+//!    falling rocks, the Operettensänger's high-C column (`hohes_c` rings),
+//!    the Souvenirstand vendors, snow globes, the Festungsbahn, the Gondel
+//!    cabins and the Schafbergbahn with its steam puffs
 //! 4. player (scene)
-//! 5. [`draw_front`]: debris (bricks and rocks) and popups
+//! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards) and popups
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
@@ -77,6 +78,10 @@ pub const FAR_DARK: u32 = 0x8ea4ccff;
 pub const FAR_LIGHT: u32 = 0xa4bad8ff;
 /// `m` stone_grey: `kiesel` pebbles without their sprite.
 pub const STONE_GREY: u32 = 0x5d6680ff;
+/// `h` sky_haze: Schneekugel (the glass dome).
+pub const SKY_HAZE: u32 = 0xdff1f0ff;
+/// `S` sky_blue: the Souvenirstand vendor (apron).
+pub const SKY_BLUE: u32 = 0x64aee6ff;
 
 /// Pebbles in a Steinschlag's telegraph trickle (renderer only) ...
 pub const KIESEL_COUNT: i32 = 3;
@@ -140,6 +145,11 @@ pub struct EntityLooks<'a> {
     kiesel: Option<&'a AtlasSprite>,
     hackl: Option<&'a AtlasSprite>,
     hackl_thrown: Option<&'a AtlasSprite>,
+    operettensaenger: Option<&'a AtlasSprite>,
+    hohes_c: Option<&'a AtlasSprite>,
+    souvenirstand: Option<&'a AtlasSprite>,
+    schneekugel: Option<&'a AtlasSprite>,
+    schneekugel_scherben: Option<&'a AtlasSprite>,
     schafbergbahn: Option<&'a AtlasSprite>,
     dampf: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
@@ -178,6 +188,11 @@ impl<'a> EntityLooks<'a> {
             kiesel: s("kiesel"),
             hackl: s("hackl"),
             hackl_thrown: s("hackl_thrown"),
+            operettensaenger: s(EnemyKind::Operettensaenger.sprite()),
+            hohes_c: s("hohes_c"),
+            souvenirstand: s("souvenirstand"),
+            schneekugel: s(EnemyKind::Schneekugel.sprite()),
+            schneekugel_scherben: s("schneekugel_scherben"),
             schafbergbahn: s("schafbergbahn"),
             dampf: s("dampf"),
             signs: signs::SIGN_SPRITES.map(s),
@@ -205,6 +220,8 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Bienenschwarm => self.bienenschwarm,
                 EnemyKind::Pilger => self.pilger,
                 EnemyKind::Gams => self.gams,
+                EnemyKind::Operettensaenger => self.operettensaenger,
+                EnemyKind::Schneekugel => self.schneekugel,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -213,6 +230,8 @@ impl<'a> EntityLooks<'a> {
             EntityKind::SteinDebris => self.stein_debris,
             EntityKind::Hackl => self.hackl,
             EntityKind::ThrownHackl => self.hackl_thrown,
+            EntityKind::Souvenirstand => self.souvenirstand,
+            EntityKind::SchneekugelScherben => self.schneekugel_scherben,
             EntityKind::Schafbergbahn => self.schafbergbahn,
             EntityKind::Popup(_)
             | EntityKind::Bump
@@ -242,6 +261,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Bienenschwarm => MEADOW_LIGHT,
             EnemyKind::Pilger => MEADOW,
             EnemyKind::Gams => NAVY,
+            EnemyKind::Operettensaenger => SLATE_DARK,
+            EnemyKind::Schneekugel => SKY_HAZE,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -251,6 +272,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Gondel => SKIN_LIGHT,
         EntityKind::Hackl => PINE_DARK,
         EntityKind::ThrownHackl => SILVER_LIGHT,
+        EntityKind::Souvenirstand => SKY_BLUE,
+        EntityKind::SchneekugelScherben => WHITE,
         EntityKind::Schafbergbahn => OUTLINE,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
@@ -304,9 +327,15 @@ pub fn draw_entities(
             // The Durchkriechstein is drawn by its prop (D-057).
             EntityKind::Debris
             | EntityKind::SteinDebris
+            | EntityKind::SchneekugelScherben
             | EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Durchkriechstein => {}
+            EntityKind::Enemy(EnemyKind::Operettensaenger) => {
+                draw_high_c(game, looks, atlas, fb, cam, e);
+                draw_enemy(game, looks, atlas, fb, cam, e);
+            }
+            EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
             EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
             EntityKind::Enemy(_)
@@ -539,7 +568,7 @@ pub fn draw_front(
     let cam = game.camera();
     for e in game.entities() {
         match e.kind {
-            EntityKind::Debris | EntityKind::SteinDebris => {
+            EntityKind::Debris | EntityKind::SteinDebris | EntityKind::SchneekugelScherben => {
                 draw_body(game, looks, atlas, fb, cam, e)
             }
             EntityKind::Popup(p) => draw_popup(game, atlas, font, texts, fb, cam, e, p),
@@ -606,6 +635,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Rest => ("rest", None),
         Pose::Wobble => ("wobble", None),
         Pose::Fall => ("fall", None),
+        Pose::Sing => ("sing", None),
+        Pose::Roll => ("roll", None),
     }
 }
 
@@ -693,10 +724,13 @@ fn draw_enemy(
                 Some(i) => i as u32 * anim.ticks,
                 None => game.frame(),
             };
+            // These only ever move left: their art faces left.
             let fixed = matches!(
                 e.kind,
-                EntityKind::Enemy(EnemyKind::Fiaker | EnemyKind::EBiker)
-                    | EntityKind::Defeated(EnemyKind::Fiaker | EnemyKind::EBiker)
+                EntityKind::Enemy(EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel)
+                    | EntityKind::Defeated(
+                        EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
+                    )
             );
             let left = e.facing_left() && !fixed;
             draw_sprite(fb, atlas, s, anim, tick, x, y, left);
@@ -717,6 +751,83 @@ fn draw_enemy(
                 // small red flag.
                 fb.fill_rect(bx + w - 2, by - 8, 1, 8, OUTLINE);
                 fb.fill_rect(bx + w - 1, by - 8, 3, 2, DIRNDL_RED);
+            }
+        }
+    }
+}
+
+/// An Operettensänger's high-C column ([`jnr_core::enemies::high_c_column`])
+/// while it sounds: `hohes_c` rings (anim `ring`, 8 px slices) stacked
+/// every 8 px from his hitbox top up, alternate rings half a period apart.
+/// A column clipped by a solid tile at a height that is no multiple of 8
+/// gets one more ring hung from its top (overlapping the ring below), so
+/// every hurting pixel lies in a ring's slice and none pokes into the tile.
+/// Without the sprite: the column as a white box with an `i` outline.
+fn draw_high_c(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let Some(c) = jnr_core::enemies::high_c_column(e, game.map(), game.tuning()) else {
+        return;
+    };
+    let (x, y) = (c.x.to_px() - cam.x, c.y.to_px() - cam.y);
+    let (w, h) = (c.w.to_px(), c.h.to_px());
+    match looks.hohes_c {
+        Some(s) => {
+            let anim = s.anim("ring").unwrap_or(&s.anims[0]);
+            let cx = x + w / 2;
+            let full = h / 8;
+            for i in 0..full {
+                let tick = game.frame() + i as u32 * anim.ticks;
+                draw_sprite(fb, atlas, s, anim, tick, cx, y + h - 8 * i, false);
+            }
+            if h % 8 != 0 {
+                // The partial top: one more ring whose slice starts at the
+                // clipped top (a column under 8 px keeps it on his head).
+                let tick = game.frame() + full as u32 * anim.ticks;
+                let feet = if full > 0 { y + 8 } else { y + h };
+                draw_sprite(fb, atlas, s, anim, tick, cx, feet, false);
+            }
+        }
+        None => {
+            fb.fill_rect(x, y, w, h, WHITE);
+            fb.outline_rect(x, y, w, h, SILVER_LIGHT);
+        }
+    }
+}
+
+/// A Souvenirstand's vendor: `souvenirstand` (anim `idle`, or `telegraph`
+/// while it holds up a globe) with its origin on the top edge of the
+/// counter's first tile (one column right of the spawner cell, the spawner
+/// row's top), never mirrored; without the sprite a 12×12 `S` box there,
+/// with a 4×4 white globe above it in the telegraph.
+fn draw_souvenirstand(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let pose = e.pose(game.tuning()).unwrap_or(Pose::Idle);
+    let x = e.right().to_px() + 8 - cam.x;
+    let y = e.y.to_px() - cam.y;
+    match looks.souvenirstand {
+        Some(s) => {
+            let (name, _) = pose_anim(pose);
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            fb.fill_rect(x - 6, y - 12, 12, 12, SKY_BLUE);
+            fb.outline_rect(x - 6, y - 12, 12, 12, OUTLINE);
+            if pose == Pose::Telegraph {
+                fb.fill_rect(x - 2, y - 17, 4, 4, WHITE);
+                fb.outline_rect(x - 2, y - 17, 4, 4, OUTLINE);
             }
         }
     }
@@ -978,6 +1089,8 @@ mod tests {
             ('F', FAR_DARK),
             ('f', FAR_LIGHT),
             ('m', STONE_GREY),
+            ('h', SKY_HAZE),
+            ('S', SKY_BLUE),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }
@@ -1088,6 +1201,69 @@ mod tests {
         assert!(checked > 200, "checked while moving both ways");
     }
 
+    /// A column clipped by a solid tile 26 px above the singer's head (not
+    /// a multiple of 8): with a ring sprite that fills its whole 8 px slice,
+    /// every hurting row is covered, and nothing is drawn above the column
+    /// (in the tile) or below it (on his head).
+    #[test]
+    fn a_clipped_high_c_column_is_covered_up_to_its_top() {
+        use crate::testutil::A;
+        let full = "a".repeat(16);
+        let ring = crate::testutil::sprite(
+            "hohes_c",
+            (8, 8),
+            false,
+            vec![("ring", 4, vec![crate::testutil::image(&[full.as_str(); 8])])],
+        );
+        let atlas = crate::testutil::atlas(&[ring]);
+        let texts = Texts::default();
+        let rows = [
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "....................",
+            "..........#.........",
+            "....................",
+            "....................",
+            "..P.......o.........",
+            "####################",
+            "####################",
+        ];
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"o\" = {{ entity = \"operettensaenger\" }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        let mut g = Game::new(&Level::parse(&text).unwrap(), &tuning(), 1);
+        for _ in 0..60 {
+            g.step(InputFrame::NONE);
+        }
+        let singer = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Operettensaenger))
+            .unwrap();
+        let c = jnr_core::enemies::high_c_column(&singer, g.map(), g.tuning()).unwrap();
+        assert_eq!(c.h.to_px(), 26, "clipped at the tile, 26 % 8 = 2");
+        let ctx = RenderContext::new(&atlas, &texts, g.level());
+        let mut fb = Framebuffer::new();
+        render(&g, &ctx, &mut fb);
+        let cam = g.camera();
+        let cx = (c.x + c.w.div_int(2)).to_px() - cam.x;
+        let top = c.y.to_px() - cam.y;
+        let bottom = top + c.h.to_px();
+        for y in top..bottom {
+            assert_eq!(fb.get(cx, y), Some(A), "row {} of the column", y - top);
+        }
+        assert_ne!(fb.get(cx, top - 1), Some(A), "nothing in the tile");
+        assert_ne!(fb.get(cx, bottom), Some(A), "nothing on his head");
+    }
+
     #[test]
     fn every_pose_has_a_catalog_animation() {
         use jnr_core::Pose;
@@ -1116,6 +1292,8 @@ mod tests {
             Pose::Rest,
             Pose::Wobble,
             Pose::Fall,
+            Pose::Sing,
+            Pose::Roll,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)

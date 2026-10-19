@@ -492,6 +492,32 @@ pub struct EnemyTuning {
     pub steinschlag_screen_top: i32,
     /// Points for a rock shattered by a projectile (the thrown Hackl).
     pub stein_points: u32,
+    /// Operettensänger (D-068).
+    pub operettensaenger_hitbox: [i32; 2],
+    /// His counter runs while the player is this close (px) ...
+    pub operettensaenger_range: i32,
+    /// ... frames per cycle ...
+    pub operettensaenger_cycle: u16,
+    /// ... the first this many frames inhale (the telegraph) ...
+    pub operettensaenger_inhale: u16,
+    /// ... then the high C sounds for this many frames; idle to the end.
+    pub operettensaenger_sing: u16,
+    /// The high-C column: width (px, centred on him) ...
+    pub hohes_c_width: i32,
+    /// ... growth per frame from his hitbox top (px) ...
+    pub hohes_c_speed: i32,
+    /// ... and full height (px), unless a solid tile stops it first.
+    pub hohes_c_height: i32,
+    /// Souvenirstand counter frames of the telegraph; the globe spawns at
+    /// this frame of each period. At most
+    /// [`crate::level::SOUVENIRSTAND_MIN_PHASE`] − 1 (D-069).
+    pub souvenirstand_telegraph: u16,
+    /// At most this many of a stand's globes are alive at once.
+    pub souvenirstand_max_alive: u16,
+    /// The rolling snow globe.
+    pub schneekugel_hitbox: [i32; 2],
+    /// Its rolling speed (always to the left; gravity is the player's).
+    pub schneekugel_speed: Fx,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -582,6 +608,68 @@ impl EnemyTuning {
         if !(0..crate::camera::SCREEN_H).contains(&self.steinschlag_screen_top) {
             return Err(ParseError::new(
                 "tuning.toml: enemies.steinschlag_screen_top must be 0..180 px",
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl EnemyTuning {
+    /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
+    /// D-069).
+    fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
+        for (name, [w, h]) in [
+            (
+                "enemies.operettensaenger_hitbox",
+                self.operettensaenger_hitbox,
+            ),
+            ("enemies.schneekugel_hitbox", self.schneekugel_hitbox),
+        ] {
+            if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=16 px wide and 1..=32 px high"
+                )));
+            }
+        }
+        if !(TILE_PX..=crate::camera::SCREEN_W).contains(&self.operettensaenger_range) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.operettensaenger_range must be 16..=320 px",
+            ));
+        }
+        // Inhale, then the C, then at least one idle frame.
+        if self.operettensaenger_inhale == 0
+            || self.operettensaenger_sing == 0
+            || self.operettensaenger_inhale + self.operettensaenger_sing
+                >= self.operettensaenger_cycle
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.operettensaenger_inhale >= 1, operettensaenger_sing >= 1 and inhale + sing < operettensaenger_cycle",
+            ));
+        }
+        if !(1..=32).contains(&self.hohes_c_width)
+            || !(1..=TILE_PX).contains(&self.hohes_c_speed)
+            || !(1..=160).contains(&self.hohes_c_height)
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.hohes_c_width 1..=32, hohes_c_speed 1..=16 and hohes_c_height 1..=160 px",
+            ));
+        }
+        // The level's `phase` is 0 or SOUVENIRSTAND_MIN_PHASE.., so the first
+        // globe of an approach always follows the whole telegraph.
+        let min_phase = crate::level::SOUVENIRSTAND_MIN_PHASE;
+        if self.souvenirstand_telegraph == 0 || self.souvenirstand_telegraph >= min_phase {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need 1 <= enemies.souvenirstand_telegraph < {min_phase}"
+            )));
+        }
+        if !(1..=8).contains(&self.souvenirstand_max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.souvenirstand_max_alive must be 1..=8",
+            ));
+        }
+        if self.schneekugel_speed <= Fx::ZERO || self.schneekugel_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.schneekugel_speed must be > 0 and < 12 px/frame (3072)",
             ));
         }
         Ok(())
@@ -704,6 +792,7 @@ impl Tuning {
             ));
         }
         self.enemies.validate_m3(self.player.max_fall_speed)?;
+        self.enemies.validate_singer_and_stand()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1288,6 +1377,27 @@ mod tests {
             ("steinschlag_refill", 50),
             ("steinschlag_screen_top", -1),
             ("steinschlag_screen_top", 180),
+            ("operettensaenger_hitbox", 0),
+            ("operettensaenger_hitbox", 17),
+            ("operettensaenger_range", 15),
+            ("operettensaenger_range", 321),
+            ("operettensaenger_cycle", 88),
+            ("operettensaenger_inhale", 0),
+            ("operettensaenger_sing", 0),
+            ("operettensaenger_sing", 140),
+            ("hohes_c_width", 0),
+            ("hohes_c_speed", 0),
+            ("hohes_c_speed", 17),
+            ("hohes_c_height", 0),
+            ("hohes_c_height", 161),
+            ("souvenirstand_telegraph", 0),
+            ("souvenirstand_telegraph", 31),
+            ("souvenirstand_max_alive", 0),
+            ("souvenirstand_max_alive", 9),
+            ("schneekugel_hitbox", 0),
+            ("schneekugel_hitbox", 33),
+            ("schneekugel_speed", 0),
+            ("schneekugel_speed", 3072),
             ("climb_feet_y", 181),
             ("climb_feet_y", 40),
             ("climb_top", -1),

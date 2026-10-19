@@ -303,6 +303,7 @@ impl Game {
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
+            globes: &[],
         };
         for e in &mut self.entities {
             let cosmetic = matches!(
@@ -310,6 +311,7 @@ impl Game {
                 EntityKind::Popup(_)
                     | EntityKind::Debris
                     | EntityKind::SteinDebris
+                    | EntityKind::SchneekugelScherben
                     | EntityKind::Bump
                     | EntityKind::PoppedOblate
                     | EntityKind::Defeated(_)
