@@ -1,0 +1,285 @@
+# Souvenir stand counter (solid, 1 high): o O l wood with a light o lip
+# on top (the walking surface), the front a dark l display with tiny
+# wares - snow globe h/w/s on an o/O base, Christmas star Y/o, cowbell
+# w/i/m, and below a shelf rail with a Mozartkugel (i/r/R/m), a Hackl
+# keychain (i/m/d head, o handle) and a brass bell. Static solid tile:
+# no k outline. Left/right ends get an end post (lit o/O left, O/l right).
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_standl
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOllllllllllllOl
+oOhhlllllllillOl
+oOwhsllYllwiilOl
+oOhsslYYoliimlOl
+oOOOOllolllmllOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOooooooooooooOl
+oOlilllimlllllOl
+oOrrRlldmollYmOl
+oOlmlllllollolOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 1
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOllllllllllllOl
+oOhhlllllllillOl
+oOwhsllYllwiilOl
+oOhsslYYoliimlOl
+oOOOOllolllmllOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOooooooooooooOl
+oOlilllimlllllOl
+oOrrRlldmollYmOl
+oOlmlllllollolOl
+oOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 2
+oooooooooooooooo
+oOOOOOOOOOOOOOOO
+oOllllllllllllll
+oOllllllllllllll
+oOhhlllllllillll
+oOwhsllYllwiilll
+oOhsslYYoliimlll
+oOOOOllolllmllll
+oOllllllllllllll
+oOOOOOOOOOOOOOOO
+oOoooooooooooooo
+oOlilllimlllllll
+oOrrRlldmollYmll
+oOlmlllllollolll
+oOOOOOOOOOOOOOOO
+llllllllllllllll
+frame auto 3
+oooooooooooooooo
+oOOOOOOOOOOOOOOO
+oOllllllllllllll
+oOllllllllllllll
+oOhhlllllllillll
+oOwhsllYllwiilll
+oOhsslYYoliimlll
+oOOOOllolllmllll
+oOllllllllllllll
+oOOOOOOOOOOOOOOO
+oOoooooooooooooo
+oOlilllimlllllll
+oOrrRlldmollYmll
+oOlmlllllollolll
+oOOOOOOOOOOOOOOO
+llllllllllllllll
+frame auto 4
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOllllllllllllOl
+oOhhlllllllillOl
+oOwhsllYllwiilOl
+oOhsslYYoliimlOl
+oOOOOllolllmllOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOooooooooooooOl
+oOlilllimlllllOl
+oOrrRlldmollYmOl
+oOlmlllllollolOl
+oOOOOOOOOOOOOOOl
+OOllllllllllllOl
+frame auto 5
+oooooooooooooooO
+oOOOOOOOOOOOOOOl
+oOllllllllllllOl
+oOllllllllllllOl
+oOhhlllllllillOl
+oOwhsllYllwiilOl
+oOhsslYYoliimlOl
+oOOOOllolllmllOl
+oOllllllllllllOl
+oOOOOOOOOOOOOOOl
+oOooooooooooooOl
+oOlilllimlllllOl
+oOrrRlldmollYmOl
+oOlmlllllollolOl
+oOOOOOOOOOOOOOOl
+OOllllllllllllOl
+frame auto 6
+oooooooooooooooo
+oOOOOOOOOOOOOOOO
+oOllllllllllllll
+oOllllllllllllll
+oOhhlllllllillll
+oOwhsllYllwiilll
+oOhsslYYoliimlll
+oOOOOllolllmllll
+oOllllllllllllll
+oOOOOOOOOOOOOOOO
+oOoooooooooooooo
+oOlilllimlllllll
+oOrrRlldmollYmll
+oOlmlllllollolll
+oOOOOOOOOOOOOOOO
+OOllllllllllllll
+frame auto 7
+oooooooooooooooo
+oOOOOOOOOOOOOOOO
+oOllllllllllllll
+oOllllllllllllll
+oOhhlllllllillll
+oOwhsllYllwiilll
+oOhsslYYoliimlll
+oOOOOllolllmllll
+oOllllllllllllll
+oOOOOOOOOOOOOOOO
+oOoooooooooooooo
+oOlilllimlllllll
+oOrrRlldmollYmll
+oOlmlllllollolll
+oOOOOOOOOOOOOOOO
+OOllllllllllllll
+frame auto 8
+oooooooooooooooO
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+llllllllllllllOl
+llhhlllllllillOl
+lhwhsllYllwiilOl
+lhhsslYYoliimlOl
+loOOOllolllmllOl
+llllllllllllllOl
+OOOOOOOOOOOOOOOl
+ooooooooooooooOl
+lllilllimlllllOl
+llrrRlldmollYmOl
+lllmlllllollolOl
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 9
+oooooooooooooooO
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+llllllllllllllOl
+llhhlllllllillOl
+lhwhsllYllwiilOl
+lhhsslYYoliimlOl
+loOOOllolllmllOl
+llllllllllllllOl
+OOOOOOOOOOOOOOOl
+ooooooooooooooOl
+lllilllimlllllOl
+llrrRlldmollYmOl
+lllmlllllollolOl
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+frame auto 10
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llhhlllllllillll
+lhwhsllYllwiilll
+lhhsslYYoliimlll
+loOOOllolllmllll
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+oooooooooooooooo
+lllilllimlllllll
+llrrRlldmollYmll
+lllmlllllollolll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+frame auto 11
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llhhlllllllillll
+lhwhsllYllwiilll
+lhhsslYYoliimlll
+loOOOllolllmllll
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+oooooooooooooooo
+lllilllimlllllll
+llrrRlldmollYmll
+lllmlllllollolll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+frame auto 12
+oooooooooooooooO
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+llllllllllllllOl
+llhhlllllllillOl
+lhwhsllYllwiilOl
+lhhsslYYoliimlOl
+loOOOllolllmllOl
+llllllllllllllOl
+OOOOOOOOOOOOOOOl
+ooooooooooooooOl
+lllilllimlllllOl
+llrrRlldmollYmOl
+lllmlllllollolOl
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+frame auto 13
+oooooooooooooooO
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+llllllllllllllOl
+llhhlllllllillOl
+lhwhsllYllwiilOl
+lhhsslYYoliimlOl
+loOOOllolllmllOl
+llllllllllllllOl
+OOOOOOOOOOOOOOOl
+ooooooooooooooOl
+lllilllimlllllOl
+llrrRlldmollYmOl
+lllmlllllollolOl
+OOOOOOOOOOOOOOOl
+llllllllllllllOl
+frame auto 14
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llhhlllllllillll
+lhwhsllYllwiilll
+lhhsslYYoliimlll
+loOOOllolllmllll
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+oooooooooooooooo
+lllilllimlllllll
+llrrRlldmollYmll
+lllmlllllollolll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+frame auto 15
+oooooooooooooooo
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llhhlllllllillll
+lhwhsllYllwiilll
+lhhsslYYoliimlll
+loOOOllolllmllll
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+oooooooooooooooo
+lllilllimlllllll
+llrrRlldmollYmll
+lllmlllllollolll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
