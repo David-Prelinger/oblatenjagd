@@ -1,0 +1,32 @@
+# Stage 5 Schafbergbahn (D-067): the solver route's inputs to the lower
+# station (frame 305), then walk onto the waiting train (it starts when she
+# stands on it) and ride the whole 24-tile, 576-frame track standing on the
+# coach (the uphill half), with two tap hops over the gorge for the Oblaten
+# line (each hop takes 1-2 and lands back on the roof), and walk off onto
+# the Alm halt at the top (roof flush with the platform, row 7).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 oblaten=12 player_x>=1300 player_y<=90 no_event=Hurt
+shots  = 700:gorge_hop 1000:halt
+---
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 1
+- 20      # land on the platform
+R 30      # walk onto the train: it starts
+- 345
+J 1       # 700: tap hop over the gorge
+- 99
+J 1       # 800: second tap hop
+- 139
+R 80      # 940: the train is at the top (931..1020): walk off onto the halt
+- 30

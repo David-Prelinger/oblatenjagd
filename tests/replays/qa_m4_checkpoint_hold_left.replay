@@ -1,0 +1,66 @@
+# QA M4 (was bug_m4_checkpoint_hold_left, fixed in the level): game-design.md
+# Stage 5 says "A Resi respawning at 150 who holds LEFT walks onto open
+# road: no pit, no bus". The st_wolfgang_solver route to 1290 (past the
+# checkpoint), a little LEFT into the Markt globe lane, where a globe kills
+# her (death 1411), the respawn at the checkpoint, then 300 frames of LEFT:
+# she walks to the screen's left edge (x 2264; the camera never scrolls
+# back) on the open road and stays alive. Fixed by penning Selfie-Tourist #3
+# at the Markt entrance (153-162, between a bench at 152 and the fountain
+# basin; he used to be reset at 146 and walk into her). Bus #2 may trigger
+# (her centre < 2336), but parked or at its stop (right edge 2142) it stays
+# left of the screen edge, out of her reach, and it drives away from her.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=1 lives=2 event=Respawned state=playing no_event=Hurt
+---
+# st_wolfgang_solver inputs to 1290
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+# a little LEFT, into the globe lane: death 1411
+L 20
+- 200
+# hold LEFT
+L 300

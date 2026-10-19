@@ -1,0 +1,37 @@
+# QA M4 Schafbergbahn (D-067): stay on the train through the 90-frame top
+# wait. The relaxed run to the top (1366), then no input: the train waits
+# 90 frames at the upper end, carries her back down, and (she is standing
+# on it) leaves at once for the next ride up. Walk off at the halt on the
+# second arrival at the top.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=1300 player_y<=90 state=playing
+---
+# the qa_st_wolfgang_relaxed inputs to 1366
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+# down and up again with her on the roof
+- 1250
+# walk off at the halt
+R 60

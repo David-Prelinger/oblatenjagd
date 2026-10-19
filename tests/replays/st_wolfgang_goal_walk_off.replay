@@ -1,0 +1,81 @@
+# Stage 5 goal, walk-off zone (D-038; game-design.md Stage 5 section 6):
+# the solver route onto the Schiffsstation's roof (row 10) by frame 2036,
+# where Resi stops, then walks off its right edge: a 6-tile drop towards
+# the goal meadow (row 16); the Maibaum catches her low, 100 points (score
+# 10100 -> 10200; the Wurstkranz is st_wolfgang_wurstkranz).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = complete frames=2138..2138 score=10200 deaths=0 state=stage_clear
+---
+# --- the first 2036 frames of st_wolfgang_solver.replay ---
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+RBJ 36
+RB 13
+RBJ 36
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 110
+RBJ 1
+RB 6
+LB 14
+RJ 36
+R 2
+RB 3
+LB 14
+RBJ 20
+RB 125
+RBJ 36
+RB 64
+RBJ 36
+RB 40
+RBJ 26
+# --- end of the solver prefix ---
+- 40      # stand on the roof
+R 80      # walk off its right edge
+- 30

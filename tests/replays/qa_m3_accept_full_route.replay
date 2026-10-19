@@ -1,16 +1,18 @@
 # QA M3 acceptance: the whole journey in one run of the real game, carrying
-# the Hackl to the teaser. qa_m2_flow_full_route_to_falkenstein up to START
-# in Wait (7655, Falkenstein intro), the 150-frame intro, then the
+# the Hackl into St. Wolfgang. qa_m2_flow_full_route_to_falkenstein up to
+# START in Wait (7655, Falkenstein intro), the 150-frame intro, then the
 # qa_falkenstein_relaxed inputs (play from 7806) with the run carried over,
-# the Maibaum, the tally, the route map Falkenstein -> St. Wolfgang (teaser,
-# player_hackl): it ends there with Hackl Resi on the map (frame 13500).
+# the Maibaum, the tally, the route map Falkenstein -> St. Wolfgang
+# (player_hackl). Since M4 St. Wolfgang is playable (D-066): the map waits
+# with the prompt (was: the teaser), and START in Wait (13501) starts the
+# St. Wolfgang intro with Hackl Resi and the run carried over (D-071).
 # Salzburg 1772, St. Gilgen 4649, Brunnwinkl 7119, Falkenstein 12903.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt event=PowerUp event=AxeHit
-expect = state=route_map power=hackl lives=5 score=77400 oblaten=49
+expect = state=stage_intro stage=st_wolfgang power=hackl lives=5 score=77400 oblaten=49
 ---
 - 20
 S 1         # title -> Salzburg intro
@@ -321,4 +323,6 @@ R 20
 RJ 15
 R 120
 # --- end ---
-- 554     # goal, tally, route map Falkenstein -> St. Wolfgang (teaser) from 13375
+- 554     # goal, tally, route map Falkenstein -> St. Wolfgang (Wait) from 13375
+S 1       # 13501: START in Wait -> St. Wolfgang intro, as Hackl
+- 30

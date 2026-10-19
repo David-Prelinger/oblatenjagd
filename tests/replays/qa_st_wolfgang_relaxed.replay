@@ -1,0 +1,103 @@
+# QA M4: relaxed full run of Stage 5 St. Wolfgang (D-045 time limit).
+# Walking pace only (no RUN), no deaths, no hurts: watch stand #1's globe
+# shatter on the curb, ride the Schafbergbahn the whole way standing still,
+# watch bus #1 from the Alm terrace, wait out bus #2's photo stop on the
+# shelter, M-box Mozartkugel, over the Pilgerbrunnen canopy, H-box Hackl,
+# axe on singer #2, the Seebad in two jumps, walk off the landing hall.
+# LevelComplete at 5242 (87.4 s): D-045 time_limit = 3 x 87.4 = 262 s,
+# inside 200..300, so the provisional 260 stands (rounded).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = complete frames=5242..5242 deaths=0 no_event=Hurt oblaten=42 state=stage_clear
+expect = event=PowerUp event=AxeHit event=CheckpointReached
+---
+R 150      # Ried: walk, 5 Oblaten
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152      # stand on the curb (col 25): stand #1's globe shatters on it
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16      # stomp Selfie-Tourist #1 at the station
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95       # walk onto the waiting train (it starts)
+- 570      # ride the whole 24-tile track standing
+R 225      # walk off at the Alm halt; stepping down stomps Selfie-Tourist #2
+RJ 10
+R 70
+- 180      # watch bus #1 drive under the terrace into the tunnel
+R 200
+RJ 18
+R 6
+- 345      # on the shelter roof: bus #2's photo stop, then it drives under
+R 45
+R 220      # walk to the bench at the Markt entrance (col 152)
+RJ 12      # hop the bench: stomp Selfie-Tourist #3 in his pen (153-162); checkpoint on the way
+R 20
+- 10
+L 6        # back under the M-box
+- 6
+- 26
+J 14       # M-box (col 156); the Mozartkugel turns at the basin
+- 160
+R 104
+RJ 8
+- 30
+RJ 20
+R 10
+- 329      # on the Pilgerbrunnen canopy
+RJ 14      # stomp Selfie-Tourist #4
+R 30
+- 80
+J 10       # hop over stand #2's globe
+R 10
+- 50
+R 24
+RJ 10
+R 52
+RJ 16
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+- 110
+RJ 16      # church terrace: stomp the Pilger pair (chain)
+R 40
+- 35
+J 10       # H-box (col 194)
+- 5
+L 14
+- 16
+RJ 16
+- 34
+R 300
+- 20
+B 1        # axe on Operettensaenger #2
+- 30
+R 259
+RJ 14      # Seebad: the 2-gap
+R 60
+RJ 30      # the 4-gap onto the quay
+R 50
+- 80
+RJ 16      # hop over stand #3's globe
+R 52
+RJ 8
+R 82
+RJ 16
+R 16
+RJ 16      # onto the landing hall, walk off to the Maibaum (100)
+R 120

@@ -1,0 +1,73 @@
+# Written by `cargo xtask solve st_wolfgang --write`; re-create it instead of editing.
+level  = st_wolfgang
+seed   = 1
+source = solver
+expect = complete frames=2102..2102 deaths=0
+---
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 12
+RB 52
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 36
+RB 46
+RBJ 36
+RB 24
+RBJ 36
+RB 28
+RBJ 36
+RB 13
+RBJ 36
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 110
+RBJ 1
+RB 6
+LB 14
+RJ 36
+R 2
+RB 3
+LB 14
+RBJ 20
+RB 125
+RBJ 36
+RB 64
+RBJ 36
+RB 40
+RBJ 36
+RB 56
