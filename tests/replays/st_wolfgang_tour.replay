@@ -15,7 +15,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=2269..2269 deaths=0 state=title score=0 lives=3
-shots  = 0:title 60:intro 216:ried 351:souvenirstand 486:talstation 801:zug 891:alm_halt 1071:tunnel_bus 1236:bus_bounce 1341:checkpoint 1386:pilgerbrunnen 1521:markt 1611:kirche 1836:roessl 1926:kaiserterrasse 2016:seebad 2151:promenade 2241:schiffsstation 2269:maibaum 2556:tally 2916:teaser
+shots  = 0:title 60:intro 216:ried 351:souvenirstand 478:talstation 801:zug 891:alm_halt 1096:tunnel_bus 1236:bus_bounce 1341:checkpoint 1386:pilgerbrunnen 1521:markt 1611:kirche 1836:roessl 1926:kaiserterrasse 2016:seebad 2151:promenade 2241:schiffsstation 2269:maibaum 2556:tally 2916:teaser
 ---
 - 20
 S 1       # START: stage intro
