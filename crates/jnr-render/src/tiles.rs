@@ -6,8 +6,8 @@
 //! name above, 2 = right, 4 = below, 8 = left; cells outside the level count
 //! as the same; names of one [`autotile_family`] count as the same, e.g.
 //! `arch` on `arch_under`; a few [`one_way_join`]s count a neighbour as
-//! the same for one side only, e.g. `kalkfels_bg` around a `steig_wall`
-//! plank, while the plank keeps its own ends). Any other tile sprite shows its first animation,
+//! the same for one side only, e.g. `kalkfels_bg` around any drawn tile,
+//! while that tile keeps its own edges). Any other tile sprite shows its first animation,
 //! animated by the game frame (e.g. water). The tile name `invisible` is
 //! never drawn (solid, under props such as the Sphaera). Which look a tile
 //! name has is resolved once in [`TileLooks::resolve`]; the mask is computed from the live grid
@@ -78,16 +78,25 @@ pub(crate) fn autotile_family(name: &str) -> &str {
 /// seen from a `here` tile) in which a `neighbour` tile name counts as the
 /// same, although the two are different families and `neighbour` does not
 /// return the favour. Every other pair: 0.
-/// - `kalkfels_bg` (the shaft's back wall) runs on behind a `steig_wall`
-///   plank on every side, so the wall shows no edge around the plank; the
-///   plank still sees the wall as different and keeps its end brackets.
+/// - `kalkfels_bg` (the shaft's back wall) runs on behind every drawn
+///   neighbour (`kalkfels`, a `steig_wall` plank, a box, a brick, any
+///   other solid or one-way) on every side, so its ragged open edge shows
+///   only against real air (no name, or [`INVISIBLE_TILE`]); the neighbour
+///   still sees the wall as different and keeps its own edges (a plank
+///   its end brackets).
 /// - `kalkfels` under a solid ground tile (`forest_path`, `meadow`,
 ///   `stone`, `ground`) counts it as the same above only, so the rock draws
 ///   no open-top lip and grass under the dirt.
+/// - `kalkfels` above `kalkfels_bg` (a shaft entrance, a cave top) counts
+///   it as the same below only, so the rock's ragged open bottom shows no
+///   sky-coloured notches over the back wall.
 pub(crate) fn one_way_join(here: &str, neighbour: &str) -> u8 {
     match (here, neighbour) {
-        ("kalkfels_bg", "steig_wall") => MASK_N | MASK_E | MASK_S | MASK_W,
+        ("kalkfels_bg", nb) if !nb.is_empty() && nb != INVISIBLE_TILE => {
+            MASK_N | MASK_E | MASK_S | MASK_W
+        }
         ("kalkfels", "forest_path" | "meadow" | "stone" | "ground") => MASK_N,
+        ("kalkfels", "kalkfels_bg") => MASK_S,
         _ => 0,
     }
 }
@@ -390,6 +399,64 @@ mod tests {
         // The plank keeps its ends: (2,2) sees only the other plank (E).
         assert_eq!(looks.mask(&map, 2, 2), MASK_E);
         assert_eq!(looks.mask(&map, 3, 2), MASK_W);
+    }
+
+    #[test]
+    fn kalkfels_joins_kalkfels_bg_below_it_only() {
+        assert_eq!(one_way_join("kalkfels", "kalkfels_bg"), MASK_S);
+        // Shaft entrance: a rock lintel over the back wall, sky above.
+        let l = level(
+            "\"#\" = \"kalkfels\"\n\":\" = \"kalkfels_bg\"\n",
+            "P....\n.###.\n.#:#.\n.#:#.\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (2,1) lintel: S is the back wall, joined (no notches); N is sky
+        // and keeps its jagged open top.
+        assert_eq!(looks.mask(&map, 2, 1), MASK_E | MASK_S | MASK_W);
+        // (1,1) corner: sky N and W stay open.
+        assert_eq!(looks.mask(&map, 1, 1), MASK_E | MASK_S);
+        // (1,2) shaft side wall: the back wall beside it is not joined.
+        assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_S);
+        // (2,2) back wall: rock on three sides, wall below.
+        assert_eq!(looks.mask(&map, 2, 2), 15);
+    }
+
+    #[test]
+    fn kalkfels_bg_joins_every_drawn_neighbour_but_not_air() {
+        for nb in [
+            "kalkfels",
+            "steig_wall",
+            "steig",
+            "oblaten_box",
+            "oblaten_box_empty",
+            "brick",
+            "ground",
+        ] {
+            assert_eq!(one_way_join("kalkfels_bg", nb), 15, "{nb}");
+            assert_eq!(one_way_join(nb, "kalkfels_bg") & !MASK_S, 0, "{nb}");
+        }
+        assert_eq!(one_way_join("kalkfels_bg", ""), 0);
+        assert_eq!(one_way_join("kalkfels_bg", INVISIBLE_TILE), 0);
+        // Back wall under a box and a brick, a one-way ledge, air and an
+        // invisible tile beside it.
+        let l = level(
+            "\":\" = \"kalkfels_bg\"\n\"?\" = { tile = \"oblaten_box\", contains = \"oblate\" }\n\
+             \"B\" = \"brick\"\n\"=\" = \"steig\"\n\"i\" = \"invisible\"\n",
+            "P....\n.?B..\n.::=.\n.:::i\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (1,2) under the box: N joined; W is air and stays open.
+        assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_E | MASK_S);
+        // (2,2) under the brick, beside the ledge: closed on every side.
+        assert_eq!(looks.mask(&map, 2, 2), 15);
+        // (3,3) under the ledge; E is invisible, which counts as air.
+        assert_eq!(looks.mask(&map, 3, 3), MASK_N | MASK_S | MASK_W);
+        // The box still sees the wall below as different.
+        assert_eq!(looks.mask(&map, 1, 1), 0);
     }
 
     #[test]
