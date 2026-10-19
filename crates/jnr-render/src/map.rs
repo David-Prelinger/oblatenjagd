@@ -147,20 +147,19 @@ pub fn label_hits(x: i32, y: i32, w: i32, b: (i32, i32, i32, i32)) -> bool {
 /// A station's label position on a map screen that starts on station
 /// `from` and ends on the next one, with Resi in `power` (art-director,
 /// M3): the primary slot, or the station's alternate slot when Resi is big
-/// and her box at the screen's start or end dot intersects the primary
-/// slot. Normal Resi always keeps the primary slot (the M2 layout, whose
-/// one-row touch was approved). The choice depends only on the screen, so
-/// a label never switches slots during the walk.
+/// and her box at the screen's **end** dot (where she waits) intersects the
+/// primary slot; her start dot never counts (art-director: the target label
+/// stays next to its dot while she sets off). Normal Resi always keeps the
+/// primary slot (the M2 layout, whose one-row touch was approved). The
+/// choice depends only on the screen, so a label never switches slots
+/// during the walk.
 pub fn screen_label_pos(st: &Station, w: i32, from: usize, power: Power) -> (i32, i32) {
     let primary = station_label_pos(st, w);
     let Some(alt) = st.label_alt else {
         return primary;
     };
-    let ends = [from, from + 1].map(|i| STATIONS[i.min(STATIONS.len() - 1)].dot);
-    let covered = power.is_big()
-        && ends
-            .iter()
-            .any(|&d| label_hits(primary.0, primary.1, w, resi_box(d, power)));
+    let end = STATIONS[(from + 1).min(STATIONS.len() - 1)].dot;
+    let covered = power.is_big() && label_hits(primary.0, primary.1, w, resi_box(end, power));
     if covered {
         slot_pos(st, w, alt.top, alt.right)
     } else {
@@ -445,7 +444,9 @@ mod tests {
                             "screen {from} {power:?}: {i} vs {j}"
                         );
                     }
-                    for end in [from, from + 1] {
+                    // Only the end dot counts (where she waits; art-director).
+                    {
+                        let end = from + 1;
                         let hit = label_hits(x, y, w, resi_box(STATIONS[end].dot, power));
                         let pair = (STATIONS[i].id, STATIONS[end].id);
                         let allowed = LATER.contains(&pair)
@@ -489,10 +490,11 @@ mod tests {
             screen_label_pos(&STATIONS[2], w, 0, Power::Normal),
             (66, 43)
         );
-        // Big on St. Gilgen (Salzburg → St. Gilgen) or Brunnwinkl: raised.
+        // Big, ending on St. Gilgen (Salzburg → St. Gilgen): raised; setting
+        // off from St. Gilgen to Brunnwinkl: the start dot doesn't count.
         for power in [Power::Big, Power::Hackl] {
             assert_eq!(screen_label_pos(&STATIONS[2], w, 0, power), (66, 20));
-            assert_eq!(screen_label_pos(&STATIONS[2], w, 1, power), (66, 20));
+            assert_eq!(screen_label_pos(&STATIONS[2], w, 1, power), (66, 43));
         }
         // Falkenstein (60 px wide): 172 normally, 171 with a big Resi
         // walking Falkenstein → St. Wolfgang.
