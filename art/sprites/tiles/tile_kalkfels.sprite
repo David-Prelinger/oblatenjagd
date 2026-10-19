@@ -1,0 +1,287 @@
+# Falkensteinwand limestone (solid; M3): pale i faces with a wavy m bedding
+# plane that wraps left/right (a cliff reads as continuous strata) and one
+# short m joint. Round 2: no w and no upper joint in the body, w only in the
+# open-top lip. Open top: w lip (+ w flecks) with one small y/g/G grass
+# tuft; open bottom (the Steinschlag overhang is mostly underside): a ragged
+# d overhang edge with broken m shade and 1 px notches; open left m, open
+# right d (light from the top left). Drawn by the pixel-artist with a
+# throwaway script; the grids are the source.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_kalkfels
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+.wwywgwwwwwwwww.
+wwigyGiiiwwiiiid
+miiiGiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
+mimiiimiiiimiimd
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+.d.dddddd.ddddd.
+frame auto 1
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
+mimiiimiiiimiimd
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+.d.dddddd.ddddd.
+frame auto 2
+.wwywgwwwwwwwwww
+wwigyGiiiwwiiiii
+miiiGiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
+mimiiimiiiimiiii
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+.d.dddddd.dddddd
+frame auto 3
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
+mimiiimiiiimiiii
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+.d.dddddd.dddddd
+frame auto 4
+.wwywgwwwwwwwww.
+wwigyGiiiwwiiiid
+miiiGiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
+miiiiimiiiiiiimd
+miiiiimmiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+frame auto 5
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiimd
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+miiiimmmmmmmiimd
+miiiiimiiiiiiimd
+miiiiimiiiiiiimd
+miiiiimmiiiiiiid
+miiiiiiiiiiiiiid
+miiiiiiiiiiiiiid
+frame auto 6
+.wwywgwwwwwwwwww
+wwigyGiiiwwiiiii
+miiiGiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
+miiiiimiiiiiiiii
+miiiiimmiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+frame auto 7
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+miiiimmmmmmmiiii
+miiiiimiiiiiiiii
+miiiiimiiiiiiiii
+miiiiimmiiiiiiii
+miiiiiiiiiiiiiii
+miiiiiiiiiiiiiii
+frame auto 8
+wwwwwwwwwwgwyww.
+iiiwwwiiigyggGid
+iiiiiiiiiiGgGimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
+iimiiimiiiimiimd
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+dd.dddddd.ddddd.
+frame auto 9
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
+iimiiimiiiimiimd
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+dd.dddddd.ddddd.
+frame auto 10
+wwwwwwwwwwwgwyww
+iiiwwwiiiwgyggGi
+iiiiiiiiiiiGgGii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
+iimiiimiiiimiiii
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+dd.dddddd.dddddd
+frame auto 11
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
+iimiiimiiiimiiii
+dmmdiimmmmdmmiim
+ddddmddddddddmdd
+dd.dddddd.dddddd
+frame auto 12
+wwwwwwwwwwgwyww.
+iiiwwwiiigyggGid
+iiiiiiiiiiGgGimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
+iiiiiimiiiiiiimd
+iiiiiimmiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+frame auto 13
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiimd
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+mmmmmiiiiiiimmmd
+iiiiimmmmmmmiimd
+iiiiiimiiiiiiimd
+iiiiiimiiiiiiimd
+iiiiiimmiiiiiiid
+iiiiiiiiiiiiiiid
+iiiiiiiiiiiiiiid
+frame auto 14
+wwwwwwwwwwwgwyww
+iiiwwwiiiwgyggGi
+iiiiiiiiiiiGgGii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
+iiiiiimiiiiiiiii
+iiiiiimmiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+frame auto 15
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+mmmmmiiiiiiimmmm
+iiiiimmmmmmmiiii
+iiiiiimiiiiiiiii
+iiiiiimiiiiiiiii
+iiiiiimmiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
