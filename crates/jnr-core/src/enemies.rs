@@ -801,8 +801,9 @@ pub const REISEBUS_LANE_TILES: i32 = 24;
 /// `levels lint` (D-070): every Reisebus's lane, the rows of its hitbox
 /// from its own cells to [`REISEBUS_LANE_TILES`] tiles left of its parked
 /// hitbox (or the level's left edge), holds no solid or one-way tile, so it
-/// is never seen driving through a wall. One problem per bus, naming the
-/// first blocked cell from the left.
+/// is never seen driving through a wall (one problem per bus, naming the
+/// first blocked cell from the left); and a bus's photo stop (`stop`)
+/// must not lie left of the level's left edge.
 pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
@@ -822,6 +823,16 @@ pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
                 solid.then_some((c, r))
             })
         });
+        let stop_x = bus.x - TILE.mul_int(i32::from(s.stop));
+        if stop_x < Fx::ZERO {
+            problems.push(format!(
+                "reisebus at row {}, column {}: its photo stop (stop = {}) would be {} px left of the level's left edge",
+                s.row + 1,
+                s.col + 1,
+                s.stop,
+                (-stop_x).to_px()
+            ));
+        }
         if let Some((c, r)) = blocked {
             problems.push(format!(
                 "reisebus at row {}, column {}: its lane (rows {}-{}, columns {}-{}) has a solid or one-way tile at row {}, column {} (D-070: keep it clear for {REISEBUS_LANE_TILES} tiles to the left, or to the level's left edge)",

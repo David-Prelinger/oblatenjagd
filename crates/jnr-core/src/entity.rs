@@ -153,7 +153,7 @@ impl EnemyKind {
             EnemyKind::Bienenschwarm => 8,
             EnemyKind::Pilger => 9,
             EnemyKind::Gams => 10,
-            EnemyKind::Reisebus => 11,
+            EnemyKind::Reisebus => 13,
         }
     }
 }

@@ -308,7 +308,9 @@ fn a_side_hit_hurts_in_every_state() {
 fn walkers_turn_at_a_standing_bus_but_not_at_a_driving_one() {
     for (st, turns) in [
         (state::PARKED, true),
+        (state::TELEGRAPH, true),
         (state::PHOTO_STOP, true),
+        (state::RESTART, true),
         (state::DRIVE, false),
     ] {
         // A Nordic-Walker walking right into the bus's left side.
@@ -431,4 +433,18 @@ fn the_lane_lint_wants_24_clear_tiles_left_of_a_bus() {
     );
     let p = lint(&[(11, 10, 'r'), (11, 0, '#'), (11, 40, 's'), (11, 30, '#')]);
     assert_eq!(p.len(), 2, "{p:?}");
+}
+
+#[test]
+fn the_lint_wants_a_photo_stop_on_the_level() {
+    let t = tuning();
+    let lint = |col: usize| reisebus_lane_problems(&world(30, &[(11, 1, 'P'), (11, col, 's')]), &t);
+    // `stop = 4`: parked at column 4 (hitbox x 66) it halts at x 2.
+    assert_eq!(lint(4), Vec::<String>::new());
+    assert_eq!(
+        lint(3),
+        [
+            "reisebus at row 12, column 4: its photo stop (stop = 4) would be 14 px left of the level's left edge"
+        ]
+    );
 }
