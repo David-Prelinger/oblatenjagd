@@ -1,4 +1,4 @@
-# Sprite catalog (M1, M2, M3)
+# Sprite catalog (M1, M2, M3, M4)
 
 The contract between pixel-artist and engine: sprite names, sizes, origins and animation names. The engine looks sprites up by these names and falls back to grey boxes when one is missing, so art and code can be built in parallel. Sizes are maxima unless marked exact; the hitboxes in `game-design.md` are gameplay numbers and live in `content/tuning.toml` / the engine, not here.
 
@@ -226,3 +226,66 @@ Same size rules as before (tileable, ≤ 640×180). New: layers may move vertica
 | `bg_wolfgangsee` (reused) | 8 | 3 | the lake and the far (south) shore. Climbing the 29 tiles sinks it by ~87 px, so at the church the lake is a band low on the screen: "you're up high now" |
 | `bg_wolfgangsee_tief` (mid, new) | 8 | 3 | deep variant of `bg_wolfgangsee` for Stage 4 only (Stages 2/3 keep the original). 640×116, origin 0,0: rows 0–51 are `bg_wolfgangsee` unchanged, rows 52–115 continue the lake (`s` with sparse `f` streaks, slightly longer and further apart towards the bottom; mid-layer water rule `v G` + `s`/`f`; no dither, no shore, no `k`), so mid-climb shots no longer show a pale-sky gap under the lake band |
 | `bg_falkenstein` (near, new) | 13 | 8 | pines (`G j`), larches (`g y`) and pale limestone outcrops (`i m`) climbing the slope, with a rockfall net strung between two posts in one place (decoration). At the summit it has sunk fully out of view (~232 px): above the treeline only the lake and the sky remain. As built: 640×180 (no need to exceed the screen: layers only move down, and 180 < 232 px so it is gone at the summit); larches are `g G` (no `y`, not a near-layer colour); outcrops `m` with a 4 px `i` rim along the upper-left silhouette (≈ 14 % of their pixels; `i` approved by the art-director for this layer), no strata; the decorative net was dropped (round 2). Opaque everywhere from row 84 down, so the mid layer's lake band (`y = 40`, sinking only 3/16) never shows a sky gap under it while the near layer sinks faster |
+
+## M4 additions: St. Wolfgang
+
+Specs in `game-design.md` → "Stage 5: St. Wolfgang"; decisions D-066 … D-072. Same conventions as above. Colour notes are starting points; art-style.md and the art-director decide. No new player sprites: Resi's three forms are complete. The intro and the map draw `player_hackl` when she carries the Hackl in.
+
+### Enemies (group `enemies`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `operettensaenger` (the singing head waiter) | 16×24 | 8,24 | `idle` 2f/30t loop (sways, hand on heart) · `inhale` held (the telegraph: chest out, arms spread wide, mouth open, head back; must read at 1× from 10 tiles and be clearly different from `idle`) · `sing` 2f/6t loop (arms up, mouth wide, a 1 px tremble) · `squished` held (sits, takes a bow with the napkin). Dark waiter's jacket `d` with a `w` shirt front and a white napkin over the forearm, a small `R` bow tie, slicked hair. Faces right, `mirror = auto`. Not a Blasmusiker: no instrument, no hat, no green Tracht |
+| `hohes_c` (the high-C sound column) | 16×8 | 8,8 | `ring` 2f/4t loop: one flat sound ring (an ellipse 12 px wide, 3–4 px high), `w` with `i` shading and a `k` outline on its lower half so it reads against light sky and white façades. The renderer stacks it every 8 px from the singer's hitbox top up to the column's current height and animates alternate rings half a period apart, so the column shimmers upwards. Never `Y`/`o` (not gold), no musical note shapes (those are the Blasmusiker's) |
+| `souvenirstand` (the vendor behind the counter) | 16×16 | 8,16 | `idle` 2f/30t loop (leans on the counter) · `telegraph` 2f/8t loop (holds a snow globe up high with a `w` glint, the other hand on the globe's base; frame 0 = up, frame 1 = glint). Upper body only: the renderer draws it with its origin on the **top of the counter's first tile** (one column right of the spawner cell, on the counter row's top edge), so the counter tile in front hides nothing and the vendor stands behind it. Apron `S` or `G` over a `c` blouse, friendly face. Faces left (towards the spawner cell and the player); no mirror needed |
+| `schneekugel` (rolling snow globe) | 12×12 | 6,11 (bottom centre of the 10×10 hitbox, centred) | `roll` 4f/6t loop: a glass dome (`h` with `s` reflections, 1 px `w` highlight that stays top-left while the snow inside swirls), a tiny white horse (`w` + `i`) inside, snow flecks `w` that move between frames, a wooden base `O l` that rotates with the roll. `k` outline. Never gold and round: the dome is pale blue-white, the base brown |
+| `schneekugel_scherben` (shatter) | 8×8 | 4,8 | `spin` 2f/4t loop: a glass shard `h w` with `i` edge and a fleck of snow; the renderer spawns 4 (like brick debris) when a globe shatters on a wall, is stomped or hit by an axe |
+| `reisebus` (tour coach) | 64×32 | 32,32 | `idle` 2f/30t loop (engine running: 1 px body shake, exhaust puff at the rear right) · `telegraph` 2f/6t loop (hazard lights `Y`/`o` blink at both ends, door closed) · `drive` 2f/4t loop (wheels turn, slight bounce) · `fotostopp` 2f/16t loop (stopped; frame 1 has 2–3 camera flashes `w` in different windows; no one gets out). A modern white coach `w i` with a blue `S b` swoosh, dark tinted windows `d` with faint heads `E`, two `k d` wheels with `i` hubs, headlights on the left (front). Faces left, **no mirror** (like the Fiaker and the E-Biker). Not a Postbus: never yellow, no Postbus horn emblem. The roof line is flat over the whole length (the roof bounce covers all of it) |
+
+### Platforms (group `props`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `schafbergbahn` (the steam cog train) | 64×40 | 32,40 (bottom centre of the 64×32 body) | `idle` held (standing) · `ride` 2f/8t loop (connecting rods move, the loco shakes 1 px). The loco on the **left** (downhill end, it pushes uphill like on the real line): black boiler `k d` with `i` bands, `R` wheels, a short chimney. The coach on the right: wooden body in wine `R` with a cream `c` window band, `o`/`O` frame accents. As with real rack trains, the bodies are built level on the slope: draw the body **horizontal** (the hitbox is a horizontal box) and only the undercarriage hints at the incline. The cog wheel under the loco may tilt 1–2 px. **The walking surface is one flat line**: sprite row 8, the top of the body, across the full 64 px (loco cab roof and coach roof). Only the chimney top and the steam dome may rise above it (rows 0–7, ≤ 6 px wide, at the loco's left end). Nothing else that looks walkable goes above row 8 (D-038) |
+| `dampf` (steam puff) | 8×8 | 4,8 | `puff` 3f/8t (plays once): a small cloud `w h` growing and thinning out. The renderer emits one every 20 frames from the chimney top while the train moves; it drifts up 1 px/frame and is removed after the animation. Never `i`/`m` grey (not a rock, not the Steinschlag's pebbles) |
+
+The **track** is drawn by the renderer (like the Gondel cable): two 1 px rails (`d`) 3 px apart with the rack (`m`, dashed) between them, along the body's bottom line from end to end, plus one tile beyond each end, at the 1:4 slope (a 4 px run per 1 px rise: clean pixel steps). Sleepers (`O`) every 8 px. Under the gorge the rails run on a 1 px `d` girder line with no posts. **Fallback** (D-067, if the drawn track is dropped): the decorative tiles `zahnrad_gleis_0` … `zahnrad_gleis_3` (see Tiles).
+
+### Tiles (group `tiles`, 16×16, `tile_<name>`)
+
+| Tile | Kind | Look |
+|---|---|---|
+| `standl` | solid | the souvenir stand's counter, 1 tile high: a wooden counter `o O l` with a light `o` lip on top (walkable surface), its front showing tiny wares: snow globes `h w`, Christmas stars `Y`, mini cowbells `i`, a Mozartkugel `r`-foil dot, Hackl keychains. Autotiled left/right ends (end posts). Must read as a counter, not as a brick or a box |
+| `standl_dach` | one-way | the stand's striped awning: red-and-white canvas `R w` (wine, not Resi's `r`) in vertical stripes with a scalloped lower edge, a thin `o` rod as the top 5 px walking surface. Autotiled left/right ends (an end tile shows the awning's side flap). Over the counter with 1 tile of air between them (the vendor stands in that gap) |
+| `wartehaus_dach` | one-way | the bus shelter's glass roof: a thin `d` steel frame with `h s` glass, top 4 px = the frame (walking surface), the glass below it faintly transparent-looking (no actual transparency needed). Autotiled left/right ends |
+| `strasse` | solid | road asphalt `m d` with a light `i` kerb lip on top and a dashed `w` lane marking low in the tile (every second tile has a dash). Autotiled left/right (kerb ends). Used for the bus park; the cobbled `ground` stays the village street |
+| `tunnel_bg` | decorative (non-solid, like `wall_village_bg`) | the inside of the bypass tunnel: dark `d k` with a faint `m` arch line and one small `Y` lamp every 4 tiles (by column parity in the autotile frame, or a 2-frame variant). Darker and flatter than any solid tile, no lip (D-038) |
+| `zahnrad_gleis_0` … `_3` (**fallback only**, D-067) | decorative (non-solid) | one 16 px segment of the 1:4 rack track, rising 4 px across the tile, at vertical offset 0/4/8/12 px (the level-designer lays them in order along the track). Same rail/rack/sleeper colours as the drawn track |
+
+Reused in M4: `ground`, `meadow`, `rock`, `stone`, `kalkfels` (the church's rock terrace), `balcony`, `oneway_wood` (the Kaiserterrasse), `chimney`, `jetty`, `jetty_post`, `wolfgangsee_water`, `wolfgangsee_water_deep`, `brick`, `oblaten_box`, `oblaten_box_empty`, `invisible` (under the Pilgerbrunnen canopy and the Schiffsstation).
+
+### Props (group `props`, M4)
+
+All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); collision stays with tiles (D-030/D-031). `PROP_SPRITES` in jnr-core and the catalog test in `xtask/src/levels.rs` must include this table (engine task; the test reads the tables by heading).
+
+| Sprite | Size | Origin | Animations / notes |
+|---|---|---|---|
+| `talstation_schafberg` (valley station) | ≤ 128×96 | bottom centre | `idle` held — `layer = "back"`; the station hall: a long timber-and-plaster building with a shallow roof, a platform canopy on wooden posts, a station clock (no text), a small water tower for the steam locos. Behind the platform; must not suggest a surface above the platform's `stone` (D-038) |
+| `haltestelle_alm` (the halt on the Alm) | ≤ 48×48 | bottom centre | `idle` held — `layer = "back"`; a small wooden shelter with a bench and a halt sign without text, a few flowers |
+| `tunnelportal` (the bypass tunnel's portal) | ≤ 64×64 | bottom centre | `idle` held — `layer = "back"`; a concrete portal face (`i m` with `d` joints) set into the Alm's slope around the 2-tile tunnel mouth (rows 13–14), meadow `g` hanging over its top edge. The mouth itself stays transparent (the `tunnel_bg` tiles show through) |
+| `wartehaus` (bus shelter posts and bench) | 48×48 | bottom centre | `idle` held — `layer = "back"`; two thin `d` posts, a bench, a timetable case (no text) under the `wartehaus_dach` tiles. Decoration only: the bench is not a platform, so it is drawn low and dark (D-038) |
+| `pilgerbrunnen` (the 1515 pilgrims' fountain) | 48×72 | 24,72 (bottom centre) | `idle` 2f/12t loop (water jets into the basin) — front layer over the 5-wide basin tiles and the 1-wide column; a Gothic canopy on slim columns (`i m d`) over a bronze basin (`O l`, + `t` patina), a pointed canopy roof (`d m`) with a finial. Drawn = solid (D-038): the canopy roof's top edge is exactly 4 tiles above the street over the 3 `invisible` tiles at 164–166 (the level aligns it with `dx`). The finial tip is the `taube_sitting`'s seat (state the pixel in the as-built note, as for the `hackelwurfkapelle`) |
+| `wallfahrtskirche` (the pilgrimage church) | ≤ 160×144 | bottom centre | `idle` held — `layer = "back"`; the late-Gothic church on its rock terrace above the lake: whitewashed walls `w i`, a steep roof `d m`, tall pointed windows, the tower (check its silhouette against a reference photo), a gate to the arcaded courtyard. Respectful decoration: no figures, no text. Its base sits on the terrace's `kalkfels` top (row 11), not on the Markt |
+| `weisses_roessl` (Hotel „Im Weißen Rößl") | ≤ 192×128 | bottom centre | `idle` held — `layer = "back"`; the white hotel façade by the lake: white walls `w i`, green shutters `G`, dark wooden balconies (their railings line up with the level's `balcony` tiles; the walking surface is the tile, not the art), a steep roof with dormers. No lettering: the name is carried by the horse sign and the text signs. Drawn behind the `balcony` and `oneway_wood` tiles |
+| `roessl_pferd` (the white horse sign) | 32×24 | bottom centre | `idle` held — front layer; a white horse `w i` with a `k` outline on a wrought-iron bracket (`d`), rearing slightly, over the hotel door. The stage's emblem (the snow globes contain it too) |
+| `schiffsstation` (boat landing hall) | 96×96 | 48,96 (bottom centre) | `idle` held — `layer = "back"`; the wooden landing hall with a ticket window, a timetable board (no text), a life ring `r w` (accent), a flagpole. Drawn = solid (D-038): its outline matches the `invisible` collision profile of the block at 280–285 (the level gives the as-built profile), its roof ridge = the launch 6 tiles above the meadow |
+
+### Backgrounds (group `bg`)
+
+Same rules as Stages 1–3 (tileable, ≤ 640×180, bottom-aligned, `factor_y` 0 in this side level).
+
+| Layer | Factor (1/16) | Content |
+|---|---|---|
+| `bg_sky_salzburg` (reused) | 0 | the Stage 1 sky |
+| `bg_schafberg_sued` (far, new) | 3 | the Schafberg seen from St. Wolfgang: much closer and steeper than `bg_schafberg` (Stages 2–3 see it across the lake). A steep south face with rock bands `F f` and `h` snow patches only at the top. The summit with the small hotel as a bump, and the rack line as a thin diagonal `F` line climbing it (the train's real route; no train). Far-layer colours only |
+| `bg_stwolfgang` (near, new) | 13 | village houses climbing the slope behind the street: white walls, wooden balconies with geraniums, steep roofs (`n R`), one or two big gabled inns, a few `G j` trees. Opaque from its lowest roofline down |
