@@ -42,6 +42,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         "salzburg",
         include_str!("../../../content/levels/01_salzburg.level"),
     ),
+    (
+        "st_gilgen",
+        include_str!("../../../content/levels/02_st_gilgen.level"),
+    ),
 ];
 
 /// The level played when none is given: Stage 1.
