@@ -1,0 +1,43 @@
+# QA (M2): pausing on a moving Gondel (title flow, D-025 pause). The
+# st_gilgen_gondeln route from the title; 40 frames into the ride on Gondel A
+# START pauses for 61 frames (nothing moves: cabins, timer), START resumes;
+# the ride, the waits for B and C and the walk-off continue exactly as without
+# the pause (same end position), no fall, no death.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 no_event=Died state=playing player_x>=1390 player_y>=218 player_y<=218
+---
+- 20
+S 1
+- 150
+RB 96
+RBJ 12
+RB 17
+RBJ 36
+RB 18
+RBJ 20
+RB 24
+R 20
+R 16
+RJ 14
+L 6
+- 72
+RJ 8
+R 6
+- 40      # riding Gondel A
+S 1       # pause on the cabin
+- 60
+S 1       # resume
+- 85
+R 60
+- 205
+R 40
+- 110
+R 14
+RJ 10
+R 4
+- 130
+R 60
+- 20
