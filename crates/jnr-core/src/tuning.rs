@@ -400,9 +400,27 @@ pub struct EnemyTuning {
     pub stein_points: u32,
 }
 
+/// Frames of a Gams hop on flat ground until it lands (the frame whose
+/// move would take it below its start height), moving like
+/// `enemies::update_gams`: vy starts at −`up`, gravity is added before each
+/// move, fall speed capped at `max_fall`. `None` if it takes more than 1000
+/// frames.
+pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
+    let (mut y, mut vy) = (0i64, -i64::from(up.raw()));
+    for n in 1..=1000 {
+        vy = (vy + i64::from(gravity.raw())).min(i64::from(max_fall.raw()));
+        y += vy;
+        if y > 0 {
+            return Some(n);
+        }
+    }
+    None
+}
+
 impl EnemyTuning {
     /// The M3 enemy keys (Pilger, Gams, Steinschlag; D-058).
-    fn validate_m3(&self) -> Result<(), ParseError> {
+    /// `max_fall` is the player's max fall speed (the Gams falls with it).
+    fn validate_m3(&self, max_fall: Fx) -> Result<(), ParseError> {
         for (name, [w, h]) in [
             ("enemies.pilger_hitbox", self.pilger_hitbox),
             ("enemies.gams_hitbox", self.gams_hitbox),
@@ -440,6 +458,18 @@ impl EnemyTuning {
         if !(1..=4).contains(&self.gams_hop_tiles) {
             return Err(ParseError::new(
                 "tuning.toml: enemies.gams_hop_tiles must be 1..=4",
+            ));
+        }
+        // The landing check sweeps `gams_hop_tiles` tiles, so the hop must
+        // not carry it further: simulate the hop on flat ground exactly as
+        // `enemies::update_gams` moves (gravity before the move, `vx` every
+        // frame including the landing one).
+        let airtime = gams_airtime(self.gams_hop_speed_y, self.gams_gravity, max_fall);
+        let across = airtime.map(|n| i64::from(self.gams_hop_speed_x.raw()) * i64::from(n));
+        let swept = i64::from(Fx::from_px(self.gams_hop_tiles * TILE_PX).raw());
+        if across.is_none_or(|a| a > swept) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.gams_hop_speed_x × the hop's airtime (from gams_hop_speed_y and gams_gravity) <= gams_hop_tiles × 16 px, so the Gams never lands past the floor it checked",
             ));
         }
         // The level's `phase` is 0 or STEINSCHLAG_MIN_PHASE.., so the first
@@ -579,7 +609,7 @@ impl Tuning {
                 "tuning.toml: game.activate_margin and game.despawn_margin must be >= 0",
             ));
         }
-        self.enemies.validate_m3()?;
+        self.enemies.validate_m3(self.player.max_fall_speed)?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -849,6 +879,14 @@ mod tests {
         assert!(t.player.walk_speed < t.player.run_speed);
         assert_eq!(t.player.coyote_frames, 6);
         assert_eq!(t.player.jump_buffer_frames, 6);
+        let e = t.enemies;
+        let airtime = gams_airtime(e.gams_hop_speed_y, e.gams_gravity, t.player.max_fall_speed);
+        assert_eq!(airtime, Some(32), "a Gams hop lands on its 32nd frame");
+        assert_eq!(
+            e.gams_hop_speed_x.mul_int(32),
+            Fx::from_px(e.gams_hop_tiles * TILE_PX),
+            "exactly the swept tiles"
+        );
     }
 
     #[test]
@@ -974,6 +1012,10 @@ mod tests {
             ("gams_crouch", 0),
             ("gams_hop_tiles", 0),
             ("gams_hop_tiles", 5),
+            ("gams_hop_tiles", 1),
+            ("gams_hop_speed_x", 257),
+            ("gams_gravity", 60),
+            ("gams_hop_speed_y", 1100),
             ("steinschlag_telegraph", 0),
             ("steinschlag_telegraph", 41),
             ("steinschlag_refill", 0),

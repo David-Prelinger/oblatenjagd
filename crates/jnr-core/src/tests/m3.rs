@@ -18,6 +18,8 @@ const LEGEND: &str = r##"
 "r" = { entity = "steinschlag" }
 "R" = { entity = "steinschlag", phase = 100 }
 "T" = { entity = "selfie_tourist", still = true }
+"^" = "hazard"
+"~" = "salzach_water"
 "P" = { entity = "player_start" }
 "G" = { entity = "goal" }
 "##;
@@ -553,6 +555,73 @@ fn a_rock_hurts_from_above_and_from_below_and_cannot_be_stomped() {
     let events = until(&mut g, "-", 200, |g| g.mode() != crate::Mode::Playing);
     assert!(events.contains(&Event::Died));
     assert_eq!(g.death_cause(), Some(DeathCause::Hit));
+}
+
+#[test]
+fn a_rock_falls_through_water_and_hazard_tiles() {
+    // Spikes at row 8 and water at row 10 in the column: the rock passes
+    // both and shatters on the ground (top 192).
+    let mut g = game(&world(
+        30,
+        &[(5, 12, 'r'), (8, 12, '^'), (10, 12, '~'), (11, 9, 'P')],
+    ));
+    until(&mut g, "-", 60, |g| find(g, STEIN).is_some());
+    until(&mut g, "-", 80, |g| find(g, STEIN).is_none());
+    let debris = all(&g, EntityKind::SteinDebris);
+    assert_eq!(debris.len(), 4);
+    assert_eq!(debris[2].y, Fx::from_px(192 - 6), "on the ground");
+}
+
+#[test]
+fn a_rock_falling_out_of_the_level_is_removed_without_debris() {
+    // No ground under the column (a pit at column 12).
+    let mut g = game(&world(
+        30,
+        &[(5, 12, 'r'), (12, 12, '.'), (13, 12, '.'), (11, 9, 'P')],
+    ));
+    until(&mut g, "-", 60, |g| find(g, STEIN).is_some());
+    until(&mut g, "-", 120, |g| find(g, STEIN).is_none());
+    assert!(find(&g, EntityKind::SteinDebris).is_none(), "no debris");
+    assert_eq!(g.mode(), crate::Mode::Playing);
+}
+
+#[test]
+fn the_niche_must_be_fully_on_screen_left_and_bottom() {
+    // Left edge: niche and player in column 9 (distance 0). With the
+    // camera 2 px right of the niche's left edge it doesn't count; with the
+    // edge exactly on screen it does.
+    for (cam_x, counts) in [(146, false), (144, true)] {
+        let mut g = game(&world(40, &[(5, 9, 'r'), (11, 9, 'P')]));
+        g.camera.x = cam_x;
+        safe_step(&mut g);
+        assert_eq!(g.camera().x, cam_x, "camera kept");
+        let n = first(&g, NICHE);
+        assert_eq!(n.state == state::COUNTING, counts, "camera x {cam_x}");
+    }
+    // Bottom edge: ground at rows 12-13 of a 24-row level with air below,
+    // so the camera rests at y 89 (screen bottom 269): a niche at row 15
+    // (bottom 256) is on screen, one at row 16 (bottom 272) is not.
+    for (row, counts) in [(15, true), (16, false)] {
+        let mut rows: Vec<Vec<char>> = (0..24)
+            .map(|r| vec![if (12..=13).contains(&r) { '#' } else { '.' }; 30])
+            .collect();
+        rows[11][9] = 'P';
+        rows[row][12] = 'r';
+        let text = format!(
+            "[meta]\nid = \"m3\"\ntime_limit = 300\n[legend]\n{LEGEND}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.into_iter()
+                .map(|r| r.into_iter().collect::<String>())
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+        let mut g = game(&Level::parse(&text).unwrap());
+        for _ in 0..10 {
+            safe_step(&mut g);
+        }
+        assert_eq!(g.camera().y, 89);
+        let n = first(&g, NICHE);
+        assert_eq!(n.state == state::COUNTING, counts, "row {row}");
+    }
 }
 
 #[test]
