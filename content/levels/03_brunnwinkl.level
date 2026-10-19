@@ -3,7 +3,7 @@
 # (rows 15-16 ground, jetty or water), 3 empty rows on top for the goal
 # camera, the goal meadow one row lower (row 16). Exactly five houses: the
 # Kornmuehle (house 1) and houses 2-5; the bee houses are sheds.
-#   1 Uferweg          0-41   forest path, no pits. Bus sign 3 (Bus 150 /
+#   1 Uferweg          0-41   forest path, no pits. Bus sign 5 (Bus 150 /
 #                             anderes Ufer), Oblaten 6-10, ?-box 12 and M-box
 #                             16 (row 11), rock wall 19 (2 high) turns the
 #                             Mozartkugel; Gehweg sign 22 (clear of both rocks);
@@ -108,10 +108,10 @@ background = [
 "e" = { entity = "e_biker" }
 "p" = { entity = "taube" }
 "s" = { entity = "bienenschwarm", dir = 0, len = 2 }
-"S" = { entity = "bienenschwarm", dir = 2, len = 4 }
-"T" = { entity = "bienenschwarm", dir = 2, len = 3, phase = 112 }
-"D" = { entity = "bienenschwarm", dir = 1, len = 4 }
-"V" = { entity = "bienenschwarm", dir = 2, len = 3 }
+"S" = { entity = "bienenschwarm", dir = 2, len = 4, dy = -8 }
+"T" = { entity = "bienenschwarm", dir = 2, len = 3, phase = 112, dy = -8 }
+"D" = { entity = "bienenschwarm", dir = 1, len = 4, dy = -8 }
+"V" = { entity = "bienenschwarm", dir = 2, len = 3, dy = -8 }
 "C" = { entity = "checkpoint" }
 "P" = { entity = "player_start" }
 "G" = { entity = "goal_maibaum" }
@@ -145,7 +145,7 @@ grid = '''
 ............?...M............ooo.........................^^^^^.................B?B...o...................n........................M.....................^^^^......^^^^..........f^^^^^K........^^^^...................o.o.....RRRRR.............
 ...........................................oo...........^HHHHH^.....................o.o.................uuuu............................................HHHH.....^^HH^..........^HHHHH^........HHHH........oo.................RRRRR.............
 ...................R.....RR............................^HHHHHHH^........................................uuuu...........................................^HHHH^....HHHHH^.........HHHHHHH.......^HHHH^.........................RRRRRR.............
-..Pb..ooooo........R..y..RR.......e.....hn....W..uu....HHHHHHHHH..m.....t..ooo..............z....X.S...uuuuuu...TY........C..c..........ooo.......e....HHHHHH..t.HHHHHH...D.....HHHHHHH..x..e.HHHHHH.ooo.........V...........RRRRRR.............
+..P..booooo........R..y..RR.......e.....hn....W..uu....HHHHHHHHH..m.....t..ooo..............z....X.S...uuuuuu...TY........C..c..........ooo.......e....HHHHHH..t.HHHHHH...D.....HHHHHHH..x..e.HHHHHH.ooo.........V...........RRRRRR.............
 ###########################################~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,jj~~jjjjjjjjj~~~jjjjRRRRRR...G..O......
 ###########################################ww,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,JJwwJJJJJJJJJwwwJJJJRRRRRR,,,,,,,,,,,,,
 '''
