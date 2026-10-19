@@ -103,7 +103,7 @@ camera = "climb"
 min_jump_window = 5
 background = [
   { sprite = "bg_sky_salzburg", factor = 0 },
-  { sprite = "bg_wolfgangsee", factor = 8, y = 96, factor_y = 3 },
+  { sprite = "bg_wolfgangsee_tief", factor = 8, y = 32, factor_y = 3 },
   { sprite = "bg_falkenstein", factor = 13, factor_y = 8 },
 ]
 
