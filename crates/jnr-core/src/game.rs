@@ -16,17 +16,18 @@
 //! route map and then plays the next stage's level (D-042, D-047).
 
 mod flow;
+mod power;
 
 pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
-use crate::camera::{Camera, SCREEN_W};
+use crate::camera::{Camera, ClimbFocus, SCREEN_H, SCREEN_W};
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
-use crate::level::{Block, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
+use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
 use crate::player::{Player, Power};
 use crate::rng::Rng;
@@ -82,13 +83,19 @@ pub enum Event {
     CheckpointReached,
     /// The last life was lost.
     GameOver,
+    /// The player threw a Hackl (D-056).
+    HacklThrown,
+    /// A thrown Hackl hit a target (defeated, bounced off or shattered it).
+    AxeHit,
+    /// The player started crawling through a Durchkriechstein (D-057).
+    CrawlStarted,
 }
 
 impl Event {
     /// Every event, in declaration order. Keep in sync with the enum: a new
     /// variant fails the build in [`Event::name`] (exhaustive `match`), which
     /// is the reminder to list it here too.
-    pub const ALL: [Event; 14] = [
+    pub const ALL: [Event; 17] = [
         Event::Jumped,
         Event::Landed,
         Event::Died,
@@ -103,6 +110,9 @@ impl Event {
         Event::Stomped,
         Event::CheckpointReached,
         Event::GameOver,
+        Event::HacklThrown,
+        Event::AxeHit,
+        Event::CrawlStarted,
     ];
 
     /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
@@ -122,6 +132,9 @@ impl Event {
             Event::Stomped => "Stomped",
             Event::CheckpointReached => "CheckpointReached",
             Event::GameOver => "GameOver",
+            Event::HacklThrown => "HacklThrown",
+            Event::AxeHit => "AxeHit",
+            Event::CrawlStarted => "CrawlStarted",
         }
     }
 
@@ -213,6 +226,9 @@ pub struct Game {
     goals: Arc<[Aabb]>,
     pub(crate) player: Player,
     pub(crate) camera: Camera,
+    /// Climb camera (D-054): the feet height (whole px) of the last
+    /// grounded frame; unused (0) in side levels.
+    ground_feet: i32,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
@@ -307,6 +323,7 @@ impl Game {
             goals,
             player,
             camera: Camera { x: 0, y: 0 },
+            ground_feet: 0,
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
@@ -403,6 +420,8 @@ impl Game {
             }
         }
         self.start_held = input.contains(InputFrame::START);
+        // In every mode, so RUN held across screens is not a new press.
+        self.player.run_held = input.run();
         &self.events
     }
 
@@ -414,30 +433,43 @@ impl Game {
             return;
         }
 
+        self.player.throw_pose = self.player.throw_pose.saturating_sub(1);
         let prev_bottom = self.player.y + self.player.h;
-        let was_on_ground = self.player.on_ground;
-        let min_x = Fx::from_px(self.camera.x);
-        let head_row = self.player.update(
-            input,
-            &self.map,
-            &self.tuning.player,
-            min_x,
-            &mut self.events,
-        );
-        crate::platform::land(
-            &mut self.player,
-            &self.entities,
-            prev_bottom,
-            was_on_ground,
-            &self.tuning.player,
-            &mut self.events,
-        );
-        if let Some(row) = head_row {
-            self.hit_from_below(row);
+        // The Durchkriechstein crawl replaces the player's own movement and
+        // every contact with entities (input ignored, can't be hurt, D-057).
+        let crawling = self.player.crawling() || self.start_crawl(input);
+        if crawling {
+            self.player.jump_held = input.jump();
+            self.step_crawl();
+        } else {
+            let was_on_ground = self.player.on_ground;
+            let min_x = Fx::from_px(self.camera.x);
+            let head_row = self.player.update(
+                input,
+                &self.map,
+                &self.tuning.player,
+                min_x,
+                &mut self.events,
+            );
+            crate::platform::land(
+                &mut self.player,
+                &self.entities,
+                prev_bottom,
+                was_on_ground,
+                &self.tuning.player,
+                &mut self.events,
+            );
+            if let Some(row) = head_row {
+                self.hit_from_below(row);
+            }
+            self.throw_hackl(input);
         }
         self.update_entities();
         self.follow_carried_left();
-        self.interact(prev_bottom, input);
+        self.axe_hits();
+        if !crawling {
+            self.interact(prev_bottom, input);
+        }
         // Counted after the hits of this frame: exactly
         // `invulnerable_frames` frames without harm.
         if self.mode == Mode::Playing && self.player.transform == 0 {
@@ -468,15 +500,44 @@ impl Game {
         if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
             self.touch_goal(goal);
         }
-        self.camera.follow(
-            self.player.center_px(),
-            self.map.width_fx().to_px(),
-            self.map.height_fx().to_px(),
-            &self.tuning.camera,
-        );
+        self.follow_camera();
+        // The climb camera's death line (D-054): the hitbox top below the
+        // screen is a fall out of the level.
+        if self.mode == Mode::Playing
+            && self.climb()
+            && hb.y > Fx::from_px(self.camera.y + SCREEN_H)
+        {
+            self.die(DeathCause::Pit);
+            return;
+        }
         if self.mode == Mode::Playing {
             self.tick_timer();
         }
+    }
+
+    /// True in a `camera = "climb"` level (D-054).
+    fn climb(&self) -> bool {
+        self.level.meta.camera == CameraMode::Climb
+    }
+
+    /// One frame of the level's camera (side: dead zone; climb: D-054).
+    fn follow_camera(&mut self) {
+        let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+        let t = &self.tuning.camera;
+        if !self.climb() {
+            self.camera.follow(self.player.center_px(), w, h, t);
+            return;
+        }
+        let p = &self.player;
+        let mut focus = ClimbFocus {
+            cx: p.center_px().0,
+            top: p.y.to_px(),
+            feet: (p.y + p.h).to_px(),
+            grounded: p.on_ground,
+            ground_feet: self.ground_feet,
+        };
+        self.camera.follow_climb(&mut focus, w, h, t);
+        self.ground_feet = focus.ground_feet;
     }
 
     /// D-051: the player's own movement stops at the screen's left edge,
@@ -596,13 +657,19 @@ impl Game {
         self.static_hash = static_hash;
     }
 
+    /// The camera on the player at the start, on respawn and on a stage
+    /// change (climb: at the settle target at once, D-054).
     fn place_camera(&mut self) {
-        self.camera = Camera::new(
-            self.player.center_px(),
-            self.map.width_fx().to_px(),
-            self.map.height_fx().to_px(),
-            &self.tuning.camera,
-        );
+        let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+        let t = &self.tuning.camera;
+        if self.climb() {
+            let feet = (self.player.y + self.player.h).to_px();
+            self.camera = Camera::new_climb(self.player.center_px().0, feet, w, h, t);
+            self.ground_feet = feet;
+        } else {
+            self.camera = Camera::new(self.player.center_px(), w, h, t);
+            self.ground_feet = 0;
+        }
     }
 
     // ------------------------------------------------------------ blocks
@@ -633,7 +700,7 @@ impl Game {
         }
         match (tile.block, tile.contains) {
             (Block::Brick, Contents::None) => {
-                if self.player.power == Power::Big {
+                if self.player.power.is_big() {
                     self.break_brick(col, row);
                     self.knock_enemies_on(col, row);
                     return;
@@ -728,6 +795,12 @@ impl Game {
                 TILE.mul_int(row + 1),
                 it.zaunerstollen_hitbox,
             )),
+            Contents::Hackl => self.entities.push(Entity::at_feet(
+                EntityKind::Hackl,
+                feet_x,
+                TILE.mul_int(row + 1),
+                self.tuning.hackl.item_hitbox,
+            )),
         }
     }
 
@@ -792,6 +865,10 @@ impl Game {
     fn update_entities(&mut self) {
         let g = &self.tuning.game;
         let activate_x = Fx::from_px(self.camera.x + SCREEN_W + g.activate_margin);
+        // Climb levels: also only near the screen vertically (D-054).
+        let climb = self.climb();
+        let (camera, margin_y) = (self.camera, self.tuning.camera.climb_activate_y);
+        let level = &self.level;
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
         let ctx = UpdateCtx {
@@ -801,12 +878,28 @@ impl Game {
             player_cx: self.player.x + self.player.w.div_int(2),
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
+            screen_top: Fx::from_px(self.camera.y),
         };
+        let wakes = |e: &Entity| {
+            !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
+        };
+        // A file of Pilger wakes together (D-061 addendum): every file one
+        // of whose pilgrims wakes by the rule above, before anyone moves.
+        let files: Vec<(i32, i32)> = self
+            .entities
+            .iter()
+            .filter(|e| wakes(e))
+            .filter_map(|e| crate::enemies::pilger_file(level, e))
+            .collect();
         let mut spawned = Vec::new();
         for e in &mut self.entities {
             // Snapshot for the stomp rule (previous-frame position).
             e.prev_y = e.y;
-            if !e.active && e.x < activate_x {
+            let in_woken_file = || {
+                !files.is_empty()
+                    && crate::enemies::pilger_file(level, e).is_some_and(|f| files.contains(&f))
+            };
+            if !e.active && (wakes(e) || in_woken_file()) {
                 e.active = true;
                 e.timer = 0;
             }
@@ -818,6 +911,9 @@ impl Game {
             // them this frame (same for every entity: order-independent).
             if let Some(new) = e.update(&ctx) {
                 spawned.push(new);
+            }
+            if e.kind == EntityKind::Stein && e.state == crate::enemies::state::SHATTERED {
+                spawned.extend(crate::enemies::stein_debris(e, ctx.tuning));
             }
             if e.kind.is_platform() {
                 crate::platform::carry(
@@ -894,6 +990,11 @@ impl Game {
                         spawned.push(popup(Popup::ExtraLife, fx, e.y));
                     }
                 }
+                EntityKind::Hackl => {
+                    self.entities[i].removed = true;
+                    grew |= self.player.power == Power::Normal;
+                    spawned.extend(self.pick_up_hackl(fx, e.y));
+                }
                 EntityKind::Enemy(_) if !e.harmful() => {}
                 // A swarm hurts on any contact, also from above.
                 EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
@@ -919,8 +1020,11 @@ impl Game {
                         hurt = true;
                     }
                 }
-                EntityKind::Thrown | EntityKind::Note => hurt = true,
+                // A falling rock hurts on any contact, also from above.
+                EntityKind::Thrown | EntityKind::Note | EntityKind::Stein => hurt = true,
                 EntityKind::PoppedOblate
+                | EntityKind::Steinschlag
+                | EntityKind::SteinDebris
                 | EntityKind::Defeated(_)
                 | EntityKind::Debris
                 | EntityKind::Popup(_)
@@ -928,7 +1032,9 @@ impl Game {
                 | EntityKind::Checkpoint
                 | EntityKind::Sign
                 | EntityKind::Festungsbahn
-                | EntityKind::Gondel => {}
+                | EntityKind::Gondel
+                | EntityKind::ThrownHackl
+                | EntityKind::Durchkriechstein => {}
             }
         }
         if grew {
@@ -989,19 +1095,43 @@ impl Game {
         }
     }
 
-    /// A hit: Zuckerschock shrinks (with invulnerability), Normal dies.
-    /// Nothing happens while invulnerable or transforming.
+    /// A projectile (the thrown Hackl, D-056) hit entity `i`: the outcome
+    /// from [`crate::enemies::hit_by_projectile`] (`Defeat` enemies knocked
+    /// off for 100 / 200, a falling rock shattered for 50) with the score,
+    /// its popup and the rock's debris. Returns false if nothing happened
+    /// (the Fiaker, pass-through kinds).
+    pub(crate) fn defeat_by_projectile(&mut self, i: usize) -> bool {
+        let Some(e) = self.entities.get_mut(i) else {
+            return false;
+        };
+        let Some(points) = crate::enemies::hit_by_projectile(e, &self.tuning) else {
+            return false;
+        };
+        let e = *e;
+        if e.kind == EntityKind::Stein {
+            self.entities
+                .extend(crate::enemies::stein_debris(&e, &self.tuning));
+        }
+        self.add_score(points);
+        let (fx, _) = e.feet();
+        self.entities.push(popup(Popup::Score(points), fx, e.y));
+        true
+    }
+
+    /// A hit steps down one power state (Hackl → Zuckerschock →
+    /// Normal, with invulnerability); Normal dies. Nothing happens while
+    /// invulnerable or transforming.
     fn hurt_player(&mut self) {
         if self.player.invulnerable > 0 || self.player.transform > 0 {
             return;
         }
-        match self.player.power {
-            Power::Big => {
-                self.player.set_power(Power::Normal, &self.tuning.player);
+        match self.player.power.after_hit() {
+            Some(power) => {
+                self.player.set_power(power, &self.tuning.player);
                 self.player.invulnerable = self.tuning.player.invulnerable_frames;
                 self.events.push(Event::Hurt);
             }
-            Power::Normal => self.die(DeathCause::Hit),
+            None => self.die(DeathCause::Hit),
         }
     }
 
@@ -1156,6 +1286,7 @@ impl Game {
         }
         self.player.hash(&mut h);
         self.camera.hash(&mut h);
+        h.i32(self.ground_feet);
         h.u64(self.rng.state());
         h.u32(self.deaths);
         self.hash_tiles(&mut h);
@@ -1193,15 +1324,13 @@ impl Game {
         let mut h = Fnv::new();
         self.hash_tiles(&mut h);
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
-        h.u8(match self.player.power {
-            Power::Normal => 0,
-            Power::Big => 1,
-        });
+        h.u8(self.player.power.id());
         for e in &self.entities {
             if matches!(
                 e.kind,
                 EntityKind::Popup(_)
                     | EntityKind::Debris
+                    | EntityKind::SteinDebris
                     | EntityKind::Bump
                     | EntityKind::Defeated(_)
             ) {
@@ -1217,8 +1346,12 @@ impl Game {
                 EntityKind::Enemy(_)
                     | EntityKind::Thrown
                     | EntityKind::Note
+                    | EntityKind::Steinschlag
+                    | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
+                    | EntityKind::ThrownHackl
+                    | EntityKind::Durchkriechstein
             ) {
                 h.bool(e.active);
                 h.u8(e.state);
@@ -1344,6 +1477,17 @@ impl Game {
     pub fn tuning(&self) -> &Tuning {
         &self.tuning
     }
+}
+
+/// D-054: in a climb level an entity activates only while its spawn cell
+/// (or, for entities without a spawn, its hitbox's top row) is within
+/// `margin` px of the screen vertically ([`Camera::row_near`]).
+pub fn spawn_row_near(level: &Level, e: &Entity, camera: Camera, margin: i32) -> bool {
+    let row = match e.spawn.and_then(|i| level.entities.get(usize::from(i))) {
+        Some(s) => s.row,
+        None => tile_of(e.y),
+    };
+    camera.row_near(row, margin)
 }
 
 /// The parts of a game derived from its level alone: the start grid, the

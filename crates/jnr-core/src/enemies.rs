@@ -1,7 +1,9 @@
 //! Enemy behaviour (`docs/game-design.md` → "Entities and behaviour",
-//! Stage 1–3): per-kind update functions for [`EntityKind::Enemy`], the
+//! Stage 1–4): per-kind update functions for [`EntityKind::Enemy`], the
 //! projectiles (thrown Mozartkugel [`EntityKind::Thrown`], Blasmusik note
-//! [`EntityKind::Note`]) and defeated enemies ([`EntityKind::Defeated`]),
+//! [`EntityKind::Note`]), the Steinschlag spawner and its falling rocks
+//! ([`EntityKind::Steinschlag`], [`EntityKind::Stein`]) and defeated
+//! enemies ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -15,7 +17,7 @@
 
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
-use crate::level::{TILE_PX, TileKind};
+use crate::level::{Level, SpawnKind, TILE_PX, TileKind};
 use crate::physics::{TILE, TileMap, YHit, tile_of};
 use crate::tuning::Tuning;
 
@@ -71,6 +73,23 @@ pub mod state {
     /// Bienenschwarm: on a half-circle return to its anchor.
     pub const RETURN: u8 = 1;
 
+    /// Gams: crouching (the telegraph; `vx` holds the planned hop).
+    pub const CROUCH: u8 = 1;
+    /// Gams: in a hop.
+    pub const HOP: u8 = 2;
+    // Gams standing is `STAND`, Pilger walking is `WALK`.
+
+    /// Steinschlag: the player was never in range (its counter hasn't
+    /// started).
+    pub const WAITING: u8 = 0;
+    /// Steinschlag: counting (`count` = frame of its period).
+    pub const COUNTING: u8 = 1;
+
+    /// Stein: falling.
+    pub const FALLING: u8 = 0;
+    /// Stein: shattered (removed; the game spawns its debris).
+    pub const SHATTERED: u8 = 1;
+
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
@@ -121,11 +140,23 @@ pub enum Pose {
     Buzz,
     /// Bienenschwarm `waggle` (on its waggle run, shaking).
     Waggle,
+    /// Thrown Hackl `stuck` (in a solid tile; `spin` while flying).
+    Stuck,
+    /// Gams `crouch` (the telegraph before a hop).
+    Crouch,
+    /// Gams `hop`.
+    Hop,
+    /// Stein `rest` (in its niche).
+    Rest,
+    /// Stein `wobble` (the telegraph; the renderer adds `kiesel` pebbles).
+    Wobble,
+    /// Stein `fall`.
+    Fall,
 }
 
 impl Entity {
-    /// The pose of an enemy, defeated enemy or thrown Mozartkugel; `None`
-    /// for every other kind.
+    /// The pose of an enemy, defeated enemy or projectile (thrown
+    /// Mozartkugel, note, thrown Hackl); `None` for every other kind.
     pub fn pose(&self, t: &Tuning) -> Option<Pose> {
         let e = &t.enemies;
         Some(match self.kind {
@@ -169,10 +200,21 @@ impl Entity {
                 state::RETURN => Pose::Buzz,
                 _ => Pose::Waggle,
             },
+            EntityKind::Enemy(EnemyKind::Pilger) => Pose::Walk,
+            EntityKind::Enemy(EnemyKind::Gams) => match self.state {
+                state::CROUCH => Pose::Crouch,
+                state::HOP => Pose::Hop,
+                _ => Pose::Idle,
+            },
+            // The niche is empty from the drop until the refill.
+            EntityKind::Steinschlag => steinschlag_pose(self, t)?,
+            EntityKind::Stein => Pose::Fall,
             EntityKind::Note => Pose::Fly,
             EntityKind::Defeated(EnemyKind::Taube | EnemyKind::TaubeSitting) => Pose::Tumble,
             EntityKind::Defeated(_) => Pose::Squished,
             EntityKind::Thrown => Pose::Spin,
+            EntityKind::ThrownHackl if self.state == crate::hackl::axe::STUCK => Pose::Stuck,
+            EntityKind::ThrownHackl => Pose::Spin,
             _ => return None,
         })
     }
@@ -259,6 +301,14 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
         }
         EnemyKind::Blasmusiker => update_blasmusiker(e, ctx),
         EnemyKind::EBiker => update_e_biker(e, ctx),
+        EnemyKind::Pilger => {
+            update_pilger(e, ctx);
+            None
+        }
+        EnemyKind::Gams => {
+            update_gams(e, ctx);
+            None
+        }
         EnemyKind::Bienenschwarm => {
             let len = e
                 .spawn
@@ -704,7 +754,9 @@ fn on_foot(e: &Entity) -> bool {
         EntityKind::Enemy(EnemyKind::SelfieTourist)
         | EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer)
         | EntityKind::Enemy(EnemyKind::NordicWalker)
-        | EntityKind::Enemy(EnemyKind::Blasmusiker) => true,
+        | EntityKind::Enemy(EnemyKind::Blasmusiker)
+        | EntityKind::Enemy(EnemyKind::Pilger) => true,
+        EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
         EntityKind::Enemy(EnemyKind::EBiker) => matches!(e.state, state::PARK | state::RING),
         EntityKind::Enemy(EnemyKind::TaubeSitting) => e.state == state::SIT,
@@ -712,7 +764,7 @@ fn on_foot(e: &Entity) -> bool {
     }
 }
 
-/// Selfie-Tourists and Nordic-Walkers that overlap another enemy on foot
+/// Selfie-Tourists, Nordic-Walkers and Pilger that overlap another enemy on foot
 /// turn away from it (after everything moved; the direction is set, not
 /// flipped, so two that overlap for several frames don't flip back and
 /// forth).
@@ -721,7 +773,9 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
         let a = entities[i];
         let walks = matches!(
             a.kind,
-            EntityKind::Enemy(EnemyKind::SelfieTourist | EnemyKind::NordicWalker)
+            EntityKind::Enemy(
+                EnemyKind::SelfieTourist | EnemyKind::NordicWalker | EnemyKind::Pilger
+            )
         );
         // `dir == 0`: a `still` tourist (test levels) never turns.
         if !a.active || a.removed || a.dir == 0 || !walks {
@@ -770,6 +824,285 @@ pub(crate) fn knock_off_block(
     knocked
 }
 
+// ------------------------------------------------------------- M3 (D-058)
+
+/// Walks like a Selfie-Tourist without selfies: towards the player at
+/// activation, turning at walls (and, in [`turn_at_enemies`], at enemies
+/// on foot), and **off ledges** (gravity and max fall speed as the
+/// player's), so pilgrims come down a mountain step by step. A group
+/// placed one cell apart stays in file: same speed, same rules.
+fn update_pilger(e: &mut Entity, ctx: &UpdateCtx) {
+    let (map, t) = (ctx.map, ctx.tuning);
+    let cx = e.x + e.w.div_int(2);
+    if e.timer == 1 && ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    e.state = state::WALK;
+    e.vx = t.enemies.pilger_speed.mul_int(i32::from(e.dir));
+    e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
+    let mut b = e.hitbox();
+    if map.move_x(&mut b, e.vx) {
+        e.dir = -e.dir;
+    }
+    if map.move_y(&mut b, e.vy, false) != YHit::None {
+        e.vy = Fx::ZERO;
+    }
+    e.x = b.x;
+    e.y = b.y;
+}
+
+/// The file a Pilger belongs to (D-061 addendum): Pilger spawned in
+/// adjacent cells of the same row form one file, named by its row and its
+/// leftmost column. `None` for every other entity (and for entities
+/// without a spawn). The game activates a file together, so a group that
+/// straddles the activation edge when the camera stops doesn't split.
+pub(crate) fn pilger_file(level: &Level, e: &Entity) -> Option<(i32, i32)> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Pilger) {
+        return None;
+    }
+    let s = level.entities.get(usize::from(e.spawn?))?;
+    let is_pilger_at = |col: i32| {
+        level
+            .entities
+            .iter()
+            .any(|o| o.kind == SpawnKind::Pilger && o.row == s.row && o.col == col)
+    };
+    let mut col = s.col;
+    while is_pilger_at(col - 1) {
+        col -= 1;
+    }
+    Some((s.row, col))
+}
+
+/// The Gams cycle (`count` = frame in the current state, 1-based): stand
+/// `gams_stand` frames, crouch `gams_crouch`, then hop until it lands
+/// (32 frames with the content tuning: gravity is applied before the move,
+/// so it is back at its height after 31 frames and lands on the 32nd,
+/// `gams_hop_tiles` tiles further; apex 30 px). At the start of each
+/// crouch it faces the player and plans the hop ([`plan_hop`]); during the
+/// crouch `vx` holds the planned hop speed but it doesn't move. In a hop it
+/// collides with tiles (lands on solid and one-way tops, a wall stops
+/// `vx`). It always has gravity, so it falls when its floor disappears.
+fn update_gams(e: &mut Entity, ctx: &UpdateCtx) {
+    let (map, t) = (ctx.map, ctx.tuning);
+    let et = &t.enemies;
+    e.count = e.count.saturating_add(1);
+    if e.state == state::STAND && e.count > et.gams_stand {
+        e.state = state::CROUCH;
+        e.count = 1;
+        let hop = plan_hop(e, ctx);
+        e.vx = et.gams_hop_speed_x.mul_int(i32::from(hop));
+    }
+    if e.state == state::CROUCH && e.count > et.gams_crouch {
+        e.state = state::HOP;
+        e.count = 1;
+        e.vy = -et.gams_hop_speed_y;
+    }
+    e.vy = (e.vy + et.gams_gravity).min(t.player.max_fall_speed);
+    let mut b = e.hitbox();
+    if e.state == state::HOP && map.move_x(&mut b, e.vx) {
+        e.vx = Fx::ZERO;
+    }
+    match map.move_y(&mut b, e.vy, false) {
+        YHit::Floor => {
+            e.vy = Fx::ZERO;
+            if e.state == state::HOP {
+                e.state = state::STAND;
+                e.count = 0;
+                e.vx = Fx::ZERO;
+            }
+        }
+        YHit::Ceiling => e.vy = Fx::ZERO,
+        YHit::None => {}
+    }
+    e.x = b.x;
+    e.y = b.y;
+}
+
+/// At the start of a crouch: faces the player and returns the hop's
+/// direction. The way towards the player if [`hop_is_clear`], else the
+/// other way (it turns), else 0: a hop straight up. So it never leaves its
+/// ledge.
+fn plan_hop(e: &mut Entity, ctx: &UpdateCtx) -> i8 {
+    let cx = e.x + e.w.div_int(2);
+    if ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    if e.dir == 0 {
+        e.dir = -1;
+    }
+    let t = ctx.tuning;
+    if hop_is_clear(e, ctx.map, e.dir, t) {
+        e.dir
+    } else if hop_is_clear(e, ctx.map, -e.dir, t) {
+        e.dir = -e.dir;
+        e.dir
+    } else {
+        0
+    }
+}
+
+/// True if a Gams standing exactly on a floor can hop `gams_hop_tiles`
+/// tiles towards `dir` without leaving its ledge: every column its hitbox
+/// sweeps over (from where it stands to the landing spot) has a solid or
+/// one-way top at its feet height, and no solid tile is in its body's rows
+/// along the way (a wall). Checking the whole sweep, not only the landing
+/// cell, keeps it off a neighbouring ledge across a gap.
+pub fn hop_is_clear(e: &Entity, map: &TileMap, dir: i8, t: &Tuning) -> bool {
+    let feet = e.y + e.h;
+    if feet.raw().rem_euclid(TILE.raw()) != 0 {
+        return false;
+    }
+    let d = TILE.mul_int(t.enemies.gams_hop_tiles * i32::from(dir));
+    let (left, right) = (e.x.min(e.x + d), e.right().max(e.right() + d) - Fx(1));
+    let floor_row = tile_of(feet);
+    let (r0, r1) = (tile_of(e.y), floor_row - 1);
+    (tile_of(left)..=tile_of(right)).all(|c| {
+        matches!(
+            map.kind_at(c, floor_row),
+            TileKind::Solid | TileKind::OneWay
+        ) && (r0..=r1).all(|r| map.kind_at(c, r) != TileKind::Solid)
+    })
+}
+
+/// A rock at rest in the niche cell (`col`, `row`): the `stein_hitbox`
+/// centred horizontally, its bottom 2 px above the cell's bottom (the
+/// 16×16 sprite's origin is 8,14, so the sprite fills the cell). Used for
+/// the spawner (`kind` [`EntityKind::Steinschlag`]) and for each falling
+/// rock it drops ([`EntityKind::Stein`]).
+pub(crate) fn resting_rock(kind: EntityKind, col: i32, row: i32, t: &Tuning) -> Entity {
+    let feet_x = TILE.mul_int(col) + TILE.div_int(2);
+    let feet_y = TILE.mul_int(row + 1) - Fx::from_px(2);
+    Entity::at_feet(kind, feet_x, feet_y, t.enemies.stein_hitbox)
+}
+
+/// The niche's pose for its counter frame: the resting rock while waiting,
+/// `wobble` in the telegraph, empty (`None`) from the drop until
+/// `steinschlag_refill` frames later, then `rest` again.
+fn steinschlag_pose(e: &Entity, t: &Tuning) -> Option<Pose> {
+    let et = &t.enemies;
+    if e.state == state::WAITING {
+        return Some(Pose::Rest);
+    }
+    let f = e.count;
+    if f < et.steinschlag_telegraph {
+        Some(Pose::Wobble)
+    } else if f < et.steinschlag_telegraph + et.steinschlag_refill {
+        None
+    } else {
+        Some(Pose::Rest)
+    }
+}
+
+/// The Steinschlag spawner. Its counter (`count`, frame of its `period`)
+/// runs only while the player is within `range` tiles (horizontally,
+/// centre to centre) **and** its cell is fully on screen with its top at
+/// least `steinschlag_screen_top` px below the screen top (the HUD);
+/// otherwise it pauses with its pose kept. On the first such frame it
+/// starts at `phase` (0 or ≥ 41, so a first rock always follows a whole
+/// telegraph); frames 0..`steinschlag_telegraph` are the telegraph, and at
+/// frame `steinschlag_telegraph` it returns the falling rock to spawn.
+pub(crate) fn update_steinschlag(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let t = ctx.tuning;
+    let s = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))?;
+    let in_range = player_distance_px(e, ctx) <= i32::from(s.range) * TILE_PX;
+    let (left, top) = (TILE.mul_int(s.col), TILE.mul_int(s.row));
+    let screen_w = Fx::from_px(crate::camera::SCREEN_W);
+    let screen_h = Fx::from_px(crate::camera::SCREEN_H);
+    let on_screen = left >= ctx.screen_left
+        && left + TILE <= ctx.screen_left + screen_w
+        && top >= ctx.screen_top + Fx::from_px(t.enemies.steinschlag_screen_top)
+        && top + TILE <= ctx.screen_top + screen_h;
+    if !(in_range && on_screen) {
+        return None;
+    }
+    let period = s.period.max(1);
+    if e.state == state::WAITING {
+        e.state = state::COUNTING;
+        e.count = s.phase % period;
+    } else {
+        e.count = (e.count + 1) % period;
+    }
+    (e.count == t.enemies.steinschlag_telegraph)
+        .then(|| resting_rock(EntityKind::Stein, s.col, s.row, t))
+}
+
+/// A falling rock: straight down from rest (gravity `stein_gravity`, max
+/// `stein_max_fall`); it shatters (state [`state::SHATTERED`], removed; the
+/// game spawns the debris) on the first solid or one-way tile its bottom
+/// reaches. Below the level it is removed like any entity. It ignores
+/// water and hazard tiles, enemies and items.
+pub(crate) fn update_stein(e: &mut Entity, map: &TileMap, t: &Tuning) {
+    let et = &t.enemies;
+    e.vy = (e.vy + et.stein_gravity).min(et.stein_max_fall);
+    let mut b = e.hitbox();
+    if map.move_y(&mut b, e.vy, false) == YHit::Floor {
+        e.state = state::SHATTERED;
+        e.removed = true;
+    }
+    e.y = b.y;
+}
+
+/// The four `stein_debris` pieces of a shattered rock (8×8, like a broken
+/// brick's: the upper pair flies higher), around its hitbox centre.
+pub(crate) fn stein_debris(e: &Entity, t: &Tuning) -> [Entity; 4] {
+    let it = &t.items;
+    let half = TILE.div_int(2);
+    let (cx, cy) = (e.x + e.w.div_int(2), e.y + e.h.div_int(2));
+    [
+        (-half, -half, -it.debris_speed_x, -it.debris_speed_high),
+        (Fx::ZERO, -half, it.debris_speed_x, -it.debris_speed_high),
+        (-half, Fx::ZERO, -it.debris_speed_x, -it.debris_speed_low),
+        (Fx::ZERO, Fx::ZERO, it.debris_speed_x, -it.debris_speed_low),
+    ]
+    .map(|(dx, dy, vx, vy)| {
+        let mut d = Entity::new(EntityKind::SteinDebris, cx + dx, cy + dy, half, half);
+        d.vx = vx;
+        d.vy = vy;
+        d
+    })
+}
+
+/// The column a Steinschlag's rocks fall down (renderer: the `kiesel`
+/// trickle of the telegraph): the y of the first solid or one-way tile top
+/// at or below the resting rock's bottom in the spawner's column, or the
+/// level's bottom.
+pub fn rock_column_bottom(e: &Entity, map: &TileMap) -> Fx {
+    let col = tile_of(e.x + e.w.div_int(2));
+    let start = tile_of(e.y + e.h);
+    let height = tile_of(map.height_fx());
+    (start..height)
+        .find(|&r| matches!(map.kind_at(col, r), TileKind::Solid | TileKind::OneWay))
+        .map_or(map.height_fx(), |r| TILE.mul_int(r))
+}
+
+/// **Defeat by projectile** (the one path for the thrown Hackl, D-056,
+/// D-060): what a projectile does to entity `e`, by its
+/// [`Entity::axe_hit`] class. Every `Defeat` enemy is knocked off (tumbling
+/// off the screen) for its base points (`score.stomp_chain[chain_start]`:
+/// 100 / 200, outside the stomp chain); a falling rock (`Shatter`) breaks
+/// for `enemies.stein_points` (50). Returns the points, or `None` for no
+/// effect (`Bounce`, `Pass`). `Game::defeat_by_projectile` adds the score,
+/// the popup and the rock's debris.
+pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
+    if !e.active || e.removed {
+        return None;
+    }
+    match (e.axe_hit(), e.kind) {
+        (crate::hackl::AxeHit::Defeat, EntityKind::Enemy(kind)) => {
+            defeat(e, kind, true, t);
+            Some(t.score.stomp_chain[kind.chain_start()])
+        }
+        (crate::hackl::AxeHit::Shatter, EntityKind::Stein) => {
+            e.state = state::SHATTERED;
+            e.removed = true;
+            Some(t.enemies.stein_points)
+        }
+        _ => None,
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

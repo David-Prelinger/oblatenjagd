@@ -31,6 +31,59 @@ pub struct Tuning {
     pub goal: GoalTuning,
     /// The route map between stages (D-043).
     pub map: MapTuning,
+    /// The Hackl power-up and the thrown axes (D-056).
+    pub hackl: HacklTuning,
+    /// The Durchkriechstein crawl (D-057).
+    pub crawl: CrawlTuning,
+}
+
+/// The Hackl power-up and its thrown axes (`docs/game-design.md` →
+/// "Stage 4: Falkenstein", D-056). The item's rise is the other power-ups'
+/// (`items.rise_frames`, `items.rise_speed`), its points `score.power_up`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HacklTuning {
+    /// The `hackl` item's hitbox `[w, h]`, whole pixels.
+    pub item_hitbox: [i32; 2],
+    /// A thrown axe's hitbox `[w, h]`, whole pixels.
+    pub axe_hitbox: [i32; 2],
+    /// Most axes alive at once; a RUN press with this many alive does nothing.
+    pub max_alive: u8,
+    /// Horizontal speed of a thrown axe (towards the facing side).
+    pub throw_speed_x: Fx,
+    /// Upward speed of a thrown axe at the throw.
+    pub throw_speed_y: Fx,
+    /// Gravity on a thrown axe.
+    pub gravity: Fx,
+    /// Maximum downward speed of a thrown axe.
+    pub max_fall_speed: Fx,
+    /// The axe's centre at the throw: this many px in front of the
+    /// player's centre ...
+    pub throw_ahead: i32,
+    /// ... and this many px below her hitbox top.
+    pub throw_below_top: i32,
+    /// Frames of the throw pose.
+    pub throw_pose_frames: u8,
+    /// Frames an axe stays stuck in a solid tile (harmless) before it is removed.
+    pub stuck_frames: u16,
+}
+
+/// The Durchkriechstein crawl (`docs/game-design.md` → "Stage 4:
+/// Falkenstein", D-057).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CrawlTuning {
+    /// The player's hitbox `[w, h]` while crawling, whole pixels (fits the
+    /// 1-tile tunnel).
+    pub hitbox: [i32; 2],
+    /// Crawl speed to the right.
+    pub speed: Fx,
+    /// The crawl starts when the hitbox's right edge is at most this many
+    /// px left of the tunnel mouth.
+    pub mouth_px: i32,
+    /// Points instead of the +1 life when a Normal Resi crawls through at
+    /// the lives cap.
+    pub cap_points: u32,
 }
 
 /// The route map between stages (`docs/game-design.md` → "Route map").
@@ -161,6 +214,22 @@ pub struct CameraTuning {
     pub deadzone_top: i32,
     /// Lower edge of the vertical dead zone (screen y of the player's centre).
     pub deadzone_bottom: i32,
+    /// Climb camera (`[meta] camera = "climb"`, D-054): screen y the feet
+    /// settle at while grounded.
+    pub climb_feet_y: i32,
+    /// Climb camera: most px per frame the camera moves while settling.
+    pub climb_settle_speed: i32,
+    /// Climb camera: in the air, the camera follows up at once when the
+    /// hitbox top is above this screen y.
+    pub climb_top: i32,
+    /// Climb camera: in the air it follows the feet down at most this many
+    /// px below the settle framing of the last ground.
+    pub climb_fall_follow: i32,
+    /// Climb camera: screen y the feet settle at during the goal sequence.
+    pub climb_goal_feet_y: i32,
+    /// Climb levels: a level entity activates only while its spawn cell is
+    /// at most this many px above or below the screen.
+    pub climb_activate_y: i32,
 }
 
 /// Game flow constants.
@@ -363,6 +432,135 @@ pub struct EnemyTuning {
     /// or hazard tile was in the way, D-027 fallback). At least 2 (it is
     /// counted down in the frame it is set).
     pub bounce_grace_frames: u16,
+    /// Pilger (both looks; `lead` only changes the sprite).
+    pub pilger_hitbox: [i32; 2],
+    /// Pilger walking speed (towards the player at activation).
+    pub pilger_speed: Fx,
+    /// Gams.
+    pub gams_hitbox: [i32; 2],
+    /// Frames a Gams stands before each crouch ...
+    pub gams_stand: u16,
+    /// ... and crouches (the telegraph) before each hop.
+    pub gams_crouch: u16,
+    /// Horizontal speed of a hop.
+    pub gams_hop_speed_x: Fx,
+    /// Upward speed at the start of a hop.
+    pub gams_hop_speed_y: Fx,
+    /// Gravity of a Gams (in a hop and when it falls).
+    pub gams_gravity: Fx,
+    /// How many tiles ahead the landing check looks (the hop's length).
+    pub gams_hop_tiles: i32,
+    /// The falling rock (`stein`).
+    pub stein_hitbox: [i32; 2],
+    /// Gravity of a falling rock ...
+    pub stein_gravity: Fx,
+    /// ... and its max fall speed.
+    pub stein_max_fall: Fx,
+    /// Steinschlag counter frames of the telegraph; the rock drops at this
+    /// frame of each period. At most [`crate::level::STEINSCHLAG_MIN_PHASE`]
+    /// − 1, so a level `phase` never skips into a telegraph.
+    pub steinschlag_telegraph: u16,
+    /// Frames after a drop until the niche shows a resting rock again.
+    pub steinschlag_refill: u16,
+    /// The niche counts as on screen only when its top is at least this
+    /// many px below the screen top (the HUD).
+    pub steinschlag_screen_top: i32,
+    /// Points for a rock shattered by a projectile (the thrown Hackl).
+    pub stein_points: u32,
+}
+
+/// Frames of a Gams hop on flat ground until it lands (the frame whose
+/// move would take it below its start height), moving like
+/// `enemies::update_gams`: vy starts at −`up`, gravity is added before each
+/// move, fall speed capped at `max_fall`. `None` if it takes more than 1000
+/// frames.
+pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
+    let (mut y, mut vy) = (0i64, -i64::from(up.raw()));
+    for n in 1..=1000 {
+        vy = (vy + i64::from(gravity.raw())).min(i64::from(max_fall.raw()));
+        y += vy;
+        if y > 0 {
+            return Some(n);
+        }
+    }
+    None
+}
+
+impl EnemyTuning {
+    /// The M3 enemy keys (Pilger, Gams, Steinschlag; D-058).
+    /// `max_fall` is the player's max fall speed (the Gams falls with it).
+    fn validate_m3(&self, max_fall: Fx) -> Result<(), ParseError> {
+        for (name, [w, h]) in [
+            ("enemies.pilger_hitbox", self.pilger_hitbox),
+            ("enemies.gams_hitbox", self.gams_hitbox),
+            ("enemies.stein_hitbox", self.stein_hitbox),
+        ] {
+            if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=64 px in both directions"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.pilger_speed", self.pilger_speed),
+            ("enemies.gams_hop_speed_x", self.gams_hop_speed_x),
+            ("enemies.gams_hop_speed_y", self.gams_hop_speed_y),
+            ("enemies.gams_gravity", self.gams_gravity),
+            ("enemies.stein_gravity", self.stein_gravity),
+            ("enemies.stein_max_fall", self.stein_max_fall),
+        ] {
+            if v <= Fx::ZERO || v >= Fx::from_px(12) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.gams_stand", self.gams_stand),
+            ("enemies.gams_crouch", self.gams_crouch),
+            ("enemies.steinschlag_refill", self.steinschlag_refill),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if !(1..=4).contains(&self.gams_hop_tiles) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.gams_hop_tiles must be 1..=4",
+            ));
+        }
+        // The landing check sweeps `gams_hop_tiles` tiles, so the hop must
+        // not carry it further: simulate the hop on flat ground exactly as
+        // `enemies::update_gams` moves (gravity before the move, `vx` every
+        // frame including the landing one).
+        let airtime = gams_airtime(self.gams_hop_speed_y, self.gams_gravity, max_fall);
+        let across = airtime.map(|n| i64::from(self.gams_hop_speed_x.raw()) * i64::from(n));
+        let swept = i64::from(Fx::from_px(self.gams_hop_tiles * TILE_PX).raw());
+        if across.is_none_or(|a| a > swept) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.gams_hop_speed_x × the hop's airtime (from gams_hop_speed_y and gams_gravity) <= gams_hop_tiles × 16 px, so the Gams never lands past the floor it checked",
+            ));
+        }
+        // The level's `phase` is 0 or STEINSCHLAG_MIN_PHASE.., so the first
+        // rock of an approach always shows the whole telegraph; drop and
+        // refill fit the shortest period.
+        let min_phase = crate::level::STEINSCHLAG_MIN_PHASE;
+        let min_period = *crate::level::STEINSCHLAG_PERIOD_RANGE.start();
+        if self.steinschlag_telegraph == 0
+            || self.steinschlag_telegraph >= min_phase
+            || self.steinschlag_telegraph + self.steinschlag_refill >= min_period
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need 1 <= enemies.steinschlag_telegraph < {min_phase} and steinschlag_telegraph + steinschlag_refill < {min_period}"
+            )));
+        }
+        if !(0..crate::camera::SCREEN_H).contains(&self.steinschlag_screen_top) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.steinschlag_screen_top must be 0..180 px",
+            ));
+        }
+        Ok(())
+    }
 }
 
 impl Tuning {
@@ -480,6 +678,7 @@ impl Tuning {
                 "tuning.toml: game.activate_margin and game.despawn_margin must be >= 0",
             ));
         }
+        self.enemies.validate_m3(self.player.max_fall_speed)?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -719,6 +918,7 @@ impl Tuning {
                 )));
             }
         }
+        self.validate_hackl()?;
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -731,6 +931,91 @@ impl Tuning {
         {
             return Err(ParseError::new(
                 "tuning.toml: need 0 <= camera.deadzone_top <= camera.deadzone_bottom < 180",
+            ));
+        }
+        let h = crate::camera::SCREEN_H;
+        if !(0 <= c.climb_top && c.climb_top < c.climb_feet_y && c.climb_feet_y <= h) {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 <= camera.climb_top < camera.climb_feet_y <= 180",
+            ));
+        }
+        if !(1..=h).contains(&c.climb_goal_feet_y) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_goal_feet_y must be 1..=180",
+            ));
+        }
+        if !(1..=TILE_PX).contains(&c.climb_settle_speed) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.climb_settle_speed must be 1..=16 px/frame",
+            ));
+        }
+        for (name, v) in [
+            ("camera.climb_fall_follow", c.climb_fall_follow),
+            ("camera.climb_activate_y", c.climb_activate_y),
+        ] {
+            if !(0..=h).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=180 px"
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// The `[hackl]` and `[crawl]` sections (D-056, D-057).
+    fn validate_hackl(&self) -> Result<(), ParseError> {
+        let (h, c) = (&self.hackl, &self.crawl);
+        for (name, [w, ht]) in [
+            ("hackl.item_hitbox", h.item_hitbox),
+            ("hackl.axe_hitbox", h.axe_hitbox),
+        ] {
+            if !(1..=TILE_PX).contains(&w) || !(1..=TILE_PX).contains(&ht) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=16 px in both directions"
+                )));
+            }
+        }
+        // The crawl hitbox fits the 1-tile tunnel and is no wider than the
+        // player (she stands up in place at the exit).
+        let [cw, ch] = c.hitbox;
+        if !(1..=self.player.hitbox_w).contains(&cw) || !(1..=TILE_PX).contains(&ch) {
+            return Err(ParseError::new(
+                "tuning.toml: need 1 <= crawl.hitbox[0] <= player.hitbox_w and 1 <= crawl.hitbox[1] <= 16",
+            ));
+        }
+        if !(1..=8).contains(&h.max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: hackl.max_alive must be 1..=8",
+            ));
+        }
+        let max_step = Fx::from_px(12);
+        for (name, v) in [
+            ("hackl.throw_speed_x", h.throw_speed_x),
+            ("hackl.throw_speed_y", h.throw_speed_y),
+            ("hackl.gravity", h.gravity),
+            ("hackl.max_fall_speed", h.max_fall_speed),
+            ("crawl.speed", c.speed),
+        ] {
+            if v <= Fx::ZERO || v >= max_step {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("hackl.throw_ahead", h.throw_ahead),
+            ("hackl.throw_below_top", h.throw_below_top),
+            ("crawl.mouth_px", c.mouth_px),
+        ] {
+            if !(0..=TILE_PX * 2).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=32 px"
+                )));
+            }
+        }
+        if !(1..=60).contains(&h.throw_pose_frames) || h.stuck_frames == 0 {
+            return Err(ParseError::new(
+                "tuning.toml: need 1 <= hackl.throw_pose_frames <= 60 and hackl.stuck_frames >= 1",
             ));
         }
         Ok(())
@@ -749,6 +1034,14 @@ mod tests {
         assert!(t.player.walk_speed < t.player.run_speed);
         assert_eq!(t.player.coyote_frames, 6);
         assert_eq!(t.player.jump_buffer_frames, 6);
+        let e = t.enemies;
+        let airtime = gams_airtime(e.gams_hop_speed_y, e.gams_gravity, t.player.max_fall_speed);
+        assert_eq!(airtime, Some(32), "a Gams hop lands on its 32nd frame");
+        assert_eq!(
+            e.gams_hop_speed_x.mul_int(32),
+            Fx::from_px(e.gams_hop_tiles * TILE_PX),
+            "exactly the swept tiles"
+        );
     }
 
     #[test]
@@ -861,6 +1154,51 @@ mod tests {
             ("walk_px", 9),
             ("wait_frames", 0),
             ("teaser_frames", 0),
+            ("pilger_hitbox", 0),
+            ("gams_hitbox", 65),
+            ("stein_hitbox", 0),
+            ("pilger_speed", 0),
+            ("gams_hop_speed_x", 0),
+            ("gams_hop_speed_y", 3072),
+            ("gams_gravity", 0),
+            ("stein_gravity", 0),
+            ("stein_max_fall", 3072),
+            ("gams_stand", 0),
+            ("gams_crouch", 0),
+            ("gams_hop_tiles", 0),
+            ("gams_hop_tiles", 5),
+            ("gams_hop_tiles", 1),
+            ("gams_hop_speed_x", 257),
+            ("gams_gravity", 60),
+            ("gams_hop_speed_y", 1100),
+            ("steinschlag_telegraph", 0),
+            ("steinschlag_telegraph", 41),
+            ("steinschlag_refill", 0),
+            ("steinschlag_refill", 50),
+            ("steinschlag_screen_top", -1),
+            ("steinschlag_screen_top", 180),
+            ("climb_feet_y", 181),
+            ("climb_feet_y", 40),
+            ("climb_top", -1),
+            ("climb_settle_speed", 0),
+            ("climb_settle_speed", 17),
+            ("climb_fall_follow", -1),
+            ("climb_fall_follow", 181),
+            ("climb_goal_feet_y", 0),
+            ("climb_goal_feet_y", 181),
+            ("climb_activate_y", -1),
+            ("climb_activate_y", 181),
+            ("item_hitbox", 0),
+            ("axe_hitbox", 17),
+            ("max_alive", 0),
+            ("max_alive", 9),
+            ("throw_speed_x", 0),
+            ("throw_speed_y", 3072),
+            ("throw_ahead", 33),
+            ("throw_below_top", -1),
+            ("throw_pose_frames", 0),
+            ("stuck_frames", 0),
+            ("mouth_px", 33),
         ]
         .map(|(f, v)| (f, v.to_string()))
         .into_iter()

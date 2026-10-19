@@ -1,0 +1,21 @@
+# After the Gams, Resi walks on at walking speed towards niche #2 (open
+# street): entering its range starts the 40-frame telegraph, the rock
+# drops at counter frame 40 and hits her as she walks into its column
+# (frame 514 = range entry + 40 + ~24 frames of fall). Normal dies.
+level  = m3_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=514..514 deaths=1 score=500
+---
+RB 56
+RBJ 20
+RB 15
+RBJ 36
+RB 18
+RBJ 31
+RB 45
+RBJ 20
+RB 2
+RBJ 36
+R 220
+- 30

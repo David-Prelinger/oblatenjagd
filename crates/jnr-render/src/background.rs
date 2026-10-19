@@ -1,12 +1,14 @@
 //! Parallax background layers.
 //!
 //! A level lists its layers back to front as (sprite name, scroll factor in
-//! sixteenths of the camera movement); [`RenderContext::with_background`]
-//! resolves them once. Each layer is drawn
+//! sixteenths of the camera movement, y offset, vertical factor);
+//! [`RenderContext::with_background`] resolves them once. Each layer is drawn
 //! - tiled horizontally, starting at x = [`parallax_offset`] (in `-(width-1)..=0`),
-//! - **bottom-aligned** to the screen bottom (y = screen height - sprite height),
-//!   fixed vertically: the camera's y does not move backgrounds (no vertical
-//!   parallax for now),
+//! - **bottom-aligned** to the screen bottom (y = screen height − sprite
+//!   height − `y`), plus the vertical parallax [`sink_px`]: `(max camera y −
+//!   camera y) × factor_y / 16` px lower (D-054). With `factor_y` 0 (the
+//!   default) or at the level bottom it is fixed to the screen; layers only
+//!   ever sink, so the sky behind them never shows a gap,
 //! - with its first animation, animated by the game frame like tiles.
 //!
 //! Factor 0 is a static sky, 16 moves with the playfield. The flat sky fill
@@ -31,15 +33,19 @@ pub struct BackgroundLayer<'a> {
     pub factor16: u32,
     /// Raised this many pixels above the screen bottom (level `y`, default 0).
     pub y_offset: u32,
+    /// Vertical parallax in sixteenths of the camera's climb (level
+    /// `factor_y`, default 0; see [`sink_px`]).
+    pub factor_y16: u32,
 }
 
-/// Resolves `(sprite name, factor in sixteenths)` pairs against the atlas,
-/// back to front. Names the atlas lacks (or sprites without frames) are
-/// skipped, like every missing sprite in the renderer.
-pub fn resolve<'a>(atlas: &'a Atlas, layers: &[(&str, u32, u32)]) -> Vec<BackgroundLayer<'a>> {
+/// Resolves `(sprite name, factor in sixteenths, y offset, factor_y in
+/// sixteenths)` against the atlas, back to front. Names the atlas lacks (or
+/// sprites without frames) are skipped, like every missing sprite in the
+/// renderer.
+pub fn resolve<'a>(atlas: &'a Atlas, layers: &[(&str, u32, u32, u32)]) -> Vec<BackgroundLayer<'a>> {
     layers
         .iter()
-        .filter_map(|&(name, factor16, y_offset)| {
+        .filter_map(|&(name, factor16, y_offset, factor_y16)| {
             let sprite = atlas.sprite(name)?;
             let anim = sprite.anims.first().filter(|a| !a.frames.is_empty())?;
             Some(BackgroundLayer {
@@ -47,9 +53,20 @@ pub fn resolve<'a>(atlas: &'a Atlas, layers: &[(&str, u32, u32)]) -> Vec<Backgro
                 anim,
                 factor16,
                 y_offset,
+                factor_y16,
             })
         })
         .collect()
+}
+
+/// How many px lower than its bottom-aligned place a layer with vertical
+/// factor `factor_y16` is drawn for a camera at `camera_y` in a level whose
+/// lowest camera position is `max_camera_y` (D-054): `(max_camera_y -
+/// camera_y) × factor_y16 / 16`, rounded down, never negative. 0 at the
+/// level bottom and for `factor_y16` 0.
+pub fn sink_px(camera_y: i32, max_camera_y: i32, factor_y16: u32) -> i32 {
+    let climbed = (i64::from(max_camera_y) - i64::from(camera_y)).max(0);
+    (climbed * i64::from(factor_y16) / 16).min(i64::from(i32::MAX)) as i32
 }
 
 /// True if `layer` hides everything behind it on a `screen_h` tall screen:
@@ -76,15 +93,18 @@ pub fn parallax_offset(camera_x: i32, factor16: u32, width: u32) -> i32 {
 }
 
 /// Draws the flat sky (unless `covered`) and every layer for a camera at
-/// `camera_x`, animated at `tick`.
+/// `camera` (x, y) in a level whose lowest camera y is `max_camera_y`,
+/// animated at `tick`.
 pub fn draw(
     fb: &mut Framebuffer,
     atlas: &Atlas,
     layers: &[BackgroundLayer],
     covered: bool,
-    camera_x: i32,
+    camera: (i32, i32),
+    max_camera_y: i32,
     tick: u32,
 ) {
+    let (camera_x, camera_y) = camera;
     if !covered {
         fb.clear(SKY_LIGHT);
     }
@@ -94,7 +114,8 @@ pub fn draw(
             continue;
         }
         let rect = layer.anim.frame(layer.anim.frame_index_at(tick), false);
-        let y = fb.h as i32 - layer.sprite.height as i32 - layer.y_offset.min(10_000) as i32;
+        let sink = sink_px(camera_y, max_camera_y, layer.factor_y16).min(10_000);
+        let y = fb.h as i32 - layer.sprite.height as i32 - layer.y_offset.min(10_000) as i32 + sink;
         let mut x = parallax_offset(camera_x, layer.factor16, layer.sprite.width);
         while x < fb.w as i32 {
             blit_frame(fb, atlas, rect, x, y, false);
@@ -164,9 +185,9 @@ mod tests {
     #[test]
     fn layers_tile_horizontally_bottom_aligned() {
         let atlas = layer_atlas();
-        let layers = resolve(&atlas, &[("bg_strip", 16, 0)]);
+        let layers = resolve(&atlas, &[("bg_strip", 16, 0, 0)]);
         let mut fb = testutil::fb();
-        draw(&mut fb, &atlas, &layers, false, 1, 0);
+        draw(&mut fb, &atlas, &layers, false, (1, 0), 0, 0);
         // Camera 1 at factor 16: offset -1, so the screen starts with `b c a b c ...`.
         let y = HEIGHT as i32 - 1;
         let row: Vec<u32> = (0..6).map(|x| fb.get(x, y).unwrap()).collect();
@@ -180,19 +201,19 @@ mod tests {
         assert_eq!(fb.get(0, HEIGHT as i32 - 2), Some(B));
         assert_eq!(fb.get(0, HEIGHT as i32 - 3), Some(SKY_LIGHT));
         // Factor 0 ignores the camera.
-        let still = resolve(&atlas, &[("bg_strip", 0, 0)]);
+        let still = resolve(&atlas, &[("bg_strip", 0, 0, 0)]);
         let mut fb = testutil::fb();
-        draw(&mut fb, &atlas, &still, false, 1000, 0);
+        draw(&mut fb, &atlas, &still, false, (1000, 0), 0, 0);
         assert_eq!(fb.get(0, y), Some(A));
     }
 
     #[test]
     fn y_offset_raises_a_layer_above_the_screen_bottom() {
         let atlas = layer_atlas();
-        let layers = resolve(&atlas, &[("bg_strip", 0, 10)]);
+        let layers = resolve(&atlas, &[("bg_strip", 0, 10, 0)]);
         assert_eq!(layers[0].y_offset, 10);
         let mut fb = testutil::fb();
-        draw(&mut fb, &atlas, &layers, false, 0, 0);
+        draw(&mut fb, &atlas, &layers, false, (0, 0), 0, 0);
         let bottom = HEIGHT as i32 - 1;
         assert_eq!(fb.get(0, bottom), Some(SKY_LIGHT));
         assert_eq!(fb.get(0, bottom - 10), Some(A));
@@ -201,11 +222,54 @@ mod tests {
     }
 
     #[test]
+    fn sink_is_the_climb_times_factor_y_over_16() {
+        assert_eq!(sink_px(492, 492, 8), 0, "at the level bottom");
+        assert_eq!(sink_px(0, 492, 0), 0, "factor_y 0");
+        assert_eq!(sink_px(0, 492, 8), 246);
+        assert_eq!(
+            sink_px(100, 492, 3),
+            73,
+            "392 × 3 / 16 = 73.5, rounded down"
+        );
+        assert_eq!(sink_px(0, 492, 32), 984);
+        assert_eq!(sink_px(600, 492, 8), 0, "never up");
+        assert_eq!(sink_px(i32::MIN, i32::MAX, 32), i32::MAX, "no overflow");
+    }
+
+    #[test]
+    fn factor_y_sinks_a_layer_as_the_camera_climbs() {
+        let atlas = layer_atlas();
+        let layers = resolve(&atlas, &[("bg_strip", 0, 10, 8)]);
+        assert_eq!(layers[0].factor_y16, 8);
+        let bottom = HEIGHT as i32 - 1;
+        // At the level bottom: exactly where `y` puts it.
+        let mut fb = testutil::fb();
+        draw(&mut fb, &atlas, &layers, false, (0, 100), 100, 0);
+        assert_eq!(fb.get(0, bottom - 10), Some(A));
+        assert_eq!(fb.get(0, bottom - 12), Some(SKY_LIGHT));
+        // 6 px climbed at factor 8: 3 px lower.
+        let mut fb = testutil::fb();
+        draw(&mut fb, &atlas, &layers, false, (0, 94), 100, 0);
+        assert_eq!(fb.get(0, bottom - 7), Some(A));
+        assert_eq!(fb.get(0, bottom - 8), Some(A));
+        assert_eq!(fb.get(0, bottom - 9), Some(SKY_LIGHT));
+        assert_eq!(fb.get(0, bottom - 6), Some(SKY_LIGHT));
+        // Far up it has sunk off the screen.
+        let mut fb = testutil::fb();
+        draw(&mut fb, &atlas, &layers, false, (0, 0), 100, 0);
+        assert!(fb.pixels.iter().all(|&p| p == SKY_LIGHT));
+    }
+
+    #[test]
     fn later_layers_draw_over_earlier_ones_and_missing_ones_are_skipped() {
         let atlas = layer_atlas();
         let layers = resolve(
             &atlas,
-            &[("bg_full", 0, 0), ("nope", 4, 0), ("bg_holey", 16, 0)],
+            &[
+                ("bg_full", 0, 0, 0),
+                ("nope", 4, 0, 0),
+                ("bg_holey", 16, 0, 0),
+            ],
         );
         assert_eq!(layers.len(), 2);
         assert!(covers_screen(&atlas, &layers[0], HEIGHT as u32));
@@ -214,7 +278,7 @@ mod tests {
             "transparent pixel"
         );
         let mut fb = testutil::fb();
-        draw(&mut fb, &atlas, &layers, true, 0, 0);
+        draw(&mut fb, &atlas, &layers, true, (0, 0), 0, 0);
         let bottom = HEIGHT as i32 - 1;
         assert_eq!(fb.get(0, bottom), Some(A));
         assert_eq!(
@@ -228,13 +292,13 @@ mod tests {
     #[test]
     fn partial_layers_keep_the_flat_sky_behind_them() {
         let atlas = layer_atlas();
-        let strip = resolve(&atlas, &[("bg_strip", 16, 0)]);
+        let strip = resolve(&atlas, &[("bg_strip", 16, 0, 0)]);
         assert!(
             !covers_screen(&atlas, &strip[0], HEIGHT as u32),
             "too short"
         );
         let mut fb = testutil::fb();
-        draw(&mut fb, &atlas, &[], false, 0, 0);
+        draw(&mut fb, &atlas, &[], false, (0, 0), 0, 0);
         assert!(fb.pixels.iter().all(|&p| p == SKY_LIGHT));
     }
 }

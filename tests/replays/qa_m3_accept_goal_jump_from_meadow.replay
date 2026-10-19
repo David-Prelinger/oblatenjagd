@@ -1,0 +1,78 @@
+# QA M3 acceptance (D-059 addendum E19, climb goal camera): a touch from
+# below the final framing. Resi walks off the Aberseeblick, brakes onto the
+# goal meadow left of the Maibaum (standing framing: camera y 108, feet at
+# 148) and jumps into the pole (1643). The final framing puts the pole base
+# at screen y 164 (camera y 92), so the camera must go *up* while she slides
+# *down*: probe-checked, camera y 108 -> 92 in 2 px steps (1643-1651), never
+# down, then still through the slide, the hop and the walk. Replays can't
+# check the camera; this pins the route and frames for the probe.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = complete frames=1643..1643 deaths=0 player_y>=230 state=stage_clear
+---
+# --- the first 1480 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 101
+RBJ 36
+RB 44
+RBJ 20
+RB 119
+RBJ 36
+RB 43
+RBJ 36
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 9
+RBJ 24
+# --- end of the solver prefix ---
+- 60      # stand on the Aberseeblick
+R 20      # walk off its right edge
+L 12      # brake in the air: land on the meadow left of the pole
+- 60
+RJ 20     # a jump from the meadow into the pole (touch 1643, feet 24 px up)
+R 10
+- 200     # slide, hop, walk off

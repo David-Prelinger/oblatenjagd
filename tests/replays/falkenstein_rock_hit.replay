@@ -1,0 +1,35 @@
+# Stage 4 Steinschlag (D-058): the solver route onto the rockfall net
+# (standing on it at col 90 while rock #1 shatters on it), then Resi walks
+# off it under rock #2's column (col 92) and stays: after its telegraph
+# (wobble and pebbles) the rock falls on her; as Normal that is a death.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = dies_at frames=623..623
+shots  = 609:telegraph 619:falling
+---
+# --- the first 560 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+# --- end of falkenstein_solver.replay ---
+- 30
+R 22       # under rock #2
+- 60

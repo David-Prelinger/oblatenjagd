@@ -6,6 +6,7 @@
 //! placeholder steps in `steps.rs`.
 
 mod archlint;
+mod climblint;
 mod content;
 mod golden;
 mod levels;

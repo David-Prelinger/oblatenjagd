@@ -1,16 +1,18 @@
 # M2 flow on the real stages (D-042, D-047, task E12): the whole M2 route
 # from the title. Salzburg, St. Gilgen and Brunnwinkl are each played with
 # their solver inputs unchanged (from frames 171, 2711 and 5284), the route
-# map is left with START in Wait (frames 2561 and 5134); Brunnwinkl's clear
-# plays the route-map teaser to Falkenstein („Fortsetzung folgt …") and ends
-# on the title with the run reset to Salzburg (score 0, 3 lives, Oblaten
-# 0). If a solver route changes, re-copy it and re-check the frames.
+# map is left with START in Wait (frames 2561 and 5134); since M3
+# Falkenstein is playable (D-053), so Brunnwinkl's clear leads to the route
+# map with the prompt (no teaser), and START in Wait starts the Falkenstein
+# intro with everything carried over (score 55100, 3 lives, Oblaten 99).
+# Was `flow_m2_brunnwinkl_teaser_title` (teaser, title, run reset). If a
+# solver route changes, re-copy it and re-check the frames.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=GameOver
-expect = state=title stage=salzburg score=0 lives=3 oblaten=0
+expect = state=stage_intro stage=falkenstein score=55100 lives=3 oblaten=99
 ---
 - 20
 S 1       # frame 21: title → Salzburg intro
@@ -165,4 +167,6 @@ RB 9
 RBJ 12
 RB 40
 # --- end of brunnwinkl_solver.replay ---
-- 800     # Maibaum sequence, tally, teaser to Falkenstein, title
+- 800     # Maibaum sequence, tally, route map Brunnwinkl → Falkenstein (Wait)
+S 1       # START in Wait → Falkenstein intro
+- 30

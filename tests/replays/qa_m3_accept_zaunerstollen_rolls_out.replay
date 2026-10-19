@@ -1,0 +1,105 @@
+# QA M3 acceptance (D-064, backlog "M3 acceptance notes" 3): the Zaunerstollen
+# rolling out of the open Einsiedelei is not lost in the saddle cleft. The
+# qa_falkenstein_relaxed inputs up to the Z-box bump (3227, big Resi in the
+# cave); she leaves the cave at once and waits under the bulge. The
+# Zaunerstollen first bounces off the cave's inner wall (col 162, row 4),
+# rolls back, then out of the mouth, over the H-box top, along the plateau
+# and down the step at 170, and is caught in the first saddle dip (195-200,
+# Gams #2): it rolls between the dip's walls (x 3120-3200) and never reaches
+# the cleft at 207-209. Resi runs after it and takes it there: ExtraLife at
+# 4090, 4 lives, no hurt.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4 power=big state=playing
+---
+# --- the first 3227 frames of qa_falkenstein_relaxed.replay ---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 73
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 218
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 4
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 205
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 1
+# --- end of the prefix ---
+R 55      # out of the cave mouth, drop past the H-box to the plateau
+L 80      # back left under the Einsiedelei bulge, out of its way
+- 400     # it rolls out, over the H-box, along the plateau and the saddle
+RB 300    # after it: stomps on the way, over it in the dip
+- 80      # it rolls back into her: +1 life (4090)

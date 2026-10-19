@@ -37,6 +37,15 @@ pub enum LabelSide {
     Below,
 }
 
+/// A label slot: a fixed top edge and a right limit (each optional).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LabelSlot {
+    /// Fixed top edge of the label text (screen y).
+    pub top: Option<i32>,
+    /// The label's right edge stays at or left of this x.
+    pub right: Option<i32>,
+}
+
 /// One station of the journey.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Station {
@@ -51,6 +60,11 @@ pub struct Station {
     pub label_top: Option<i32>,
     /// The label's right edge stays at or left of this x.
     pub label_right: Option<i32>,
+    /// An alternate slot for the label, used on a map screen where a big
+    /// Resi (Zuckerschock or Hackl) would cover the primary one
+    /// (`label_top`, `label_right`) at that screen's start or end dot
+    /// (art-director, M3; chosen by the renderer once per screen).
+    pub label_alt: Option<LabelSlot>,
     /// Waypoints of the route from the previous station's dot to this one
     /// (both dots excluded); empty for the first station.
     pub path_in: &'static [(i32, i32)],
@@ -65,6 +79,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Right,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[],
     },
     Station {
@@ -73,6 +88,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Left,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[(48, 40), (68, 52), (88, 62)],
     },
     Station {
@@ -80,18 +96,31 @@ pub const STATIONS: [Station; 9] = [
         dot: (124, 58),
         // Above, raised clear of Resi's head (art-director, M2).
         // Above-left, close to the dot and clear of Resi (art-director, M2).
+        // Alternate (M3): rows 20–28 when a big Resi stands on the
+        // St. Gilgen or Brunnwinkl dot of that map screen.
         label: LabelSide::Left,
         label_top: Some(43),
         label_right: Some(114),
+        label_alt: Some(LabelSlot {
+            top: Some(20),
+            right: Some(114),
+        }),
         path_in: &[(108, 64), (116, 58)],
     },
     Station {
         id: "falkenstein",
         dot: (152, 68),
-        // Clear of the St. Wolfgang marker (art-director, M2).
+        // Clear of the St. Wolfgang marker (art-director, M2). Alternate
+        // (M3): ending at x 170 when a big Resi stands on St. Wolfgang (the
+        // teaser), so the outline (x 170) keeps a 1 px gap to her 16×32 box
+        // (x 172..) and never touches it (QA, M3 task E19).
         label: LabelSide::Below,
         label_top: None,
         label_right: Some(172),
+        label_alt: Some(LabelSlot {
+            top: None,
+            right: Some(170),
+        }),
         path_in: &[(136, 58), (144, 62)],
     },
     Station {
@@ -100,6 +129,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Right,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[(164, 74), (172, 80)],
     },
     Station {
@@ -108,6 +138,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Below,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[(186, 94)],
     },
     Station {
@@ -116,6 +147,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Right,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[(212, 116)],
     },
     Station {
@@ -126,6 +158,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Above,
         label_top: None,
         label_right: None,
+        label_alt: None,
         path_in: &[(252, 112), (264, 104)],
     },
     Station {
@@ -135,6 +168,7 @@ pub const STATIONS: [Station; 9] = [
         label: LabelSide::Left,
         label_top: Some(69),
         label_right: Some(290),
+        label_alt: None,
         path_in: &[(288, 88)],
     },
 ];

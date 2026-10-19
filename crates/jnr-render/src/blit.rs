@@ -18,7 +18,18 @@ pub fn blit_frame(
     dst_y: i32,
     flip_h: bool,
 ) {
-    blit(fb, atlas, rect, dst_x, dst_y, flip_h, None);
+    blit(fb, atlas, rect, dst_x, dst_y, flip_h, Paint::Plain);
+}
+
+/// How opaque atlas pixels are written.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Paint {
+    /// As they are.
+    Plain,
+    /// Every one in this colour.
+    Tint(u32),
+    /// Pixels of the first colour in the second, the rest as they are.
+    Swap(u32, u32),
 }
 
 /// Like [`blit_frame`], but every opaque pixel is drawn in `tint`
@@ -32,7 +43,7 @@ pub fn blit_frame_tinted(
     flip_h: bool,
     tint: u32,
 ) {
-    blit(fb, atlas, rect, dst_x, dst_y, flip_h, Some(tint));
+    blit(fb, atlas, rect, dst_x, dst_y, flip_h, Paint::Tint(tint));
 }
 
 /// Draws frame `anim.frame_index_at(tick)` of a sprite so that the sprite's
@@ -51,7 +62,8 @@ pub fn draw_sprite(
     y: i32,
     facing_left: bool,
 ) {
-    sprite_impl(fb, atlas, sprite, anim, tick, x, y, facing_left, None);
+    let i = anim.frame_index_at(tick);
+    sprite_impl(fb, atlas, sprite, anim, i, x, y, facing_left, Paint::Plain);
 }
 
 /// Like [`draw_sprite`], but every opaque pixel is drawn in `tint`.
@@ -67,11 +79,25 @@ pub fn draw_sprite_tinted(
     facing_left: bool,
     tint: u32,
 ) {
-    sprite_impl(fb, atlas, sprite, anim, tick, x, y, facing_left, Some(tint));
+    let i = anim.frame_index_at(tick);
+    sprite_impl(
+        fb,
+        atlas,
+        sprite,
+        anim,
+        i,
+        x,
+        y,
+        facing_left,
+        Paint::Tint(tint),
+    );
 }
 
+/// Like [`draw_sprite`], but pixels of colour `from` (`0xRRGGBBAA`) are
+/// drawn in `to` (a palette swap of one colour; used by documented art
+/// fallbacks such as `player_hackl`'s).
 #[allow(clippy::too_many_arguments)]
-fn sprite_impl(
+pub fn draw_sprite_swapped(
     fb: &mut Framebuffer,
     atlas: &Atlas,
     sprite: &AtlasSprite,
@@ -80,17 +106,54 @@ fn sprite_impl(
     x: i32,
     y: i32,
     facing_left: bool,
-    tint: Option<u32>,
+    (from, to): (u32, u32),
+) {
+    let i = anim.frame_index_at(tick);
+    let paint = Paint::Swap(from, to);
+    sprite_impl(fb, atlas, sprite, anim, i, x, y, facing_left, paint);
+}
+
+/// Like [`draw_sprite`], but frame `index` of the anim (clamped to its
+/// last frame) instead of the frame at a tick, optionally with a colour
+/// `swap` as in [`draw_sprite_swapped`].
+#[allow(clippy::too_many_arguments)]
+pub fn draw_sprite_frame(
+    fb: &mut Framebuffer,
+    atlas: &Atlas,
+    sprite: &AtlasSprite,
+    anim: &AtlasAnim,
+    index: usize,
+    x: i32,
+    y: i32,
+    facing_left: bool,
+    swap: Option<(u32, u32)>,
+) {
+    let paint = swap.map_or(Paint::Plain, |(from, to)| Paint::Swap(from, to));
+    let i = index.min(anim.frames.len().saturating_sub(1));
+    sprite_impl(fb, atlas, sprite, anim, i, x, y, facing_left, paint);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sprite_impl(
+    fb: &mut Framebuffer,
+    atlas: &Atlas,
+    sprite: &AtlasSprite,
+    anim: &AtlasAnim,
+    index: usize,
+    x: i32,
+    y: i32,
+    facing_left: bool,
+    paint: Paint,
 ) {
     if anim.frames.is_empty() {
         return;
     }
-    let rect = anim.frame(anim.frame_index_at(tick), facing_left);
+    let rect = anim.frame(index, facing_left);
     let flip = facing_left && anim.mirrored_frames.is_empty();
     let o = sprite.origin_facing(facing_left);
     let dst_x = x.saturating_sub(o.x as i32);
     let dst_y = y.saturating_sub(o.y as i32);
-    blit(fb, atlas, rect, dst_x, dst_y, flip, tint);
+    blit(fb, atlas, rect, dst_x, dst_y, flip, paint);
 }
 
 fn blit(
@@ -100,7 +163,7 @@ fn blit(
     dst_x: i32,
     dst_y: i32,
     flip_h: bool,
-    tint: Option<u32>,
+    paint: Paint,
 ) {
     let (w, h) = (rect.w as i32, rect.h as i32);
     let (fw, fh) = (fb.w as i32, fb.h as i32);
@@ -121,7 +184,13 @@ fn blit(
             if p[3] == 0 {
                 continue;
             }
-            let rgba = tint.unwrap_or(u32::from_be_bytes([p[0], p[1], p[2], 0xff]));
+            let own = u32::from_be_bytes([p[0], p[1], p[2], 0xff]);
+            let rgba = match paint {
+                Paint::Plain => own,
+                Paint::Tint(t) => t,
+                Paint::Swap(from, to) if own == from => to,
+                Paint::Swap(..) => own,
+            };
             fb.pixels[(dst_row + i as isize) as usize] = rgba;
         }
     }
@@ -241,6 +310,32 @@ mod tests {
         let mut fb = testutil::fb();
         draw_sprite_tinted(&mut fb, &atlas, s, &s.anims[0], 0, 1, 2, false, 7);
         assert_eq!(drawn(&fb), [(0, 0, 7), (1, 0, 7), (2, 1, 7)]);
+    }
+
+    #[test]
+    fn swap_replaces_one_colour_only() {
+        let atlas = small_atlas();
+        let s = atlas.sprite("s").unwrap();
+        let mut fb = testutil::fb();
+        draw_sprite_swapped(&mut fb, &atlas, s, &s.anims[0], 0, 1, 2, false, (B, 7));
+        assert_eq!(drawn(&fb), [(0, 0, A), (1, 0, 7), (2, 1, C)]);
+        let mut fb = testutil::fb();
+        draw_sprite_frame(
+            &mut fb,
+            &atlas,
+            s,
+            &s.anims[0],
+            5,
+            1,
+            2,
+            false,
+            Some((A, 9)),
+        );
+        assert_eq!(
+            drawn(&fb),
+            [(0, 0, 9), (1, 0, B), (2, 1, C)],
+            "clamped index"
+        );
     }
 
     #[test]

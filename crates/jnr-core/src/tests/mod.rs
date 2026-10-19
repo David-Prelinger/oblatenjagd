@@ -1,12 +1,15 @@
 //! Integration-style tests of the whole simulation (game feel, game flow,
 //! determinism, the testbed level). Unit tests live next to their modules.
 
+mod climb;
 mod enemies;
 mod feel;
 mod flow;
 mod goal;
+mod hackl;
 mod items;
 mod m2;
+mod m3;
 mod modes;
 mod route;
 mod testbed;

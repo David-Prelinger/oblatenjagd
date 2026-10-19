@@ -1,0 +1,23 @@
+# A missed jump in the shaft lands on the plank it started from (D-055):
+# into the shaft, up through the first `steig` plank (row 27, hitbox top
+# 410) with a held jump, then a short hop under the next plank (row 24,
+# columns 40-44) that doesn't reach it: she lands back on row 27.
+level  = climb_test
+source = handwritten
+expect = deaths=0 state=playing player_y>=410 player_y<=410 player_x>=640
+expect = no_event=Died
+---
+RB 72     # the solver's route to the shaft floor
+RBJ 36
+RB 40
+RBJ 36
+RB 66
+- 20
+R 10      # under the first plank
+- 20
+J 36      # up through it, lands on it
+- 40
+R 12      # under the second plank's left end (column 40)
+- 20
+J 6       # too short: misses the second plank ...
+- 50      # ... and lands on the first one again

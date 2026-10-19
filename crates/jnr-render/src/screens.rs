@@ -8,7 +8,7 @@
 //! has the full `k` outline); lines are centred
 //! horizontally. Blinking texts are on for [`BLINK_FRAMES`], then off as long.
 
-use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup, Power};
+use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
@@ -51,7 +51,7 @@ pub const TITLE_LOGO_SPRITE: &str = "title_logo";
 /// Every text key the engine uses by name (not counting level signs, which
 /// `cargo xtask levels lint` checks). Per-stage keys are listed for the
 /// fallback stage; the route map's keys are [`crate::map`]'s.
-pub const TEXT_KEYS: [&str; 31] = [
+pub const TEXT_KEYS: [&str; 33] = [
     TITLE_NAME_KEY,
     SUBTITLE_KEY,
     PRESS_START_KEY,
@@ -78,6 +78,14 @@ pub const TEXT_KEYS: [&str; 31] = [
         None => "",
     },
     match Popup::Wurstkranz.text_key() {
+        Some(k) => k,
+        None => "",
+    },
+    match Popup::Hackl.text_key() {
+        Some(k) => k,
+        None => "",
+    },
+    match Popup::Ballast.text_key() {
         Some(k) => k,
         None => "",
     },
@@ -195,10 +203,19 @@ pub fn draw_intro(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let times_w = font.measure("×");
     let total = 16 + GAP + times_w + GAP + font.measure(lives);
     let left = (WIDTH as i32 - total) / 2;
-    // Zuckerschock carried into the stage: `player_big` (D-042).
-    let big = game.player().power == Power::Big;
+    // The power state carried into the stage: `player_big` or
+    // `player_hackl` (D-042, D-056).
     let feet = (left + 8, INTRO_LIVES_Y + 12);
-    scene::draw_player_pose(ctx, fb, big, PlayerAnim::Idle, feet, game.frame(), false);
+    scene::draw_player_pose(
+        ctx,
+        fb,
+        game.player().power,
+        &game.tuning().player,
+        PlayerAnim::Idle,
+        feet,
+        game.frame(),
+        false,
+    );
     let x = left + 16 + GAP;
     // The „×“ in `Y` like the number (art-director: a white × vanishes in haze).
     font.draw_text(

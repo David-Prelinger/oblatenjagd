@@ -1,0 +1,107 @@
+# Stage 4 Hackl (D-056, game-design.md "New mechanics"): the solver route
+# to the church plateau (it jumps onto the H-box), then Resi stops on the
+# plateau, walks under the H-box (164, row 8, 2 rows above the plateau), bumps it,
+# and the Hackl rises onto it and stays; a straight jump beside the box with
+# a drift left takes it (Normal -> Hackl, „Wirf, Resi, wirf!" + 1000) and
+# she lands on the box. Facing right from the box top she throws an axe
+# every 31 frames (new RUN presses): the first takes the Wolfgang pigeon off
+# the statue, later ones defeat pilger group C (3 x 100, outside the stomp
+# chain) on the saddle's clear axe lane. No hurt.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=PowerUp no_event=Hurt deaths=0 score=6000
+shots  = 1172:bump 1305:pickup 1680:axes
+---
+# --- the first 1080 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 101
+RBJ 36
+RB 38
+# --- end of falkenstein_solver.replay ---
+- 30
+R 38       # under the H-box
+- 20
+J 10       # bump: the Hackl rises
+- 50
+R 16       # beside the box
+- 20
+J 6        # straight up beside the box ...
+LJ 26      # ... and drift left onto the Hackl
+L 6
+- 40       # transformation freeze
+R 3        # face right on the box
+- 5
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 40

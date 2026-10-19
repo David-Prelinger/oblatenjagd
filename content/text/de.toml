@@ -28,6 +28,9 @@ extra_life = "+1 Leben"
 checkpoint = "Zwischenstopp"
 wurstkranz = "Wurstkranz!"
 hoppala = "Hoppala!"
+# M3: picking up St. Wolfgang's Hackl; a big Resi leaving the Durchkriechstein as Normal.
+hackl = "Wirf, Resi, wirf!"
+ballast = "Ballast weg!"
 
 # Route map between stages (docs/game-design.md "Route map").
 [map]
@@ -97,3 +100,20 @@ sign_checkpoint = "Bus 150\nwinkt rüber"
 sign_futter = "Futter nur\nauf Blau"
 sign_nobelpreis = "Nobelpreis\nfür alle"
 sign_ortsende = "Brunnwinkl"
+
+[stage.falkenstein]
+title = "Etappe 4: Falkenstein"
+tagline = "Steil. Steiler. Hackl."
+next = "Auf nach St. Wolfgang."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\nnur z'Fuß"
+sign_weg = "Weg 28\nsteil. Sehr."
+sign_steine = "Bitte Stein\nmitnehmen"
+sign_pilgerstau = "Pilgerstau\nseit 1291"
+sign_steinschlag = "Steinschlag\ninklusive"
+sign_gams = "Gamswild\nhat Vorrang"
+sign_checkpoint = "Bus 150\nwinzig, voll"
+sign_durchkriech = "Passt jeder\nohne Sünden"
+sign_einsiedelei = "Einsiedelei\nzu vermieten"
+sign_hackl = "Hacklwurf\nRekord: 5 km"
+sign_ortsende = "Falkenstein"

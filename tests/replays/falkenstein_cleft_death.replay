@@ -1,0 +1,44 @@
+# Stage 4 climb camera death line (game-design.md "New mechanics", D-054):
+# the solver route to just before its jump over the Steinschlag cleft
+# (110-112), then Resi walks right into it. The cleft is empty down to the
+# level bottom (row 41), but she dies at the death line (hitbox top below
+# the screen bottom) at frame 746, hitbox top 530 px, long before the level
+# bottom (672 px).
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = dies_at frames=746..746 player_y<=540
+---
+# --- the first 686 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 1
+# --- end of falkenstein_solver.replay ---
+R 80       # walk into the cleft

@@ -1,0 +1,15 @@
+# Written by `cargo xtask solve hackl --write`; re-create it instead of editing.
+level  = hackl
+seed   = 1
+source = solver
+expect = complete frames=379..379 deaths=0
+---
+RB 104
+RBJ 36
+RB 63
+RBJ 36
+RB 10
+RBJ 36
+RB 18
+RBJ 32
+RB 44

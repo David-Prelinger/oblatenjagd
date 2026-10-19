@@ -1,0 +1,63 @@
+# Written by `cargo xtask solve falkenstein --write`; re-create it instead of editing.
+level  = falkenstein
+seed   = 1
+source = solver
+expect = complete frames=1542..1542 deaths=0
+---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 101
+RBJ 36
+RB 44
+RBJ 20
+RB 119
+RBJ 36
+RB 43
+RBJ 36
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 9
+RBJ 36
+RB 50

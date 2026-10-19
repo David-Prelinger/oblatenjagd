@@ -1,0 +1,183 @@
+# QA M3: a relaxed full run of Stage 4 Falkenstein for the D-045 time
+# limit. Walking pace (RUN only where the original run used it), some
+# exploring, no deaths, no hurts: the M-box at Fürberg (the Mozartkugel
+# bounces off the garden wall at col 17 and comes back to Resi under the
+# box), the Fürberg pilgrim stomped over the wall, group A stomped one by
+# one from the terrace below the long terrace (they come down in file: a
+# hop every 32 frames), the ?-box, the Holzstiege, pair B and #7 stomped
+# in the trough, a wait under the rockfall net, a hop over the fallen rock
+# at col 93 and timed walks past rocks #2-#4, the checkpoint (col 116),
+# the shaft planks with a short wait on the row-23 plank while Pilger #8
+# drops past on his zigzag, the boulder top (Oblaten), the Einsiedelei
+# (Zaunerstollen, +1 life), the Hackl taken as Zuckerschock with a
+# standing jump beside the H-box (164, row 8), the Wolfgang pigeon and
+# group C defeated with axes thrown from the box top, both saddle Gams
+# defeated with axes, a walk off the Aberseeblick to the Maibaum. 50 of
+# 68 Oblaten.
+# Measured: LevelComplete at frame 5098 (85.0 s): time_limit 255 = 3x.
+# Re-cut by the level-designer after the QA fixes (wall 17, Pilger #8,
+# H-box 164/8, checkpoint 116, rock at 93) and E19 (pilgrim files wake
+# together): QA's inputs with new stretches at Fürberg (0-323), group A
+# (794-932), a hop over the rock (1866), a 20-frame wait in the shaft
+# (2558) and the H-box (3320-4173); the rest is QA's run unchanged.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = complete frames=5098..5098 deaths=0 no_event=Hurt power=hackl lives=4 oblaten=50
+---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 73
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 218
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 12
+- 20
+J 4
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 205
+R 28
+RJ 8
+R 104
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 40
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 40
+J 22
+- 10
+L 8
+- 10
+J 22
+- 40
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 50
+- 8
+J 10
+- 46
+J 8
+LJ 22
+L 4
+- 30
+R 12
+- 20
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 2
+R 95
+- 172
+R 140
+- 5
+B 1
+- 30
+B 1
+- 30
+R 30
+- 5
+B 1
+- 30
+B 1
+- 30
+R 150
+- 5
+RJ 22
+R 20
+- 20
+R 28
+RJ 22
+R 25
+- 15
+B 1
+- 30
+B 1
+- 30
+R 100
+RJ 20
+R 20
+RJ 15
+R 120

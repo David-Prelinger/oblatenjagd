@@ -49,5 +49,7 @@ fn hand_written_route_reaches_the_goal() {
 
 /// Frame on which the route touches the goal.
 const FINISH_FRAME: u32 = 731;
-/// `state_hash` at that frame (changes whenever the hashed tuning gains keys).
-const FINISH_HASH: u64 = 0x19b4_9b83_7c57_2654;
+/// `state_hash` at that frame (changes whenever the hashed tuning gains keys
+/// or the player gains hashed fields; M3 E15: `[hackl]`, `[crawl]` and the
+/// Hackl/crawl player fields).
+const FINISH_HASH: u64 = 0x6287_e5b9_dbd4_7995;

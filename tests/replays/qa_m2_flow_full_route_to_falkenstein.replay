@@ -4,17 +4,17 @@
 # (auto) -> Brunnwinkl (solver route from 5651; the Oblaten counter goes
 # 72 -> 99, one short of the 100th: the M2 level pass moved St. Gilgen's
 # house Oblaten off the solver's roof-top arcs) -> Maibaum 7119 -> map from
-# 7603: START in Arrive (7615) skips the walk straight to the Teaser (Resi on
-# Falkenstein, „Fortsetzung folgt …"), START in the Teaser (7655) is ignored,
-# the 180 teaser frames end on the title (7795) with the run reset to
-# Salzburg (score 0, 3 lives, 0 Oblaten, Normal); START (7856) starts the
-# Salzburg intro.
+# 7603: START in Arrive (7615) skips the walk straight to Wait (Resi on
+# Falkenstein; since M3 it is playable, D-053, so the panel shows the prompt
+# instead of the teaser), START in Wait (7655) starts the Falkenstein intro
+# with the run carried over (score 55100, 3 lives, 99 Oblaten). Was
+# `qa_m2_flow_full_route_teaser` (teaser, START ignored, title, reset).
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died event=CheckpointReached
-expect = state=stage_intro stage=salzburg score=0 lives=3 oblaten=0
+expect = state=stage_intro stage=falkenstein score=55100 lives=3 oblaten=99
 ---
 - 20
 S 1         # title -> Salzburg intro
@@ -163,9 +163,7 @@ RB 9
 RBJ 12
 RB 40
 - 495       # goal sequence; map Arrive from 7603
-S 1         # 7615: Arrive -> Teaser
+S 1         # 7615: Arrive -> Wait
 - 39
-S 1         # 7655: ignored in the Teaser
-- 200       # title at 7795
-S 1         # 7856: START -> Salzburg intro
+S 1         # 7655: START in Wait -> Falkenstein intro
 - 30

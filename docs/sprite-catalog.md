@@ -1,4 +1,4 @@
-# Sprite catalog (M1, M2)
+# Sprite catalog (M1, M2, M3)
 
 The contract between pixel-artist and engine: sprite names, sizes, origins and animation names. The engine looks sprites up by these names and falls back to grey boxes when one is missing, so art and code can be built in parallel. Sizes are maxima unless marked exact; the hitboxes in `game-design.md` are gameplay numbers and live in `content/tuning.toml` / the engine, not here.
 
@@ -155,3 +155,74 @@ Same rules as Stage 1 (tileable, ≤ 640×180, bottom-aligned, art-style §7 col
 | `bg_wolfgangsee` (mid) | 8 | 2, 3 | the lake band and the far shore's wooded hills (St. Wolfgang as a small silhouette); distant water within the mid layer's colours (art-director: `v G` + a calm `s`/`f` water band, or move the water to the near layer) |
 | `bg_stgilgen` (near) | 13 | 2 | village houses with wooden balconies, the parish church tower, the Zwölferhorn gondola line as a thin line going up-left |
 | `bg_forest` (near) | 13 | 3 | shore forest (`G j g`) with gaps showing the lake (`t T`), a boathouse or two |
+
+## M3 additions: Falkenstein, Hackl, Durchkriechstein
+
+Specs in `game-design.md` → "Stage 4: Falkenstein" and "Power states"; decisions D-053 … D-058. Same conventions as above. Colour notes are starting points; art-style.md and the art-director decide.
+
+### Player (group `player`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `player_hackl` (Resi, Hackl) | 16×32 exact | 8,32 | `idle` 2f/30t loop · `walk` 4f/8t loop · `run` 4f/5t loop · `skid` held · `jump` held · `fall` held · `die` held · `pole` 2f/8t loop (same names and poses as `player_big`) · **`throw`** 2f (frame 0 = arm back with the Hackl raised behind her head, 4 ticks; frame 1 = arm forward, empty hand, 6 ticks; the engine picks the frame for the 10-frame throw pose, on the ground and in the air) · **`crawl`** 2f/8t loop (see below) |
+| `player`, `player_big` (existing) | as before | as before | add **`crawl`** 2f/8t loop |
+
+- **Look of Hackl Resi**: the Zuckerschock Resi in a green loden jacket (Janker, `G` with `j` shadow, `g` light) over the red dirndl (skirt stays `r`), so the state reads at 1× by its dominant colour, like SMB's fire palette. A small Hackl (axe) hangs at her belt on the back side (blade `i`/`w` with a `d` edge, handle `O l`), visible in `idle`/`walk`/`run` and missing in `throw` frame 1. The apron stays blue `S` and the hair blond, so she's still Resi.
+- **`crawl`** (all three player sprites): Resi on hands and knees, facing right, within the **bottom 14 rows** of the canvas (the tunnel is 16 px high) and the full 16 px width, head down. In `player_big`/`player_hackl` she is the big Resi squeezed flat (the legend joke "even a large person fits": a slightly wider, comic squash). Frame 1 moves the knees and hands. Drawn while the engine's crawl hitbox (12×12) moves through the tunnel. No mirror needed (she always crawls right), but `mirror = auto` is fine.
+- The transformation freeze alternates `player_hackl` with `player` or `player_big` (engine, no extra frames). The stage intro and the route map draw `player_hackl` (`idle`, `walk`) when Resi carries the Hackl.
+
+### Items (group `items`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `hackl` (power-up) | 16×16 | 8,16 | `idle` 2f/20t loop: a small woodcutter's axe standing upright, blade top-right, with a 1 px `w` glint that moves along the blade on frame 1. Blade `i w` + `d` edge, handle `O l`, `k` outline. Must read as a tool, not a weapon of war: short handle, rounded blade. Never gold and round |
+| `hackl_thrown` | 12×12 | 6,10 (bottom centre of the 8×8 hitbox, centred in the sprite) | `spin` 4f/3t loop (blade up → right → down → left: four hand-drawn rotations, no engine rotation) · `stuck` held (blade buried in a wall to the right, the handle sticking out up-left; the engine mirrors it for left throws) |
+| `stein_debris` | 8×8 | 4,8 | `spin` 2f/4t loop: limestone chip `i m` with `d` shadow (the `debris` brick piece's counterpart for shattered rocks) |
+
+### Enemies (group `enemies`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `pilger` | 16×24 | 8,24 | `walk` 2f/12t loop (steady pilgrim pace, stick planted on frame 0) · `squished` held (sits down on his stone and rests, hat pushed back: a rest, not a squash). Grey-brown loden (`m`/`O`), green felt hat `G` with a small badge `Y`, walking stick `O l`, a backpack with a grey **penance stone** (`i m d`) strapped on top (the Steinetragen custom: the readable prop at 1×). Friendly face; pilgrims are funny, faith is not the joke: no rosary or cross props |
+| `pilger_lead` (`lead = true`) | 16×32 | 8,32 | same anims as `pilger`; the walking stick is taller and carries a small red-white pennant (`r w`) above his hat (the group leader, like a tour guide's umbrella). Pennant ≤ 8 rows above the hat; the hitbox is the pilgrim's, the pennant is harmless decoration |
+| `gams` | 24×20 | 12,20 | `idle` 2f/30t loop (chewing, ear flick) · `crouch` held (the telegraph: head down, horns forward, legs bent – must read at 1× from 6 tiles) · `hop` held (legs tucked, body stretched) · `squished` held (sits dazed, a little star or two over the horns). Summer coat `O` with `l` back stripe, the black-and-white face mask `k`/`w`, short hooked horns `k`, light belly `c`. Faces right, `mirror = auto` |
+| `stein` (falling rock and the rock in its niche) | 16×16 | 8,14 (bottom centre of the 12×12 hitbox) | `rest` held (sits in the niche) · `wobble` 2f/4t loop (the telegraph: tilts 1 px left/right) · `fall` 2f/6t loop (tumbling). Pale limestone `i` with `m` facets and `d` shadow, `k` outline; clearly a rock, never round-gold (not an Oblate, not a Mozartkugel) |
+| `kiesel` (telegraph pebbles) | 4×4 | 2,4 | `fall` 2f/4t loop: 1–2 px grey grains `m i`; drawn by the renderer as a trickle down the rock's column during the telegraph (renderer only, no collision) |
+
+### Tiles (group `tiles`, 16×16, `tile_<name>`)
+
+| Tile | Kind | Look |
+|---|---|---|
+| `kalkfels` | solid | the Falkensteinwand's pale limestone: `i` faces, `m` cracks, `d` shadowed undersides, a light `w` lip on top, occasional `G`/`g` grass tufts on top edges. Autotiled (16f `auto`): undersides (bottom open) show a dark `d` overhang edge, because the Steinschlag overhang is mostly underside. The mountain mass under every path is this tile. As built (M3, round 2): one quiet stratum per tile (a wavy `m` bedding line in rows 9–10 that wraps left/right and one short `m` joint in rows 11–13; no `w` in the body); open top = `w` lip + one `y g G` tuft; open bottom = 3 px ragged `d` edge with 1 px notches; open left `m`, open right `d`. Underside frames use 4 stone shades (`w i m d`), as the catalog colours ask |
+| `kalkfels_bg` | decorative (non-solid, like `wall_village_bg`) | the cliff face *behind* the playfield: the shaft's back wall, the Einsiedelei cave interior. Darker and flatter than `kalkfels` (`m d` with `F` haze, no light lip, no top grass), so it never reads as a surface (D-038). Autotiled. As built (M3): the `kalkfels` stratum recoloured (`m` body, `d` bedding line and joint); edges are recessed, never lit: open top = 2 px ragged `d` shadow whose row 0 has 1–2 px transparent notches (runs ≤ 5 px) (cast by the rock, a plank or the cave ceiling above), open left = ragged `d` shadow column, open right/bottom flat |
+| `steig` | one-way | the wall's wooden stairway: a plank (top 5 px = walking surface, `o O l`) on two black iron brackets (`d`) bolted into the rock below it, a thin steel-cable handrail (`m`, 1 px) 10 px above on short posts. Autotiled left/right ends (the bracket on the end tiles). The handrail must not look walkable: 1 px, dashed with posts, no lip. **As built (M3)**: `k`-outlined plank in rows 0–4, iron knee brackets (`d` post + diagonal brace, `m` bolts, `k` outline) under the end tiles, one Y-bracket under a single tile; transparent below (for the Kreuzweg's open air). **No handrail**: 10 px above the plank lies outside the 16×16 cell (the cell above is air or another tile), so it can't be drawn by the tile |
+| `steig_wall` (new, M3) | one-way | the same plank drawn over the `kalkfels_bg` back wall, with a 2 px `d` cast shadow on the wall under it: for the shaft, where a plank cell replaces a back-wall cell (one tile per cell, as `balcony` over `wall_village_bg`). Autotiled left/right ends like `steig`. Engine: map it to one-way like `steig` |
+| `netz` | one-way | rockfall net: a steel-cable net `m d` stretched flat between posts (diamond mesh, 1 px), a `d` edge rope with a light `i` highlight on top as the walking surface (top 4 px). Autotiled left/right ends (an end tile has a post going down to the ground, decoration only, drawn in the tile). As built (M3, round 2): rows 0–3 `k`/`i`/`d`/`k` rope over the full tile width, a 1 px `d` diamond mesh (period 8) in rows 4–10 back to a `d` rope in row 11, transparent between; end tiles have a 4 px `k i m k` post in columns 6–9 with a `d` clamp every 8 px over the full tile height (the mesh stops at the post, the rope runs on to a `k` end cap); `netz_post` continues it down to the ground |
+| `netz_post` (new, M3 round 2) | decorative (non-solid, like `jetty_post`) | the `netz` end post continued down to the ground: the same 4 px `k i m k` post in columns 6–9 with a `d` clamp every 8 px; vertical autotile (16f `auto`, left/right bits ignored), an open bottom gets a `k`-outlined `i m d` concrete footing. Placed in the column under each `netz` end tile |
+
+Reused in M3: `forest_path` (Kreuzweg steps), `stone` (Fürberg garden wall), `jetty`, `jetty_post`, `wolfgangsee_water`, `meadow` (goal meadow), `brick`, `oblaten_box`, `oblaten_box_empty`, `invisible` (under the Durchkriechstein prop).
+
+### Props (group `props`)
+
+All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); collision stays with tiles (D-030/D-031). `PROP_SPRITES` in jnr-core must list the new names.
+
+| Sprite | Size | Origin | Animations / notes |
+|---|---|---|---|
+| `gasthof_fuerberg` | ≤ 128×96 | bottom centre | `idle` held — `layer = "back"`; lakeside inn at the Fürberg landing: whitewashed ground floor, dark wooden upper floor with a balcony, shingle roof, a beer-garden umbrella or two. No text. As built: 128×96, origin 64,96; house on x 0–100 (wide eaves), beer garden with two green umbrellas on x 88–127 |
+| `bildstock` (wayside shrine on the Kreuzweg) | 16×40 | bottom centre | `idle` held — `layer = "back"`; a slim stone pillar (`i m`) with a small roofed niche on top holding a tiny painted panel (abstract colour, no figure detail needed). Respectful decoration. As built: 16×40, origin 8,40 |
+| `steinhaufen` (pilgrims' stone pile) | 32×16 | bottom centre | `idle` held — front layer; a heap of grey stones of mixed sizes (`i m d`), on the Kreuzweg start and at the church. As built: 32×16, origin 16,16, stones mostly `m` with `i` tops, separated and outlined in `d` (no `k`: scenery, not a hazard rock) |
+| `falkensteinkirche` | ≤ 96×112 | bottom centre | `idle` held — `layer = "back"`; the small white church built into the cliff: whitewashed walls `w i`, a shingle roof `O l`, a small onion or pointed ridge turret with a bell, an arched door, the grey rock face (`m d`) wrapping round its back and over its roof (it stands in the wall's cave). No text. As built: 96×112, origin 48,112; rock fills the top (rows 0–~14) and the right side (x ≥ 84) down to the ground, the cave's open left side below row ~52 is transparent; façade x 18–62, nave side to x 76. Meant to sit under a `kalkfels` overhang whose underside meets the prop's top row |
+| `brunnkapelle` (spring chapel) | ≤ 48×48 | bottom centre | `idle` 2f/12t loop — `layer = "back"`; a tiny chapel over the spring, with a trickle of water `t s` from a pipe into a stone trough (animated). As built: 48×44, origin 24,44 |
+| `hackelwurfkapelle` | ≤ 48×64 | bottom centre | `idle` held — `layer = "back"`; an open wayside chapel with a stone figure of St. Wolfgang (bishop's mitre and crozier as a simple silhouette, `i m`) with one arm raised, throwing an axe. His head is where the level places the `taube_sitting` (the level-designer aligns them with `dx`). As built: 48×64, origin 24,64; the mitre tip (the pigeon's seat) is sprite pixel (22, 24): 2 px left of the origin, 40 px above the ground. The Hackl is a 1 px `m` handle diagonal (5 px) from the raised hand to a 4×4 `i` blade (`m` lower-right edge, `w` glint) at x 34–37, y 21–24, clear of the pigeon area |
+| `durchkriechstein` (the Schliefstein boulder) | 64×48 exact | 32,48 (bottom centre) | `idle` held — `layer = "back"`; a rounded limestone boulder 4 tiles wide and 3 tall, sitting on the plateau, with a **low, dark tunnel** through its bottom row (rows 32–47 of the sprite, `d`/`k` interior, worn smooth light edges `i` at the mouth, the far opening visible as a lighter patch). Drawn = solid (D-038): the level puts `invisible` solid tiles on the boulder's top two rows (sprite rows 0–31) and leaves the tunnel row empty, so the top edge matches the boulder's drawn top within 2 px. Resi is drawn over it while crawling (player layer). As built (round 2): top row 0 (corners round off by ≤ 2 px over x 0–5 and 58–63); a curved `m` shadow terminator in the right quarter and a curved `m` underside; the tunnel ceiling is an irregular arch (lowest rock rows 31–33, radius-3 corners at the mouths, a dip near the middle, ≥ 14 clear rows above the floor); the boulder rests on two rounded 3–5 px feet at the mouths (Resi is drawn over them) |
+
+### Backgrounds (group `bg`)
+
+Same size rules as before (tileable, ≤ 640×180). New: layers may move vertically with `factor_y` (D-054). A layer with `factor_y > 0` sinks as the camera climbs, so its **top** part matters at the summit and its bottom part at the start. The sky must stay opaque and full height behind them.
+
+| Layer | Factor (1/16) | `factor_y` | Content |
+|---|---|---|---|
+| `bg_sky_salzburg` (reused) | 0 | 0 | the Stage 1 sky |
+| `bg_wolfgangsee` (reused) | 8 | 3 | the lake and the far (south) shore. Climbing the 29 tiles sinks it by ~87 px, so at the church the lake is a band low on the screen: "you're up high now" |
+| `bg_wolfgangsee_tief` (mid, new) | 8 | 3 | deep variant of `bg_wolfgangsee` for Stage 4 only (Stages 2/3 keep the original). 640×116, origin 0,0: rows 0–51 are `bg_wolfgangsee` unchanged, rows 52–115 continue the lake (`s` with sparse `f` streaks, slightly longer and further apart towards the bottom; mid-layer water rule `v G` + `s`/`f`; no dither, no shore, no `k`), so mid-climb shots no longer show a pale-sky gap under the lake band |
+| `bg_falkenstein` (near, new) | 13 | 8 | pines (`G j`), larches (`g y`) and pale limestone outcrops (`i m`) climbing the slope, with a rockfall net strung between two posts in one place (decoration). At the summit it has sunk fully out of view (~232 px): above the treeline only the lake and the sky remain. As built: 640×180 (no need to exceed the screen: layers only move down, and 180 < 232 px so it is gone at the summit); larches are `g G` (no `y`, not a near-layer colour); outcrops `m` with a 4 px `i` rim along the upper-left silhouette (≈ 14 % of their pixels; `i` approved by the art-director for this layer), no strata; the decorative net was dropped (round 2). Opaque everywhere from row 84 down, so the mid layer's lake band (`y = 40`, sinking only 3/16) never shows a sky gap under it while the near layer sinks faster |

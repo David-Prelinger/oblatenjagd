@@ -1,0 +1,65 @@
+# QA M3, Stage 4: time-up during the Durchkriechstein crawl (D-060: dying
+# mid-crawl keeps the crawl state until the respawn, then a normal
+# standing player). The falkenstein_crawl_normal route to the boulder's
+# face at the mouth, then Resi waits there until the timer shows 1 and
+# holds DOWN: the crawl starts at 15262, the timer runs out at 15300 with
+# her half-way through the tunnel (no +1 life). She respawns at the
+# checkpoint (15360, col 116) as Normal, standing (hitbox top 394 = 22 px
+# on row 26), timer 255, and walks normally.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=CrawlStarted dies_at frames=15300..15300 deaths=1 lives=2 no_event=ExtraLife event=Respawned
+expect = state=playing power=normal player_y>=394 player_y<=394 player_x>=1858
+---
+# --- the first 1000 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 40
+LBJ 12
+LB 2
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
+RBJ 20
+RB 16
+RBJ 20
+RB 95
+# --- end of the first 1000 frames of falkenstein_solver.replay ---
+- 30
+R 50      # into the boulder's face, facing right
+- 14181   # wait at the mouth until the timer shows 1
+D 4       # crawl (15262); time-up at 15300 inside the tunnel
+- 300     # dying, respawn at the checkpoint (15360)
+R 60      # she stands and walks

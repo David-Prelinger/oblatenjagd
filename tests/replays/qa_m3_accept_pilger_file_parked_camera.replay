@@ -1,0 +1,24 @@
+# QA M3 acceptance (D-061 addendum E19, a Pilger file wakes together) in
+# the real level: the qa_falkenstein_relaxed inputs to the Fürberg pilgrim's
+# stomp (300), then Resi walks to x 422 and stops. The camera parks at
+# x 284, so the activation edge (camera x + 640 = 924) lies inside group A
+# (lead 57, 58, 59 at x 913, 929, 945): probe-checked, all three wake on
+# frame 379 and stay 16 px apart all the way down the Kreuzweg steps. The
+# file reaches her at 1337 (Hurt, Zuckerschock -> Normal), passes in her
+# i-frames, turns at the garden wall and kills her at 1862. A split file
+# (the bug E19 fixed) would change both frames.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=Hurt dies_at frames=1862..1862 deaths=1 lives=2 power=normal
+---
+# --- the first 300 frames of qa_falkenstein_relaxed.replay ---
+R 120
+J 12
+- 125
+R 4
+RJ 18
+R 21
+# --- end of the prefix ---
+R 72      # stop at x 422: the camera parks at x 284, activation edge 924 cuts through group A (913/929/945)
+- 1500    # the whole file wakes at 379 and walks down to her in file

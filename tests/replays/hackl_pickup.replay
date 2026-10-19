@@ -1,0 +1,16 @@
+# Hackl pickup from Normal (D-056) on the grey-box level 00_hackl:
+# bump the H-box, the Hackl rises onto it and stays, jump onto the box.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=PowerUp power=hackl score=1000 deaths=0 state=playing
+---
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40

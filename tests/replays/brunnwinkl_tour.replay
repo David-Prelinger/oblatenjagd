@@ -3,15 +3,16 @@
 # frame 21, stage intro 21..170, then the inputs of brunnwinkl_solver.replay
 # unchanged from frame 171 (re-copy them after `cargo xtask solve brunnwinkl
 # --write`; the xtask tour coupling test checks it), then 800 idle frames:
-# the Maibaum sequence, the tally, the route-map teaser to Falkenstein
-# („Fortsetzung folgt …") and the title, with the run reset to its first
-# stage (here Brunnwinkl, the `level` it started at).
+# the Maibaum sequence, the tally and the route map to Falkenstein, which
+# is playable since M3 (D-053): the tour ends with Resi waiting on
+# Falkenstein with the „Weiter mit START" prompt (was: the teaser and the
+# title). Shot `route_map` replaces the old `teaser` shot.
 level  = brunnwinkl
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=1639..1639 deaths=0 state=title stage=brunnwinkl score=0 lives=3
-shots  = 0:title 60:intro 172:uferweg 360:ebiker 480:kornmuehle 830:bienenhaus 958:checkpoint 1295:fuenf_haeuser 1590:badesteg 1639:maibaum 1860:tally 2220:teaser
+expect = complete frames=1639..1639 deaths=0 state=route_map score=15100 lives=3
+shots  = 0:title 60:intro 172:uferweg 360:ebiker 480:kornmuehle 830:bienenhaus 958:checkpoint 1295:fuenf_haeuser 1590:badesteg 1639:maibaum 1860:tally 2220:route_map
 ---
 - 20
 S 1       # START: stage intro
@@ -58,4 +59,4 @@ RBJ 36
 RB 9
 RBJ 12
 RB 40
-- 800     # Maibaum sequence, tally, route map
+- 800     # Maibaum sequence, tally, route map to Falkenstein (Wait)

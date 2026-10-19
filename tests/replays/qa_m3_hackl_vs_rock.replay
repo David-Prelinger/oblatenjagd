@@ -1,0 +1,95 @@
+# QA M3, Stage 4: a thrown Hackl shatters a falling rock (D-056: both
+# gone, 50 points). Falkenstein's rocks come before its H-box, so a Hackl
+# at the rocks needs a carried-over Hackl: the run starts on the test
+# route `hackl falkenstein` (title, the flow_hackl_carry_over inputs on
+# the hackl test level, its goal and the route map), then Falkenstein is
+# played as Hackl from frame 2214 with the qa_falkenstein_relaxed inputs
+# (axes instead of stomps for pilgrim group A). Under the rockfall net,
+# 28 frames after rock #2 (col 92) drops, one RUN press throws an axe
+# that meets the falling rock at frame 4038: AxeHit, +50 (12450 -> 12500),
+# no hurt, still Hackl.
+# Re-cut after the QA level fixes (garden wall at col 17): the Fürberg
+# stretch (frames 2214-2520) waits for the Mozartkugel under the M-box
+# before the wall jump, then rejoins the original run.
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl falkenstein
+expect = event=AxeHit no_event=Hurt deaths=0 power=hackl score=12500 stage=st_gilgen state=playing
+---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250
+- 830
+R 120
+J 12
+- 90
+R 4
+RJ 18
+R 108
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 150
+B 1
+- 39
+B 1
+- 39
+B 1
+- 39
+B 1
+- 79
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 80
+RJ 14
+- 178
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 178
+B 1
+- 26

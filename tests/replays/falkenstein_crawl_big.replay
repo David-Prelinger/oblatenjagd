@@ -1,0 +1,71 @@
+# Stage 4 Durchkriechstein as Zuckerschock (D-057): the solver route past
+# the checkpoint (116), then Resi walks back under the M-box (117, row 22),
+# bumps it and follows the Mozartkugel into the shaft (the curb at 115 keeps
+# it there). Big, she climbs the four planks with straight jumps in column
+# 125 (the column all of them share) while Pilger #8 walks away from it on
+# the row-20 plank, crosses the plateau to the Durchkriechstein's mouth and
+# holds DOWN: she crawls through and comes out Normal („Ballast weg!", no
+# points, no life). End: hitbox top 154 = Normal on the plateau (big would
+# be 146).
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = event=PowerUp event=CrawlStarted no_event=Hurt no_event=ExtraLife deaths=0 lives=3 player_y>=150
+shots  = 1626:mouth 1670:crawl 1718:ballast_weg
+---
+# --- the first 746 frames of falkenstein_solver.replay ---
+RB 40
+RBJ 36
+RB 38
+RBJ 36
+RB 56
+RBJ 36
+RB 27
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 44
+RBJ 36
+RB 40
+RBJ 36
+RB 10
+RBJ 1
+RB 8
+L 4
+RB 22
+RJ 11
+R 3
+RBJ 18
+RB 4
+R 14
+RB 8
+RBJ 1
+RB 44
+RBJ 36
+RB 25
+# --- end of falkenstein_solver.replay ---
+- 20
+L 26       # back under the M-box
+- 12
+J 10       # bump: Mozartkugel
+- 40
+R 100      # after it into the shaft (Zuckerschock)
+- 40
+J 24       # floor -> plank row 23
+- 40
+R 17       # to column 125
+- 20
+J 24       # -> plank row 20
+- 40
+J 24       # -> plank row 17
+- 40
+J 24       # -> plank row 14
+- 40
+R 30
+RJ 24      # onto the plateau
+R 280      # to the stone's mouth
+- 10
+D 4        # DOWN at the mouth: crawl
+- 120
