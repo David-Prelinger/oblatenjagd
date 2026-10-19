@@ -20,11 +20,10 @@
 //! - swarms, projectiles, items, spawners → [`AxeHit::Pass`] (flies on);
 //! - the falling Stein → [`AxeHit::Shatter`] (both gone, 50 points).
 //!
-//! `Game::axe_hits` applies a hit by first calling
-//! `Game::defeat_by_projectile` (E16: Pilger, Gams, Stein with their points,
-//! popup and debris); for every other kind it applies the rules above
-//! itself. A new kind with special effects goes into
-//! `enemies::hit_by_projectile`.
+//! `Game::axe_hits` removes the axe and applies every hit through
+//! `Game::defeat_by_projectile` / `enemies::hit_by_projectile`, which act on
+//! this classification (points, popup, the rock's debris). A new kind with
+//! special effects goes into `enemies::hit_by_projectile`.
 
 use crate::entity::{EnemyKind, Entity, EntityKind};
 use crate::fx::Fx;

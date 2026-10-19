@@ -6,6 +6,7 @@ seed   = 1
 source = handwritten
 expect = event=PowerUp event=CrawlStarted power=normal lives=3 score=1000 deaths=0 player_x>=384
 expect = no_event=Hurt state=playing
+shots  = 350:crawl 400:ballast
 ---
 R 98
 - 30

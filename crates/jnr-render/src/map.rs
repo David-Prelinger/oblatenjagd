@@ -179,6 +179,7 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         ctx,
         fb,
         game.player().power,
+        &game.tuning().player,
         state,
         (x, y + RESI_DY),
         tick,
@@ -524,6 +525,7 @@ mod tests {
             &ctx,
             &mut fb,
             Power::Big,
+            &tuning().player,
             PlayerAnim::Idle,
             (50, 100),
             0,
@@ -533,7 +535,16 @@ mod tests {
         assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
         let mut fb = testutil::fb();
         let hackl = Power::Hackl;
-        scene::draw_player_pose(&ctx, &mut fb, hackl, PlayerAnim::Idle, (50, 100), 0, false);
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            hackl,
+            &tuning().player,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
         assert_eq!(
             fb.get(50, 75),
             Some(crate::entities::PINE_DARK),
@@ -542,7 +553,16 @@ mod tests {
         assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
         let mut fb = testutil::fb();
         let normal = Power::Normal;
-        scene::draw_player_pose(&ctx, &mut fb, normal, PlayerAnim::Idle, (50, 100), 0, false);
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            normal,
+            &tuning().player,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
         assert_eq!(fb.get(50, 85), Some(DIRNDL_RED));
         assert_eq!(fb.get(50, 78), Some(OUTLINE), "22 px tall");
     }

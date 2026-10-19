@@ -6,6 +6,7 @@ seed   = 1
 source = handwritten
 expect = complete frames=1172..1172 deaths=0 power=hackl event=HacklThrown event=AxeHit
 expect = no_event=Hurt score>=1300
+shots  = 240:pickup_freeze 650:axe_flight 677:axe_hit
 ---
 R 40
 - 30

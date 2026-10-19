@@ -1055,24 +1055,24 @@ pub fn rock_column_bottom(e: &Entity, map: &TileMap) -> Fx {
         .map_or(map.height_fx(), |r| TILE.mul_int(r))
 }
 
-/// **Defeat by projectile** (the entry point for the thrown Hackl, D-056):
-/// what a projectile does to entity `e`, for the M3 kinds. A Pilger or a
-/// Gams is defeated (tumbling off the screen like a knocked enemy) for its
-/// base points (`score.stomp_chain[chain_start]`: 100 / 200, outside the
-/// stomp chain); a falling rock shatters for `enemies.stein_points` (50).
-/// Returns the points, or `None` if the projectile has no effect on this
-/// kind here (other kinds are the caller's). `Game::defeat_by_projectile`
-/// adds the score, the popup and the rock's debris.
+/// **Defeat by projectile** (the one path for the thrown Hackl, D-056,
+/// D-060): what a projectile does to entity `e`, by its
+/// [`Entity::axe_hit`] class. Every `Defeat` enemy is knocked off (tumbling
+/// off the screen) for its base points (`score.stomp_chain[chain_start]`:
+/// 100 / 200, outside the stomp chain); a falling rock (`Shatter`) breaks
+/// for `enemies.stein_points` (50). Returns the points, or `None` for no
+/// effect (`Bounce`, `Pass`). `Game::defeat_by_projectile` adds the score,
+/// the popup and the rock's debris.
 pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
     if !e.active || e.removed {
         return None;
     }
-    match e.kind {
-        EntityKind::Enemy(kind @ (EnemyKind::Pilger | EnemyKind::Gams)) => {
+    match (e.axe_hit(), e.kind) {
+        (crate::hackl::AxeHit::Defeat, EntityKind::Enemy(kind)) => {
             defeat(e, kind, true, t);
             Some(t.score.stomp_chain[kind.chain_start()])
         }
-        EntityKind::Stein => {
+        (crate::hackl::AxeHit::Shatter, EntityKind::Stein) => {
             e.state = state::SHATTERED;
             e.removed = true;
             Some(t.enemies.stein_points)

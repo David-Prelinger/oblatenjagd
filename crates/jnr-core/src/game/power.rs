@@ -23,7 +23,7 @@
 
 use super::{Event, Game};
 use crate::crawl::{self, stone};
-use crate::entity::{EnemyKind, EntityKind, Popup, popup};
+use crate::entity::{EntityKind, Popup, popup};
 use crate::fx::Fx;
 use crate::hackl::{self, AxeHit, axe};
 use crate::physics::Aabb;
@@ -108,26 +108,13 @@ impl Game {
         }
     }
 
-    /// Axe `i` hits entity `j` (its reaction is not `Pass`): the M3 kinds
-    /// through `defeat_by_projectile` (E16), the others here.
+    /// Axe `i` hits entity `j` (its reaction is not `Pass`): the axe is
+    /// gone; `defeat_by_projectile` defeats or shatters the target (a
+    /// `Bounce`, the Fiaker, does nothing there).
     fn axe_hit(&mut self, i: usize, j: usize) {
         self.entities[i].removed = true;
         self.events.push(Event::AxeHit);
-        if self.defeat_by_projectile(j) {
-            return;
-        }
-        let target = self.entities[j];
-        let (x, _) = target.feet();
-        let points = match (target.axe_hit(), target.kind) {
-            (AxeHit::Defeat, EntityKind::Enemy(kind)) => {
-                crate::enemies::defeat(&mut self.entities[j], kind, true, &self.tuning);
-                base_points(kind, &self.tuning)
-            }
-            // Bounce (the Fiaker): the axe is gone, nothing else.
-            _ => return,
-        };
-        self.add_score(points);
-        self.entities.push(popup(Popup::Score(points), x, target.y));
+        self.defeat_by_projectile(j);
     }
 
     /// DOWN at the mouth of an unused Durchkriechstein starts the crawl:
@@ -198,11 +185,4 @@ impl Game {
         };
         self.entities.push(popup(shown, x, top));
     }
-}
-
-/// An enemy's base value: the first step of its stomp chain (100, or 200
-/// for the enemies that start a chain at 200, D-046).
-fn base_points(kind: EnemyKind, t: &crate::Tuning) -> u32 {
-    let chain = &t.score.stomp_chain;
-    chain[kind.chain_start().min(chain.len() - 1)]
 }

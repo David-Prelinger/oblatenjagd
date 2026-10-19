@@ -210,6 +210,7 @@ pub fn draw_intro(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         ctx,
         fb,
         game.player().power,
+        &game.tuning().player,
         PlayerAnim::Idle,
         feet,
         game.frame(),

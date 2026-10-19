@@ -457,6 +457,7 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
         ctx,
         fb,
         p.power,
+        &game.tuning().player,
         PlayerAnim::Idle,
         (feet_x, feet_y),
         tick,
@@ -467,12 +468,13 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
 /// Resi outside play (title, intro, route map) in her power state:
 /// `player`, `player_big` or `player_hackl` (with their fallbacks, see
 /// [`RenderContext`]) in `state` with her feet at `feet` on screen,
-/// mirrored if `left`; else the grey-box player (a 12×22 `r` box, 12×30
-/// wine when Zuckerschock, 12×30 pine green when Hackl).
+/// mirrored if `left`; else the grey-box player ([`grey_box_player`]).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn draw_player_pose(
     ctx: &RenderContext,
     fb: &mut Framebuffer,
     power: Power,
+    t: &PlayerTuning,
     state: PlayerAnim,
     (x, y): (i32, i32),
     tick: u32,
@@ -486,11 +488,7 @@ pub(crate) fn draw_player_pose(
             draw_look(fb, ctx.atlas, look.sprite, anim, i, (x, y), left, swap);
         }
         None => {
-            let (h, fill) = match power {
-                Power::Normal => (22, DIRNDL_RED),
-                Power::Big => (30, entities::WINE_DARK),
-                Power::Hackl => (30, entities::PINE_DARK),
-            };
+            let (h, fill) = grey_box_player(power, t);
             fb.fill_rect(x - 6, y - h, 12, h, fill);
             fb.outline_rect(x - 6, y - h, 12, h, OUTLINE);
         }
@@ -596,6 +594,11 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
     }
     let p = game.player();
     if p.transform == 0 && (u32::from(p.invulnerable) / DYING_FLASH_FRAMES) % 2 == 1 {
+        return;
+    }
+    // Dying in the Durchkriechstein's tunnel: she stays hidden inside the
+    // stone (no crawl look, no standing look in the boulder).
+    if p.crawling() && matches!(game.mode(), Mode::Dying { .. }) {
         return;
     }
     let sliding = game
@@ -1356,5 +1359,32 @@ mod tests {
         // Normal Resi has no `crawl` here: hidden.
         p.power = Power::Normal;
         assert_eq!(resi_colour(&ctx, &p), Some(testutil::BG));
+    }
+
+    #[test]
+    fn resi_dying_in_the_tunnel_stays_hidden() {
+        // Time is up (3 s) while she crawls through the stone at columns 8–11.
+        let text = "[meta]\nid = \"tiny\"\ntime_limit = 3\n[legend]\n\"#\" = \"solid\"\n\
+                    \"P\" = { entity = \"player_start\" }\n\"K\" = { entity = \"durchkriechstein\" }\n\
+                    [map]\ngrid = '''\n....................\n....................\n........####........\n\
+                    ........####........\n..P.....K...........\n####################\n'''\n";
+        let mut game = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
+        let step = |g: &mut Game, input: InputFrame, n: u32| {
+            for _ in 0..n {
+                g.step(input);
+            }
+        };
+        step(&mut game, InputFrame::RIGHT, 80);
+        step(&mut game, InputFrame::NONE, 30);
+        step(&mut game, InputFrame::DOWN, 1);
+        assert!(game.player().crawling());
+        while game.mode() == Mode::Playing {
+            game.step(InputFrame::NONE);
+        }
+        assert!(matches!(game.mode(), Mode::Dying { .. }));
+        assert!(game.player().crawling(), "died in the tunnel");
+        // Grey-box mode would draw her hitbox in `r`: nothing is drawn.
+        let fb = rendered(&game, &empty_atlas());
+        assert!(!fb.pixels.contains(&DIRNDL_RED));
     }
 }

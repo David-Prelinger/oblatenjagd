@@ -777,3 +777,99 @@ fn big_resi_at_the_mouth_without_down_is_never_stuck() {
         assert_eq!(g.player().power, power, "{power:?} kept");
     }
 }
+#[test]
+fn dying_mid_crawl_respawns_standing_with_the_stone_unused() {
+    let t = tuning();
+    for power in [Power::Normal, Power::Hackl] {
+        let mut g = at_mouth(power);
+        hold(&mut g, "D", 20);
+        assert!(g.player().crawling());
+        // Time up in the tunnel.
+        g.time = 1;
+        until(&mut g, "-", 61, |g| g.events().contains(&Event::Died));
+        until(&mut g, "-", 200, |g| g.mode() == Mode::Playing);
+        let p = *g.player();
+        assert!(!p.crawling(), "{power:?}");
+        assert_eq!(p.power, Power::Normal);
+        assert_eq!(
+            (p.w, p.h),
+            (
+                Fx::from_px(t.player.hitbox_w),
+                Fx::from_px(t.player.hitbox_h)
+            )
+        );
+        assert_eq!(feet_y(&g), Fx::from_px(192));
+        let s = g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Durchkriechstein)
+            .unwrap();
+        assert_eq!(s.state, stone::UNUSED, "{power:?}");
+    }
+}
+
+#[test]
+fn run_held_through_a_pause_is_not_a_new_press() {
+    let t = tuning();
+    let mut g = Game::new_at(&world(40, &[]), &t, 1, Start::Title);
+    hold(&mut g, "S", 1);
+    hold(&mut g, "-", u32::from(t.game.intro_frames));
+    assert_eq!(g.mode(), Mode::Playing);
+    g.player.set_power(Power::Hackl, &t.player);
+    g.player.transform = 0;
+    // RUN pressed together with START: paused, no throw.
+    assert!(!hold(&mut g, "SB", 1).contains(&Event::HacklThrown));
+    assert_eq!(g.mode(), Mode::Paused);
+    hold(&mut g, "B", 10);
+    // Resume with RUN still held: no throw.
+    let mut events = hold(&mut g, "SB", 1);
+    events.extend(hold(&mut g, "B", 20));
+    assert_eq!(g.mode(), Mode::Playing);
+    assert!(!events.contains(&Event::HacklThrown), "{events:?}");
+    assert!(axes(&g).is_empty());
+    // A real press throws.
+    hold(&mut g, "-", 1);
+    assert!(hold(&mut g, "B", 1).contains(&Event::HacklThrown));
+}
+
+#[test]
+fn a_crawl_in_a_climb_level_keeps_the_camera_settling() {
+    // 40 rows, ground from row 30 (feet at 480), the stone at columns
+    // 8–11 of row 29 (boulder rows 27–28).
+    let rows: Vec<String> = (0..40)
+        .map(|r| {
+            (0..30)
+                .map(|c| match (r, c) {
+                    (r, _) if r >= 30 => '#',
+                    (27 | 28, 8..=11) => '#',
+                    (29, 2) => 'P',
+                    (29, 8) => 'K',
+                    _ => '.',
+                })
+                .collect()
+        })
+        .collect();
+    let text = format!(
+        "[meta]\nid = \"climb_stone\"\ntime_limit = 300\ncamera = \"climb\"\n[legend]\n{LEGEND}\n[map]\ngrid = '''\n{}\n'''\n",
+        rows.join("\n")
+    );
+    let mut g = game(&Level::parse(&text).unwrap());
+    let target = 480 - 148;
+    assert_eq!(g.camera().y, target);
+    hold(&mut g, "R", 80);
+    hold(&mut g, "-", 30);
+    // Knock the camera off its settle target, then crawl: it settles back
+    // at 2 px per frame (she counts as grounded while crawling).
+    g.camera.y = target - 20;
+    assert!(hold(&mut g, "D", 1).contains(&Event::CrawlStarted));
+    assert!(g.player().crawling() && g.player().on_ground);
+    let mut ys = vec![g.camera().y];
+    for _ in 0..12 {
+        hold(&mut g, "-", 1);
+        ys.push(g.camera().y);
+    }
+    assert!(g.player().crawling());
+    assert_eq!(ys[0], target - 18, "{ys:?}");
+    assert_eq!(*ys.last().unwrap(), target, "{ys:?}");
+    assert!(ys.windows(2).all(|w| w[1] - w[0] <= 2), "{ys:?}");
+}

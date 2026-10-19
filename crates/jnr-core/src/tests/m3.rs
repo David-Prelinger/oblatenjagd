@@ -679,8 +679,8 @@ fn defeat_by_projectile_pays_base_points_and_shatters_rocks() {
                 .any(|e| e.kind == EntityKind::Popup(Popup::Score(p)))
         );
     }
-    // Other kinds are left to the caller.
+    // One path for every kind (D-060): the M1/M2 stompable enemies too.
     let i = at(&g, EntityKind::Enemy(EnemyKind::SelfieTourist));
-    assert!(!g.defeat_by_projectile(i));
-    assert_eq!(g.score(), 350);
+    assert!(g.defeat_by_projectile(i));
+    assert_eq!(g.score(), 450);
 }

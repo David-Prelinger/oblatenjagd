@@ -9,6 +9,7 @@ start  = title
 route  = hackl route_b
 expect = complete deaths=0 event=AxeHit
 expect = state=playing stage=st_gilgen power=hackl
+shots  = 1800:map 2150:intro
 ---
 - 20
 S 1       # title -> intro

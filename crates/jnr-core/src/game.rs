@@ -1083,11 +1083,11 @@ impl Game {
         }
     }
 
-    /// A projectile (the thrown Hackl, D-056) hit entity `i`: the M3 kinds'
-    /// outcome from [`crate::enemies::hit_by_projectile`] (Pilger 100 and
-    /// Gams 200 defeated, tumbling; a falling rock shatters for 50) with the
-    /// score, its popup and the rock's debris. Returns false (nothing
-    /// happened) for every other kind, so a caller can handle those itself.
+    /// A projectile (the thrown Hackl, D-056) hit entity `i`: the outcome
+    /// from [`crate::enemies::hit_by_projectile`] (`Defeat` enemies knocked
+    /// off for 100 / 200, a falling rock shattered for 50) with the score,
+    /// its popup and the rock's debris. Returns false if nothing happened
+    /// (the Fiaker, pass-through kinds).
     pub(crate) fn defeat_by_projectile(&mut self, i: usize) -> bool {
         let Some(e) = self.entities.get_mut(i) else {
             return false;
