@@ -1,18 +1,20 @@
-# QA M3 flow (D-042, D-053, D-056): Falkenstein clear with the Hackl ->
-# route map to St. Wolfgang (no level yet: the teaser, `player_hackl` on
-# the map) -> title, with the run reset. Dev entry at Falkenstein in the
+# QA M3 flow (D-042, D-053, D-056), re-cut in M4 (D-066): Falkenstein clear
+# with the Hackl -> route map to St. Wolfgang (`player_hackl` on the map) ->
+# St. Wolfgang with the run carried over. Dev entry at Falkenstein in the
 # title flow (`level = falkenstein`, start = title): the
 # qa_falkenstein_relaxed inputs from frame 171 (Hackl from play frame
-# 3446) to the Maibaum (5269), the tally, the route map and the teaser,
-# then the title with the run reset: Normal, score 0, Oblaten 0, 3 lives.
-# START starts a new run at Falkenstein as Normal. Re-cut after the QA
-# level fixes (the relaxed run was re-cut; the frames moved by +134).
+# 3446) to the Maibaum (5269), the tally and the route map; START in Wait
+# (6037) starts the St. Wolfgang intro, which draws `player_hackl`, and
+# play starts there as Hackl with the score, lives and Oblaten kept.
+# Was `qa_m3_flow_falkenstein_hackl_teaser_title` (teaser, title, run reset
+# to Normal): St. Wolfgang is playable since M4, so the map waits instead
+# of playing the teaser.
 level  = falkenstein
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=5269..5269 deaths=0 no_event=Hurt event=PowerUp event=AxeHit
-expect = state=playing stage=falkenstein power=normal lives=3 score=0 oblaten=0
+expect = state=playing stage=st_wolfgang power=hackl lives=4 score=22300 oblaten=50
 ---
 - 20
 S 1       # title -> Falkenstein intro
@@ -175,6 +177,6 @@ R 20
 RJ 15
 R 120
 # --- end of qa_falkenstein_relaxed ---
-- 724     # goal, tally, route map to St. Wolfgang (no level: teaser), title at 5842
-S 1       # title -> a new run
-- 160
+- 724     # goal, tally, route map to St. Wolfgang (Wait with the prompt)
+S 1       # 6037: START in Wait -> St. Wolfgang intro (player_hackl)
+- 160     # the 150-frame intro, then play as Hackl

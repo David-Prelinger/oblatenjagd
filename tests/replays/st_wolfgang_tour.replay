@@ -1,0 +1,89 @@
+# Stage 5 golden tour (M4, D-036 style): the real game from the title with
+# the run started at St. Wolfgang (`level = st_wolfgang`, D-047): START at
+# frame 21, stage intro 21..170, then the inputs of st_wolfgang_solver.replay
+# unchanged from frame 171 (re-copy them after `cargo xtask solve
+# st_wolfgang --write`; the xtask tour coupling test checks it), then 800
+# idle frames: the Maibaum sequence, the tally, the route map to the
+# Wolfgangsee, which has no level yet, so the teaser („Fortsetzung folgt …",
+# with St. Wolfgang's raised label, D-072) and the title, with the run reset
+# to its first stage (here St. Wolfgang). The solver route rides the train
+# a little, runs ahead along the rock steps under the track, catches the
+# train again at the gorge and leaps from its roof to the shelf under the
+# halt (the accepted D-067 shortcut; st_wolfgang_zug rides the whole way).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2269..2269 deaths=0 state=title score=0 lives=3
+shots  = 0:title 60:intro 216:ried 351:souvenirstand 486:talstation 801:zug 891:alm_halt 1071:tunnel_bus 1236:bus_bounce 1341:checkpoint 1386:pilgerbrunnen 1521:markt 1611:kirche 1836:roessl 1926:kaiserterrasse 2016:seebad 2151:promenade 2241:schiffsstation 2269:maibaum 2556:tally 2916:teaser
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 20
+RB 40
+RBJ 20
+RB 56
+RBJ 32
+RB 44
+RBJ 20
+RB 34
+RBJ 36
+RB 126
+RBJ 36
+RB 20
+RBJ 20
+RB 11
+RBJ 36
+RB 2
+RBJ 20
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 36
+RB 24
+R 38
+- 16
+RBJ 33
+RB 5
+RBJ 36
+RB 101
+RBJ 36
+RB 64
+RBJ 36
+RB 40
+RBJ 36
+RB 56
+- 800     # Maibaum sequence, tally, route map, teaser, title
