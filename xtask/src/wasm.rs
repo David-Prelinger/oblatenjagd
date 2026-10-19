@@ -22,7 +22,9 @@ cargo xtask wasm-smoke
     assembles the release build, loads it in headless Chromium (SwiftShader
     WebGL) and checks the screenshot $CARGO_TARGET_DIR/preview/wasm_smoke.png
     is not blank and shows the Salzburg title's parallax sky (palette `s` +
-    `S` together at least 25 %, the upper `S` band at least 5 %)
+    `S` together at least 25 %, the upper `S` band at least 5 %); a probe
+    page (smoke.html) checks that the blinking title prompt changes, so a
+    frozen frame fails
 ";
 
 /// The wasm file name the page loads (see `web/index.html`).
@@ -45,6 +47,19 @@ const MIN_SKY_SHARE: f64 = 0.25;
 /// Minimum share of the upper `S` sky band: it is only in the parallax
 /// background, so a flat sky fill (or the testbed) fails.
 const MIN_SKY_BLUE_SHARE: f64 = 0.05;
+/// The liveness probe (see the file); served only as `smoke.js` next to
+/// `smoke.html`, a copy of `index.html` that loads it.
+const PROBE_JS: &str = include_str!("wasm_smoke_probe.js");
+/// Game rows `[top, bottom)` of the band the probe watches: the title
+/// prompt line with its outline and descenders.
+const PROMPT_BAND: (i32, i32) = (
+    jnr_render::screens::PRESS_START_Y - 3,
+    jnr_render::screens::PRESS_START_Y + 13,
+);
+/// Changes of the prompt band the probe must see: at most one while the
+/// title first appears, then the blink (every 30 frames, about 9 changes in
+/// the 5 s virtual-time budget). A frozen game frame shows ≤ 1 (the probe drives the frame export itself, so it does not prove the page's requestAnimationFrame loop).
+const MIN_PROMPT_CHANGES: u32 = 3;
 
 #[derive(Debug, PartialEq, Eq)]
 struct WasmOpts {
@@ -210,6 +225,7 @@ impl Drop for KillOnDrop {
 pub fn smoke_check(root: &Path) -> Result<String, String> {
     let sky = [sky_colour(root)?, palette_colour(root, SKY_BLUE_CHAR)?];
     let dir = build_and_assemble(root, true, true)?;
+    write_probe_page(&dir)?;
     let preview = target_dir(root).join("preview");
     fs::create_dir_all(&preview).map_err(|e| format!("{}: {e}", preview.display()))?;
     let shot = preview.join("wasm_smoke.png");
@@ -240,27 +256,29 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     };
     wait_for_port(&mut server.child, port, Duration::from_secs(10))?;
     let url = format!("http://127.0.0.1:{port}/index.html");
+    let probe_url = format!("http://127.0.0.1:{port}/smoke.html");
 
-    // 1) Did the wasm module instantiate? (DOM marker set by index.html.)
+    // 1) Did the wasm module instantiate (DOM marker set by index.html), and
+    //    is the game alive (the probe saw the title prompt blink)?
     let dom_log = preview.join("wasm_smoke_dom.log");
     let dom_out = preview.join("wasm_smoke_dom.html");
     run_chromium(
         &chromium,
         &preview,
         &["--dump-dom"],
-        &url,
+        &probe_url,
         &dom_out,
         &dom_log,
     )?;
     let dom = fs::read_to_string(&dom_out).unwrap_or_default();
+    let see = format!("see {} and {}", dom_out.display(), dom_log.display());
     if !dom.contains("data-wasm=\"loaded\"") {
         return Err(format!(
             "the wasm module did not instantiate (no data-wasm=\"loaded\" marker in the DOM); \
-             see {} and {}",
-            dom_out.display(),
-            dom_log.display()
+             {see}"
         ));
     }
+    let liveness = check_liveness(&dom).map_err(|e| format!("{e}; {see}"))?;
 
     // 2) Did it draw the game? (Screenshot.)
     let shot_log = preview.join("wasm_smoke.log");
@@ -289,8 +307,60 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         )
     })?;
     Ok(format!(
-        "module loaded, {w}x{h} screenshot {}, {summary}",
+        "module loaded, {liveness}, {w}x{h} screenshot {}, {summary}",
         shot.display()
+    ))
+}
+
+/// Writes `smoke.html` (`index.html` that also loads the probe) and
+/// `smoke.js` (the probe with the prompt band) into the web dir `dir`.
+fn write_probe_page(dir: &Path) -> Result<(), String> {
+    let index = dir.join("index.html");
+    let html = fs::read_to_string(&index).map_err(|e| format!("{}: {e}", index.display()))?;
+    let loader = "<script src=\"gl.js\"></script>";
+    if !html.contains(loader) {
+        return Err(format!(
+            "{} does not load gl.js with `{loader}`: update the wasm-smoke probe",
+            index.display()
+        ));
+    }
+    let page = html.replacen(
+        loader,
+        &format!("{loader}\n<script src=\"smoke.js\"></script>"),
+        1,
+    );
+    let height = jnr_render::HEIGHT as f64;
+    let js = format!(
+        "var PROMPT_TOP = {};\nvar PROMPT_BOTTOM = {};\n{PROBE_JS}",
+        f64::from(PROMPT_BAND.0) / height,
+        f64::from(PROMPT_BAND.1) / height
+    );
+    for (name, text) in [("smoke.html", page), ("smoke.js", js)] {
+        let path = dir.join(name);
+        fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
+    Ok(())
+}
+
+/// Reads the probe's counters from the dumped DOM and requires at least
+/// [`MIN_PROMPT_CHANGES`] changes of the prompt band. Returns a summary.
+fn check_liveness(dom: &str) -> Result<String, String> {
+    let attr = |name: &str| -> Option<u32> {
+        let start = dom.find(&format!("{name}=\""))? + name.len() + 2;
+        dom[start..].split('"').next()?.parse().ok()
+    };
+    let Some(frames) = attr("data-smoke-frames") else {
+        return Err("the liveness probe saw no game frame (no data-smoke-frames)".to_owned());
+    };
+    let changes = attr("data-smoke-prompt-changes").unwrap_or(0);
+    if changes < MIN_PROMPT_CHANGES {
+        return Err(format!(
+            "frozen frame: the title prompt band changed {changes} times in {frames} frames \
+             (need {MIN_PROMPT_CHANGES}: the prompt blinks every 30 frames)"
+        ));
+    }
+    Ok(format!(
+        "prompt blinked ({changes} changes in {frames} frames)"
     ))
 }
 
@@ -575,6 +645,47 @@ mod tests {
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         assert_eq!(sky_colour(root), Ok(SKY));
         assert_eq!(palette_colour(root, SKY_BLUE_CHAR), Ok(SKY_BLUE));
+    }
+
+    #[test]
+    fn liveness_needs_the_prompt_to_blink() {
+        let dom = |attrs: &str| format!("<html><body data-wasm=\"loaded\" {attrs}></body></html>");
+        assert_eq!(
+            check_liveness(&dom(
+                "data-smoke-frames=\"280\" data-smoke-prompt-changes=\"9\""
+            )),
+            Ok("prompt blinked (9 changes in 280 frames)".to_owned())
+        );
+        // A frozen frame: the title appeared once, then nothing changed.
+        let frozen = check_liveness(&dom(
+            "data-smoke-frames=\"280\" data-smoke-prompt-changes=\"1\"",
+        ));
+        assert!(frozen.unwrap_err().starts_with("frozen frame"));
+        // No frame reached the probe at all.
+        assert!(
+            check_liveness(&dom(""))
+                .unwrap_err()
+                .contains("no game frame")
+        );
+    }
+
+    #[test]
+    fn probe_page_loads_the_probe_after_gl_js() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let dir = target_dir(root).join("tmp/xtask-wasm-probe-test");
+        fs::create_dir_all(&dir).unwrap();
+        fs::copy(root.join("web/index.html"), dir.join("index.html")).unwrap();
+        write_probe_page(&dir).unwrap();
+        let page = fs::read_to_string(dir.join("smoke.html")).unwrap();
+        let gl = page.find("src=\"gl.js\"").unwrap();
+        let probe = page.find("src=\"smoke.js\"").unwrap();
+        let load = page.find("load(\"jnr-app.wasm\")").unwrap();
+        assert!(gl < probe && probe < load, "{page}");
+        let js = fs::read_to_string(dir.join("smoke.js")).unwrap();
+        // Band 125..141 of 180 rows.
+        assert!(js.starts_with("var PROMPT_TOP = 0.69"), "{js}");
+        assert!(js.contains("var PROMPT_BOTTOM = 0.78"), "{js}");
+        assert!(js.contains("miniquad_add_plugin"));
     }
 
     #[test]

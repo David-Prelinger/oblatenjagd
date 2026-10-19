@@ -431,15 +431,15 @@ impl Tuning {
                 "tuning.toml: need 4 <= player.hitbox_w <= 16 and 4 <= player.hitbox_h <= 32",
             ));
         }
-        // Every gap a Normal player fits in (whole tiles on the 16 px grid)
+        // Every gap a Normal player fits in (whole tiles on the tile grid)
         // must fit the Zuckerschock too, so growing always finds room
         // (`Player::fit_head`).
-        let gap = (p.hitbox_h + 15) / 16 * 16;
+        let gap = (p.hitbox_h + TILE_PX - 1) / TILE_PX * TILE_PX;
         if !(p.hitbox_h..=gap).contains(&p.hitbox_h_big) {
-            return Err(ParseError::new(
+            return Err(ParseError::new(format!(
                 "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= player.hitbox_h \
-                 rounded up to whole tiles (16 px)",
-            ));
+                 rounded up to whole tiles ({TILE_PX} px)"
+            )));
         }
         for (name, v) in [
             ("player.stomp_bounce", p.stomp_bounce),

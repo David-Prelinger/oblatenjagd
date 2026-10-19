@@ -33,8 +33,8 @@
 //! capped at the route's end; the progress there is the original x minus
 //! one tile. A shift succeeds if the player survives the shifted jump and
 //! then reaches that progress (or completes the level) without dying:
-//! either the unchanged later inputs do it by the checkpoint (fast path),
-//! or a short re-planning beam search ([`recovers`], beam
+//! either the unchanged later inputs do it by the checkpoint, standing on
+//! the ground (fast path), or a short re-planning beam search ([`recovers`], beam
 //! [`REPLAN_BEAM`]) from the state right after the shifted jump's landing
 //! (or, if the press made no jump, after its buffer ran out) reaches it
 //! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames. So
@@ -44,13 +44,19 @@
 //! records why it stopped ([`Bound`]): a failed shift, the route (the
 //! shift would start before frame 0 or touch a neighbouring JUMP hold) or
 //! ±12. Windows with a route-limited side are only lower bounds and never
-//! count as the narrowest.
+//! count as the narrowest. A recovery may take a small detour (skip an
+//! item, another platform): the window asks whether a player can get on
+//! with the stage, not whether the score stays the same (D-034).
+//! Each shift starts from a snapshot of the original route at its earliest
+//! changed frame, and the jumps are measured on parallel threads (results
+//! in jump order, so independent of the thread count).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use jnr_core::replay::{Expect, FrameRange, Shot, Source};
@@ -553,41 +559,56 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
     t
 }
 
-/// Runs `inputs` up to frame `until` (or their end): `None` if the player
-/// died on the way, else the x at frame `check` and whether the level was
-/// completed by then.
-fn progress(
-    level: &Level,
-    tuning: &Tuning,
-    inputs: &[InputFrame],
-    check: u32,
-) -> Option<(i32, bool)> {
-    let mut g = Game::new(level, tuning, 1);
-    for &i in inputs.iter().take(check as usize) {
+/// Where a shifted run stands at its checkpoint (see [`progress`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Progress {
+    /// Player x (px) at the checkpoint, or where the level was completed.
+    x: i32,
+    /// The level was completed by the checkpoint.
+    done: bool,
+    /// The player stands on the ground at the checkpoint.
+    on_ground: bool,
+}
+
+/// Runs `inputs` from `start` (a state of the same route) up to frame
+/// `check` (or the end of `inputs`): `None` if the player died on the way,
+/// else where it stands then (or where it completed the level).
+fn progress(start: &Game, inputs: &[InputFrame], check: u32) -> Option<Progress> {
+    let mut g = start.clone();
+    let at = |g: &Game, done| Progress {
+        x: g.player().x.to_px(),
+        done,
+        on_ground: g.player().on_ground,
+    };
+    while g.frame() < check {
+        let Some(&i) = inputs.get(g.frame() as usize) else {
+            break;
+        };
         if g.step(i).contains(&Event::Died) {
             return None;
         }
         if g.mode() == Mode::StageClear {
-            return Some((g.player().x.to_px(), true));
+            return Some(at(&g, true));
         }
     }
-    Some((g.player().x.to_px(), false))
+    Some(at(&g, false))
 }
 
-/// Where a shifted jump leaves the player for re-planning: after the step
-/// that lands it (the first `Landed` after its `Jumped`), or, if the press
-/// made no jump, after the jump buffer ran out. `Err(true)`: the level was
-/// completed on the way (success), `Err(false)`: died or never landed
-/// before `deadline` (failure).
+/// Where a shifted jump leaves the player for re-planning, running
+/// `inputs` from `start` (a state of the same route before the press):
+/// after the step that lands it (the first `Landed` after its `Jumped`),
+/// or, if the press made no jump, after the jump buffer ran out.
+/// `Err(true)`: the level was completed on the way (success), `Err(false)`:
+/// died or never landed before `deadline` (failure).
 fn after_shifted_jump(
-    level: &Level,
+    start: &Game,
     tuning: &Tuning,
     inputs: &[InputFrame],
     press: u32,
     deadline: u32,
 ) -> Result<Game, bool> {
     let buffer = tuning.player.jump_buffer_frames as u32;
-    let mut g = Game::new(level, tuning, 1);
+    let mut g = start.clone();
     let mut jumped = false;
     let pad = inputs
         .last()
@@ -725,14 +746,25 @@ fn window_range(mut try_shift: impl FnMut(i32) -> Shifted) -> (i32, Bound, i32, 
     (lo, lo_bound, hi, hi_bound)
 }
 
-/// A jump of the route before measuring: its JUMP hold and checkpoint.
+/// A jump of the route before measuring: its JUMP hold, checkpoint and the
+/// state every shift of it starts from.
 struct JumpAt {
     hold: (usize, usize),
     check: u32,
+    /// The original route run up to frame `hold.0 - MAX_SHIFT` (or 0), the
+    /// last state no shift changes: `Err(true)` if it completed the level
+    /// before, `Err(false)` if it died before.
+    start: Result<Game, bool>,
 }
 
-/// The jump windows of a route (see the module docs).
-pub fn jump_windows(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Vec<JumpWindow> {
+/// The jump windows of a route (see the module docs). Jumps are measured on
+/// up to `threads` threads; the result does not depend on it.
+pub fn jump_windows(
+    level: &Level,
+    tuning: &Tuning,
+    inputs: &[InputFrame],
+    threads: usize,
+) -> Vec<JumpWindow> {
     let orig = trace(level, tuning, inputs);
     let total = inputs.len() as u32;
     let buffer = tuning.player.jump_buffer_frames as u32;
@@ -743,55 +775,104 @@ pub fn jump_windows(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Ve
             .map(|&(f, _)| f)
     };
     // Presses that make the player jump; checkpoint = the first landing
-    // after that `Jumped` + 2 s, capped at the end of the route.
+    // after that `Jumped` + 2 s, capped at the end of the route. The start
+    // states come from one run of the original route (holds are in order).
+    let mut run: Result<Game, bool> = Ok(Game::new(level, tuning, 1));
     let jumps: Vec<JumpAt> = jump_holds(inputs)
         .into_iter()
         .filter_map(|(s, e)| {
             let press = s as u32 + 1;
             let jumped = first(Event::Jumped, press, press + buffer)?;
             let landing = first(Event::Landed, jumped + 1, total).unwrap_or(total);
+            let from = s.saturating_sub(MAX_SHIFT as usize) as u32;
+            while let Ok(g) = &mut run
+                && g.frame() < from
+            {
+                let events = g.step(inputs[g.frame() as usize]);
+                if events.contains(&Event::Died) {
+                    run = Err(false);
+                } else if g.mode() == Mode::StageClear {
+                    run = Err(true);
+                }
+            }
             Some(JumpAt {
                 hold: (s, e),
                 check: landing.saturating_add(CHECKPOINT_AFTER_LANDING).min(total),
+                start: run.clone(),
             })
         })
         .collect();
 
-    let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
-    let mut out = Vec::new();
-    for jump in &jumps {
-        let (s, e) = jump.hold;
-        let check = jump.check;
-        let x_goal = orig.x[check as usize] - PROGRESS_TOLERANCE_PX;
-        let deadline = check + REPLAN_MARGIN;
-        let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
-            let Some(shifted) = shift_hold(inputs, s, e, d) else {
-                return Shifted::Route;
+    // The jumps are independent: a shared counter hands them to the
+    // threads, the results are put back in jump order.
+    let next = AtomicUsize::new(0);
+    let worker = || {
+        let mut measured = Vec::new();
+        loop {
+            let i = next.fetch_add(1, Ordering::Relaxed);
+            let Some(jump) = jumps.get(i) else {
+                return measured;
             };
-            // Fast path: the unchanged later inputs already get there.
-            if let Some((x, done)) = progress(level, tuning, &shifted, check)
-                && (done || x >= x_goal)
-            {
-                return Shifted::Ok;
-            }
-            let press = (s as i64 + i64::from(d)) as u32 + 1;
-            let ok = match after_shifted_jump(level, tuning, &shifted, press, deadline) {
-                Ok(game) => recovers(game, x_goal, deadline, threads),
-                Err(done) => done,
-            };
-            if ok { Shifted::Ok } else { Shifted::Fail }
-        });
-        out.push(JumpWindow {
-            index: s,
-            hold: (e - s) as u32,
-            x: orig.x[s],
-            lo,
-            hi,
-            lo_bound,
-            hi_bound,
-        });
+            measured.push((i, window(tuning, inputs, &orig, jump)));
+        }
+    };
+    let mut out: Vec<(usize, JumpWindow)> = if threads <= 1 || jumps.len() < 2 {
+        worker()
+    } else {
+        std::thread::scope(|s| {
+            let handles: Vec<_> = (0..threads.min(jumps.len()))
+                .map(|_| s.spawn(worker))
+                .collect();
+            handles
+                .into_iter()
+                .flat_map(|h| h.join().expect("jump window thread panicked"))
+                .collect()
+        })
+    };
+    out.sort_by_key(|&(i, _)| i);
+    out.into_iter().map(|(_, w)| w).collect()
+}
+
+/// Measures the window of one jump of the route `inputs` (D-033).
+fn window(tuning: &Tuning, inputs: &[InputFrame], orig: &Trace, jump: &JumpAt) -> JumpWindow {
+    let (s, e) = jump.hold;
+    let check = jump.check;
+    let x_goal = orig.x[check as usize] - PROGRESS_TOLERANCE_PX;
+    let deadline = check + REPLAN_MARGIN;
+    let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
+        let Some(shifted) = shift_hold(inputs, s, e, d) else {
+            return Shifted::Route;
+        };
+        let start = match &jump.start {
+            Ok(g) => g,
+            Err(true) => return Shifted::Ok,
+            Err(false) => return Shifted::Fail,
+        };
+        // Fast path: the unchanged later inputs already get there and she
+        // stands on the ground (like the re-planning goal).
+        if let Some(p) = progress(start, &shifted, check)
+            && (p.done || (p.on_ground && p.x >= x_goal))
+        {
+            return Shifted::Ok;
+        }
+        let press = (s as i64 + i64::from(d)) as u32 + 1;
+        let ok = match after_shifted_jump(start, tuning, &shifted, press, deadline) {
+            // A beam of REPLAN_BEAM nodes is too small to gain from threads;
+            // the jumps run in parallel instead.
+            Ok(game) => recovers(game, x_goal, deadline, 1),
+            Err(done) => done,
+        };
+        if ok { Shifted::Ok } else { Shifted::Fail }
+    });
+    JumpWindow {
+        index: s,
+        hold: (e - s) as u32,
+        x: orig.x[s],
+        lo,
+        hi,
+        lo_bound,
+        hi_bound,
     }
-    out
 }
 
 /// The narrowest window (earliest on ties) among the jumps whose window is
@@ -1013,7 +1094,7 @@ pub fn solve(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Solution {
     let mut inputs = search.best.inputs();
     let windows = if search.complete() {
         inputs = clean_route(level, tuning, &inputs);
-        jump_windows(level, tuning, &inputs)
+        jump_windows(level, tuning, &inputs, opts.threads)
     } else {
         Vec::new()
     };
@@ -1575,7 +1656,7 @@ mod tests {
         let mut inputs = vec![NONE; 5];
         inputs.push(InputFrame::JUMP);
         inputs.extend([NONE; 5]);
-        let w = jump_windows(&level, &tuning(), &inputs);
+        let w = jump_windows(&level, &tuning(), &inputs, 1);
         assert_eq!(w.len(), 1);
         assert_eq!((w[0].lo, w[0].lo_bound), (-5, Bound::Route));
         assert_eq!((w[0].hi, w[0].hi_bound), (MAX_SHIFT, Bound::Max));
@@ -1616,7 +1697,7 @@ mod tests {
             vec![(5, landing - 3), (landing - 1, landing)]
         );
 
-        let w = jump_windows(&level, &t, &inputs);
+        let w = jump_windows(&level, &t, &inputs, 1);
         assert_eq!(w.len(), 2, "both presses jump: {w:?}");
         assert_eq!((w[0].lo, w[0].lo_bound), (-5, Bound::Route));
         assert_eq!((w[0].hi, w[0].hi_bound), (1, Bound::Route), "{w:?}");
@@ -1649,7 +1730,7 @@ mod tests {
         let mut inputs = vec![RB; press];
         inputs.extend([RBJ; 20]);
         inputs.extend([RB; 150]);
-        let w = jump_windows(&level, &t, &inputs);
+        let w = jump_windows(&level, &t, &inputs, 1);
         assert_eq!(w.len(), 1, "{w:?}");
         assert_eq!(
             (w[0].hi, w[0].hi_bound),
@@ -1714,7 +1795,7 @@ mod tests {
         inputs.resize(press2, RB);
         inputs.extend([RBJ; 20]);
         inputs.extend([RB; 200]);
-        let windows = jump_windows(&level, &t, &inputs);
+        let windows = jump_windows(&level, &t, &inputs, 1);
         assert_eq!(windows.len(), 2, "{windows:?}");
         let w1 = &windows[0];
 
@@ -1734,7 +1815,7 @@ mod tests {
         let shifted = shift_hold(&inputs, s, e, fixed_deaths[0]).unwrap();
         let check = landed + CHECKPOINT_AFTER_LANDING;
         assert_eq!(
-            progress(&level, &t, &shifted, check),
+            progress(&Game::new(&level, &t, 1), &shifted, check),
             None,
             "dies by {check}"
         );
@@ -1752,12 +1833,119 @@ mod tests {
         assert!(w2.hi <= 1, "{w2:?}");
     }
 
+    /// A 70-tile level with three 3-tile pits: a route with several jumps.
+    fn three_pit_level() -> Level {
+        let w = 70;
+        let air = ".".repeat(w);
+        let mut top = ".".repeat(w);
+        top.replace_range(1..2, "P");
+        top.replace_range(w - 2..w - 1, "G");
+        let mut ground = "#".repeat(w);
+        for pit in [14, 30, 46] {
+            ground.replace_range(pit..pit + 3, "...");
+        }
+        level([&air, &air, &air, &top], &ground)
+    }
+
+    #[test]
+    fn jump_windows_do_not_depend_on_the_thread_count() {
+        let level = three_pit_level();
+        let t = tuning();
+        let sol = solve(&level, &t, &opts(&level, 1));
+        assert!(sol.search.complete(), "{}", sol.summary());
+        let one = jump_windows(&level, &t, &sol.inputs, 1);
+        assert!(one.len() >= 3, "a jump per pit: {one:?}");
+        assert_eq!(one, sol.windows);
+        for threads in [2, 3, 8] {
+            assert_eq!(
+                jump_windows(&level, &t, &sol.inputs, threads),
+                one,
+                "{threads} threads"
+            );
+        }
+    }
+
+    #[test]
+    fn progress_reports_ground_and_does_not_depend_on_the_start_frame() {
+        // Standing jump at input index 5 on flat ground.
+        let level = gap_level(0);
+        let t = tuning();
+        let mut inputs = vec![NONE; 5];
+        inputs.push(InputFrame::JUMP);
+        inputs.extend([NONE; 100]);
+        let start = Game::new(&level, &t, 1);
+        let mid_air = progress(&start, &inputs, 12).unwrap();
+        assert!(!mid_air.on_ground && !mid_air.done, "{mid_air:?}");
+        let landed = progress(&start, &inputs, 100).unwrap();
+        assert!(landed.on_ground && !landed.done, "{landed:?}");
+        // From a later state of the same route: the same result.
+        let mut later = start.clone();
+        for &i in &inputs[..4] {
+            later.step(i);
+        }
+        assert_eq!(progress(&later, &inputs, 12), Some(mid_air));
+        assert_eq!(progress(&later, &inputs, 100), Some(landed));
+        // Past the end of the inputs: where the route ends.
+        assert_eq!(progress(&start, &inputs, 10_000), Some(landed));
+    }
+
+    #[test]
+    fn after_shifted_jump_stops_at_the_landing_or_the_buffer_end() {
+        let level = gap_level(0);
+        let t = tuning();
+        let buffer = t.player.jump_buffer_frames as u32;
+        let start = Game::new(&level, &t, 1);
+        // A standing jump pressed at input index 5 (frame 6): stops right
+        // after the landing step.
+        let mut inputs = vec![NONE; 5];
+        inputs.push(InputFrame::JUMP);
+        inputs.extend([NONE; 100]);
+        let g = after_shifted_jump(&start, &t, &inputs, 6, 200).unwrap();
+        assert!(g.events().contains(&Event::Landed), "{:?}", g.events());
+        assert!(g.player().on_ground);
+        assert!(g.frame() > 6 + 10, "landed at {}", g.frame());
+        let landing = g.frame();
+        // The same from a later start state of the route.
+        let mut later = start.clone();
+        for &i in &inputs[..3] {
+            later.step(i);
+        }
+        let g = after_shifted_jump(&later, &t, &inputs, 6, 200).unwrap();
+        assert_eq!(g.frame(), landing);
+        // Deadline before the landing: failure.
+        assert_eq!(
+            after_shifted_jump(&start, &t, &inputs, 6, landing - 1).err(),
+            Some(false)
+        );
+        // A press high in the air makes no jump: stops when its buffer ran
+        // out (the second press, at index 15, is far from any landing).
+        let mut air_press = inputs.clone();
+        air_press[15] = InputFrame::JUMP;
+        let g = after_shifted_jump(&start, &t, &air_press, 16, 200).unwrap();
+        assert_eq!(g.frame(), 16 + buffer);
+        assert!(!g.player().on_ground);
+        // Running into a pit before the press: died.
+        let pit = gap_level(4);
+        let g0 = Game::new(&pit, &t, 1);
+        let run = vec![RB; 200];
+        assert_eq!(
+            after_shifted_jump(&g0, &t, &run, 250, 300).err(),
+            Some(false)
+        );
+        // Running to the goal before the press: completed (success).
+        let run = vec![RB; 400];
+        assert_eq!(
+            after_shifted_jump(&start, &t, &run, 900, 1000).err(),
+            Some(true)
+        );
+    }
+
     #[test]
     fn replanning_finds_a_way_or_reports_none() {
         // From the start of a level with a 3-tile gap the re-planning
         // search gets past the gap; across an 11-tile gap it can't.
         let t = tuning();
-        let threads = 2;
+        let threads = 1;
         let ok = gap_level(3);
         let g = Game::new(&ok, &t, 1);
         assert!(recovers(g, 20 * 16, 400, threads));

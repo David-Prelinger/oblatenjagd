@@ -171,7 +171,16 @@ fn start_recording(_opts: &Options, _game: &Game) -> Recording {}
 #[cfg(not(target_arch = "wasm32"))]
 fn record_step(rec: &mut Recording, input: InputFrame, game: &Game) {
     if let Some(rec) = rec {
+        let was_full = rec.is_full();
         rec.record(input, game);
+        if !was_full && rec.is_full() {
+            eprintln!(
+                "jnr-app: warning: recording stopped at frame {} (the replay limit, {} frames = 1 h); \
+                 the game goes on, the file gets the recorded part on exit",
+                game.frame(),
+                jnr_core::replay::MAX_TOTAL_FRAMES
+            );
+        }
     }
 }
 

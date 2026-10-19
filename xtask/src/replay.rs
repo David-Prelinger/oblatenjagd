@@ -425,8 +425,10 @@ pub fn run_scene(root: &Path, args: &[String]) -> ExitCode {
 /// the second value is true when that clamp changed it.
 pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> (Game, bool) {
     let wanted = camera_x.saturating_add(tuning.camera.follow_x);
-    let half_w = tuning.player.hitbox_w / 2;
-    let max = level.width * jnr_core::level::TILE_PX - (tuning.player.hitbox_w - half_w);
+    // The hitbox reaches w/2 (x.5 px for an odd width) to each side of the
+    // centre, so the centre stays (w + 1) / 2 whole pixels from both edges.
+    let half_w = (tuning.player.hitbox_w + 1) / 2;
+    let max = level.width * jnr_core::level::TILE_PX - half_w;
     let player_x = wanted.clamp(half_w, max);
     let mut game = Game::new(level, tuning, 1);
     game.teleport_player(player_x);
@@ -514,6 +516,7 @@ fn exit(result: Result<(), String>) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jnr_core::{Fx, InputFrame};
 
     fn root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -531,6 +534,42 @@ mod tests {
         assert_eq!(first_difference(&[1, 2, 3], &[1, 2, 3]), None);
         assert_eq!(first_difference(&[1, 2, 3], &[1, 9, 3]), Some(1));
         assert_eq!(first_difference(&[1, 2], &[1, 2, 3]), Some(2));
+    }
+
+    /// D-036: the Stage 1 tour is the title intro, then the solver route
+    /// unchanged, then 800 idle frames for the Maibaum sequence. A re-solve
+    /// that changes the route must be copied into the tour.
+    #[test]
+    fn salzburg_tour_replays_the_solver_route() {
+        let frames = |name: &str| -> Vec<u64> {
+            let path = root().join("tests/replays").join(name);
+            let replay = Replay::parse(&fs::read_to_string(&path).unwrap()).unwrap();
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let (none, start) = (0, u64::from(InputFrame::START.bits()));
+        let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
+        let route = frames("salzburg_solver.replay");
+        let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+        let tour = frames("salzburg_tour.replay");
+        if let Some(i) = first_difference(&tour, &expected) {
+            let part = if i < intro.len() {
+                "the title/intro prefix `- 20`, `S 1`, `- 150`"
+            } else if i < intro.len() + route.len() {
+                "the solver route"
+            } else {
+                "the Maibaum outro `- 800`"
+            };
+            panic!(
+                "tests/replays/salzburg_tour.replay differs at frame {i}, in {part} (tour {} \
+                 frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs of \
+                 tests/replays/salzburg_solver.replay unchanged, then `- 800` (D-036). If \
+                 `cargo xtask solve salzburg --write` changed the route, re-copy its inputs \
+                 into the tour, update its `expect` frames and re-pick the shot frames (new \
+                 goldens need an art-director verdict).",
+                tour.len(),
+                expected.len()
+            );
+        }
     }
 
     #[test]
@@ -640,16 +679,23 @@ mod tests {
         let level = content::find_level(&root, "testbed").unwrap();
         let tuning = content::tuning(&root).unwrap();
         let level_px = level.width * jnr_core::level::TILE_PX;
-        for x in [5000, i32::MAX, -500, i32::MIN] {
-            let (g, clamped) = scene_game(&level, &tuning, x);
-            assert!(clamped, "x={x}");
-            let p = g.player();
-            assert!(p.x.to_px() >= 0, "x={x}: player x={}", p.x.to_px());
-            assert!(
-                (p.x + p.w).to_px() <= level_px,
-                "x={x}: player right edge {} > level width {level_px}",
-                (p.x + p.w).to_px()
-            );
+        let mut odd = tuning;
+        odd.player.hitbox_w = 13;
+        // The real (even) hitbox and an odd one, whose edges are half pixels.
+        for t in [&tuning, &odd] {
+            for x in [5000, i32::MAX, -500, i32::MIN] {
+                let (g, clamped) = scene_game(&level, t, x);
+                assert!(clamped, "x={x}");
+                let p = g.player();
+                assert_eq!(p.w.to_px(), t.player.hitbox_w);
+                assert!(p.x >= Fx::ZERO, "x={x}: player x={:?}", p.x);
+                assert!(
+                    p.x + p.w <= Fx::from_px(level_px),
+                    "x={x} (w {}): player right edge {:?} > level width {level_px}",
+                    t.player.hitbox_w,
+                    p.x + p.w
+                );
+            }
         }
     }
 }
