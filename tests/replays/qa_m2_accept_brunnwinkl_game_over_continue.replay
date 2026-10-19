@@ -1,0 +1,86 @@
+# QA (M2 acceptance, D-042/D-047): game over in Brunnwinkl, the last
+# playable stage, restarts Brunnwinkl. The run starts at Brunnwinkl from the
+# title (level = brunnwinkl, start = title). Three times: the opening of
+# qa_m2_coyote_over_water (Mozartkugel -> Zuckerschock, walker stomp) up to
+# the mill race, then walk on into it without jumping: sunk and dead (1090,
+# 2219, 3348; respawn at the start, Normal, with the 150-frame intro).
+# GameOver at 3408; START at 3559 restarts Brunnwinkl (not Salzburg, not
+# the teaser) with score 0, Oblaten 0, 3 lives.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=1090..1090 event=GameOver event=Respawned deaths=3 no_event=LevelComplete
+expect = state=playing stage=brunnwinkl score=0 oblaten=0 lives=3 player_x>=34
+---
+- 20
+S 1         # title -> Brunnwinkl intro
+- 150
+# life: the qa_m2_coyote_over_water opening to the mill race edge
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26
+R 40        # into the race, no jump: dies
+- 177       # dying, respawn, intro
+# life: the qa_m2_coyote_over_water opening to the mill race edge
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26
+R 40        # into the race, no jump: dies
+- 177       # dying, respawn, intro
+# life: the qa_m2_coyote_over_water opening to the mill race edge
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26
+R 40        # into the race, no jump: dies
+- 177       # dying, respawn, intro
+S 1         # Weiter? -> restart Brunnwinkl
+- 300

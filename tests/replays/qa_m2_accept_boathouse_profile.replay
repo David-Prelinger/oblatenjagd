@@ -1,0 +1,79 @@
+# QA (M2 acceptance): the Brunnwinkl boathouse's invisible collision
+# (D-038 drawn = solid, M2 level pass) in its 2/4/5 profile: woodpile 221
+# (2 high), stair tower 222 (4), roof 223-226 (5; the prop's own cell 223
+# row 14 is an enclosed air pocket). Everything is solid from every side
+# and the profile is climbable step by step.
+# Steps: the solver route to 1415 (she comes down on the stair tower),
+# walk off its left end down to the jetty, push right against the
+# woodpile (held flush at x 3524), climb woodpile -> tower -> roof again
+# and walk off the roof's right end: 100 points at the pole (same score
+# as brunnwinkl_goal_walk_off), complete at 1722.
+# The air pocket has solid cells on all four sides (222 and 224 row 14,
+# 223 row 13, the jetty below), so it cannot be entered: in 6 000
+# random-input runs from four spots next to the boathouse (Normal; QA
+# probe, M2 acceptance) her hitbox never overlapped a solid tile.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = complete frames=1722..1722 score=6000 deaths=0 no_event=Died state=stage_clear
+---
+# --- the first 1415 frames of brunnwinkl_solver.replay ---
+RB 104
+RBJ 36
+RB 27
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 33
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 8
+# --- end of the first 1415 frames of brunnwinkl_solver.replay ---
+- 6         # land on the stair tower (1417)
+L 40        # walk off its left end: past the woodpile down to the jetty (1464)
+- 20
+R 40        # push right: stopped flush at the woodpile (x 3524), no way in
+RJ 1        # a tap jump against it does not climb it
+R 30
+- 10
+RJ 12       # 1563: up onto the woodpile (2 high, lands 1591)
+R 8
+- 10
+RJ 16       # up onto the stair tower (4 high, lands 1625)
+R 6
+- 10
+RJ 14       # up onto the roof (5 high, lands 1659)
+R 4
+- 10
+R 80        # walk off the roof's right end: pole touch 1722, 100 points
+- 60

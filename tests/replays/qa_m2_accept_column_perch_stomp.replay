@@ -1,0 +1,25 @@
+# QA (M2 acceptance): St. Gilgen's flower column (col 28, 3 high, the
+# planter's raised left end, M2 level pass) is a perch over Nordic-Walker
+# #2 on the planter 29-34: Resi stands on it and steps off onto the walker.
+# Steps: the St. Gilgen solver route for 165 frames (stomp of walker #1 at
+# 136), land on the column without the solver's next jump, brake, wait
+# 61 frames, walk off right: Stomped 264, 2100 -> 2200, then she lands on
+# the planter. (Brute force: waits 40-80 hit the walker; other waits drop
+# her beside it, which is the "watch the walker" design.)
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing score=2200 player_x>=500
+---
+# --- the first 165 frames of st_gilgen_solver.replay ---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 2
+# --- end of the first 165 frames of st_gilgen_solver.replay ---
+RB 10       # land on the flower column (col 28, 3 high) at 175, no JUMP
+L 12        # brake on the column top
+- 61        # wait for walker #2 to pace back under the column
+R 30        # step off right onto its head: Stomped 264 (+100)
+- 30        # bounce, land on the planter (289)

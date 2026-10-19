@@ -1,0 +1,44 @@
+# QA (M2 acceptance): St. Gilgen's Mozartkugel-Verkaeufer stands beside
+# the souvenir stand (col 122, stand roof 117-120 row 12, M2 level pass)
+# and can be stomped by walking off the stand roof (game-design.md sec. 3).
+# Steps: the St. Gilgen solver route to the street after the Mozartbrunnen
+# (frame 736), brake, hop onto the stand roof, jump over his throw, then
+# walk off the roof's right end: she drops onto his head (Stomped 915,
+# chain start 200: score 5800 -> 6000) and lands on the street behind him.
+# Note: walking off without dodging the throw (wind-up visible from ~816)
+# runs into the ball as it leaves his hand: fair, the wind-up shows it.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing score=6000 player_x>=1980
+---
+# --- the first 736 frames of st_gilgen_solver.replay ---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 37
+# --- end of the first 736 frames of st_gilgen_solver.replay ---
+L 20        # brake on the street before the souvenir stand
+- 10
+RJ 16       # hop onto the stand roof (one-way, row 12; lands 794)
+R 10
+- 48        # stand still; his wind-up, the throw spawns ~836
+J 20        # 841: jump straight up, the Mozartkugel flies under her
+- 10        # lands back on the roof (885)
+R 60        # walk off the roof's right end onto his head: Stomped 915, +200
+- 30
