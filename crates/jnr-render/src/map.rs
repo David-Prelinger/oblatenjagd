@@ -367,6 +367,33 @@ mod tests {
                 );
             }
         }
+        // Clear of a big (16×32) Resi standing on any dot, outline included
+        // (art-director, M3). Known exceptions on the later stations (from
+        // St. Wolfgang on, not playable yet), left for their milestones' map
+        // review: (label, the dot Resi stands on).
+        const LATER: [(&str, &str); 4] = [
+            ("st_wolfgang", "wolfgangsee"),
+            ("st_wolfgang", "strobl"),
+            ("bad_ischl", "bad_ischl"),
+            ("cafe_zauner", "bad_ischl"),
+        ];
+        for (i, &(x, y, w)) in boxes.iter().enumerate() {
+            for st in &STATIONS {
+                let (dx, feet) = (st.dot.0, st.dot.1 + RESI_DY);
+                let (rl, rr, rt, rb) = (dx - 8, dx + 8, feet - 32, feet);
+                // Outline 1 px around the label; the box is [rl, rr) × [rt, rb).
+                let apart = x + w < rl || rr < x || y + GLYPH_H < rt || rb < y;
+                let known = LATER.contains(&(STATIONS[i].id, st.id));
+                assert_eq!(
+                    apart,
+                    !known,
+                    "label {} vs Resi on {} (label {:?})",
+                    STATIONS[i].id,
+                    st.id,
+                    (x, y, w)
+                );
+            }
+        }
     }
 
     #[test]
@@ -379,9 +406,9 @@ mod tests {
         assert_eq!(label_pos((300, 76), LabelSide::Above, 60), (256, 62));
         assert_eq!(label_pos((2, 2), LabelSide::Left, 10), (4, 4));
         // Route-data overrides (art review): fixed rows, right limits.
-        assert_eq!(station_label_pos(&STATIONS[2], 48), (66, 43), "Brunnwinkl");
+        assert_eq!(station_label_pos(&STATIONS[2], 48), (66, 20), "Brunnwinkl");
         let (x, _) = station_label_pos(&STATIONS[3], 60);
-        assert_eq!(x + 60, 172, "Falkenstein ends at x 172");
+        assert_eq!(x + 60, 171, "Falkenstein ends at x 171");
         assert_eq!(
             station_label_pos(&STATIONS[8], 58),
             (232, 69),

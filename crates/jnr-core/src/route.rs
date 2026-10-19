@@ -78,20 +78,23 @@ pub const STATIONS: [Station; 9] = [
     Station {
         id: "brunnwinkl",
         dot: (124, 58),
-        // Above, raised clear of Resi's head (art-director, M2).
-        // Above-left, close to the dot and clear of Resi (art-director, M2).
+        // Above-left of the dot (art-director, M2), raised to rows 20–28
+        // (art-director, M3): clear of a big (16×32) Resi standing on the
+        // St. Gilgen or the Brunnwinkl dot and of the Salzburg → St. Gilgen
+        // route (at x <= 91 the label would cover that route).
         label: LabelSide::Left,
-        label_top: Some(43),
+        label_top: Some(20),
         label_right: Some(114),
         path_in: &[(108, 64), (116, 58)],
     },
     Station {
         id: "falkenstein",
         dot: (152, 68),
-        // Clear of the St. Wolfgang marker (art-director, M2).
+        // Clear of the St. Wolfgang marker (art-director, M2) and, outline
+        // included, of a big Resi standing on St. Wolfgang (M3 teaser).
         label: LabelSide::Below,
         label_top: None,
-        label_right: Some(172),
+        label_right: Some(171),
         path_in: &[(136, 58), (144, 62)],
     },
     Station {
