@@ -1,0 +1,27 @@
+# QA (M2 acceptance): St. Gilgen's 210 s limit (D-045) runs out while
+# Resi rides Gondel A back and forth (station platform <-> knoll) for the
+# whole stage time (camera x stays 721: A's left end is on screen): death
+# by time-up in step 12600 exactly (210 x 60); she respawns at the start
+# (no checkpoint reached) with the timer full again and 2 lives.
+# Steps: st_gilgen_gondeln's opening (hop onto Gondel A at ~356), then no
+# input at all.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = dies_at frames=12600..12600 deaths=1 lives=2 state=playing player_x>=34
+expect = event=Respawned no_event=GameOver
+---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 25
+L 4         # brake at the platform edge
+- 70        # wait for Gondel A to come back
+RJ 8        # hop onto its roof (~356)
+R 6
+- 12400     # ride A back and forth until the time is up (12600)

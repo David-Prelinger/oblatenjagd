@@ -1,0 +1,53 @@
+# QA (M2 acceptance): D-051 round trip. The camera follows a Gondel rider
+# left, then behaves normally when she rides back and walks right.
+# Steps: qa_m2_gondel_camera_edge_push (camera at x 1301, Resi rides Gondel
+# C up-left from its lower end; the camera follows her left 1 px per step
+# down to x 1202 at the pylon end, ~1470). She stays on the roof while C
+# waits and rides back down-right (camera stays at 1202: it never scrolls
+# left or right on its own), walks off at its lower end (~1612) onto the
+# ledge and street; the camera scrolls right again once her centre passes
+# screen x 144 (~1650) and she walks on into Mozartplatz to the basin rim
+# (x 1588): the tourist, the Verkaeufer and the sitting Taube activate and
+# act normally. Removed entities never respawn (retain), so the left
+# scroll cannot bring back anything despawned behind the camera.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=1580
+---
+# st_gilgen_gondeln (frames 0-1126)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 25
+L 4         # brake at the platform edge (x 737; Gondel C activates)
+- 70        # wait for Gondel A to come back
+RJ 8        # hop onto its roof (~frame 356)
+R 6
+- 125       # ride A up to the knoll
+R 60
+- 197       # wait on the knoll for Gondel B
+R 40        # walk off the edge onto B (~790)
+- 110       # ride B across the ravine
+R 24        # onto the pylon (918)
+RJ 4        # tap jump onto Gondel C, just leaving the pylon (~950)
+R 8
+- 100       # ride C down to its lower end
+R 70        # walk off onto the ledge and the street
+- 20
+R 14        # a few steps further right: camera x 1301
+- 10
+L 30
+LJ 10       # back up onto the ledge 83-85
+L 14
+- 90        # Gondel C arrives at its lower end (x 1296)
+LJ 8        # hop onto its roof (lands ~1330)
+L 10
+- 150       # stand still and ride up towards the pylon
+- 162       # ride C back down to its lower end
+R 250       # walk off right, through the ledge to the basin rim

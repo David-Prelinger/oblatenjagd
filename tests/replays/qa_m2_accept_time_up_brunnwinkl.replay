@@ -1,0 +1,10 @@
+# QA (M2 acceptance): Brunnwinkl's time_limit is 200 s (D-045): standing
+# still at the start, the timer runs out in step 12000 (200 x 60) exactly;
+# respawn at the start with 2 lives (E-Biker #1 at col 34 stays parked:
+# the start is far outside its 144 px trigger).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = dies_at frames=12000..12000 deaths=1 lives=2 state=playing event=Respawned
+---
+- 12100

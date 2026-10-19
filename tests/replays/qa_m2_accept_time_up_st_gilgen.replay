@@ -1,0 +1,10 @@
+# QA (M2 acceptance): St. Gilgen's time_limit is 210 s (D-045): standing
+# still at the start, the timer runs out in step 12600 (210 x 60) exactly;
+# respawn at the start with 2 lives (walker #1 is penned in by the bus
+# shelter wall, nothing reaches the start).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = dies_at frames=12600..12600 deaths=1 lives=2 state=playing event=Respawned
+---
+- 12700
