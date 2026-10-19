@@ -112,6 +112,14 @@ All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); col
 | `bienenhaus` (bee house) | ≤ 128×80 | bottom centre | `idle` held — `layer = "back"`; open wooden shed with rows of painted hive fronts (small folk-art panels, no text) |
 | `futterschaelchen` (bee bonus marker) | 16×8 | bottom centre | `idle` held — a small glass dish (`i w`) on a blue card (`S b`); front layer. Never gold and round |
 
+### Props pending engine registration
+
+Art is in `art/sprites/props/`; move the row into the table above when the name is added to `PROP_SPRITES` (the `props_must_name_a_catalog_prop_sprite` test keeps the two in sync).
+
+| Sprite | Size | Origin | Animations / notes |
+|---|---|---|---|
+| `boathouse` (Brunnwinkl Bootshaus) | 96×80 | 48,80 (bottom centre) | `idle` held — `layer = "back"`; steep wooden-shingle roof, plank wall with a cross window, `o O l` stilts over the dark `d` slip with a white rowing boat hung on two `l` hoist slings; a stair tower and a woodpile on its left. Drawn = solid (D-038): placed at col 223 with `dx = 8`, bottom on the top of the jetty row, its outline matches the shore block 221–226: woodpile top 2 tiles, stair tower 4 tiles, roof ridge (4 tiles, `o` lip) 5 tiles = the launch. Collision stays with tiles (`invisible` under it); under it the level puts `jetty` (row 15: the lake surface 4 px below the deck line, as on the bathing jetty) and `jetty_post` (row 16) |
+
 ### Tiles (group `tiles`, 16×16, `tile_<name>`)
 
 New tile names (engine: map each to its collision kind in `TileKind::from_tile_name`):
@@ -128,6 +136,8 @@ New tile names (engine: map each to its collision kind in `TileKind::from_tile_n
 | `wolfgangsee_water_deep` | hazard | rows below the surface, `T b B` bands |
 | `forest_path` | solid | earth path `O l` with a `y g` grass lip and roots, autotiled |
 | `beute` | solid | bee hive box (`o O l` wood) with a small painted front panel; stackable (autotile vertical neighbours so a stack reads as boxes, not a wall) |
+| `roof_bg` | decorative (non-solid, like `wall_village_bg`) | shaded terracotta Biberschwanz roof `n R` (+ `l` ridge/eave shadow) over walk-through `wall_village_bg` houses; no light lip, never the solid `roof_shingle` look. Autotiled (16f `auto`): left end open = left 45° slope, right end open = right slope (2 px `R` shaded verge), both closed = full roof, both open = small pyramid; top open = ridge cap, bottom open = eave; a slope end with roof above it becomes a straight edge. One row over a house = trapezoid; stack rows each one tile narrower per side (6 + 4 + 2) for a full gable |
+| `chimney` | solid | stone chimney stack, 14 px fieldstone masonry `w i m` + `d` edge, full-width cap slab with a `w` lip over a dark `d` opening; no smoke (D-038). Autotiled vertically only (cap on top of a stack, base course at its bottom; left/right bits ignored), so a stack of 2 reads as one chimney |
 
 Reused in M2: `ground`, `meadow`, `rock`, `stone`, `brick`, `oblaten_box`, `oblaten_box_empty`, `oneway_wood`, `invisible`.
 
