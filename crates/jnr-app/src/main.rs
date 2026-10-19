@@ -19,10 +19,10 @@ mod options;
 #[cfg(not(target_arch = "wasm32"))]
 mod record;
 
-use jnr_core::{Game, InputFrame, Level, TICKS_PER_SECOND, Texts, Tuning};
+use jnr_core::{Game, InputFrame, TICKS_PER_SECOND, Texts, Tuning};
 use jnr_render::{Framebuffer, HEIGHT, RenderContext, WIDTH, render, render_debug};
 use macroquad::prelude::*;
-use options::{Options, level_source};
+use options::{Options, embedded_levels};
 
 /// Gameplay constants (embedded).
 const TUNING_SRC: &str = include_str!("../../../content/tuning.toml");
@@ -82,12 +82,29 @@ fn ticks_due(accumulator: &mut f64, frame_seconds: f64) -> u32 {
     n as u32
 }
 
+/// The game the options ask for: a run along the route (D-042, D-047) when
+/// the level is on it (`--level st_gilgen` starts the run there), else the
+/// level alone.
 fn new_game(opts: &Options) -> Game {
-    let src = level_source(&opts.level)
-        .unwrap_or_else(|| panic!("level `{}` is not embedded", opts.level));
-    let level = Level::parse(src).unwrap_or_else(|e| panic!("level {}: {e}", opts.level));
+    let levels = embedded_levels();
     let tuning = Tuning::parse(TUNING_SRC).unwrap_or_else(|e| panic!("tuning.toml: {e}"));
-    Game::new_at(&level, &tuning, opts.seed, opts.start)
+    match jnr_core::route::select(&levels, &opts.level, &opts.route) {
+        Ok(Some((route, stage))) => Game::new_run(
+            std::sync::Arc::new(route),
+            stage,
+            &tuning,
+            opts.seed,
+            opts.start,
+        ),
+        Ok(None) => {
+            let level = levels
+                .iter()
+                .find(|l| l.meta.id == opts.level)
+                .unwrap_or_else(|| panic!("level `{}` is not embedded", opts.level));
+            Game::new_at(level, &tuning, opts.seed, opts.start)
+        }
+        Err(e) => panic!("route: {e}"),
+    }
 }
 
 fn texts() -> Texts {
@@ -145,7 +162,7 @@ type Recording = ();
 fn start_recording(opts: &Options, game: &Game) -> Recording {
     opts.record
         .as_ref()
-        .map(|_| record::Recorder::new(game, opts.seed))
+        .map(|_| record::Recorder::new(game, opts.seed, &opts.route))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -154,7 +171,16 @@ fn start_recording(_opts: &Options, _game: &Game) -> Recording {}
 #[cfg(not(target_arch = "wasm32"))]
 fn record_step(rec: &mut Recording, input: InputFrame, game: &Game) {
     if let Some(rec) = rec {
+        let was_full = rec.is_full();
         rec.record(input, game);
+        if !was_full && rec.is_full() {
+            eprintln!(
+                "jnr-app: warning: recording stopped at frame {} (the replay limit, {} frames = 1 h); \
+                 the game goes on, the file gets the recorded part on exit",
+                game.frame(),
+                jnr_core::replay::MAX_TOTAL_FRAMES
+            );
+        }
     }
 }
 
@@ -213,8 +239,10 @@ fn main() {
 async fn run(opts: Options) {
     let mut game = new_game(&opts);
     let texts = texts();
-    // All renderer lookups are resolved once here (rebuild on level change).
-    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, game.level());
+    // All renderer lookups are resolved once per level (rebuilt when the
+    // run moves on to the next stage).
+    let atlas = jnr_assets::atlas();
+    let mut ctx = RenderContext::for_level(atlas, &texts, game.level());
     let mut fb = Framebuffer::new();
     let mut bytes = Vec::with_capacity(WIDTH * HEIGHT * 4);
     let mut accumulator = 0.0;
@@ -245,6 +273,9 @@ async fn run(opts: Options) {
             let input = opts.input.input_for(game.frame(), keyboard);
             game.step(input);
             record_step(&mut recording, input, &game);
+            if !ctx.is_for(game.level()) {
+                ctx = RenderContext::for_level(atlas, &texts, game.level());
+            }
             if after_frame(&opts, &game, &ctx, &mut fb) {
                 break 'frames;
             }
@@ -345,6 +376,19 @@ mod tests {
             "starts at the title"
         );
         assert_eq!(texts().get("stage.clear"), "Etappe geschafft!");
+    }
+
+    #[test]
+    fn journey_levels_start_a_run_and_test_levels_play_alone() {
+        let game = new_game(&Options::default());
+        assert_eq!(game.station(), Some(0), "Salzburg starts the route");
+        let route: Vec<&str> = game.route().map(|r| r.ids().collect()).unwrap_or_default();
+        assert_eq!(route[0], "salzburg");
+        let testbed = new_game(&Options {
+            level: "testbed".to_owned(),
+            ..Options::default()
+        });
+        assert_eq!(testbed.station(), None);
     }
 
     #[test]

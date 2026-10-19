@@ -27,6 +27,24 @@ to_be_continued = "Fortsetzung folgt …"
 extra_life = "+1 Leben"
 checkpoint = "Zwischenstopp"
 wurstkranz = "Wurstkranz!"
+hoppala = "Hoppala!"
+
+# Route map between stages (docs/game-design.md "Route map").
+[map]
+next_stop = "Nächster Halt:"
+continue = "Weiter mit START"
+
+[map.station]
+salzburg = "Salzburg"
+st_gilgen = "St. Gilgen"
+brunnwinkl = "Brunnwinkl"
+falkenstein = "Falkenstein"
+st_wolfgang = "St. Wolfgang"
+wolfgangsee = "Wolfgangsee"
+strobl = "Strobl"
+bad_ischl = "Bad Ischl"
+# Needs the `é` glyph appended to the font (D-012 append rule, D-043).
+cafe_zauner = "Café Zauner"
 
 [stage]
 clear = "Etappe geschafft!"
@@ -47,3 +65,35 @@ sign_jedermann = "Jedermann\nausverkauft"
 sign_sphaera = "Keine\nMozartkugel"
 sign_festungsbahn = "Festungsbahn\nseit 1892"
 sign_ortsende = "Salzburg"
+
+[stage.st_gilgen]
+title = "Etappe 2: St. Gilgen"
+tagline = "Mozartdorf ohne Mozart."
+next = "Weiter nach Brunnwinkl."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\n4x stündlich"
+sign_ischlerbahn = "Ischlerbahn\nbis 1957"
+sign_seilbahn = "Seilbahn\nseit 1957"
+sign_dachfahrt = "Dachfahrt\nverboten"
+sign_mozartplatz = "Hier wohnte\nnie Mozart"
+sign_checkpoint = "Bus 150\nalle 4 voll"
+sign_mozarthaus = "Mozarts Mama\ngeboren 1720"
+sign_nannerl = "Hier wohnte\nNannerl"
+sign_platzkonzert = "Platzkonzert\nZugabe droht"
+sign_schiff = "Linienschiff\nauch voll"
+sign_ortsende = "St. Gilgen"
+
+[stage.brunnwinkl]
+title = "Etappe 3: Brunnwinkl"
+tagline = "Fünf Häuser, null Ruhe."
+next = "Weiter zum Falkenstein."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\nfährt drüben"
+sign_gehweg = "Gehweg\nnicht Radweg"
+sign_haeuser = "Fünf Häuser\nam See"
+sign_muehle = "Frischluft\nseit 1882"
+sign_tanzschule = "Tanzschule\nBrunnwinkl"
+sign_checkpoint = "Bus 150\nwinkt rüber"
+sign_futter = "Futter nur\nauf Blau"
+sign_nobelpreis = "Nobelpreis\nfür alle"
+sign_ortsende = "Brunnwinkl"

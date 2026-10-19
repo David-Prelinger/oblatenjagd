@@ -1,0 +1,165 @@
+# Stage 3: Brunnwinkl (docs/game-design.md "Stage 3: Brunnwinkl").
+# 240 columns x 17 rows, Stage 1's vertical layout: the path's top is row 15
+# (rows 15-16 ground, jetty or water), 3 empty rows on top for the goal
+# camera, the goal meadow one row lower (row 16). Exactly five houses: the
+# Kornmuehle (house 1) and houses 2-5; the bee houses are sheds.
+#   1 Uferweg          0-41   forest path, no pits. Bus sign 5 (Bus 150 /
+#                             fährt drüben), Oblaten 6-10, ?-box 12 and M-box
+#                             16 (row 11), rock wall 19 (2 high) turns the
+#                             Mozartkugel; Gehweg sign 22 (clear of both rocks);
+#                             boulder 25-26 (2x2); E-Biker #1 parked at 34
+#                             facing left: standing on the boulder triggers it
+#                             and it crashes into the boulder („Hoppala!"), or
+#                             stomp it from there (Oblaten arc 29-31).
+#                             „Fünf Häuser" sign 40 left of Nordic-Walker #1
+#                             (41), so the walker is drawn in front of it.
+#   2 Kornmuehle      42-89   mill race 43-44 (2 wide, first water) with the
+#                             muehlrad prop on the right bank (46); hive 49-50
+#                             (1 high) under swarm #1 (col 50, row 9, run right,
+#                             len 2: its lowest point is 19 px above a standing
+#                             Zuckerschock even on the hive); its run points at
+#                             bonus 1 on the mill's ridge at the run's height
+#                             (5 Oblaten + futterschaelchen at 59). Mill 55-63:
+#                             facade_village walls under a stepped roof_shingle
+#                             roof, heights 2/3/5x5/3/2 (steps <= 2), ridge
+#                             57-61 five tiles above the path. Frischluft sign
+#                             66, tourist 72, B?B 79-81 (row 11), Oblaten.
+#   3 Bienenhaus      90-119  Tanzschule sign 92; two bienenhaus sheds (back
+#                             layer) 94-101 and 109-116 under roof_shingle
+#                             roofs (row 9, 6 above the path, Oblaten on top);
+#                             swarm #2 at 99 (up, len 4, reaches cols 97-101)
+#                             and swarm #3 at 112 (up, len 3, cols 111-114,
+#                             phase half a period) rise off the path towards
+#                             the roofs: wait for the opening, then walk or
+#                             run under. Free path columns 102 and 109-110 are
+#                             safe spots on both sides of the hives: 103 (1),
+#                             104-107 (3, Nordic-Walker #2 on top, open sky so
+#                             it can be stomped), 108 (1); the 3-high stack is
+#                             also the way up to both roofs.
+#   4 Fuenf Haeuser  120-199  checkpoint 122, Bus 150 / winkt rueber sign 125
+#                             (D-039), M-box 130 (row 11); paved path 132-150
+#                             with the Selfie-Tourist at 140 (open ground; in
+#                             the garden 157-160 it stood where a walk off
+#                             house 2's eave lands) and E-Biker #2 at 146
+#                             (jump over or stomp);
+#                             house 2 151-156 (heights 2/4/4/4/4/2: the steps
+#                             are 2 below the ridge, so a waiting Resi is
+#                             below the walker and a jump comes down on it;
+#                             walker #3), garden 157-160 (empty), house
+#                             3 161-166, garden 167-175 with swarm #4 at 170
+#                             (up-right, len 4, cols 169-174) whose run points
+#                             at the Zaunerstollen box over house 4 (177, row
+#                             7, 3 tiles above the ridge) with the
+#                             futterschaelchen on the step beside it (176);
+#                             house 4 176-182 (the biggest, ridge 177-181)
+#                             with the Futter sign standing on the ridge and a
+#                             chimney stack (tile chimney) on the eave step
+#                             (182, rows 10-11) that turns the Zaunerstollen
+#                             back; garden
+#                             183-189 with the Nobelpreis board 185 and
+#                             E-Biker #3 at 188, which triggers while Resi is
+#                             on house 4's ridge and crashes into its wall;
+#                             house 5 190-195 (2/4/4/4/4/2, walker #4).
+#   5 Badesteg       200-239  jetty 201-226 over the lake: gaps 203-204 and
+#                             215-217 (one column right of the first draft:
+#                             the solver's window at 214-216 was 5); swarm #5
+#                             at 209 (up, len 3, cols 207-211, clear of the
+#                             landing 205-206 and the take-off 212-214)
+#                             pointing at 3 Oblaten above; Taube high above
+#                             the 3-gap (row 7: above the walking jump arcs,
+#                             its wave under the HUD labels, D-038; spawn
+#                             224, meets Resi over ~213-217); 3 jetty tiles
+#                             218-220, then the boathouse prop (back layer,
+#                             cell 223 + dx 8 = cols 221-226; a boathouse,
+#                             not a sixth house) on the jetty deck (jetty
+#                             row 15, jetty_post row 16 under it) with
+#                             invisible collision in its drawn profile
+#                             (D-038): woodpile 221 (2 high), stair tower 222
+#                             (4), roof ridge 223-226 (5; the prop's own cell
+#                             223 row 14 is an enclosed air pocket), roof 6
+#                             above the meadow; Maibaum 230 on the
+#                             meadow, Ortsende 233, level end 239 (the camera
+#                             clamps: the crown sits in the HUD gap as in
+#                             Stage 1). Walking off the roof scores 100, a
+#                             held running jump off it the Wurstkranz.
+# Replays: tests/replays/brunnwinkl_*.replay.
+
+[meta]
+id = "brunnwinkl"
+title_key = "stage.brunnwinkl.title"
+time_limit = 200
+min_jump_window = 6
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_schafberg", factor = 3 },
+  { sprite = "bg_wolfgangsee", factor = 8, y = 40 },
+  { sprite = "bg_forest", factor = 13 },
+]
+
+[legend]
+"#" = "forest_path"
+"," = "meadow"
+"=" = "ground"
+"R" = "rock"
+"K" = "stone"
+"~" = "wolfgangsee_water"
+"w" = "wolfgangsee_water_deep"
+"j" = "jetty"
+"J" = "jetty_post"
+"H" = "facade_village"
+"^" = "roof_shingle"
+"u" = "beute"
+"B" = "brick"
+"Q" = "chimney"
+"I" = "invisible"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
+"o" = { entity = "oblate" }
+"t" = { entity = "selfie_tourist" }
+"n" = { entity = "nordic_walker" }
+"e" = { entity = "e_biker" }
+"p" = { entity = "taube" }
+"s" = { entity = "bienenschwarm", dir = 0, len = 2 }
+"S" = { entity = "bienenschwarm", dir = 2, len = 4, dy = -8 }
+"T" = { entity = "bienenschwarm", dir = 2, len = 3, phase = 112, dy = -8 }
+"D" = { entity = "bienenschwarm", dir = 1, len = 4, dy = -8 }
+"V" = { entity = "bienenschwarm", dir = 2, len = 3, dy = -8 }
+"C" = { entity = "checkpoint" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal_maibaum" }
+"W" = { entity = "prop", sprite = "muehlrad", dx = 8 }
+"X" = { entity = "prop", sprite = "bienenhaus", dx = 8, layer = "back" }
+"Y" = { entity = "prop", sprite = "bienenhaus", dx = -8, layer = "back" }
+"f" = { entity = "prop", sprite = "futterschaelchen" }
+"L" = { entity = "prop", sprite = "boathouse", dx = 8, layer = "back" }
+"b" = { entity = "sign", text = "stage.brunnwinkl.sign_bus", style = "bus" }
+"y" = { entity = "sign", text = "stage.brunnwinkl.sign_gehweg" }
+"h" = { entity = "sign", text = "stage.brunnwinkl.sign_haeuser" }
+"m" = { entity = "sign", text = "stage.brunnwinkl.sign_muehle" }
+"z" = { entity = "sign", text = "stage.brunnwinkl.sign_tanzschule" }
+"c" = { entity = "sign", text = "stage.brunnwinkl.sign_checkpoint", style = "bus" }
+"a" = { entity = "sign", text = "stage.brunnwinkl.sign_futter" }
+"x" = { entity = "sign", text = "stage.brunnwinkl.sign_nobelpreis" }
+"O" = { entity = "sign", text = "stage.brunnwinkl.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+................................................................................................................................................................................................................................................
+.................................................................................................................................................................................Z..............................................p...............
+...........................................................o...................................oooooo.........oooooo............................................................................................................................
+..................................................s......oofoo................................^^^^^^^^.......^^^^^^^^.........................................oo................................................ooo.............................
+.........................................................^^^^^............................................................................................n..o..o..................a..Q..........n.....................o.......IIII.............
+............?...M............ooo.........................^^^^^.................B?B...o...................n........................M.....................^^^^......^^^^..........f^^^^^Q........^^^^...................o.o.....IIIII.............
+...........................................oo...........^HHHHH^.....................o.o.................uuuu............................................HHHH.....^^HH^..........^HHHHH^........HHHH........oo.................IIIII.............
+...................R.....RR............................^HHHHHHH^........................................uuuu...........................................^HHHH^....HHHHH^.........HHHHHHH.......^HHHH^.........................IIIIII.............
+..P..booooo........R..y..RR.......e.....hn....W..uu....HHHHHHHHH..m.....t..ooo..............z....X.S...uuuuuu...TY........C..c..........ooo.t.....e....HHHHHH....HHHHHH...D.....HHHHHHH..x..e.HHHHHH.ooo.........V...........IILIII.............
+###########################################~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,jj~~jjjjjjjjjj~~~jjjjjjjjj...G..O......
+###########################################ww,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,JJwwJJJJJJJJJJwwwJJJJJJJJJ,,,,,,,,,,,,,
+'''

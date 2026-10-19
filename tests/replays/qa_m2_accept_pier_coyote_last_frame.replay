@@ -1,0 +1,63 @@
+# QA (M2 acceptance): water coyote (D-050) at St. Gilgen's pier, run speed.
+# Steps: the St. Gilgen solver route to 1473 (on the street before the
+# pier), keep running onto jetty deck 236-238 and off its east edge over
+# the Wolfgangsee gap 239-240: first airborne step 1529; JUMP in 1535 (the
+# 6th airborne step, last coyote frame) still jumps out, she lands on deck
+# 241-243 (1595). Pair: qa_m2_accept_pier_coyote_one_late. All twelve
+# water edges of both stages (each direction, walk and run) were scanned
+# with the QA probe: the jump works in airborne steps 1-6, death in step 6
+# without it.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=3856
+---
+# --- the first 1473 frames of st_gilgen_solver.replay ---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 26
+# --- end of the first 1473 frames ---
+RB 55       # run along the street onto jetty deck 236-238
+RB 6        # 1529: off its east edge, first airborne step (gap 239-240)
+RBJ 6       # 1535: JUMP on the 6th airborne step (last coyote frame,
+            # the step she would die in): she leaves the water
+LJ 40       # brake in the air, land on deck 241-243 (1595)
+- 40

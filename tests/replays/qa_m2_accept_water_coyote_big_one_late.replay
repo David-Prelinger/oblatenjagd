@@ -1,0 +1,35 @@
+# QA (M2 acceptance): pair of qa_m2_accept_water_coyote_big_both_ways.
+# Walking back left into the Brunnwinkl mill race as Zuckerschock, JUMP one
+# step after the coyote window (step 1046, 7th airborne step) is too late:
+# she has sunk 8 px and dies in step 1045 (D-050), big or not.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = dies_at frames=1045..1045 deaths=1 lives=2 state=dying
+---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26        # on the edge of the path at step 912
+R 1         # step 913: first airborne step
+R 5         # 914-918
+RJ 20       # step 919: last coyote frame
+R 40
+- 10
+L 57        # back left; first airborne step 1039, dies in 1045
+LJ 10       # 1046: too late

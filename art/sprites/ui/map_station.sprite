@@ -1,0 +1,49 @@
+# Route-map station marker (D-043), 8x8, origin = the station dot.
+# todo: a grey stone dot (m, i glint, d shade) with a k outline.
+# done: a little red-white-red pennant (r/w, the Austrian colours) on a d
+#       pole - the station is "conquered". UI may use r (art-style 8).
+# next: blinks (2 frames x 15 ticks): a Y ring around the grey dot, then
+#       the plain dot.
+sprite = map_station
+size   = 8x8
+origin = 4,4
+anim   = todo frames=1
+anim   = done frames=1
+anim   = next frames=2 ticks=15 loop
+---
+frame todo 0
+........
+..kkkk..
+.kimmmk.
+.kmmmmk.
+.kmmmdk.
+.kmmddk.
+..kkkk..
+........
+frame done 0
+.kk.....
+.kdkkkkk
+.kdrrrrk
+.kdwwwwk
+.kdrrrrk
+.kdkkkkk
+.kdk....
+.kkk....
+frame next 0
+..kkkk..
+.kYYYYk.
+kYkkkkYk
+kYkimkYk
+kYkmdkYk
+kYkkkkYk
+.kYYYYk.
+..kkkk..
+frame next 1
+........
+..kkkk..
+.kimmmk.
+.kmmmmk.
+.kmmmdk.
+.kmmddk.
+..kkkk..
+........

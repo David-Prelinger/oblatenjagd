@@ -1,0 +1,7 @@
+# Written by `cargo xtask solve route_b --write`; re-create it instead of editing.
+level  = route_b
+seed   = 1
+source = solver
+expect = complete frames=149..149 deaths=0
+---
+RB 149

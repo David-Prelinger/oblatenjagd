@@ -1,0 +1,19 @@
+# Uferweg: Resi waits on the boulder until E-Biker #1 rides at her, then
+# jumps off and lands on it: stomp, 200 (chain start 200, D-046), plus
+# the 3 Oblaten of the arc over its path.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=Stomped score=1800 oblaten=8 deaths=0 no_event=Hurt state=playing
+# review shots (enable with goldens after an art-director verdict): 345:stomp
+---
+R 165
+RJ 24
+R 30
+- 20
+RJ 20
+L 4
+- 40
+RJ 20
+R 30
+- 40

@@ -1,0 +1,65 @@
+# Stage 2 goal, walk-off (D-035/D-038 as in Stage 1): the solver's route to
+# the kiosk steps (frame 1646, feet 192), a hop onto the Schiffskassa roof
+# (the launch, 6 tiles above the meadow; its three Oblaten, +600), then
+# just RIGHT: off the roof's edge she lands on the meadow before the pole
+# column and touches the Maibaum at ground level (frame 1820): 100 points
+# (8500 + 600 + 100). Ends during the slide, before the time-bonus tally.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = complete frames=1820..1820 deaths=0 state=stage_clear score=9200
+---
+# solver route (frames 0-1646)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 12
+RB 1
+L 8         # brake on the steps
+- 10
+RJ 14       # onto the kiosk roof
+- 30
+R 140       # walk off the edge into the pole

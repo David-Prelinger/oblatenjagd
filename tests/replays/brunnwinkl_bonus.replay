@@ -1,0 +1,51 @@
+# Both bee bonuses: the solver route up to frame 1128 (on the way it takes
+# bonus 1 on the Kornmuehle's ridge that swarm #1's run points at: three of
+# its five Oblaten, frames 361-374), then, landing on house 4's ridge, Resi
+# brakes, walks back under the Oblatenkiste that swarm #4's diagonal run
+# points at (next to the blue futterschaelchen) and bumps it (1208); the
+# Zaunerstollen rolls right into the chimney and back to her: +1 life
+# (1333). Re-cut on the re-solved route (M2 level pass: chimney tile,
+# boathouse, moved garden tourist and 3-gap).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=ExtraLife lives=4 deaths=0 oblaten>=13 state=playing
+# review shots (enable with goldens after an art-director verdict): 370:bonus1 1270:zaunerstollen
+---
+# --- the first 1128 frames of brunnwinkl_solver.replay ---
+RB 104
+RBJ 36
+RB 27
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 5
+# --- end of the first 1128 frames of brunnwinkl_solver.replay ---
+- 4         # land on house 4's ridge
+L 28        # brake and walk back under the box
+- 40
+J 20        # bump it (1208): the Zaunerstollen
+- 150       # it rolls into the chimney and back: +1 life (1333)

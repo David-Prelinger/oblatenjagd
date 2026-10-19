@@ -1,0 +1,62 @@
+# Stage 2 (D-046, game-design "New mechanics": stomp the walker on the
+# jetty segment): the solver's route to the pier; from the 3-tile segment
+# 241-243 a running jump over the 3-tile gap; Nordic-Walker #6 paces the
+# 6-tile segment 247-252 and never falls in; the jump comes down on it
+# (stomp, 100: score 8200 -> 8300 at frame 1604); the held bounce carries
+# her over the last gap (an Oblate of its arc, +200) onto the kiosk steps
+# (feet 192).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died no_event=Hurt state=playing score=8500 player_x>=4140 player_y>=170 player_y<=170
+---
+# solver route (frames 0-1646)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 12
+RB 1
+- 20

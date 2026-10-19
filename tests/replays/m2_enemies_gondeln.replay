@@ -1,0 +1,36 @@
+# The whole level by hand: waits on the station platform for Gondel A,
+# hops on and rides it (no input) up to the knoll, waits for Gondel B,
+# rides it across the death pit to the ledge and walks to the goal.
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1753..1753 deaths=0
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+- 16
+L 10
+- 20
+R 6
+- 160
+R 160
+- 224
+R 150
+R 30
+RJ 14
+R 6
+- 240
+RJ 6
+- 120
+R 70
+- 46
+RJ 8
+R 16
+- 126
+R 200

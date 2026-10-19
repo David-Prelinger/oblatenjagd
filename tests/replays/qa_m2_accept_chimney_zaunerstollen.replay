@@ -1,0 +1,51 @@
+# QA (M2 acceptance): Brunnwinkl house 4's chimney (tile chimney, col 182
+# rows 10-11 on the eave step, M2 level pass) turns the Zaunerstollen back
+# onto the ridge, as the level header promises.
+# Steps: the Brunnwinkl solver route to 1126 (she arrives over house 4),
+# land on the ridge, stop under the Zaunerstollen box (177, row 7) and bump
+# it straight up. The Zaunerstollen rolls right along the ridge, reverses
+# at the chimney's left face (x 2912) and rolls back into the waiting
+# Resi: ExtraLife at 1309, 4 lives, no death.
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = event=ExtraLife lives=4 deaths=0 no_event=Died state=playing
+---
+# --- the first 1126 frames of brunnwinkl_solver.replay ---
+RB 104
+RBJ 36
+RB 27
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 3
+# --- end of the first 1126 frames ---
+R 7         # land on house 4's ridge (1133) without the solver's next jump
+L 26        # brake, under the Zaunerstollen box (col 177)
+- 20
+J 20        # bump it (BlockBumped 1187)
+- 135       # it rises, rolls right along the ridge, turns at the chimney
+            # (col 182, ~1268) and rolls back into her: ExtraLife 1309

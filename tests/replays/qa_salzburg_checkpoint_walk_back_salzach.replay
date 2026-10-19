@@ -2,12 +2,12 @@
 # route dies after the Hanuschplatz checkpoint and respawns there (frame 998,
 # x 2050, camera 1912: the 4-tile Salzach gap 118-121 is at the screen's left
 # edge). Walking left off the Makartsteg end drops into the Salzach: a clean
-# death (frame 1149), she respawns at the checkpoint again with the level reset
+# death (frame 1155, D-050 sinking), she respawns at the checkpoint again with the level reset
 # (no softlock, the checkpoint is not lost).
 level  = salzburg
 source = handwritten
 expect = deaths=2 lives=1 state=playing oblaten>=22
-expect = dies_at frames=1149..1149
+expect = dies_at frames=1155..1155
 expect = player_x>=2040 event=Respawned
 ---
 RB 64

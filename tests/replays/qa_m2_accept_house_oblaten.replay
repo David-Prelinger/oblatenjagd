@@ -1,0 +1,55 @@
+# QA (M2 acceptance): the walk-through houses of St. Gilgen (M2 level
+# pass): roof_bg gables never collide, and the house Oblaten that hang in
+# front of the wall just above each balcony (D-049 "O" = oblate on
+# wall_village_bg) are collected by walking the balconies.
+# Steps: the St. Gilgen solver route to frame 1110 (it stomps the B1 and
+# B2 walkers and comes down on B2's east end), then walk B2 west and back
+# (all four H2 Oblaten, row 7), drop onto B3 (all three H3 Oblaten, row
+# 10), jump up onto B4 (all four H4 Oblaten, row 8): 11 house Oblaten,
+# 28 -> 39, ending on B4 (feet on row 9).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing oblaten=39 player_x>=3064 player_y<=122
+---
+# --- the first 1110 frames of st_gilgen_solver.replay ---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 21
+# --- end of the first 1110 frames of st_gilgen_solver.replay ---
+RB 4        # land on B2's east end (1114)
+L 80        # walk B2 west under H2's roof_bg gable: 3 more H2 Oblaten (4 with 1111)
+- 10
+R 100       # back east, drop off B2 onto B3 (1307): H3 Oblaten 1306, 1327
+R 50        # along B3: H3 Oblate 1348
+RJ 20       # 1355: jump from B3's east end up onto B4 (lands 1391)
+R 80        # walk B4 under H4's gable: H4 Oblaten 1402-1434
+- 30

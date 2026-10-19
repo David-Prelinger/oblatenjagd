@@ -1,0 +1,42 @@
+# QA (M2 acceptance): water coyote (D-050) as Zuckerschock, in both
+# directions at the Brunnwinkl mill race (cols 43-44).
+# Steps: qa_m2_coyote_over_water's opening (Mozartkugel -> big, walker
+# stomp) up to the path edge at step 912. Step 913 is the first airborne
+# step; JUMP in step 919 (6th airborne step = last coyote frame; without
+# it she dies in that very step) clears the race, she lands on the right
+# bank (~963) and stops at the hive. Then she walks back left into the
+# race: first airborne step 1039, JUMP in 1045 (again the last coyote
+# frame, the step she would die in) carries her back onto the forest path.
+# Pair: qa_m2_accept_water_coyote_big_one_late (JUMP in 1046 dies at 1045).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=634
+---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26        # on the edge of the path at step 912
+R 1         # step 913: first airborne step
+R 5         # 914-918
+RJ 20       # step 919: last coyote frame
+R 40        # land, walk into the hive (x 772)
+- 10
+L 56        # back left; first airborne step 1039
+LJ 20       # step 1045: last coyote frame
+L 30

@@ -1,8 +1,9 @@
-//! Enemy behaviour (`docs/game-design.md` → "Entities and behaviour"):
-//! per-kind update functions for [`EntityKind::Enemy`], the thrown
-//! Mozartkugel ([`EntityKind::Thrown`]) and defeated enemies
-//! ([`EntityKind::Defeated`]), plus the rules that need the whole entity
-//! list (turning at other enemies, knocking enemies off a bumped block).
+//! Enemy behaviour (`docs/game-design.md` → "Entities and behaviour",
+//! Stage 1–3): per-kind update functions for [`EntityKind::Enemy`], the
+//! projectiles (thrown Mozartkugel [`EntityKind::Thrown`], Blasmusik note
+//! [`EntityKind::Note`]) and defeated enemies ([`EntityKind::Defeated`]),
+//! plus the rules that need the whole entity list (turning at other
+//! enemies, knocking enemies off a bumped block).
 //!
 //! Everything runs on frame counters from activation (`Entity::timer`,
 //! `Entity::count`), never on the RNG (D-017). Numbers are in
@@ -12,9 +13,10 @@
 //! Per-kind `state` values are the constants in [`state`]; the renderer
 //! reads them through [`Entity::pose`].
 
-use crate::entity::{EnemyKind, Entity, EntityKind, UpdateCtx};
+use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
-use crate::physics::{TILE, TileMap, YHit};
+use crate::level::{TILE_PX, TileKind};
+use crate::physics::{TILE, TileMap, YHit, tile_of};
 use crate::tuning::Tuning;
 
 /// `Entity::state` values per enemy kind.
@@ -44,6 +46,30 @@ pub mod state {
     pub const TELEGRAPH: u8 = 1;
     /// Fiaker: charging left.
     pub const CHARGE: u8 = 2;
+
+    /// Nordic-Walker: walking (its only state).
+    pub const STRIDE: u8 = 0;
+
+    /// Blasmusiker: standing (also between notes).
+    pub const STAND: u8 = 0;
+    /// Blasmusiker: inhaling (the telegraph, first frames of each bar).
+    pub const INHALE: u8 = 1;
+    /// Blasmusiker: just blew a note.
+    pub const BLOW: u8 = 2;
+
+    /// E-Biker: parked.
+    pub const PARK: u8 = 0;
+    /// E-Biker: telegraphing (bell, headlight).
+    pub const RING: u8 = 1;
+    /// E-Biker: riding left.
+    pub const RIDE: u8 = 2;
+    /// E-Biker: crashed into a wall (harmless, removed after the pose).
+    pub const CRASH: u8 = 3;
+
+    /// Bienenschwarm: on its straight waggle run.
+    pub const RUN: u8 = 0;
+    /// Bienenschwarm: on a half-circle return to its anchor.
+    pub const RETURN: u8 = 1;
 
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
@@ -83,6 +109,18 @@ pub enum Pose {
     Charge,
     /// Thrown Mozartkugel `spin`.
     Spin,
+    /// Blasmusiker `inhale` (the telegraph).
+    Inhale,
+    /// Blasmusiker `blow`.
+    Blow,
+    /// E-Biker `ride`.
+    Ride,
+    /// E-Biker `crash`.
+    Crash,
+    /// Bienenschwarm `buzz` (returning to its anchor).
+    Buzz,
+    /// Bienenschwarm `waggle` (on its waggle run, shaking).
+    Waggle,
 }
 
 impl Entity {
@@ -115,6 +153,23 @@ impl Entity {
                 state::CHARGE => Pose::Charge,
                 _ => Pose::Idle,
             },
+            EntityKind::Enemy(EnemyKind::NordicWalker) => Pose::Walk,
+            EntityKind::Enemy(EnemyKind::Blasmusiker) => match self.state {
+                state::INHALE => Pose::Inhale,
+                state::BLOW => Pose::Blow,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::EBiker) => match self.state {
+                state::RING => Pose::Telegraph,
+                state::RIDE => Pose::Ride,
+                state::CRASH => Pose::Crash,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Bienenschwarm) => match self.state {
+                state::RETURN => Pose::Buzz,
+                _ => Pose::Waggle,
+            },
+            EntityKind::Note => Pose::Fly,
             EntityKind::Defeated(EnemyKind::Taube | EnemyKind::TaubeSitting) => Pose::Tumble,
             EntityKind::Defeated(_) => Pose::Squished,
             EntityKind::Thrown => Pose::Spin,
@@ -125,6 +180,30 @@ impl Entity {
     /// True if it is drawn facing left (`dir < 0`).
     pub fn facing_left(&self) -> bool {
         self.dir < 0
+    }
+
+    /// Renderer only: the Bienenschwarm's sprite offset in whole px. On
+    /// its waggle run it shakes `swarm_shake` px to either side of the run
+    /// (across it, switching every `swarm_shake_frames` frames); the
+    /// hitbox stays on the straight line. (0, 0) otherwise.
+    pub fn shake_px(&self, t: &Tuning) -> (i32, i32) {
+        let e = &t.enemies;
+        if self.kind != EntityKind::Enemy(EnemyKind::Bienenschwarm) || self.state != state::RUN {
+            return (0, 0);
+        }
+        let side = if (self.count / e.swarm_shake_frames.max(1)).is_multiple_of(2) {
+            e.swarm_shake
+        } else {
+            -e.swarm_shake
+        };
+        let (nx, ny) = left_normal(self.dir as u8);
+        (nx.signum() * side, ny.signum() * side)
+    }
+
+    /// False for an enemy that can't touch the player right now (a
+    /// crashed E-Biker); true for every other enemy.
+    pub fn harmful(&self) -> bool {
+        !(self.kind == EntityKind::Enemy(EnemyKind::EBiker) && self.state == state::CRASH)
     }
 }
 
@@ -174,7 +253,261 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_fiaker(e, ctx);
             None
         }
+        EnemyKind::NordicWalker => {
+            update_walker(e, ctx);
+            None
+        }
+        EnemyKind::Blasmusiker => update_blasmusiker(e, ctx),
+        EnemyKind::EBiker => update_e_biker(e, ctx),
+        EnemyKind::Bienenschwarm => {
+            let len = e
+                .spawn
+                .and_then(|i| ctx.level.entities.get(usize::from(i)))
+                .map_or(crate::level::DEFAULT_SWARM_LEN, |s| s.len);
+            e.count = (e.count + 1) % swarm_period(len, ctx.tuning);
+            let (x, y) = (e.x, e.y);
+            place_swarm(e, len, ctx.tuning);
+            e.vx = e.x - x;
+            e.vy = e.y - y;
+            None
+        }
     }
+}
+
+/// True if the cell under feet height `feet` at `x` is a floor (solid or
+/// one-way) and `feet` is exactly on its top.
+fn floor_at(map: &TileMap, x: Fx, feet: Fx) -> bool {
+    feet.raw().rem_euclid(TILE.raw()) == 0
+        && matches!(
+            map.kind_at(tile_of(x), tile_of(feet)),
+            TileKind::Solid | TileKind::OneWay
+        )
+}
+
+/// Walks like a Selfie-Tourist without selfies (turning at walls), and
+/// turns at ledges: while it stands on a floor, the cell under its leading
+/// foot one px ahead must be a floor too, else it turns (and walks the
+/// other way in the same frame). It only falls when the floor under it
+/// disappears.
+fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
+    let (map, t) = (ctx.map, ctx.tuning);
+    // At activation it starts towards the player (game-design.md).
+    let cx = e.x + e.w.div_int(2);
+    if e.timer == 1 && ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    let feet = e.y + e.h;
+    let last = e.right() - Fx(1);
+    let standing = floor_at(map, e.x, feet) || floor_at(map, last, feet);
+    let ahead = if e.dir < 0 {
+        e.x - Fx::ONE
+    } else {
+        last + Fx::ONE
+    };
+    if e.dir != 0 && standing && !floor_at(map, ahead, feet) {
+        e.dir = -e.dir;
+    }
+    e.state = state::STRIDE;
+    e.vx = t.enemies.walker_speed.mul_int(i32::from(e.dir));
+    e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
+    let mut b = e.hitbox();
+    if map.move_x(&mut b, e.vx) {
+        e.dir = -e.dir;
+    }
+    if map.move_y(&mut b, e.vy, false) != YHit::None {
+        e.vy = Fx::ZERO;
+    }
+    e.x = b.x;
+    e.y = b.y;
+}
+
+/// Faces the player. While the player is within `blasmusiker_range`, the
+/// bar counter (`count`, frame of the bar) runs; outside it pauses and he
+/// keeps his pose. Each bar: inhale for the first `blasmusiker_inhale`
+/// frames, a note at each of `blasmusiker_notes` (blow pose for
+/// `blasmusiker_blow_pose` frames), idle until the bar ends. The counter
+/// starts at 0, so the first note train is preceded by an inhale.
+fn update_blasmusiker(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let et = &ctx.tuning.enemies;
+    let cx = e.x + e.w.div_int(2);
+    if ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    if player_distance_px(e, ctx) > et.blasmusiker_range {
+        return None;
+    }
+    let f = e.count;
+    e.count = (e.count + 1) % et.blasmusiker_bar;
+    let last_note = et.blasmusiker_notes.iter().rev().find(|&&n| n <= f);
+    e.state = if f < et.blasmusiker_inhale {
+        state::INHALE
+    } else if last_note.is_some_and(|&n| f < n + et.blasmusiker_blow_pose) {
+        state::BLOW
+    } else {
+        state::STAND
+    };
+    et.blasmusiker_notes
+        .contains(&f)
+        .then(|| note(e, ctx.tuning))
+}
+
+/// A note from the tuba bell: its centre `note_height` px above the
+/// musician's feet and `note_ahead` px in front of his centre, flying
+/// towards his facing side.
+fn note(e: &Entity, t: &Tuning) -> Entity {
+    let et = &t.enemies;
+    let dir = i32::from(e.dir);
+    let (cx, feet) = e.feet();
+    let [w, h] = et.note_hitbox;
+    let mut n = Entity::at_feet(
+        EntityKind::Note,
+        cx + Fx::from_px(et.note_ahead * dir),
+        feet - Fx::from_px(et.note_height) + Fx::from_px(h).div_int(2),
+        [w, h],
+    );
+    n.vx = et.note_speed.mul_int(dir);
+    n.dir = e.dir;
+    n
+}
+
+/// A note flies straight (ignoring gravity, one-way tiles and enemies) and
+/// vanishes once it has flown `note_range` px from its start, touches a
+/// solid tile or leaves the level sideways (left and right of the level
+/// count as solid).
+pub(crate) fn update_note(e: &mut Entity, map: &TileMap, t: &Tuning) {
+    e.x += e.vx;
+    let flown = (e.x - e.base_x).abs();
+    if flown >= Fx::from_px(t.enemies.note_range) || map.touches(&e.hitbox(), TileKind::Solid) {
+        e.removed = true;
+    }
+}
+
+/// Parked until the player is within `e_biker_trigger`, then telegraphs
+/// for `e_biker_telegraph` frames (`count` = frame of the telegraph), then
+/// rides left with the player's gravity and max fall speed (off ledges,
+/// into water: gone; through other enemies). A wall stops it: it crashes
+/// (harmless, `count` = frame of the crash, removed after
+/// `e_biker_crash_frames`) and returns the „Hoppala!" popup. Removed once
+/// its right edge is left of the screen. No points except for a stomp.
+fn update_e_biker(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let et = &ctx.tuning.enemies;
+    match e.state {
+        state::PARK => {
+            if player_distance_px(e, ctx) <= et.e_biker_trigger {
+                e.state = state::RING;
+                e.count = 1;
+            }
+        }
+        state::RING => {
+            e.count += 1;
+            if e.count > et.e_biker_telegraph {
+                e.state = state::RIDE;
+                e.count = 0;
+            }
+        }
+        state::CRASH => {
+            e.count += 1;
+            if e.count >= et.e_biker_crash_frames {
+                e.removed = true;
+            }
+            return None;
+        }
+        _ => {}
+    }
+    if e.state != state::RIDE {
+        return None;
+    }
+    let t = ctx.tuning;
+    e.vx = -et.e_biker_speed;
+    e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
+    let mut b = e.hitbox();
+    let wall = ctx.map.move_x(&mut b, e.vx);
+    if ctx.map.move_y(&mut b, e.vy, false) != YHit::None {
+        e.vy = Fx::ZERO;
+    }
+    e.x = b.x;
+    e.y = b.y;
+    if wall {
+        e.state = state::CRASH;
+        e.count = 0;
+        e.vx = Fx::ZERO;
+        e.vy = Fx::ZERO;
+        let (cx, _) = e.feet();
+        return Some(popup(Popup::Hoppala, cx, e.y - TILE.div_int(2)));
+    }
+    if ctx.map.touches_lethal(&b) || e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+    None
+}
+
+/// Run direction (0..=7, × 45°, 0 = right, 2 = up) as a unit vector in
+/// 1/256 px (diagonals 181/256 ≈ 1/√2), screen coordinates (y down).
+const SWARM_DIRS: [(i32, i32); 8] = [
+    (256, 0),
+    (181, -181),
+    (0, -256),
+    (-181, -181),
+    (-256, 0),
+    (-181, 181),
+    (0, 256),
+    (181, 181),
+];
+
+/// The left side of a run in `dir` (the run rotated 90° counter-clockwise
+/// on screen), in 1/256 px.
+fn left_normal(dir: u8) -> (i32, i32) {
+    let (ux, uy) = SWARM_DIRS[usize::from(dir & 7)];
+    (uy, -ux)
+}
+
+/// Frames of a swarm's figure-eight: 2 × (run + return), the run being
+/// `len` tiles at 1 px per frame.
+pub fn swarm_period(len: u8, t: &Tuning) -> u16 {
+    2 * (u16::from(len) * TILE_PX as u16 + t.enemies.swarm_return_frames)
+}
+
+/// Where a swarm is `k` frames into its figure-eight: the offset of its
+/// hitbox centre from the anchor A (subpixels) and whether it is on a
+/// waggle run. The cycle: run from A straight along `dir` for L = `len`
+/// tiles at 1 px/frame (A → B), return to A on the half circle over AB on
+/// the run's left side in `swarm_return_frames` frames, run A → B again,
+/// return on the right side. Integer sine (D-026), no floats.
+pub fn swarm_offset(dir: u8, len: u8, k: u16, t: &Tuning) -> (Fx, Fx, bool) {
+    let (ux, uy) = SWARM_DIRS[usize::from(dir & 7)];
+    let (nx, ny) = left_normal(dir);
+    let run = i32::from(len) * TILE_PX;
+    let back = i32::from(t.enemies.swarm_return_frames.max(1));
+    let k = i32::from(k) % (2 * (run + back));
+    let (j, side) = if k < run + back {
+        (k, 1)
+    } else {
+        (k - run - back, -1)
+    };
+    if j < run {
+        return (Fx(ux * j), Fx(uy * j), true);
+    }
+    // Half circle from B (angle 0) back to A (angle π) around the middle
+    // of AB: sin and cos of π·j/back via the quarter-period trick.
+    let j = j - run;
+    let r = Fx::from_px(run).div_int(2);
+    let p4 = (4 * back) as u16;
+    let cos = sine_offset((2 * j + back) as u32, p4, r);
+    let sin = sine_offset((2 * j) as u32, p4, r);
+    let along = i64::from((r + cos).raw());
+    let across = i64::from(sin.raw()) * i64::from(side);
+    let ox = (i64::from(ux) * along + i64::from(nx) * across).div_euclid(256);
+    let oy = (i64::from(uy) * along + i64::from(ny) * across).div_euclid(256);
+    (Fx(ox as i32), Fx(oy as i32), false)
+}
+
+/// Puts a swarm where its `count` says (relative to its anchor hitbox at
+/// `base_x`/`base_y`) and sets its state (run or return).
+pub(crate) fn place_swarm(e: &mut Entity, len: u8, t: &Tuning) {
+    let (ox, oy, run) = swarm_offset(e.dir as u8, len, e.count, t);
+    e.x = e.base_x + ox;
+    e.y = e.base_y + oy;
+    e.state = if run { state::RUN } else { state::RETURN };
 }
 
 /// Walks (turning at walls, falling off ledges); every
@@ -365,29 +698,33 @@ pub(crate) fn defeat(e: &mut Entity, kind: EnemyKind, knocked: bool, t: &Tuning)
 }
 
 /// True for enemies that walk or stand on the ground (they block walking
-/// Selfie-Tourists).
+/// Selfie-Tourists and Nordic-Walkers).
 fn on_foot(e: &Entity) -> bool {
     match e.kind {
         EntityKind::Enemy(EnemyKind::SelfieTourist)
-        | EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer) => true,
+        | EntityKind::Enemy(EnemyKind::MozartkugelVerkaeufer)
+        | EntityKind::Enemy(EnemyKind::NordicWalker)
+        | EntityKind::Enemy(EnemyKind::Blasmusiker) => true,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
+        EntityKind::Enemy(EnemyKind::EBiker) => matches!(e.state, state::PARK | state::RING),
         EntityKind::Enemy(EnemyKind::TaubeSitting) => e.state == state::SIT,
         _ => false,
     }
 }
 
-/// Selfie-Tourists that overlap another enemy on foot turn away from it
-/// (after everything moved; the direction is set, not flipped, so two
-/// that overlap for several frames don't flip back and forth).
+/// Selfie-Tourists and Nordic-Walkers that overlap another enemy on foot
+/// turn away from it (after everything moved; the direction is set, not
+/// flipped, so two that overlap for several frames don't flip back and
+/// forth).
 pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
     for i in 0..entities.len() {
         let a = entities[i];
+        let walks = matches!(
+            a.kind,
+            EntityKind::Enemy(EnemyKind::SelfieTourist | EnemyKind::NordicWalker)
+        );
         // `dir == 0`: a `still` tourist (test levels) never turns.
-        if !a.active
-            || a.removed
-            || a.dir == 0
-            || a.kind != EntityKind::Enemy(EnemyKind::SelfieTourist)
-        {
+        if !a.active || a.removed || a.dir == 0 || !walks {
             continue;
         }
         let ac = a.x + a.w.div_int(2);

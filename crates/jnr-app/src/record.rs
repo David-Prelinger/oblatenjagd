@@ -3,11 +3,16 @@
 //!
 //! The replay gets an `expect` line derived from what happened, so it passes
 //! `cargo xtask replay` right away: `complete frames=N..N` if the stage was
-//! completed, else `state=<mode> player_x>=<x>`; always `deaths=<n>`.
+//! completed, else `state=<mode> player_x>=<x>`; always `deaths=<n>`, and
+//! `stage=<station>` when the game has a route (it may change stages).
+//!
+//! A recording stops at [`MAX_TOTAL_FRAMES`] steps (1 h), the most a replay
+//! file may hold, so every recording parses; the app warns once when that
+//! happens and writes the first hour on exit.
 
 use std::path::Path;
 
-use jnr_core::replay::{Expect, FrameRange, Outcome, Source};
+use jnr_core::replay::{Expect, FrameRange, MAX_TOTAL_FRAMES, Outcome, Source};
 use jnr_core::{Game, InputFrame, Replay, Start};
 
 /// Records one input per simulation step plus what happened.
@@ -15,31 +20,51 @@ pub struct Recorder {
     level: String,
     seed: u64,
     start: Start,
+    /// The run's explicit route (`route` header; usually empty).
+    route: Vec<String>,
     /// Run-length encoded: (input, frames held).
     inputs: Vec<(InputFrame, u32)>,
     outcome: Outcome,
+    /// Steps recorded so far.
+    frames: u32,
+    /// Most steps recorded ([`MAX_TOTAL_FRAMES`]; lower in tests).
+    limit: u32,
 }
 
 impl Recorder {
-    /// Starts recording a game that has not stepped yet; `seed` is the seed
-    /// it was created with.
-    pub fn new(game: &Game, seed: u64) -> Recorder {
+    /// Starts recording a game that has not stepped yet; `seed` and `route`
+    /// are what it was created with.
+    pub fn new(game: &Game, seed: u64, route: &[String]) -> Recorder {
         Recorder {
             level: game.level().meta.id.clone(),
             seed,
             start: game.start(),
+            route: route.to_vec(),
             inputs: Vec::new(),
             outcome: Outcome::new(game),
+            frames: 0,
+            limit: MAX_TOTAL_FRAMES,
         }
     }
 
-    /// Records one step: `input` was fed to `game.step`, `game` is the state after it.
+    /// Records one step: `input` was fed to `game.step`, `game` is the state
+    /// after it. Once the recording is full, steps are ignored.
     pub fn record(&mut self, input: InputFrame, game: &Game) {
+        if self.is_full() {
+            return;
+        }
         match self.inputs.last_mut() {
             Some((last, n)) if *last == input => *n += 1,
             _ => self.inputs.push((input, 1)),
         }
         self.outcome.record(game, game.events());
+        self.frames += 1;
+    }
+
+    /// True once [`MAX_TOTAL_FRAMES`] steps are recorded: the recording has
+    /// stopped (a longer replay would not parse).
+    pub fn is_full(&self) -> bool {
+        self.frames >= self.limit
     }
 
     /// The recording as a replay (`source = human`, expectations derived).
@@ -49,6 +74,7 @@ impl Recorder {
             seed: self.seed,
             source: Source::Human,
             start: self.start,
+            route: self.route.clone(),
             expects: expects_for(&self.outcome),
             shots: Vec::new(),
             inputs: self.inputs.clone(),
@@ -63,6 +89,9 @@ pub fn expects_for(o: &Outcome) -> Vec<Expect> {
         None => vec![Expect::State(o.state), Expect::PlayerXAtLeast(o.player_x)],
     };
     out.push(Expect::Deaths(o.deaths));
+    if let Some(stage) = o.stage {
+        out.push(Expect::Stage(stage));
+    }
     out
 }
 
@@ -102,7 +131,7 @@ mod tests {
             ..Options::default()
         };
         let mut game = crate::new_game(&opts);
-        let mut rec = Recorder::new(&game, opts.seed);
+        let mut rec = Recorder::new(&game, opts.seed, &opts.route);
         for &input in inputs {
             game.step(input);
             rec.record(input, &game);
@@ -181,6 +210,74 @@ mod tests {
         assert_eq!(replay.start, Start::Title);
         assert!(replay.format().contains("start  = title"));
         assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn recording_a_run_expects_its_stage() {
+        let opts = Options::default();
+        let mut game = crate::new_game(&opts);
+        let mut rec = Recorder::new(&game, opts.seed, &opts.route);
+        for input in [InputFrame::NONE, InputFrame::START, InputFrame::RIGHT] {
+            game.step(input);
+            rec.record(input, &game);
+        }
+        let replay = rec.replay();
+        assert_eq!(replay.level, "salzburg");
+        assert!(
+            replay.expects.contains(&Expect::Stage(0)),
+            "{:?}",
+            replay.expects
+        );
+        assert!(
+            replay.route.is_empty(),
+            "the standard route needs no header"
+        );
+        let parsed = Replay::parse(&replay.format()).expect("parses");
+        let levels = crate::options::embedded_levels();
+        let game = parsed.new_game(&levels, &tuning()).expect("game");
+        let outcome = parsed.run_game(game, |_| {});
+        assert_eq!(parsed.check(&outcome), Vec::<String>::new());
+    }
+
+    #[test]
+    fn recording_stops_at_the_replay_frame_limit() {
+        let opts = Options {
+            level: "testbed".to_owned(),
+            ..Options::default()
+        };
+        let mut game = crate::new_game(&opts);
+        let mut rec = Recorder::new(&game, opts.seed, &opts.route);
+        assert_eq!(rec.limit, MAX_TOTAL_FRAMES);
+        // A lower limit, so the game can really be played up to it.
+        rec.limit = 50;
+        let r = InputFrame::RIGHT;
+        for i in 0..80 {
+            assert_eq!(rec.is_full(), i >= 50, "step {i}");
+            game.step(r);
+            rec.record(r, &game);
+        }
+        let replay = rec.replay();
+        assert_eq!(replay.inputs, vec![(r, 50)]);
+        // The expectations describe the state at the cut, so it passes.
+        assert_round_trip_passes(&replay);
+    }
+
+    #[test]
+    fn a_full_length_recording_parses() {
+        // MAX_TOTAL_FRAMES steps and more (without stepping the game, which
+        // only matters for the expectations): the written file parses.
+        let game = crate::new_game(&Options {
+            level: "testbed".to_owned(),
+            ..Options::default()
+        });
+        let mut rec = Recorder::new(&game, 1, &[]);
+        let inputs = [InputFrame::RIGHT, InputFrame::NONE];
+        for i in 0..MAX_TOTAL_FRAMES + 100 {
+            rec.record(inputs[(i / 1000 % 2) as usize], &game);
+        }
+        assert!(rec.is_full());
+        let parsed = Replay::parse(&rec.replay().format()).expect("parses");
+        assert_eq!(parsed.frame_count(), MAX_TOTAL_FRAMES);
     }
 
     #[test]

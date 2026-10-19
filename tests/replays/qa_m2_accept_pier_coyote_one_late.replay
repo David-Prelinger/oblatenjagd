@@ -1,0 +1,55 @@
+# QA (M2 acceptance): pair of qa_m2_accept_pier_coyote_last_frame. JUMP in
+# step 1536 (7th airborne step off deck 236-238) is too late: she has sunk
+# 8 px into the Wolfgangsee and died in step 1535.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = dies_at frames=1535..1535 deaths=1 lives=2
+---
+# --- the first 1473 frames of st_gilgen_solver.replay ---
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 26
+# --- end of the first 1473 frames ---
+RB 55       # run along the street onto jetty deck 236-238
+RB 7        # 1529: first airborne step; sunk 8 px and dead in 1535
+RBJ 6       # 1536: too late
+- 20

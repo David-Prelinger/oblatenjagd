@@ -6,7 +6,9 @@ mod feel;
 mod flow;
 mod goal;
 mod items;
+mod m2;
 mod modes;
+mod route;
 mod testbed;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
@@ -16,12 +18,13 @@ fn tuning() -> Tuning {
     Tuning::parse(include_str!("../../../../content/tuning.toml")).unwrap()
 }
 
-/// Builds a level from grid rows of `.`, `#`, `-`, `^`, `P`, `G`, `t`
+/// Builds a level from grid rows of `.`, `#`, `-`, `^` (spikes), `~`
+/// (Salzach water), `P`, `G`, `t`
 /// (Selfie-Tourist), `v` (Mozartkugel-Verkäufer), `M` (Mozartkugel box).
 fn level(rows: &[&str]) -> Level {
     let grid = rows.join("\n");
     let text = format!(
-        "[meta]\nid = \"test\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"t\" = {{ entity = \"selfie_tourist\" }}\n\"v\" = {{ entity = \"mozartkugel_verkaeufer\" }}\n\"M\" = {{ tile = \"oblaten_box\", contains = \"mozartkugel\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
+        "[meta]\nid = \"test\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"~\" = \"salzach_water\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"t\" = {{ entity = \"selfie_tourist\" }}\n\"v\" = {{ entity = \"mozartkugel_verkaeufer\" }}\n\"M\" = {{ tile = \"oblaten_box\", contains = \"mozartkugel\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
     );
     Level::parse(&text).unwrap()
 }

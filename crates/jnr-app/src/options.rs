@@ -5,12 +5,14 @@
 
 use std::path::{Path, PathBuf};
 
-use jnr_core::{InputFrame, Start};
+use jnr_core::{InputFrame, Level, Start};
 
 /// The levels embedded in the binary (so wasm needs no file access), as
 /// `(id, source)`: every file in `content/levels/`, in file name order.
 /// The id must equal the level's `[meta] id`. To add a level: append a line
-/// here (a test checks that this list matches the directory).
+/// here (a test checks that this list matches the directory). Levels whose
+/// id is a station (`st_gilgen`, …) join the journey on their own: the run
+/// follows `jnr_core::route::Route::standard` over all of these (D-047).
 pub const LEVELS: &[(&str, &str)] = &[
     (
         "enemies",
@@ -21,6 +23,18 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_items.level"),
     ),
     (
+        "m2_enemies",
+        include_str!("../../../content/levels/00_m2_enemies.level"),
+    ),
+    (
+        "route_a",
+        include_str!("../../../content/levels/00_route_a.level"),
+    ),
+    (
+        "route_b",
+        include_str!("../../../content/levels/00_route_b.level"),
+    ),
+    (
         "testbed",
         include_str!("../../../content/levels/00_testbed.level"),
     ),
@@ -28,12 +42,30 @@ pub const LEVELS: &[(&str, &str)] = &[
         "salzburg",
         include_str!("../../../content/levels/01_salzburg.level"),
     ),
+    (
+        "st_gilgen",
+        include_str!("../../../content/levels/02_st_gilgen.level"),
+    ),
+    (
+        "brunnwinkl",
+        include_str!("../../../content/levels/03_brunnwinkl.level"),
+    ),
 ];
 
 /// The level played when none is given: Stage 1.
 pub const DEFAULT_LEVEL: &str = "salzburg";
 
+/// Every embedded level, parsed (panics on a broken embedded level: the
+/// tests parse them all).
+pub fn embedded_levels() -> Vec<Level> {
+    LEVELS
+        .iter()
+        .map(|(id, src)| Level::parse(src).unwrap_or_else(|e| panic!("level {id}: {e}")))
+        .collect()
+}
+
 /// The `.level` source of the embedded level `id`.
+#[cfg_attr(target_arch = "wasm32", allow(dead_code))]
 pub fn level_source(id: &str) -> Option<&'static str> {
     LEVELS
         .iter()
@@ -61,6 +93,9 @@ pub struct Options {
     /// How the game starts: the title screen, unless a `--replay` says
     /// otherwise (its `start`, default `playing`, D-025).
     pub start: Start,
+    /// The level ids of the run, from a `--replay`'s `route` header (empty:
+    /// the standard route if `level` is on it, else `level` alone; D-047).
+    pub route: Vec<String>,
 }
 
 /// Where the per-frame input comes from.
@@ -101,6 +136,7 @@ impl Default for Options {
             input: InputSource::Keyboard,
             record: None,
             start: Start::Title,
+            route: Vec::new(),
         }
     }
 }

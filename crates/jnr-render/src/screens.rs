@@ -8,12 +8,12 @@
 //! has the full `k` outline); lines are centred
 //! horizontally. Blinking texts are on for [`BLINK_FRAMES`], then off as long.
 
-use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup};
+use jnr_core::{ClearPhase, DeathCause, Game, Mode, Popup, Power};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
 use crate::palette::{DIRNDL_RED, MOZART_YELLOW, NAVY, OUTLINE, SILVER_LIGHT, SKY_BLUE, WHITE};
-use crate::scene::{self, RenderContext};
+use crate::scene::{self, PlayerAnim, RenderContext};
 use crate::{WIDTH, hud};
 
 /// Blinking texts: this many frames on, then as many off.
@@ -50,8 +50,8 @@ pub const TITLE_LOGO_SPRITE: &str = "title_logo";
 
 /// Every text key the engine uses by name (not counting level signs, which
 /// `cargo xtask levels lint` checks). Per-stage keys are listed for the
-/// fallback stage.
-pub const TEXT_KEYS: [&str; 20] = [
+/// fallback stage; the route map's keys are [`crate::map`]'s.
+pub const TEXT_KEYS: [&str; 31] = [
     TITLE_NAME_KEY,
     SUBTITLE_KEY,
     PRESS_START_KEY,
@@ -81,13 +81,27 @@ pub const TEXT_KEYS: [&str; 20] = [
         Some(k) => k,
         None => "",
     },
+    crate::map::NEXT_STOP_KEY,
+    crate::map::CONTINUE_KEY,
+    crate::map::STATION_KEYS[0],
+    crate::map::STATION_KEYS[1],
+    crate::map::STATION_KEYS[2],
+    crate::map::STATION_KEYS[3],
+    crate::map::STATION_KEYS[4],
+    crate::map::STATION_KEYS[5],
+    crate::map::STATION_KEYS[6],
+    crate::map::STATION_KEYS[7],
+    crate::map::STATION_KEYS[8],
 ];
 
 // Layout (y = top of the text line).
 const LOGO_Y: i32 = 24;
 const TITLE_NAME_Y: i32 = 20;
-const SUBTITLE_Y: i32 = 84;
-const PRESS_START_Y: i32 = 128;
+/// In the plain sky band under the logo, clear of every station's start
+/// tiles (the Brunnwinkl ?-boxes start at y 84; art review of E12).
+const SUBTITLE_Y: i32 = 60;
+/// Top of the title prompt line (also the band `cargo xtask wasm-smoke` watches).
+pub const PRESS_START_Y: i32 = 128;
 const INTRO_TITLE_Y: i32 = 64;
 const INTRO_TAGLINE_Y: i32 = 80;
 const INTRO_LIVES_Y: i32 = 112;
@@ -120,7 +134,7 @@ pub fn blink_on(frames: u32) -> bool {
 }
 
 /// Draws `text` centred horizontally with its top at `y`.
-fn centred(ctx: &RenderContext, fb: &mut Framebuffer, text: &str, y: i32, colour: u32) {
+pub(crate) fn centred(ctx: &RenderContext, fb: &mut Framebuffer, text: &str, y: i32, colour: u32) {
     let x = (WIDTH as i32 - ctx.font().measure(text)) / 2;
     ctx.font()
         .draw_text(fb, ctx.atlas(), text, x, y, colour, Some(OUTLINE));
@@ -181,7 +195,10 @@ pub fn draw_intro(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     let times_w = font.measure("×");
     let total = 16 + GAP + times_w + GAP + font.measure(lives);
     let left = (WIDTH as i32 - total) / 2;
-    scene::draw_player_idle(ctx, fb, left + 8, INTRO_LIVES_Y + 12, game.frame());
+    // Zuckerschock carried into the stage: `player_big` (D-042).
+    let big = game.player().power == Power::Big;
+    let feet = (left + 8, INTRO_LIVES_Y + 12);
+    scene::draw_player_pose(ctx, fb, big, PlayerAnim::Idle, feet, game.frame(), false);
     let x = left + 16 + GAP;
     // The „×“ in `Y` like the number (art-director: a white × vanishes in haze).
     font.draw_text(
@@ -232,7 +249,7 @@ pub fn draw_pause(ctx: &RenderContext, fb: &mut Framebuffer) {
 
 /// An art-style §11 panel `(x, y, w, h)`: `B` fill, 1 px `k` border, 1 px
 /// `S` highlight inside the border on the top and left edges.
-fn draw_panel(fb: &mut Framebuffer, (x, y, w, h): (i32, i32, i32, i32)) {
+pub(crate) fn draw_panel(fb: &mut Framebuffer, (x, y, w, h): (i32, i32, i32, i32)) {
     fb.fill_rect(x, y, w, h, NAVY);
     fb.fill_rect(x + 1, y + 1, w - 2, 1, SKY_BLUE);
     fb.fill_rect(x + 1, y + 1, 1, h - 2, SKY_BLUE);
@@ -398,6 +415,48 @@ mod tests {
         assert_ne!(fb.get(px, PRESS_START_Y), Some(WHITE), "prompt off");
         // No HUD on the title screen.
         assert_ne!(fb.get(16, 4), Some(WHITE));
+    }
+
+    /// The subtitle (y 60..=68 with its shadow) sits in plain sky on every
+    /// shipped stage's title view: no tile is drawn behind it.
+    #[test]
+    fn subtitle_band_is_clear_of_tiles_on_every_stage_title() {
+        let line = crate::font::LINE_HEIGHT;
+        // Every shipped stage: content/levels/0[1-9]_*.level.
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/levels");
+        let mut stages: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                let n = p.file_name().unwrap().to_string_lossy();
+                let b = n.as_bytes();
+                b.len() > 3
+                    && b[0] == b'0'
+                    && (b'1'..=b'9').contains(&b[1])
+                    && b[2] == b'_'
+                    && n.ends_with(".level")
+            })
+            .collect();
+        stages.sort();
+        assert!(stages.len() >= 3, "{stages:?}");
+        for path in stages {
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let level = Level::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            let g = Game::new_at(&level, &tuning(), 1, Start::Title);
+            let cam = g.camera();
+            let tile = jnr_core::level::TILE_PX;
+            for y in (cam.y + SUBTITLE_Y - 1)..=(cam.y + SUBTITLE_Y + line) {
+                for x in (cam.x + 48)..(cam.x + WIDTH as i32 - 48) {
+                    let t = level.tile(x.div_euclid(tile), y.div_euclid(tile));
+                    assert!(
+                        t.is_none_or(|t| t.name == 0),
+                        "{name}: a tile is drawn behind the title subtitle at screen ({}, {})",
+                        x - cam.x,
+                        y - cam.y
+                    );
+                }
+            }
+        }
     }
 
     #[test]

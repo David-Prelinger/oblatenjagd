@@ -15,15 +15,17 @@ Usage: jnr-app [options]
 
 Options:
   --level <id>                  embedded level to play: salzburg (Stage 1, the
-                                default), or the test levels testbed, items,
-                                enemies
+                                default) or a later stage of the journey (the
+                                run starts there and follows the route), or
+                                the test levels testbed, items, enemies,
+                                route_a, route_b (played alone)
   --seed <n>                    seed of the game RNG (default: 1)
   --scale <n>                   initial window size 320n x 180n, 1..=16 (default: 4)
   --exit-after <frames>         quit (exit code 0) after that many simulation frames
   --screenshot-at <frame>:<png> write the 320x180 framebuffer after that simulation
                                 frame (0 = start); repeatable
-  --replay <file>               play a replay file: its level, seed and start are
-                                used (without `start = title` the game starts in
+  --replay <file>               play a replay file: its level, seed, start and
+                                route are used (without `start = title` the game starts in
                                 play, not on the title screen);
                                 game input comes only from the replay (Escape
                                 quits; F1/F12 still work); after the last
@@ -137,7 +139,15 @@ pub fn parse_args_with(
                 opts.seed, replay.seed
             ));
         }
+        if let Some(id) = replay.route.iter().find(|id| level_source(id).is_none()) {
+            return Err(format!(
+                "replay {}: route level `{id}` is not embedded (embedded levels: {})",
+                path.display(),
+                level_ids()
+            ));
+        }
         opts.level = replay.level.clone();
+        opts.route = replay.route.clone();
         opts.seed = replay.seed;
         opts.input = InputSource::Replay(replay.frames().collect());
         opts.start = replay.start;
@@ -270,6 +280,7 @@ mod tests {
                 input: InputSource::Keyboard,
                 record: None,
                 start: jnr_core::Start::Title,
+                route: Vec::new(),
             }
         );
     }
@@ -282,10 +293,9 @@ mod tests {
 
     #[test]
     fn bad_input_is_reported() {
-        assert!(
-            error(&["--level", "atlantis"])
-                .contains("embedded levels: enemies, items, testbed, salzburg")
-        );
+        assert!(error(&["--level", "atlantis"]).contains(
+            "embedded levels: enemies, items, m2_enemies, route_a, route_b, testbed, salzburg, st_gilgen, brunnwinkl"
+        ));
         assert!(error(&["--seed"]).contains("needs a value"));
         assert!(error(&["--seed", "-1"]).contains("not a valid"));
         assert!(error(&["--scale", "0"]).contains("1..=16"));
@@ -298,6 +308,25 @@ mod tests {
             error(&["--exit-after", "10", "--screenshot-at", "11:a.png"])
                 .contains("never be taken")
         );
+    }
+
+    #[test]
+    fn replay_route_header_reaches_the_options() {
+        let text = "level = items\nsource = handwritten\nstart = title\nroute = testbed items\n\
+                    expect = deaths=0\n---\nS 1\n";
+        let opts = match parse_with(&["--replay", "r.replay"], text) {
+            Ok(Command::Run(opts)) => opts,
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(opts.route, ["testbed", "items"]);
+        let game = crate::new_game(&opts);
+        assert_eq!(
+            (game.level().meta.id.as_str(), game.station()),
+            ("items", Some(1))
+        );
+        let bad = text.replace("route = testbed items", "route = testbed atlantis");
+        let e = parse_with(&["--replay", "r.replay"], &bad).unwrap_err();
+        assert!(e.contains("route level `atlantis` is not embedded"), "{e}");
     }
 
     #[test]

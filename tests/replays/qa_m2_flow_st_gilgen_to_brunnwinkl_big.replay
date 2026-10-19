@@ -1,0 +1,135 @@
+# QA (M2 route flow, D-042 power carry-over): dev entry at St. Gilgen in the
+# title flow (`level = st_gilgen`, start = title). The relaxed St. Gilgen run
+# (qa_st_gilgen_relaxed, play from 172) ends as Zuckerschock (Maibaum at
+# 4155), the map auto-continues (Arrive 4593, 24 px walk, Wait) into the
+# Brunnwinkl intro at 4957 and play at 5107: Resi is still Zuckerschock
+# (player_y 210 = the 30 px hitbox on the path), score 25100, 72 Oblaten,
+# 3 lives, timer 200, no checkpoint.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=4155..4155 deaths=0 no_event=Respawned
+expect = state=playing stage=brunnwinkl score=25100 oblaten=72 lives=3 player_y<=210 player_x>=60
+---
+- 20
+S 1         # title -> St. Gilgen intro
+- 150
+# qa_st_gilgen_relaxed (play 172-4200)
+R 128
+- 20
+J 12
+- 100
+R 50
+RJ 30
+R 28
+RJ 20
+R 40
+- 12
+RJ 18
+- 26
+R 30
+R 84
+RJ 14
+R 20
+- 30
+R 16
+- 140
+RJ 8
+R 6
+- 120
+R 60
+- 68
+R 40
+- 120
+R 30
+- 25
+RJ 8
+R 10
+- 130
+R 40
+- 20
+R 100
+- 140
+R 30
+- 40
+RJ 8
+R 6
+- 10
+RJ 30
+R 10
+- 30
+R 10
+RJ 20
+R 30
+R 50
+RJ 16
+R 6
+- 20
+R 30
+- 30
+R 16
+RJ 12
+R 28
+- 10
+R 150
+RJ 12
+R 20
+- 30
+R 18
+- 6
+J 12
+- 100
+R 14
+RJ 16
+R 50
+RJ 30
+R 2
+RJ 14
+R 2
+RJ 20
+R 2
+RJ 20
+R 2
+RJ 30
+R 26
+RJ 20
+R 2
+RJ 20
+R 18
+R 32
+RJ 30
+R 26
+R 64
+RJ 14
+R 34
+R 128
+RJ 30
+R 2
+RJ 20
+R 6
+- 180
+R 32
+RJ 30
+R 34
+RJ 8
+R 2
+R 128
+RJ 30
+R 34
+RJ 30
+R 42
+RJ 30
+R 34
+J 20
+- 2
+RJ 8
+R 2
+J 8
+- 2
+R 16
+- 20
+R 100
+- 30
+- 907       # goal sequence, map, Brunnwinkl intro; play from 5107
+R 30

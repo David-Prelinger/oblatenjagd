@@ -1,0 +1,16 @@
+# After the walker (100, chain reset on landing) jumps the bench and
+# stomps the Blasmusiker as the first stomp of a new chain: 200 (D-046).
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = event=Stomped score=300 deaths=0 no_event=Hurt state=playing
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+- 30

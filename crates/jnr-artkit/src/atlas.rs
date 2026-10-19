@@ -361,6 +361,7 @@ mod tests {
         img.set(0, 0, [0, colour, 0, 255]); // asymmetric, so mirroring shows
         CompiledSprite {
             name: name.into(),
+            group: "test".into(),
             width: 3,
             height: h,
             origin: Point { x: 1, y: h },

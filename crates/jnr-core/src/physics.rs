@@ -141,6 +141,26 @@ impl TileMap {
         (r0..=r1).any(|r| (c0..=c1).any(|c| self.kind_at(c, r) == kind))
     }
 
+    /// True if `b` overlaps a tile that kills ([`TileKind::is_lethal`]:
+    /// spikes or water) – the test for items and E-Bikers.
+    pub fn touches_lethal(&self, b: &Aabb) -> bool {
+        self.touches(b, TileKind::Hazard) || self.touches(b, TileKind::Water)
+    }
+
+    /// True if the bottom edge of `b` has sunk at least `sink_px` whole
+    /// pixels into water (D-050): the pixel row `sink_px` above the feet is
+    /// a water tile in any of the box's columns. With `sink_px` = 0 this
+    /// would be "the row below the feet", so callers pass >= 1.
+    pub fn sunk_in_water(&self, b: &Aabb, sink_px: i32) -> bool {
+        let probe = Aabb {
+            x: b.x,
+            y: b.bottom() - Fx::from_px(sink_px),
+            w: b.w,
+            h: Fx(1),
+        };
+        self.touches(&probe, TileKind::Water)
+    }
+
     /// True if `b` stands on at least one one-way tile and no solid tile
     /// (the row directly below its bottom edge); it may then drop through.
     pub fn on_one_way_only(&self, b: &Aabb) -> bool {
@@ -152,7 +172,7 @@ impl TileMap {
             match k {
                 TileKind::Solid => return false,
                 TileKind::OneWay => one_way = true,
-                TileKind::Empty | TileKind::Hazard => {}
+                TileKind::Empty | TileKind::Hazard | TileKind::Water => {}
             }
         }
         one_way
@@ -201,7 +221,7 @@ impl TileMap {
                 let floor = (c0..=c1).any(|c| match self.kind_at(c, r) {
                     TileKind::Solid => true,
                     TileKind::OneWay => !drop_through,
-                    TileKind::Empty | TileKind::Hazard => false,
+                    TileKind::Empty | TileKind::Hazard | TileKind::Water => false,
                 });
                 if floor {
                     b.y = TILE.mul_int(r) - b.h;
@@ -250,13 +270,14 @@ pub enum YHit {
 mod tests {
     use super::*;
 
-    /// Map from rows of `.`, `#`, `-`, `^` (plus a dummy player start).
+    /// Map from rows of `.`, `#`, `-`, `^`, `~` (water; plus a dummy player
+    /// start).
     fn map(rows: &[&str]) -> TileMap {
         let mut grid = rows.join("\n");
         let first_air = grid.find('.').unwrap();
         grid.replace_range(first_air..first_air + 1, "P");
         let text = format!(
-            "[meta]\nid = \"t\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
+            "[meta]\nid = \"t\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\"^\" = \"hazard\"\n\"~\" = \"salzach_water\"\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}\n'''\n"
         );
         TileMap::from_level(&Level::parse(&text).unwrap())
     }
@@ -421,6 +442,30 @@ mod tests {
         // Sideways it never blocks.
         let mut b = bx(18, 20);
         assert!(!m.move_x(&mut b, Fx::from_px(4)));
+    }
+
+    #[test]
+    fn sunk_in_water_needs_the_feet_sink_px_below_the_top() {
+        // Water at row 4 (top y 64), spikes at columns 4-5; boxes of 12x22.
+        let m = map(&["......", "......", "......", "......", "##~~^^"]);
+        // Feet at 64 + 7 px (bottom 71): not yet.
+        assert!(!m.sunk_in_water(&bx(32, 49), 8));
+        assert!(m.touches(&bx(32, 49), TileKind::Water));
+        assert!(m.touches_lethal(&bx(32, 49)));
+        // Feet at 64 + 8 px: sunk.
+        assert!(m.sunk_in_water(&bx(32, 50), 8));
+        // One subpixel short of 8 px: not yet.
+        let mut b = bx(32, 50);
+        b.y -= Fx(1);
+        assert!(!m.sunk_in_water(&b, 8));
+        // Any overlapped column counts (box over solid 1 and water 2).
+        assert!(m.sunk_in_water(&bx(24, 50), 8));
+        // Spikes are not water (they kill on touch, `touches`).
+        assert!(!m.sunk_in_water(&bx(66, 50), 8));
+        assert!(m.touches_lethal(&bx(66, 43)));
+        // Water is no floor.
+        let mut b = bx(32, 40);
+        assert_eq!(m.move_y(&mut b, Fx::from_px(4), false), YHit::None);
     }
 
     #[test]

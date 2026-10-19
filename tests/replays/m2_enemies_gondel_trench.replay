@@ -1,0 +1,35 @@
+# Walks off the station platform into the trench under Gondel A, waits
+# there for the cabin to pass, and climbs out onto the knoll without it
+# (D-027/D-044: never a softlock).
+level  = m2_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=1400
+---
+RB 32
+RBJ 12
+RB 16
+RBJ 35
+RB 41
+RBJ 36
+RB 18
+RBJ 33
+- 16
+L 10
+- 20
+R 6
+- 160
+R 160
+- 224
+R 150
+R 30
+RJ 14
+R 6
+- 30
+R 50
+- 150
+R 40
+RJ 16
+R 16
+RJ 20
+R 30

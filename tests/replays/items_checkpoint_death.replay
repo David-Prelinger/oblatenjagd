@@ -4,7 +4,7 @@
 level  = items
 seed   = 1
 source = handwritten
-expect = dies_at frames=1145..1145 deaths=1 state=playing lives=3
+expect = dies_at frames=1151..1151 deaths=1 state=playing lives=3
 expect = oblaten>=9 score>=2850 player_x>=640
 ---
 R 28

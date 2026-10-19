@@ -1,0 +1,57 @@
+# Bienenhaus: Resi (Normal after the swarm-hurt route: Mozartkugel,
+# boulder, walker stomp, hive, swarm #1, mill ridge with bonus 1, tourist
+# stomp) stops at x 1525, left of swarm #2's reach (cols 97-101), waits
+# 100 frames until the swarm is in the upper part of its figure-eight and
+# runs under it to the free column 102 in front of the hives (x 1636).
+# Running in after a wait of 70-120 or 190-260 frames is safe, 20-60 or
+# 130-180 is a hit (a ~60-frame opening every half figure-eight).
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died lives=3 state=playing player_x>=1636 player_y>=218
+# review shots (enable with goldens after an art-director verdict): 1790:waiting 1860:under
+---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+RJ 30
+R 30
+R 20
+RJ 12
+R 6
+- 20
+J 36
+- 30
+J 36
+- 30
+J 36
+- 30
+R 40
+RJ 30
+R 10
+RJ 30
+R 30
+R 22
+RJ 36
+R 30
+- 20
+R 260
+- 30
+- 100
+RB 70
+- 10

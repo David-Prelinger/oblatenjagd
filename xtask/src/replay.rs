@@ -91,22 +91,39 @@ impl Played {
 /// and renders the frames in `render_frames`.
 pub fn play(root: &Path, path: &Path, render_frames: &[u32]) -> Result<Played, String> {
     let replay = content::load_replay(path)?;
-    let level =
-        content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
+    // (For the error message with the known ids.)
+    content::find_level(root, &replay.level).map_err(|e| format!("{}: {e}", path.display()))?;
+    // Every level must parse: a broken stage would silently cut the route.
+    let levels: Vec<Level> = content::all_levels(root)?
+        .into_iter()
+        .map(|(p, l)| l.map_err(|e| format!("{}: {e}", p.display())))
+        .collect::<Result<_, _>>()?;
     let tuning = content::tuning(root)?;
     let texts = content::texts(root)?;
-    let ctx = RenderContext::for_level(jnr_assets::atlas(), &texts, &level);
+    // The replay's level, on its route (D-047): a replay may change stages.
+    let game = replay
+        .new_game(&levels, &tuning)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
+    let atlas = jnr_assets::atlas();
+    let mut ctx = RenderContext::for_level(atlas, &texts, game.level());
 
     let mut hashes = Vec::new();
     let mut images = Vec::new();
-    let outcome = replay.run(&level, &tuning, |g| {
+    let outcome = replay.run_game(game, |g| {
         hashes.push(g.state_hash());
         if render_frames.contains(&g.frame()) {
+            if !ctx.is_for(g.level()) {
+                ctx = RenderContext::for_level(atlas, &texts, g.level());
+            }
             images.push((g.frame(), render_image(g, &ctx)));
         }
     });
+    // A freshly built game: building it must be deterministic too.
+    let again_game = replay
+        .new_game(&levels, &tuning)
+        .map_err(|e| format!("{}: {e}", path.display()))?;
     let mut again = Vec::new();
-    replay.run(&level, &tuning, |g| again.push(g.state_hash()));
+    replay.run_game(again_game, |g| again.push(g.state_hash()));
 
     let mut failures = replay.check(&outcome);
     if replay.expects.is_empty() {
@@ -408,8 +425,10 @@ pub fn run_scene(root: &Path, args: &[String]) -> ExitCode {
 /// the second value is true when that clamp changed it.
 pub fn scene_game(level: &Level, tuning: &jnr_core::Tuning, camera_x: i32) -> (Game, bool) {
     let wanted = camera_x.saturating_add(tuning.camera.follow_x);
-    let half_w = tuning.player.hitbox_w / 2;
-    let max = level.width * jnr_core::level::TILE_PX - (tuning.player.hitbox_w - half_w);
+    // The hitbox reaches w/2 (x.5 px for an odd width) to each side of the
+    // centre, so the centre stays (w + 1) / 2 whole pixels from both edges.
+    let half_w = (tuning.player.hitbox_w + 1) / 2;
+    let max = level.width * jnr_core::level::TILE_PX - half_w;
     let player_x = wanted.clamp(half_w, max);
     let mut game = Game::new(level, tuning, 1);
     game.teleport_player(player_x);
@@ -497,6 +516,7 @@ fn exit(result: Result<(), String>) -> ExitCode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jnr_core::{Fx, InputFrame};
 
     fn root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
@@ -514,6 +534,172 @@ mod tests {
         assert_eq!(first_difference(&[1, 2, 3], &[1, 2, 3]), None);
         assert_eq!(first_difference(&[1, 2, 3], &[1, 9, 3]), Some(1));
         assert_eq!(first_difference(&[1, 2], &[1, 2, 3]), Some(2));
+    }
+
+    /// D-036: each stage tour is the title intro, then the stage's solver
+    /// route unchanged, then 800 idle frames for the Maibaum sequence (and
+    /// the route map). A re-solve that changes a route must be copied into
+    /// its tour.
+    #[test]
+    fn stage_tours_replay_the_solver_route() {
+        let frames = |name: &str| -> Vec<u64> {
+            let path = root().join("tests/replays").join(name);
+            let replay = Replay::parse(&fs::read_to_string(&path).unwrap()).unwrap();
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let (none, start) = (0, u64::from(InputFrame::START.bits()));
+        let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
+        for stage in ["salzburg", "st_gilgen", "brunnwinkl"] {
+            let route = frames(&format!("{stage}_solver.replay"));
+            let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+            let tour = frames(&format!("{stage}_tour.replay"));
+            if let Some(i) = first_difference(&tour, &expected) {
+                let part = if i < intro.len() {
+                    "the title/intro prefix `- 20`, `S 1`, `- 150`"
+                } else if i < intro.len() + route.len() {
+                    "the solver route"
+                } else {
+                    "the Maibaum outro `- 800`"
+                };
+                panic!(
+                    "tests/replays/{stage}_tour.replay differs at frame {i}, in {part} (tour {} \
+                     frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs \
+                     of tests/replays/{stage}_solver.replay unchanged, then `- 800` (D-036). \
+                     If `cargo xtask solve {stage} --write` changed the route, re-copy its \
+                     inputs into the tour, update its `expect` frames and re-pick the shot \
+                     frames (new goldens need an art-director verdict).",
+                    tour.len(),
+                    expected.len()
+                );
+            }
+        }
+    }
+
+    /// `<stage>_solver.replay` → (stage, None); `the first N frames of
+    /// <stage>_solver.replay` → (stage, Some(N)).
+    fn solver_route(s: &str) -> Option<(String, Option<usize>)> {
+        let (limit, file) = match s.strip_prefix("the first ") {
+            Some(rest) => {
+                let (n, file) = rest.split_once(" frames of ")?;
+                (Some(n.parse().ok()?), file)
+            }
+            None => (None, s),
+        };
+        let stage = file.strip_suffix("_solver.replay")?;
+        (!stage.is_empty() && !stage.contains(' ')).then(|| (stage.to_owned(), limit))
+    }
+
+    #[test]
+    fn solver_route_markers_parse() {
+        assert_eq!(
+            solver_route("brunnwinkl_solver.replay"),
+            Some(("brunnwinkl".into(), None))
+        );
+        assert_eq!(
+            solver_route("the first 375 frames of st_gilgen_solver.replay"),
+            Some(("st_gilgen".into(), Some(375)))
+        );
+        assert_eq!(solver_route("the first x frames of a_solver.replay"), None);
+        assert_eq!(solver_route("salzburg.replay"), None);
+    }
+
+    /// D-049: the `flow_m2_*` replays copy solver routes between marker
+    /// comments, `# --- <stage>_solver.replay inputs, unchanged ---` (the
+    /// whole route) or `# --- the first N frames of <stage>_solver.replay
+    /// ---` (a prefix), each closed by `# --- end of ... ---`. Every block
+    /// must still match its solver replay, so a re-solve says "re-copy".
+    #[test]
+    fn flow_m2_replays_copy_the_solver_routes() {
+        let solver = |stage: &str| -> Vec<u64> {
+            let name = format!("{stage}_solver.replay");
+            let text = fs::read_to_string(root().join("tests/replays").join(&name)).unwrap();
+            let replay = Replay::parse(&text).unwrap();
+            replay.frames().map(|i| u64::from(i.bits())).collect()
+        };
+        let mut files: Vec<PathBuf> = fs::read_dir(root().join("tests/replays"))
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                let name = p.file_name().unwrap().to_string_lossy();
+                name.starts_with("flow_m2_") && name.ends_with(".replay")
+            })
+            .collect();
+        files.sort();
+        assert!(!files.is_empty(), "no flow_m2_* replays found");
+        for path in files {
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let text = fs::read_to_string(&path).unwrap();
+            let mut blocks = 0;
+            // The open block: (stage, frame limit, its marker line, inputs).
+            let mut open: Option<(String, Option<usize>, String, String)> = None;
+            for (i, line) in text.lines().enumerate() {
+                let at = format!("tests/replays/{name}:{}", i + 1);
+                let Some(m) = line
+                    .strip_prefix("# --- ")
+                    .and_then(|l| l.strip_suffix(" ---"))
+                else {
+                    if let Some((_, _, _, body)) = &mut open {
+                        body.push_str(line);
+                        body.push('\n');
+                    }
+                    continue;
+                };
+                match (m.strip_prefix("end of "), open.take()) {
+                    (None, None) => {
+                        let route = m
+                            .strip_suffix(" inputs, unchanged")
+                            .or_else(|| m.starts_with("the first ").then_some(m));
+                        let (stage, limit) = route.and_then(solver_route).unwrap_or_else(|| {
+                            panic!(
+                                "{at}: unknown marker `{line}` (expected `<stage>_solver.replay \
+                                 inputs, unchanged` or `the first N frames of \
+                                 <stage>_solver.replay`)"
+                            )
+                        });
+                        open = Some((stage, limit, line.to_owned(), String::new()));
+                    }
+                    (None, Some((_, _, start, _))) => {
+                        panic!("{at}: `{line}` starts a block before `{start}` has ended")
+                    }
+                    (Some(_), None) => panic!("{at}: end without start: `{line}`"),
+                    (Some(closes), Some((stage, limit, start, body))) => {
+                        assert_eq!(
+                            solver_route(closes),
+                            Some((stage.clone(), limit)),
+                            "{at}: `{line}` does not close `{start}` (same stage and frame count)"
+                        );
+                        let text = format!("level = x\nsource = handwritten\n---\n{body}");
+                        let got: Vec<u64> = Replay::parse(&text)
+                            .unwrap_or_else(|e| {
+                                panic!("{at}: the block opened by `{start}` does not parse: {e}")
+                            })
+                            .frames()
+                            .map(|i| u64::from(i.bits()))
+                            .collect();
+                        let route = solver(&stage);
+                        let expected = match limit {
+                            None => &route[..],
+                            Some(n) => {
+                                assert!(n <= route.len(), "{at}: {n} > the {stage} route");
+                                &route[..n]
+                            }
+                        };
+                        if let Some(i) = first_difference(&got, expected) {
+                            panic!(
+                                "tests/replays/{name}: the copy of {stage}_solver.replay differs at \
+                                 its frame {i} ({} frames, expected {}). Re-copy the solver inputs \
+                                 (D-049), update the expectations and re-pick the shot frames.",
+                                got.len(),
+                                expected.len()
+                            );
+                        }
+                        blocks += 1;
+                    }
+                }
+            }
+            assert!(open.is_none(), "{name}: unclosed solver block");
+            assert!(blocks > 0, "{name}: no solver block");
+        }
     }
 
     #[test]
@@ -623,16 +809,23 @@ mod tests {
         let level = content::find_level(&root, "testbed").unwrap();
         let tuning = content::tuning(&root).unwrap();
         let level_px = level.width * jnr_core::level::TILE_PX;
-        for x in [5000, i32::MAX, -500, i32::MIN] {
-            let (g, clamped) = scene_game(&level, &tuning, x);
-            assert!(clamped, "x={x}");
-            let p = g.player();
-            assert!(p.x.to_px() >= 0, "x={x}: player x={}", p.x.to_px());
-            assert!(
-                (p.x + p.w).to_px() <= level_px,
-                "x={x}: player right edge {} > level width {level_px}",
-                (p.x + p.w).to_px()
-            );
+        let mut odd = tuning;
+        odd.player.hitbox_w = 13;
+        // The real (even) hitbox and an odd one, whose edges are half pixels.
+        for t in [&tuning, &odd] {
+            for x in [5000, i32::MAX, -500, i32::MIN] {
+                let (g, clamped) = scene_game(&level, t, x);
+                assert!(clamped, "x={x}");
+                let p = g.player();
+                assert_eq!(p.w.to_px(), t.player.hitbox_w);
+                assert!(p.x >= Fx::ZERO, "x={x}: player x={:?}", p.x);
+                assert!(
+                    p.x + p.w <= Fx::from_px(level_px),
+                    "x={x} (w {}): player right edge {:?} > level width {level_px}",
+                    t.player.hitbox_w,
+                    p.x + p.w
+                );
+            }
         }
     }
 }

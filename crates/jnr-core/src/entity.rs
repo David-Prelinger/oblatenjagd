@@ -18,7 +18,8 @@
 //! The player interactions (collecting, power-ups, stomping, hurting) live
 //! in `game.rs`, because they change the score, lives and player. Enemy
 //! behaviour (patterns, projectiles, defeated enemies) is in
-//! [`crate::enemies`], the Festungsbahn car in [`crate::platform`].
+//! [`crate::enemies`], the moving platforms (Festungsbahn car, Gondel) in
+//! [`crate::platform`].
 
 use crate::fx::Fx;
 use crate::hash::Fnv;
@@ -38,6 +39,8 @@ pub enum Popup {
     Checkpoint,
     /// `popup.wurstkranz` („Wurstkranz!"), the top Maibaum zone.
     Wurstkranz,
+    /// `popup.hoppala` („Hoppala!"), an E-Biker crashed into a wall.
+    Hoppala,
 }
 
 impl Popup {
@@ -48,11 +51,12 @@ impl Popup {
             Popup::ExtraLife => Some("popup.extra_life"),
             Popup::Checkpoint => Some("popup.checkpoint"),
             Popup::Wurstkranz => Some("popup.wurstkranz"),
+            Popup::Hoppala => Some("popup.hoppala"),
         }
     }
 }
 
-/// The enemy types of Stage 1.
+/// The enemy types of Stages 1–3.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -65,12 +69,37 @@ pub enum EnemyKind {
     MozartkugelVerkaeufer,
     /// `fiaker`: not stompable, landing on it only bounces.
     Fiaker,
+    /// `nordic_walker`: walks, turns at walls, enemies and ledges.
+    NordicWalker,
+    /// `blasmusiker`: stands, blows note trains ([`EntityKind::Note`]).
+    Blasmusiker,
+    /// `e_biker`: parked, then rides left along the ground.
+    EBiker,
+    /// `bienenschwarm`: dances a figure-eight; hurts on any contact.
+    Bienenschwarm,
 }
 
 impl EnemyKind {
-    /// True if a stomp defeats it (the Fiaker only bounces the player).
+    /// True if a stomp defeats it (the Fiaker only bounces the player, a
+    /// swarm hurts from above too).
     pub const fn stompable(self) -> bool {
-        !matches!(self, EnemyKind::Fiaker)
+        !matches!(self, EnemyKind::Fiaker | EnemyKind::Bienenschwarm)
+    }
+
+    /// True if touching it from above hurts like any other contact (no
+    /// stomp, no bounce): the Bienenschwarm.
+    pub const fn hurts_from_above(self) -> bool {
+        matches!(self, EnemyKind::Bienenschwarm)
+    }
+
+    /// Index into `score.stomp_chain` when it is the first stomp of a
+    /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
+    /// Blasmusiker, E-Biker; D-046), else 0.
+    pub const fn chain_start(self) -> usize {
+        match self {
+            EnemyKind::MozartkugelVerkaeufer | EnemyKind::Blasmusiker | EnemyKind::EBiker => 1,
+            _ => 0,
+        }
     }
 
     /// Catalog sprite name.
@@ -80,6 +109,10 @@ impl EnemyKind {
             EnemyKind::Taube | EnemyKind::TaubeSitting => "taube",
             EnemyKind::MozartkugelVerkaeufer => "mozartkugel_verkaeufer",
             EnemyKind::Fiaker => "fiaker",
+            EnemyKind::NordicWalker => "nordic_walker",
+            EnemyKind::Blasmusiker => "blasmusiker",
+            EnemyKind::EBiker => "e_biker",
+            EnemyKind::Bienenschwarm => "bienenschwarm",
         }
     }
 
@@ -90,6 +123,10 @@ impl EnemyKind {
             EnemyKind::TaubeSitting => 2,
             EnemyKind::MozartkugelVerkaeufer => 3,
             EnemyKind::Fiaker => 4,
+            EnemyKind::NordicWalker => 5,
+            EnemyKind::Blasmusiker => 6,
+            EnemyKind::EBiker => 7,
+            EnemyKind::Bienenschwarm => 8,
         }
     }
 }
@@ -127,6 +164,11 @@ pub enum EntityKind {
     Thrown,
     /// The Festungsbahn car (moving one-way platform, [`crate::platform`]).
     Festungsbahn,
+    /// A Blasmusik note (flies straight, hurts, can't be stomped).
+    Note,
+    /// A Zwölferhorn cabin (free-running moving one-way platform,
+    /// [`crate::platform`]).
+    Gondel,
 }
 
 impl EntityKind {
@@ -142,8 +184,16 @@ impl EntityKind {
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => Some(k.sprite()),
             EntityKind::Thrown => Some("mozartkugel_thrown"),
             EntityKind::Festungsbahn => Some("festungsbahn"),
+            EntityKind::Note => Some("note"),
+            EntityKind::Gondel => Some("gondel"),
             EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
         }
+    }
+
+    /// True for moving platforms (Festungsbahn, Gondel): one-way tops that
+    /// carry the player and never despawn (D-027).
+    pub const fn is_platform(self) -> bool {
+        matches!(self, EntityKind::Festungsbahn | EntityKind::Gondel)
     }
 
     fn hash(self, h: &mut Fnv) {
@@ -163,6 +213,7 @@ impl EntityKind {
                     Popup::ExtraLife => h.u8(1),
                     Popup::Checkpoint => h.u8(2),
                     Popup::Wurstkranz => h.u8(3),
+                    Popup::Hoppala => h.u8(4),
                 }
             }
             EntityKind::Bump => h.u8(6),
@@ -178,6 +229,8 @@ impl EntityKind {
                 h.u8(k.id());
             }
             EntityKind::Thrown => h.u8(12),
+            EntityKind::Note => h.u8(13),
+            EntityKind::Gondel => h.u8(14),
         }
     }
 }
@@ -329,6 +382,47 @@ impl Entity {
                 car.state = crate::platform::initial_state(s);
                 car
             }
+            SpawnKind::Gondel => {
+                // Left-aligned in its cell like the Festungsbahn, then at
+                // `phase` frames into its cycle.
+                let mut cab =
+                    Entity::at_feet(EntityKind::Gondel, feet_x, feet_y, t.platforms.gondel_size);
+                cab.x = cell_x;
+                cab.base_x = cell_x;
+                cab.count = s.phase % crate::platform::gondel_period(s, t);
+                crate::platform::place_gondel(&mut cab, s, t);
+                cab
+            }
+            SpawnKind::NordicWalker => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::NordicWalker),
+                feet_x,
+                feet_y,
+                e.nordic_walker_hitbox,
+            ),
+            SpawnKind::Blasmusiker => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Blasmusiker),
+                feet_x,
+                feet_y,
+                e.blasmusiker_hitbox,
+            ),
+            SpawnKind::EBiker => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::EBiker),
+                feet_x,
+                feet_y,
+                e.e_biker_hitbox,
+            ),
+            SpawnKind::Bienenschwarm => {
+                // Hitbox centred on the anchor A: the cell centre, moved
+                // `dy` px (level field, e.g. -8 above the ground).
+                let [w, h] = e.bienenschwarm_hitbox;
+                let centre_y = tile.mul_int(s.row) + tile.div_int(2) + Fx::from_px(s.dy);
+                Entity::at_feet(
+                    EntityKind::Enemy(EnemyKind::Bienenschwarm),
+                    feet_x,
+                    centre_y + Fx::from_px(h).div_int(2),
+                    [w, h],
+                )
+            }
         };
         entity.active = false;
         entity.spawn = Some(index as u16);
@@ -336,6 +430,12 @@ impl Entity {
             // A `still` tourist has no direction: it never walks (D-026).
             entity.dir = if s.still { 0 } else { -1 };
             entity.state = crate::enemies::initial_state(kind);
+            if kind == EnemyKind::Bienenschwarm {
+                // `dir` is its run direction (0..=7), placed at `phase`.
+                entity.dir = (s.dir & 7) as i8;
+                entity.count = s.phase % crate::enemies::swarm_period(s.len, t);
+                crate::enemies::place_swarm(&mut entity, s.len, t);
+            }
         }
         Some(entity)
     }
@@ -410,6 +510,14 @@ impl Entity {
                 crate::platform::update_car(self, ctx);
                 None
             }
+            EntityKind::Gondel => {
+                crate::platform::update_gondel(self, ctx);
+                None
+            }
+            EntityKind::Note => {
+                crate::enemies::update_note(self, map, t);
+                None
+            }
             EntityKind::PoppedOblate => self.update_popped_oblate(t),
             EntityKind::Mozartkugel => {
                 self.update_power_up(map, t, t.items.mozartkugel_speed);
@@ -471,7 +579,7 @@ impl Entity {
         }
         self.x = b.x;
         self.y = b.y;
-        if map.touches(&b, crate::level::TileKind::Hazard) {
+        if map.touches_lethal(&b) {
             self.removed = true;
         }
     }
@@ -587,6 +695,10 @@ mod tests {
             sprite: None,
             layer: Default::default(),
             dx: 0,
+            phase: 0,
+            dir: 0,
+            len: crate::level::DEFAULT_SWARM_LEN,
+            dy: 0,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());
@@ -600,11 +712,14 @@ mod tests {
         assert_eq!(tourist.kind, EntityKind::Enemy(EnemyKind::SelfieTourist));
         for kind in SpawnKind::ALL {
             if let Some(e) = Entity::from_spawn(&s(kind), 0, &t) {
-                assert_eq!(
-                    e.feet().1,
-                    Fx::from_px(64) - Fx::from_px(3).mul_int((kind == SpawnKind::Oblate) as i32),
-                    "{kind:?}"
-                );
+                // Oblaten are centred in the cell; so is a swarm's hitbox
+                // (its anchor is the cell centre).
+                let above = match kind {
+                    SpawnKind::Oblate => 3,
+                    SpawnKind::Bienenschwarm => 1,
+                    _ => 0,
+                };
+                assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");
             }
         }
     }
@@ -613,6 +728,24 @@ mod tests {
     fn enemy_rules() {
         assert!(EnemyKind::SelfieTourist.stompable());
         assert!(!EnemyKind::Fiaker.stompable());
+        assert!(!EnemyKind::Bienenschwarm.stompable());
+        assert!(EnemyKind::Bienenschwarm.hurts_from_above());
+        assert!(!EnemyKind::Fiaker.hurts_from_above());
+        for k in [
+            EnemyKind::NordicWalker,
+            EnemyKind::Blasmusiker,
+            EnemyKind::EBiker,
+        ] {
+            assert!(k.stompable(), "{k:?}");
+        }
+        assert_eq!(EnemyKind::SelfieTourist.chain_start(), 0);
+        assert_eq!(EnemyKind::NordicWalker.chain_start(), 0);
+        assert_eq!(EnemyKind::MozartkugelVerkaeufer.chain_start(), 1);
+        assert_eq!(EnemyKind::Blasmusiker.chain_start(), 1);
+        assert_eq!(EnemyKind::EBiker.chain_start(), 1);
+        assert_eq!(Popup::Hoppala.text_key(), Some("popup.hoppala"));
+        assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
+        assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);
         assert_eq!(Popup::ExtraLife.text_key(), Some("popup.extra_life"));

@@ -701,11 +701,20 @@ fn checkpoint_activates_when_the_centre_passes_its_x() {
     assert!(events.contains(&Event::CheckpointReached));
     assert_eq!(g.checkpoint(), Some(cp));
     assert_eq!(g.player().center_px().0, 8 * 16 + 8, "exactly at its x");
-    assert!(
-        g.entities()
-            .iter()
-            .any(|e| e.kind == EntityKind::Popup(Popup::Checkpoint))
-    );
+    let popup = g
+        .entities()
+        .iter()
+        .find(|e| e.kind == EntityKind::Popup(Popup::Checkpoint))
+        .expect("checkpoint popup");
+    // Its text top 52 px above the checkpoint's ground: glyph rows 0–7
+    // (incl. the descender row) and the outline row 8 end 44 px above the
+    // ground, leaving 3 px of air above the 40 px bus board (at least 2
+    // required), and the popup only rises.
+    let ground = (g.level().entities[cp].row + 1) * 16;
+    assert_eq!(popup.y.to_px(), ground - 52);
+    let lowest_row = popup.y.to_px() + 8;
+    let board_top = ground - 40;
+    assert_eq!(board_top - lowest_row - 1, 3, "px of air above the board");
     // Only once.
     let events = hold(&mut g, "R", 20);
     assert!(!events.contains(&Event::CheckpointReached));
@@ -976,6 +985,46 @@ fn fit_head_only_acts_on_overlap() {
     p.vy = Fx::from_px(2);
     assert!(p.fit_head(&map));
     assert_eq!((p.y, p.vy), (Fx::from_px(160), Fx::from_px(2)));
+}
+
+/// The player stands on the ground and touches a Mozartkugel; an Oblate
+/// sits right above her Normal head, inside the Zuckerschock hitbox she
+/// grows into this frame. `ball_first`: the Mozartkugel comes first in the
+/// entity list.
+fn grow_under_an_oblate(ball_first: bool) -> Game {
+    let mut g = game(&world(20, &[(5, 10, 'o'), (5, 12, 'o')]));
+    let p = *g.player();
+    let ball = &mut g.entities[0];
+    ball.kind = EntityKind::Mozartkugel;
+    ball.timer = 1000; // risen long ago
+    ball.vx = Fx::ZERO;
+    ball.x = p.x;
+    ball.y = p.y + p.h - ball.h;
+    let oblate = &mut g.entities[1];
+    oblate.x = p.x;
+    oblate.y = p.y - oblate.h; // bottom flush with the Normal head
+    if !ball_first {
+        g.entities.swap(0, 1);
+    }
+    g.step(input("-"));
+    g
+}
+
+/// All contacts of a frame use the hitbox from the start of the contact
+/// pass: growing (and `fit_head`) happens after it, so the Oblate above the
+/// Normal head is not collected in the frame she grows, in either order.
+#[test]
+fn contacts_in_the_growing_frame_use_the_hitbox_before_growing() {
+    let a = grow_under_an_oblate(true);
+    let b = grow_under_an_oblate(false);
+    for g in [&a, &b] {
+        assert_eq!(g.player().power, Power::Big);
+        assert!(g.events().contains(&Event::PowerUp));
+        assert_eq!(g.oblaten(), 0, "the Oblate above the old head stays");
+        assert_eq!(count(g, EntityKind::Oblate), 1);
+    }
+    assert_eq!(a.player(), b.player(), "same player in both orders");
+    assert_eq!(a.score(), b.score());
 }
 
 // ------------------------------------------------------------- popups

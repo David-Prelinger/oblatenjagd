@@ -1,0 +1,58 @@
+# Stage 2 checkpoint (game-design "New mechanics": die in the water after
+# the checkpoint -> respawn at 142, level reset). The solver's route passes
+# the Ischler Strasse bus stop (col 142, CheckpointReached) and runs to the
+# pier; there she just walks on into the Wolfgangsee at the first gap
+# (239-240) and drowns (frame 1558, D-050 sinking). She respawns on the checkpoint (x 2274,
+# col 142) as Normal with the Oblaten counter (31) and the score (7600)
+# kept, one life less.
+level  = st_gilgen
+seed   = 1
+source = handwritten
+expect = dies_at frames=1558..1558 deaths=1 lives=2 event=CheckpointReached event=Respawned
+expect = state=playing oblaten=31 score=7600 player_x>=2270 player_y>=218 player_y<=218
+---
+# solver route (frames 0-1486)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 39
+RB 1
+R 80        # into the lake
+- 100

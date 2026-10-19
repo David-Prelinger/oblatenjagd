@@ -1,0 +1,192 @@
+# Stage 2: St. Gilgen (docs/game-design.md "Stage 2: St. Gilgen", D-041).
+# 280 columns x 17 rows with Stage 1's vertical layout: the street's top is
+# row 15 (rows 15-16 ground or water), 3 empty rows on top for the goal
+# camera, the goal meadow one row lower (row 16). 84 Oblaten, one ?-box and
+# two M-boxes. time_limit 210 (D-045: 3 x the 68 s QA relaxed run). An
+# entity cell is air unless its legend entry adds a tile (D-049): the
+# Oblaten in front of the walk-through houses use "O" (oblate on
+# wall_village_bg), so they don't punch holes in the walls; the balcony
+# walkers spawn on the balcony end that sticks out one column past the wall.
+# Columns:
+#   1 Busbahnhof        0-34   bus sign 5; 5 Oblaten 6-10; B M B at 13-15
+#                              (row 11, 4 up); bus-shelter wall 18-19
+#                              (2 high, turns the Mozartkugel); prellbock
+#                              prop 20-21, „Ischlerbahn" sign 24 (22-26);
+#                              walker #1 at 25 (street, wall 19 to the
+#                              flower column 28); planter 29-34 (1 high)
+#                              with walker #2 on it (turns at its right
+#                              edge and at the column); its raised left end,
+#                              the flower column 28 (3 high), is the perch:
+#                              Resi stands above the walker's head and steps
+#                              off onto it (a walking-pace hop onto a 1-high
+#                              planter landed in front of the walker).
+#   2 Talstation       35-94   „Seilbahn" sign 37; tourist 40 (forecourt,
+#                              walled in by the planter and the platform);
+#                              talstation prop (back, dx 32 -> col 43: its
+#                              drawn cable meets Gondel A's cable); station
+#                              platform 43-46 (1 up), „Dachfahrt" sign 44 on
+#                              it, clear of the cabin. Gondel A at 47 (roof
+#                              8 px above the platform) to [6, -1] over the
+#                              meadow trench 47-54 (floor row 16, stairs 47
+#                              and 53-54 at row 15: D-027/D-028 recovery; 3
+#                              Oblaten on its floor as consolation) to the
+#                              knoll 55-61 (top row 13; the roof ends 8 px
+#                              above it). Gondel B at 62 (roof 8 px below
+#                              the knoll: walk on) to [7, -2] over the death
+#                              ravine 62-70 to the pylon 71-73 (rock, top
+#                              row 12; seilbahn_stuetze prop at the level
+#                              bottom, dx 32, so its crossarm sits where B's
+#                              and C's cables meet). Gondel C at 74 (roof 8
+#                              px above the pylon: tap jump) to [7, 2] over
+#                              the ravine 74-82 to the ledge 83-85 (1 up),
+#                              street from 86. B and C share the period
+#                              (284 frames); C's phase 245 keeps its
+#                              activation on the station platform (before
+#                              the wait for A) and brings it back to the
+#                              pylon within ~0-70 frames of B's arrival.
+#                              No Taube here (D-032); 3 tiles free above
+#                              every track (lint).
+#   3 Mozartplatz      95-139  „nie Mozart" sign 97 (95-99, left of the
+#                              basin); Mozartbrunnen: basin rim 100-104 (1
+#                              high), plinth 102 (3 high, drawn = solid),
+#                              prop dx 48 from col 99; taube_sitting on
+#                              Mozart's head (102, row 9); tourists 114 (the
+#                              only one between the basin and the
+#                              Verkaeufer, so it paces 105-121 and isn't
+#                              pinned against the rim), 128, 138; souvenir
+#                              stand roof 117-120 (row 12, 2 Oblaten on it)
+#                              with the Verkaeufer beside it at 122, in the
+#                              open: stomp him off the roof or with a hop
+#                              (D-046); Gastgarten 131-137 (oneway_wood, row
+#                              12) with walker #3 and a ?-box 3 above its
+#                              middle (134, row 9).
+#   4 Ischler Strasse 140-189  checkpoint 142, „alle 4 voll" bus sign 145
+#                              (143-147, D-039); M-box 150 (row 11); tourist
+#                              #5 at 152 (roams left of the portal step);
+#                              „Mozarts Mama" sign 151 (149-153); mozarthaus
+#                              prop (back) 151-158 with a stone portal step
+#                              154-155 (turns the Mozartkugel and tourist
+#                              #5); „Nannerl" sign 158 (156-160). Balcony
+#                              staircase over wall_village_bg houses (D-041)
+#                              H1 162-166, H2 169-174, H3 177-182, H4
+#                              186-191, each under a full roof_bg gable
+#                              (rows narrowing by one tile per side: 5+3+1
+#                              or 6+4+2, catalog convention): trough step
+#                              161 -> B1 162-167 (row 11, walker #4) -> B2
+#                              169-175 (row 8, walker #5) -> B3 177-183 (row
+#                              11) -> B4 185-192 (row 9) -> the bandstand
+#                              roof. The house Oblaten hang in front of the
+#                              wall row just above each balcony (H1 163-165
+#                              row 10, H2 170-173 row 7, H3 178/180/182 row
+#                              10, H4 187-190 row 8), never inside a roof. Trough 183 and
+#                              planter 188-189 pen tourist #6 (185) on the
+#                              street away from the balcony walkers. The
+#                              street is always passable (balconies are
+#                              one-way, 3 tiles of headroom).
+#   5 Seepromenade    190-234  „Platzkonzert" sign 193; Musikpavillon
+#                              196-203: oneway_wood floor row 13, solid
+#                              roof_shingle roof row 9 (reached from B4; 6
+#                              Oblaten), prop dx 8; Blasmusiker #1 on the
+#                              floor at 200 (notes 198 px world y, over a
+#                              standing Resi's head); park bench 214-215
+#                              (stone, 1 high: stand on it or behind it);
+#                              Blasmusiker #2 at 223 on the street (notes
+#                              reach col 212 at most: the bench stops them;
+#                              after passing him they reach col 234, short
+#                              of the pier); „Linienschiff" sign 234 at the
+#                              pier entrance.
+#   6 Anlegestelle    235-279  jetty decks 236-238, 241-243, 247-252, 255-257
+#                              over Wolfgangsee gaps 239-240 (2), 244-246
+#                              (3), 253-254 (2); walker #6 paces the 6-tile
+#                              segment 247-252; Taube #3 high (row 6, spawn
+#                              258, meets Resi over 247-251, above every jump
+#                              arc); shore 258-265 with kiosk steps 258-259
+#                              (3 up) and the Schiffskassa 260-265
+#                              (facade_village, roof_shingle roof row 10 =
+#                              6 tiles above the meadow: the launch); meadow
+#                              266-279 one row lower; Maibaum 270, Ortsende
+#                              273, level end 279 (camera clamps at the goal,
+#                              crown in the HUD gap, D-029/D-037).
+
+[meta]
+id = "st_gilgen"
+title_key = "stage.st_gilgen.title"
+time_limit = 210
+min_jump_window = 6
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_schafberg", factor = 3 },
+  { sprite = "bg_wolfgangsee", factor = 8, y = 40 },
+  { sprite = "bg_stgilgen", factor = 13 },
+]
+
+[legend]
+"#" = "ground"
+"," = "meadow"
+"R" = "rock"
+"S" = "stone"
+"B" = "brick"
+"k" = "oneway_wood"
+"W" = "wall_village_bg"
+"^" = "roof_bg"
+"y" = "balcony"
+"r" = "roof_shingle"
+"H" = "facade_village"
+"J" = "jetty"
+"j" = "jetty_post"
+"~" = "wolfgangsee_water"
+"w" = "wolfgangsee_water_deep"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"o" = { entity = "oblate" }
+"O" = { entity = "oblate", tile = "wall_village_bg" }
+"n" = { entity = "nordic_walker" }
+"t" = { entity = "selfie_tourist" }
+"p" = { entity = "taube" }
+"q" = { entity = "taube_sitting" }
+"v" = { entity = "mozartkugel_verkaeufer" }
+"m" = { entity = "blasmusiker" }
+"A" = { entity = "gondel", to = [6, -1] }
+"D" = { entity = "gondel", to = [7, -2] }
+"E" = { entity = "gondel", to = [7, 2], phase = 245 }
+"C" = { entity = "checkpoint" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal_maibaum" }
+"b" = { entity = "sign", text = "stage.st_gilgen.sign_bus", style = "bus" }
+"i" = { entity = "sign", text = "stage.st_gilgen.sign_ischlerbahn" }
+"s" = { entity = "sign", text = "stage.st_gilgen.sign_seilbahn" }
+"d" = { entity = "sign", text = "stage.st_gilgen.sign_dachfahrt" }
+"z" = { entity = "sign", text = "stage.st_gilgen.sign_mozartplatz" }
+"c" = { entity = "sign", text = "stage.st_gilgen.sign_checkpoint", style = "bus" }
+"h" = { entity = "sign", text = "stage.st_gilgen.sign_mozarthaus" }
+"N" = { entity = "sign", text = "stage.st_gilgen.sign_nannerl" }
+"K" = { entity = "sign", text = "stage.st_gilgen.sign_platzkonzert" }
+"L" = { entity = "sign", text = "stage.st_gilgen.sign_schiff" }
+"x" = { entity = "sign", text = "stage.st_gilgen.sign_ortsende", style = "ortsende" }
+"1" = { entity = "prop", sprite = "prellbock", dx = 8 }
+"2" = { entity = "prop", sprite = "talstation", layer = "back", dx = 32 }
+"3" = { entity = "prop", sprite = "seilbahn_stuetze", layer = "back", dx = 32 }
+"4" = { entity = "prop", sprite = "mozartbrunnen", dx = 48 }
+"5" = { entity = "prop", sprite = "mozarthaus", layer = "back", dx = -24 }
+"6" = { entity = "prop", sprite = "musikpavillon", layer = "back", dx = 8 }
+
+[map]
+grid = '''
+........................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................^^...........................................................................................................
+..........................................................................................................................................................................^^^^..............^^..........................................................................................
+.........................................................................................................................................................................^^^^^^............^^^^...................................................................p.....................
+....................................................................................................................................................................^....WOOOOWn...^^.....^^^^^^........................................................................................
+...................................................................................................................................................................^^^...yyyyyyy..^^^^....WOOOOW.....oooooo.............................................................................
+......................................................................................................q...............................?...........................^^^^^..WWWWWW..^^^^^^..yyyyyyyy...rrrrrrrr.........................................................ooo................
+..................oo............o....................................................................o.o..........................................................WOOOWn.WWWWWW..WOWOWO...WWWWWW....................................................................rrrrrr..............
+.............BMB.o..o.........o...o...............................o.o...o...o.o.....................o...o.............oo...........o..n..o............M...........yyyyyy.WWWWWW..yyyyyyy..WWWWWW.....................................................o.......oo.....HHHHHH..............
+............................S...................oooooo..ooo.....o......RRRE.....o.....................S..............kkkk..........kkkkkkk........................WWWWW..WWWWWW..WWWWWW...WWWWWW........m......................................oo...o.o...........SSHHHHHH..............
+..................SS........S..n............d..........,,,,,,,.........RRR............................S...........................................................WWWWW..WWWWWW..WWWWWW...WWWWWW....kkkkkkkk..........oo..........................................SSHHHHHH..............
+..P..booooo.......SS1...in..SSSSSSS..s..t2.SSSSA.......#######D........RRR.........,,,...ooo.....z.4SSSSS.....ooo.t.......v.....t.........t...C..c.....ht.SS5.N..SWWWWW.oWWWWWW..WWWWWWS.tWWSSWW.K.....6......ooo.....SS.......m...ooo....L...............n.......SSHHHHHH..............
+###############################################S.ooo.SS#######.........RRR.........RRR######################################################################################################################################################JJJ~~JJJ~~~JJJJJJ~~JJJ########....G..x......
+###############################################,,,,,,,,#######........3RRR.........RRR######################################################################################################################################################jjjwwjjjwwwjjjjjjwwjjj########,,,,,,,,,,,,,,
+'''

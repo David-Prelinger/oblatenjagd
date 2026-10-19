@@ -29,6 +29,25 @@ pub struct Tuning {
     pub platforms: PlatformTuning,
     /// The Maibaum goal sequence.
     pub goal: GoalTuning,
+    /// The route map between stages (D-043).
+    pub map: MapTuning,
+}
+
+/// The route map between stages (`docs/game-design.md` → "Route map").
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MapTuning {
+    /// Frames Resi stands on the cleared station before walking.
+    pub arrive_frames: u16,
+    /// Frame of the Arrive phase at which the cleared station's marker
+    /// turns `done` (renderer only).
+    pub done_frame: u16,
+    /// Walking speed along the route, whole px per frame.
+    pub walk_px: u16,
+    /// Frames of the Wait phase before the next stage starts on its own.
+    pub wait_frames: u16,
+    /// Frames of „Fortsetzung folgt …" before the title (teaser).
+    pub teaser_frames: u16,
 }
 
 /// The Maibaum goal sequence (`docs/game-design.md` → "Goal sequence").
@@ -67,6 +86,16 @@ pub struct PlatformTuning {
     /// Frames standing at the upper end point (at the lower end the car
     /// waits for its rider, D-030).
     pub festungsbahn_wait: u16,
+    /// Gondel cabin `[w, h]` in whole pixels: the hitbox is the cabin, its
+    /// top the standing surface (left-aligned in its spawn cell, bottom on
+    /// the cell's bottom edge, like the Festungsbahn).
+    pub gondel_size: [i32; 2],
+    /// Frames a cabin waits at each end of its track (it never waits for a
+    /// rider, D-044).
+    pub gondel_wait: u16,
+    /// Travel frames per tile along the track's major axis (16 = 1 px per
+    /// frame): travel = max(|dx|, |dy|) × this.
+    pub gondel_frames_per_tile: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -117,6 +146,9 @@ pub struct PlayerTuning {
     pub invulnerable_frames: u8,
     /// Frames the game freezes while the player grows or shrinks.
     pub transform_frames: u8,
+    /// Whole pixels the player's feet sink below a water tile's top before
+    /// water kills (D-050; spikes kill on touch).
+    pub water_sink_px: i32,
 }
 
 /// Camera constants, in whole pixels of the 320×180 screen.
@@ -234,6 +266,16 @@ pub struct EnemyTuning {
     pub fiaker_hitbox: [i32; 2],
     /// The thrown Mozartkugel.
     pub thrown_hitbox: [i32; 2],
+    /// Nordic-Walker.
+    pub nordic_walker_hitbox: [i32; 2],
+    /// Blasmusiker.
+    pub blasmusiker_hitbox: [i32; 2],
+    /// A Blasmusik note.
+    pub note_hitbox: [i32; 2],
+    /// E-Biker.
+    pub e_biker_hitbox: [i32; 2],
+    /// Bienenschwarm (centred on its path).
+    pub bienenschwarm_hitbox: [i32; 2],
     /// Selfie-Tourist walking speed.
     pub tourist_speed: Fx,
     /// A selfie starts every this many frames after activation ...
@@ -276,6 +318,42 @@ pub struct EnemyTuning {
     pub fiaker_telegraph: u16,
     /// ... then charges left at this speed.
     pub fiaker_speed: Fx,
+    /// Nordic-Walker walking speed (it turns at walls, enemies and ledges).
+    pub walker_speed: Fx,
+    /// The Blasmusiker's bar counter runs while the player is this close (px).
+    pub blasmusiker_range: i32,
+    /// Frames of one bar of that counter ...
+    pub blasmusiker_bar: u16,
+    /// ... the first this many inhaling (the telegraph) ...
+    pub blasmusiker_inhale: u16,
+    /// ... and a note is blown at each of these bar frames (strictly
+    /// increasing, after the inhale, inside the bar).
+    pub blasmusiker_notes: [u16; 3],
+    /// Frames the blow pose shows from each note on.
+    pub blasmusiker_blow_pose: u16,
+    /// Note speed (straight towards the musician's facing side).
+    pub note_speed: Fx,
+    /// A note vanishes after flying this far (px).
+    pub note_range: i32,
+    /// Note centre height above the musician's feet (px) ...
+    pub note_height: i32,
+    /// ... and how far in front of his centre it starts (px).
+    pub note_ahead: i32,
+    /// The parked E-Biker telegraphs when the player is this close (px) ...
+    pub e_biker_trigger: i32,
+    /// ... for this many frames ...
+    pub e_biker_telegraph: u16,
+    /// ... then rides left at this speed (player gravity and max fall speed).
+    pub e_biker_speed: Fx,
+    /// Frames the crashed E-Biker shows before it is removed.
+    pub e_biker_crash_frames: u16,
+    /// Frames of a swarm's half-circle return to its anchor (the waggle
+    /// run itself is 1 px per frame).
+    pub swarm_return_frames: u16,
+    /// Renderer only: the swarm sprite shakes this many px across the run ...
+    pub swarm_shake: i32,
+    /// ... switching sides every this many frames.
+    pub swarm_shake_frames: u16,
     /// Frames a stomped enemy stays visible (squished).
     pub squish_frames: u16,
     /// Upward speed of an enemy or item knocked by a bumped block.
@@ -356,15 +434,15 @@ impl Tuning {
                 "tuning.toml: need 4 <= player.hitbox_w <= 16 and 4 <= player.hitbox_h <= 32",
             ));
         }
-        // Every gap a Normal player fits in (whole tiles on the 16 px grid)
+        // Every gap a Normal player fits in (whole tiles on the tile grid)
         // must fit the Zuckerschock too, so growing always finds room
         // (`Player::fit_head`).
-        let gap = (p.hitbox_h + 15) / 16 * 16;
+        let gap = (p.hitbox_h + TILE_PX - 1) / TILE_PX * TILE_PX;
         if !(p.hitbox_h..=gap).contains(&p.hitbox_h_big) {
-            return Err(ParseError::new(
+            return Err(ParseError::new(format!(
                 "tuning.toml: need player.hitbox_h <= player.hitbox_h_big <= player.hitbox_h \
-                 rounded up to whole tiles (16 px)",
-            ));
+                 rounded up to whole tiles ({TILE_PX} px)"
+            )));
         }
         for (name, v) in [
             ("player.stomp_bounce", p.stomp_bounce),
@@ -380,6 +458,11 @@ impl Tuning {
             return Err(ParseError::new(
                 "tuning.toml: player.transform_frames must be <= 120",
             ));
+        }
+        if !(1..=TILE_PX).contains(&p.water_sink_px) {
+            return Err(ParseError::new(format!(
+                "tuning.toml: player.water_sink_px must be 1..={TILE_PX}"
+            )));
         }
         let g = &self.game;
         if g.lives_start == 0 || g.lives_start > g.lives_max || g.lives_max > 99 {
@@ -411,10 +494,16 @@ impl Tuning {
             ),
             ("enemies.fiaker_hitbox", e.fiaker_hitbox),
             ("enemies.thrown_hitbox", e.thrown_hitbox),
+            ("enemies.nordic_walker_hitbox", e.nordic_walker_hitbox),
+            ("enemies.blasmusiker_hitbox", e.blasmusiker_hitbox),
+            ("enemies.note_hitbox", e.note_hitbox),
+            ("enemies.e_biker_hitbox", e.e_biker_hitbox),
+            ("enemies.bienenschwarm_hitbox", e.bienenschwarm_hitbox),
             (
                 "platforms.festungsbahn_size",
                 self.platforms.festungsbahn_size,
             ),
+            ("platforms.gondel_size", self.platforms.gondel_size),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -436,6 +525,9 @@ impl Tuning {
             ("enemies.thrown_gravity", e.thrown_gravity),
             ("enemies.fiaker_speed", e.fiaker_speed),
             ("enemies.knock_speed", e.knock_speed),
+            ("enemies.walker_speed", e.walker_speed),
+            ("enemies.note_speed", e.note_speed),
+            ("enemies.e_biker_speed", e.e_biker_speed),
         ] {
             if v <= Fx::ZERO || v >= max_step {
                 return Err(ParseError::new(format!(
@@ -467,6 +559,15 @@ impl Tuning {
             ("enemies.verkaeufer_period", e.verkaeufer_period),
             ("enemies.fiaker_telegraph", e.fiaker_telegraph),
             ("enemies.squish_frames", e.squish_frames),
+            ("enemies.blasmusiker_bar", e.blasmusiker_bar),
+            ("enemies.blasmusiker_blow_pose", e.blasmusiker_blow_pose),
+            ("enemies.e_biker_telegraph", e.e_biker_telegraph),
+            ("enemies.e_biker_crash_frames", e.e_biker_crash_frames),
+            ("enemies.swarm_shake_frames", e.swarm_shake_frames),
+            (
+                "platforms.gondel_frames_per_tile",
+                self.platforms.gondel_frames_per_tile,
+            ),
             (
                 "platforms.festungsbahn_travel",
                 self.platforms.festungsbahn_travel,
@@ -481,6 +582,26 @@ impl Tuning {
             if v == 0 {
                 return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
             }
+        }
+        let m = &self.map;
+        for (name, v) in [
+            ("map.arrive_frames", m.arrive_frames),
+            ("map.wait_frames", m.wait_frames),
+            ("map.teaser_frames", m.teaser_frames),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        if m.done_frame > m.arrive_frames {
+            return Err(ParseError::new(
+                "tuning.toml: map.done_frame must be <= map.arrive_frames",
+            ));
+        }
+        if !(1..=8).contains(&m.walk_px) {
+            return Err(ParseError::new(
+                "tuning.toml: map.walk_px must be 1..=8 px/frame",
+            ));
         }
         // Counted down in the frame it is set: 1 would protect no frame.
         if e.bounce_grace_frames < 2 {
@@ -501,6 +622,44 @@ impl Tuning {
                 "tuning.toml: platforms.festungsbahn_wait + festungsbahn_travel must be <= 32767 frames",
             ));
         }
+        // A cabin's whole cycle (longest track: 64 tiles) fits the u16
+        // frame counter.
+        let gondel_period = 2
+            * (u32::from(pl.gondel_wait)
+                + u32::from(pl.gondel_frames_per_tile) * crate::level::MAX_TRACK_TILES as u32);
+        // (`gondel_frames_per_tile` <= 64 also keeps `place_gondel`'s
+        // delta × progress product inside i32.)
+        if gondel_period > u32::from(u16::MAX) || pl.gondel_frames_per_tile > 64 {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.gondel_frames_per_tile <= 64 and 2 × (gondel_wait + 64 × gondel_frames_per_tile) <= 65535 frames",
+            ));
+        }
+        let n = e.blasmusiker_notes;
+        if n[0] < e.blasmusiker_inhale
+            || n.windows(2).any(|w| w[0] >= w[1])
+            || n[2].saturating_add(e.blasmusiker_blow_pose) > e.blasmusiker_bar
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.blasmusiker_inhale <= blasmusiker_notes (strictly increasing) and the last note + blasmusiker_blow_pose <= blasmusiker_bar",
+            ));
+        }
+        if !(2..=1024).contains(&e.swarm_return_frames) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.swarm_return_frames must be 2..=1024",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.note_range", e.note_range),
+            ("enemies.note_height", e.note_height),
+            ("enemies.note_ahead", e.note_ahead),
+            ("enemies.swarm_shake", e.swarm_shake),
+        ] {
+            if !(0..=crate::camera::SCREEN_W).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=320 px"
+                )));
+            }
+        }
         if e.verkaeufer_windup.saturating_add(e.verkaeufer_throw_pose) >= e.verkaeufer_period {
             return Err(ParseError::new(
                 "tuning.toml: need enemies.verkaeufer_windup + verkaeufer_throw_pose < verkaeufer_period",
@@ -520,6 +679,8 @@ impl Tuning {
             ("enemies.taube_sitting_trigger", e.taube_sitting_trigger),
             ("enemies.verkaeufer_range", e.verkaeufer_range),
             ("enemies.fiaker_trigger", e.fiaker_trigger),
+            ("enemies.blasmusiker_range", e.blasmusiker_range),
+            ("enemies.e_biker_trigger", e.e_biker_trigger),
         ] {
             if !(0..=crate::camera::SCREEN_W * 2).contains(&v) {
                 return Err(ParseError::new(format!(
@@ -661,6 +822,30 @@ mod tests {
             ("bounce_grace_frames", 0),
             ("bounce_grace_frames", 1),
             ("festungsbahn_wait", 32700),
+            ("gondel_size", 0),
+            ("gondel_frames_per_tile", 0),
+            ("gondel_frames_per_tile", 65),
+            ("gondel_wait", 32000),
+            ("nordic_walker_hitbox", 65),
+            ("blasmusiker_hitbox", 0),
+            ("note_hitbox", 0),
+            ("e_biker_hitbox", 65),
+            ("bienenschwarm_hitbox", 0),
+            ("walker_speed", 0),
+            ("note_speed", 0),
+            ("e_biker_speed", 3072),
+            ("blasmusiker_range", 641),
+            ("e_biker_trigger", -1),
+            ("blasmusiker_bar", 0),
+            ("blasmusiker_bar", 85),
+            ("blasmusiker_inhale", 31),
+            ("blasmusiker_blow_pose", 0),
+            ("note_range", 321),
+            ("e_biker_telegraph", 0),
+            ("e_biker_crash_frames", 0),
+            ("swarm_return_frames", 1),
+            ("swarm_return_frames", 1025),
+            ("swarm_shake_frames", 0),
             ("hitbox_w", 3),
             ("hitbox_w", 17),
             ("hitbox_h", 3),
@@ -668,7 +853,19 @@ mod tests {
             ("hitbox_h", 16),
             ("hitbox_h_big", 21),
             ("hitbox_h_big", 33),
-        ] {
+            ("water_sink_px", 0),
+            ("water_sink_px", 17),
+            ("arrive_frames", 0),
+            ("done_frame", 41),
+            ("walk_px", 0),
+            ("walk_px", 9),
+            ("wait_frames", 0),
+            ("teaser_frames", 0),
+        ]
+        .map(|(f, v)| (f, v.to_string()))
+        .into_iter()
+        .chain([("blasmusiker_notes", "[30, 30, 78]".to_string())])
+        {
             let t = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             assert!(Tuning::parse(&t).is_err(), "{field} = {bad}");
         }
