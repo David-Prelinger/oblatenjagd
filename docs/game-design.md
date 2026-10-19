@@ -12,7 +12,7 @@ Language: all in-game text is German with Austrian flavour ("Servus", "Grüß Go
 
 ## Core gameplay (Super Mario Bros. style)
 
-- Side-scrolling from left to right; the camera never scrolls back left (like SMB).
+- Side-scrolling from left to right; the camera never scrolls back left (like SMB). Only exception: a moving platform carrying Resi left past the screen edge takes the camera along (D-051).
 - Run, jump with variable height (hold to jump higher), stomp enemies from above.
 - Collect **Zauner Oblaten** (the coins). 100 Oblaten = 1 extra life.
 - Hit **Oblatenkisten** (the "?" blocks) from below to release Oblaten or power-ups.

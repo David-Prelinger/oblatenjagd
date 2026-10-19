@@ -799,22 +799,40 @@ fn gondel_carries_a_standing_player_exactly() {
 }
 
 #[test]
-fn a_gondel_rider_is_held_at_the_screen_s_left_edge() {
-    // A cabin at column 12 going 8 tiles left; the camera's left edge is
-    // put at x 160 (as if the player had scrolled it there): the rider
-    // stays on screen and slides back over the roof instead.
+fn a_gondel_carries_its_rider_past_the_screen_s_left_edge() {
+    // D-051: a cabin at column 12 going 8 tiles left; the camera's left
+    // edge is put at x 160 (as if the player had scrolled it there). The
+    // carry takes the rider past it, the camera follows her left by the
+    // same amount, and she stays on the roof the whole way.
     let mut g = game(&world(60, &[(11, 12, 'l')]));
     safe_step(&mut g, "-");
     board(&mut g, 20);
     g.camera.x = 160;
-    let mut held = 0;
+    let mut followed = 0;
     for _ in 0..300 {
+        let (cam, px) = (g.camera().x, g.player().x);
         g.step(input("-"));
-        let p = *g.player();
+        let (c, p) = (first(&g, GONDEL), *g.player());
+        assert_eq!(p.y + p.h, c.y, "still on the roof");
+        assert_eq!(p.x - c.x, Fx::from_px(20), "no sliding");
         assert!(p.x >= Fx::from_px(g.camera().x), "on screen");
-        held += u32::from(p.x == Fx::from_px(160));
+        if g.camera().x < cam {
+            followed += 1;
+            assert_eq!(g.camera().x, p.x.to_px(), "left edge on the rider");
+            assert!(p.x < px, "only while carried left");
+        }
     }
-    assert!(held > 0, "pushed against the edge");
+    assert!(followed > 0, "the camera scrolled left");
+    assert_eq!(g.camera().x, 192 - 128 + 20, "at the far end");
+}
+
+#[test]
+fn the_camera_never_scrolls_left_for_the_player_s_own_steps() {
+    let mut g = game(&world(60, &[]));
+    g.camera.x = 16;
+    hold(&mut g, "L", 120);
+    assert_eq!(g.camera().x, 16);
+    assert_eq!(g.player().x, Fx::from_px(16), "held at the edge");
 }
 
 #[test]

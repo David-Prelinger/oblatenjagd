@@ -121,14 +121,26 @@ fn max_fall_speed_is_4_px_per_frame() {
 /// Walks off a ledge and presses JUMP `j` steps after the first airborne
 /// step (step `j` is the `j`-th step that starts in the air).
 fn coyote_jump_after(j: u32) -> bool {
+    coyote_jump_after_over(j, '.')
+}
+
+/// A ledge at row 7 (columns 0–7) followed by `beyond` tiles in the same
+/// row (`.` a pit, `~` water flush with the walking surface, `^` spikes).
+fn ledge_level(beyond: char) -> Level {
     let air = ".".repeat(30);
-    let ledge = format!("{}{}", "#".repeat(8), ".".repeat(22));
+    let ledge = format!("{}{}", "#".repeat(8), beyond.to_string().repeat(22));
     let start = format!("..P{}", ".".repeat(27));
     let mut rows: Vec<&str> = vec![&air; 6];
     rows.push(&start);
     rows.push(&ledge);
     rows.extend(std::iter::repeat_n(air.as_str(), 6));
-    let mut g = Game::new(&level(&rows), &tuning(), 1);
+    level(&rows)
+}
+
+/// [`coyote_jump_after`] with `beyond` (see [`ledge_level`]) after the
+/// ledge.
+fn coyote_jump_after_over(j: u32, beyond: char) -> bool {
+    let mut g = Game::new(&ledge_level(beyond), &tuning(), 1);
     hold(&mut g, "-", 2);
     let mut steps = 0;
     while g.player().on_ground {
@@ -152,6 +164,73 @@ fn coyote_time_is_6_frames() {
         );
     }
     assert!(!coyote_jump_after(frames + 1), "too late");
+}
+
+#[test]
+fn coyote_time_works_over_water() {
+    // D-050: water flush with the walking surface kills only once the feet
+    // have sunk in, so every coyote frame still jumps.
+    let frames = tuning().player.coyote_frames as u32;
+    for j in 1..=frames {
+        assert!(
+            coyote_jump_after_over(j, '~'),
+            "jump {j} frames after the water edge must work"
+        );
+    }
+}
+
+/// Walks right off the ledge of [`ledge_level`] until she dies; returns
+/// (steps from the first airborne step to the death step, 1 = the same
+/// step, feet below the ledge top in subpixels at the death).
+fn walk_off_until_death(beyond: char) -> (u32, Fx) {
+    let mut g = Game::new(&ledge_level(beyond), &tuning(), 1);
+    hold(&mut g, "-", 2);
+    let top = Fx::from_px(7 * TILE_PX);
+    let mut airborne = 0;
+    for _ in 0..300 {
+        let died = g.step(input("R")).contains(&Event::Died);
+        if !g.player().on_ground || died {
+            airborne += 1;
+        }
+        if died {
+            return (airborne, g.player().feet().1 - top);
+        }
+        if airborne > 0 {
+            assert!(
+                g.player().feet().1 - top < Fx::from_px(tuning().player.water_sink_px),
+                "alive with the feet sunk less than water_sink_px"
+            );
+        }
+    }
+    panic!("no death");
+}
+
+#[test]
+fn water_kills_once_the_feet_have_sunk_in() {
+    let sink = Fx::from_px(tuning().player.water_sink_px);
+    assert_eq!(sink, Fx::from_px(8));
+    let (steps, depth) = walk_off_until_death('~');
+    assert!(depth >= sink, "sunk {} subpx", depth.raw());
+    assert!(steps > 1, "not on the first airborne step");
+    assert_eq!(g_cause('~'), Some(crate::DeathCause::Hazard));
+}
+
+#[test]
+fn spikes_still_kill_on_touch() {
+    // D-050 leaves spikes alone: the first airborne step over spikes flush
+    // with the walking surface kills.
+    let (steps, depth) = walk_off_until_death('^');
+    assert_eq!(steps, 1);
+    assert!(depth > Fx::ZERO && depth < Fx::from_px(1));
+    assert_eq!(g_cause('^'), Some(crate::DeathCause::Hazard));
+}
+
+/// The death cause after walking off the ledge into `beyond`.
+fn g_cause(beyond: char) -> Option<crate::DeathCause> {
+    let mut g = Game::new(&ledge_level(beyond), &tuning(), 1);
+    hold(&mut g, "-", 2);
+    until(&mut g, "R", 300, |g| g.death_cause().is_some());
+    g.death_cause()
 }
 
 /// Tap-jumps, then presses JUMP again `d` frames before the first frame

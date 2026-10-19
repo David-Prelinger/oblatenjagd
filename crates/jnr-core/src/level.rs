@@ -27,8 +27,12 @@ pub enum TileKind {
     Solid,
     /// Blocks only from above (the player can jump through from below).
     OneWay,
-    /// Kills the player on touch (spikes, Salzach water).
+    /// Kills the player on touch (spikes).
     Hazard,
+    /// Kills the player once her feet have sunk `player.water_sink_px`
+    /// below the tile's top (Salzach, Wolfgangsee; D-050); otherwise a
+    /// hazard (items and E-Bikers are lost in it).
+    Water,
 }
 
 impl TileKind {
@@ -47,11 +51,11 @@ impl TileKind {
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" => {
                 Some(TileKind::OneWay)
             }
-            "hazard"
-            | "salzach_water"
+            "hazard" => Some(TileKind::Hazard),
+            "salzach_water"
             | "salzach_water_deep"
             | "wolfgangsee_water"
-            | "wolfgangsee_water_deep" => Some(TileKind::Hazard),
+            | "wolfgangsee_water_deep" => Some(TileKind::Water),
             _ => None,
         }
     }
@@ -63,7 +67,14 @@ impl TileKind {
             TileKind::Solid => 1,
             TileKind::OneWay => 2,
             TileKind::Hazard => 3,
+            TileKind::Water => 4,
         }
+    }
+
+    /// True for the kinds that kill (spikes, water) and that items and
+    /// E-Bikers are lost in.
+    pub const fn is_lethal(self) -> bool {
+        matches!(self, TileKind::Hazard | TileKind::Water)
     }
 }
 
@@ -907,15 +918,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn salzburg_water_tiles_are_hazards() {
+    fn salzburg_water_tiles_are_water() {
         assert_eq!(
             TileKind::from_tile_name("salzach_water"),
-            Some(TileKind::Hazard)
+            Some(TileKind::Water)
         );
         assert_eq!(
             TileKind::from_tile_name("salzach_water_deep"),
-            Some(TileKind::Hazard)
+            Some(TileKind::Water)
         );
+        assert_eq!(TileKind::from_tile_name("hazard"), Some(TileKind::Hazard));
+        assert!(TileKind::Water.is_lethal() && TileKind::Hazard.is_lethal());
+        assert!(!TileKind::Solid.is_lethal() && !TileKind::Empty.is_lethal());
     }
 
     const SMALL: &str = r##"
@@ -1433,8 +1447,8 @@ P.sSC.tfG
             ("jetty_post", Solid),
             ("forest_path", Solid),
             ("beute", Solid),
-            ("wolfgangsee_water", Hazard),
-            ("wolfgangsee_water_deep", Hazard),
+            ("wolfgangsee_water", Water),
+            ("wolfgangsee_water_deep", Water),
         ] {
             assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
         }

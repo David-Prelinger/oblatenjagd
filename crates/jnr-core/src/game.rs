@@ -428,6 +428,7 @@ impl Game {
             self.hit_from_below(row);
         }
         self.update_entities();
+        self.follow_carried_left();
         self.interact(prev_bottom, input);
         // Counted after the hits of this frame: exactly
         // `invulnerable_frames` frames without harm.
@@ -441,7 +442,13 @@ impl Game {
         }
 
         let hb = self.player.hitbox();
-        if self.map.touches(&hb, TileKind::Hazard) {
+        // Spikes kill on touch; water only once the feet have sunk in
+        // (D-050), so coyote jumps work at water edges.
+        if self.map.touches(&hb, TileKind::Hazard)
+            || self
+                .map
+                .sunk_in_water(&hb, self.tuning.player.water_sink_px)
+        {
             self.die(DeathCause::Hazard);
             return;
         }
@@ -461,6 +468,17 @@ impl Game {
         );
         if self.mode == Mode::Playing {
             self.tick_timer();
+        }
+    }
+
+    /// D-051: the player's own movement stops at the screen's left edge,
+    /// so only a moving platform's carry can take her past it; the camera
+    /// then scrolls left by the same amount (the one exception to "never
+    /// scrolls left"), and she stays on the cabin.
+    fn follow_carried_left(&mut self) {
+        let left = self.player.x.to_px();
+        if left < self.camera.x {
+            self.camera.x = left.max(0);
         }
     }
 
@@ -799,7 +817,6 @@ impl Game {
                     old,
                     e,
                     ctx.map,
-                    ctx.screen_left,
                     &ctx.tuning.player,
                     &mut self.events,
                 );
@@ -932,8 +949,7 @@ impl Game {
             y: top - self.player.h,
             ..self.player.hitbox()
         };
-        if self.map.touches(&placed, TileKind::Solid) || self.map.touches(&placed, TileKind::Hazard)
-        {
+        if self.map.touches(&placed, TileKind::Solid) || self.map.touches_lethal(&placed) {
             self.player.bounce_grace = self.tuning.enemies.bounce_grace_frames;
         } else {
             self.player.y = placed.y;

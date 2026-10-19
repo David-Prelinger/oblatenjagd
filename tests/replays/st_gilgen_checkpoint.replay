@@ -2,13 +2,13 @@
 # the checkpoint -> respawn at 142, level reset). The solver's route passes
 # the Ischler Strasse bus stop (col 142, CheckpointReached) and runs to the
 # pier; there she just walks on into the Wolfgangsee at the first gap
-# (239-240) and drowns (frame 1552). She respawns on the checkpoint (x 2274,
+# (239-240) and drowns (frame 1558, D-050 sinking). She respawns on the checkpoint (x 2274,
 # col 142) as Normal with the Oblaten counter (38) and the score (9100)
 # kept, one life less.
 level  = st_gilgen
 seed   = 1
 source = handwritten
-expect = dies_at frames=1552..1552 deaths=1 lives=2 event=CheckpointReached event=Respawned
+expect = dies_at frames=1558..1558 deaths=1 lives=2 event=CheckpointReached event=Respawned
 expect = state=playing oblaten=38 score=9100 player_x>=2270 player_y>=218 player_y<=218
 ---
 # solver route (frames 0-1486)

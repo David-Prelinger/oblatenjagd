@@ -271,12 +271,15 @@ pub(crate) fn land(
 /// exactly the same amount (X then Y, with tile collision). A car rising
 /// into a player who is not moving up (feet at or above the old top, below
 /// the new one) lifts the player onto its top.
+///
+/// Unlike the player's own movement the carry is not stopped at the
+/// screen's left edge: the camera follows a rider carried past it
+/// (D-051, `Game::follow_carried_left`).
 pub(crate) fn carry(
     p: &mut Player,
     old: Aabb,
     car: &Entity,
     map: &TileMap,
-    screen_left: Fx,
     t: &PlayerTuning,
     events: &mut Vec<Event>,
 ) {
@@ -284,8 +287,6 @@ pub(crate) fn carry(
     let feet = b.bottom();
     if p.on_ground && stands_on(&b, &old) {
         map.move_x(&mut b, car.x - old.x);
-        // Like the player's own movement: never left of the screen.
-        b.x = b.x.max(screen_left);
         map.move_y(&mut b, car.y - old.y, false);
         p.x = b.x;
         p.y = b.y;
