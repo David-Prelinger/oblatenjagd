@@ -1,0 +1,174 @@
+# QA M3: a relaxed full run of Stage 4 Falkenstein for the D-045 time
+# limit. Walking pace (RUN only for the one running jump onto the H-box),
+# some exploring, no deaths, no hurts: the M-box at Fürberg (the
+# Mozartkugel hops the garden wall and is caught on the shore path), the
+# Fürberg pilgrim and group A stomped one by one from the terrace below
+# the long terrace (waiting for them to come down), the ?-box, the
+# Holzstiege, pair B and #7 stomped in the trough, a wait under the
+# rockfall net and timed walks past rocks #2-#4, the checkpoint, the shaft
+# planks, the boulder top (Oblaten), the Einsiedelei (Zaunerstollen,
+# +1 life), the Wolfgang pigeon stomped, the Hackl taken as Zuckerschock
+# with a running jump onto the H-box (a walking jump can't reach it, see
+# the QA report), group C and both saddle Gams defeated with axes, a walk
+# off the Aberseeblick to the Maibaum. 52 of 68 Oblaten.
+# Measured: LevelComplete at frame 4964 (82.7 s; the timer shows 159 of 240).
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = complete frames=4964..4964 deaths=0 no_event=Hurt power=hackl lives=4 oblaten=52
+---
+R 120
+J 12
+- 60
+R 20
+RJ 20
+R 20
+R 100
+RJ 20
+R 30
+RJ 20
+R 30
+RJ 20
+R 25
+RJ 20
+R 30
+- 20
+J 15
+- 212
+J 12
+- 30
+J 12
+- 30
+J 12
+- 30
+J 12
+R 30
+RJ 20
+R 108
+RJ 20
+- 10
+RJ 22
+R 60
+R 20
+RJ 14
+- 40
+- 60
+- 78
+J 12
+- 20
+J 12
+- 30
+R 40
+RJ 15
+R 90
+- 150
+- 55
+R 120
+R 20
+- 190
+R 6
+RJ 20
+R 60
+- 20
+RJ 22
+R 30
+R 10
+RJ 10
+R 20
+J 10
+- 40
+R 56
+- 10
+J 22
+- 20
+R 14
+- 20
+J 22
+- 10
+L 8
+- 10
+J 22
+- 30
+- 10
+J 22
+- 30
+R 30
+RJ 22
+R 170
+RJ 20
+R 40
+- 10
+J 22
+R 110
+- 20
+J 30
+- 10
+J 4
+- 45
+DJ 5
+- 30
+R 60
+- 10
+J 15
+- 10
+R 8
+- 10
+J 12
+LJ 18
+L 4
+- 66
+J 10
+- 40
+- 5
+L 110
+- 5
+RB 44
+RBJ 20
+R 10
+- 10
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+R 26
+- 30
+B 1
+- 40
+R 30
+- 10
+B 1
+- 40
+R 140
+- 5
+B 1
+- 30
+B 1
+- 30
+R 30
+- 5
+B 1
+- 30
+B 1
+- 30
+R 150
+- 5
+RJ 22
+R 20
+- 20
+R 28
+RJ 22
+R 25
+- 15
+B 1
+- 30
+B 1
+- 30
+R 100
+RJ 20
+R 20
+RJ 15
+R 120

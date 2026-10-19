@@ -1,0 +1,62 @@
+# QA M3: pausing during the Durchkriechstein crawl (D-057). Title flow
+# with the run started at Falkenstein; the falkenstein_crawl_normal
+# inputs from frame 171 to the boulder's face, DOWN: the crawl starts at
+# 1217; START at 1251 pauses half-way through the tunnel (nothing moves,
+# the timer stands), START at 1352 resumes; she comes out at 1394, exactly
+# 76 crawl frames after the start, with +1 life.
+level  = falkenstein
+seed   = 1
+source = handwritten
+start  = title
+expect = event=CrawlStarted event=ExtraLife lives=4 deaths=0 state=playing power=normal player_x>=2464
+---
+- 20
+S 1
+- 150
+# --- the first 995 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 6
+RB 59
+RBJ 6
+RB 40
+RBJ 36
+RB 40
+RBJ 12
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 97
+# --- end of falkenstein_solver.replay ---
+- 30
+R 20      # into the boulder's face at the mouth
+D 4       # crawl (1217)
+- 30
+S 1       # pause in the tunnel (1251)
+- 100
+S 1       # resume (1352); out at 1394 with +1 life
+- 100

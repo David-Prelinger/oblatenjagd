@@ -1,0 +1,60 @@
+# QA M3, Stage 4 cleft death at the death line (D-054), the saddle's
+# cleft (207-209; falkenstein_cleft_death covers the Steinschlag one):
+# the solver route to the take-off (201-206, frame 1350), then Resi walks
+# right into the cleft instead of jumping. The climb camera follows the
+# fall only 80 px below the take-off's framing (camera y stops at 124),
+# so she dies when her hitbox top reaches the screen bottom: frame 1451,
+# ~38 frames after the edge, top at 304 px, long before the level bottom
+# (672 px). If the solver route changes, re-copy the prefix.
+level  = falkenstein
+seed   = 1
+source = handwritten
+expect = dies_at frames=1451..1451 deaths=1 player_y<=310 state=dying
+---
+# --- the first 1350 frames of falkenstein_solver.replay ---
+RB 28
+RBJ 36
+RB 16
+RBJ 36
+RB 43
+RBJ 36
+RB 18
+RBJ 12
+RB 43
+RBJ 12
+RB 30
+RBJ 36
+RB 14
+RBJ 20
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 6
+RB 59
+RBJ 6
+RB 40
+RBJ 36
+RB 40
+RBJ 12
+RB 13
+LBJ 12
+LB 2
+RB 3
+LBJ 36
+LB 2
+RB 3
+RBJ 20
+RB 13
+RBJ 20
+RB 98
+RBJ 36
+RB 188
+RBJ 36
+RB 43
+RBJ 20
+RB 31
+# --- end of the first 1350 frames of falkenstein_solver.replay ---
+R 100     # walks right off the take-off into the cleft (207-209)
+- 20      # dies at the death line, far above the level bottom
