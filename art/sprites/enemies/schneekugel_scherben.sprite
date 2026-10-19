@@ -1,8 +1,9 @@
 # Schneekugel shard: a broken piece of the snow globe's glass (w lit edge,
 # h body, i edge on the shadow side) with a k outline and a fleck of snow.
 # The renderer spawns 4 when a globe shatters (wall, stomp, axe), like
-# brick debris. spin = the shard tumbles a quarter turn and
-# the snow fleck (w in a k ring) swaps sides.
+# brick debris. spin: frame 0 = a thin tilted sliver, frame 1 = a short
+# curved piece (not a rotation of frame 0); the snow fleck (w in a k ring)
+# sits apart from the point and swaps corners.
 sprite = schneekugel_scherben
 size   = 8x8
 origin = 4,8
@@ -10,20 +11,20 @@ hitbox = 1,1,6,6
 anim   = spin frames=2 ticks=4 loop
 ---
 frame spin 0
-......k.
-...k.kwk
-..kwk.k.
-..kwhk..
-.kwhhik.
-.khhiik.
-..kkkkk.
-........
+.k......
+kwk..kk.
+.k..kwhk
+...kwhik
+..kwhik.
+.kwhik..
+.kiik...
+..kk....
 frame spin 1
 ........
-.kkkkk..
-.kwhhik.
-.kwhik..
-.khik.k.
-.kik.kwk
-..k...k.
-........
+..kkk...
+.kwwhkk.
+kwhhhiik
+.kiiikk.
+..kkk.k.
+.....kwk
+......k.
