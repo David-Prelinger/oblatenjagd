@@ -412,9 +412,10 @@ impl Entity {
                 e.e_biker_hitbox,
             ),
             SpawnKind::Bienenschwarm => {
-                // Hitbox centred on the cell centre (the anchor A).
+                // Hitbox centred on the anchor A: the cell centre, moved
+                // `dy` px (level field, e.g. -8 above the ground).
                 let [w, h] = e.bienenschwarm_hitbox;
-                let centre_y = tile.mul_int(s.row) + tile.div_int(2);
+                let centre_y = tile.mul_int(s.row) + tile.div_int(2) + Fx::from_px(s.dy);
                 Entity::at_feet(
                     EntityKind::Enemy(EnemyKind::Bienenschwarm),
                     feet_x,
@@ -578,7 +579,7 @@ impl Entity {
         }
         self.x = b.x;
         self.y = b.y;
-        if map.touches(&b, crate::level::TileKind::Hazard) {
+        if map.touches_lethal(&b) {
             self.removed = true;
         }
     }
@@ -697,6 +698,7 @@ mod tests {
             phase: 0,
             dir: 0,
             len: crate::level::DEFAULT_SWARM_LEN,
+            dy: 0,
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());

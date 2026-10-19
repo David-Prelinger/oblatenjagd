@@ -1,55 +1,65 @@
-# Badesteg -> Maibaum: the solver route up to frame 1435 (Resi on the
-# boathouse roof), she stops, walks back to the roof's left end and takes
-# a held running jump off its edge (6 tiles above the meadow): she grabs
-# the pole above 7 tiles, Wurstkranz, 5000 (D-038). Take-offs after 16 to
-# 34 frames of running all reach it.
+# Badesteg -> Maibaum: the solver route up to frame 1415 (Resi comes down
+# on the boathouse's stair tower), a hop onto its roof, she stops, walks
+# back to the roof's left end and takes a held running jump off its edge
+# (6 tiles above the meadow): she grabs the pole above 7 tiles (1569),
+# Wurstkranz, 5000 (D-038; 4900 more than brunnwinkl_goal_walk_off's
+# 100). Take-offs after 12 to 36 frames of running all reach it. Re-cut
+# on the re-solved route (M2 level pass: boathouse prop, 3-gap at
+# 215-217).
 level  = brunnwinkl
 seed   = 1
 source = handwritten
-expect = complete frames=1588..1588 score=11200 deaths=0 state=stage_clear
-# review shots (enable with goldens after an art-director verdict): 1588:touch
+expect = complete frames=1569..1569 score=10900 deaths=0 state=stage_clear
+# review shots (enable with goldens after an art-director verdict): 1569:touch
 ---
-RB 108
+# --- the first 1415 frames of brunnwinkl_solver.replay ---
+RB 104
 RBJ 36
-RB 47
+RB 27
 RBJ 36
-RB 40
+RB 2
 RBJ 36
-RB 18
-RBJ 36
-RB 40
-RBJ 36
-RB 188
-RBJ 1
-RB 18
-L 4
-RJ 36
-R 2
-RB 3
-RBJ 12
-RB 210
-RBJ 6
-RB 22
-RJ 36
-R 2
-RB 34
-RBJ 36
-RB 60
-RBJ 36
-RB 5
-RBJ 1
-RB 32
-RBJ 36
-RB 38
-RBJ 36
-RB 40
-RBJ 36
-RB 32
-RBJ 36
-RB 4
-- 40
-L 36
-- 20
 RB 24
-RBJ 40
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 33
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 8
+# --- end of the first 1415 frames of brunnwinkl_solver.replay ---
+- 6         # land on the stair tower
+RJ 14       # hop onto the boathouse roof
+R 2
+- 40        # stand on the roof
+L 14        # back to its left end
+- 20
+RB 24       # run-up
+RBJ 40      # held running jump off the edge: Wurstkranz
 RB 20

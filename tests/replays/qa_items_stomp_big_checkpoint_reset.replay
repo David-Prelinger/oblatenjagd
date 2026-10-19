@@ -1,12 +1,12 @@
 # QA (E1): items_route as Zuckerschock up to the Zaunerstollen, then stomp
 # the Selfie-Tourist as Zuckerschock (frame 1025, 100 points, stays big),
-# checkpoint (1075), walk into the Salzach (1138), respawn at the
-# checkpoint as Normal (1198), walk back left: the stomped tourist must be
+# checkpoint (1075), walk into the Salzach (1144; D-050 sinking), respawn at the
+# checkpoint as Normal (1204), walk back left: the stomped tourist must be
 # back (level reset) and kills the Normal player (1258).
 level  = items
 seed   = 1
 source = handwritten
-expect = dies_at frames=1138..1138 dies_at frames=1258..1258 deaths=2 lives=2
+expect = dies_at frames=1144..1144 dies_at frames=1258..1258 deaths=2 lives=2
 expect = no_event=Hurt score>=2950 oblaten>=9
 ---
 R 28

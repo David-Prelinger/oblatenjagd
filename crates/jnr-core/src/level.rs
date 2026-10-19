@@ -3,7 +3,8 @@
 //!
 //! Legend values are a tile name (`"ground"`), a tile table
 //! (`{ tile = "oblaten_box", contains = "mozartkugel" }`) or an entity table
-//! (`{ entity = "sign", text = "<key>", style = "bus" }`). The level is the
+//! (`{ entity = "sign", text = "<key>", style = "bus" }`; any entity may add
+//! `tile = "<name>"` for a non-colliding tile drawn in its cell). The level is the
 //! static start state; everything that changes while playing (broken bricks,
 //! emptied boxes, entities) lives in `Game`.
 
@@ -27,8 +28,12 @@ pub enum TileKind {
     Solid,
     /// Blocks only from above (the player can jump through from below).
     OneWay,
-    /// Kills the player on touch (spikes, Salzach water).
+    /// Kills the player on touch (spikes).
     Hazard,
+    /// Kills the player once her feet have sunk `player.water_sink_px`
+    /// below the tile's top (Salzach, Wolfgangsee; D-050); otherwise a
+    /// hazard (items and E-Bikers are lost in it).
+    Water,
 }
 
 impl TileKind {
@@ -47,11 +52,11 @@ impl TileKind {
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" => {
                 Some(TileKind::OneWay)
             }
-            "hazard"
-            | "salzach_water"
+            "hazard" => Some(TileKind::Hazard),
+            "salzach_water"
             | "salzach_water_deep"
             | "wolfgangsee_water"
-            | "wolfgangsee_water_deep" => Some(TileKind::Hazard),
+            | "wolfgangsee_water_deep" => Some(TileKind::Water),
             _ => None,
         }
     }
@@ -63,7 +68,14 @@ impl TileKind {
             TileKind::Solid => 1,
             TileKind::OneWay => 2,
             TileKind::Hazard => 3,
+            TileKind::Water => 4,
         }
+    }
+
+    /// True for the kinds that kill (spikes, water) and that items and
+    /// E-Bikers are lost in.
+    pub const fn is_lethal(self) -> bool {
+        matches!(self, TileKind::Hazard | TileKind::Water)
     }
 }
 
@@ -272,7 +284,9 @@ impl SignStyle {
     }
 }
 
-/// An entity placed in the grid (its cell counts as empty tile).
+/// An entity placed in the grid. Its cell's tile is empty air, or the
+/// non-colliding tile named by the legend entry's `tile = "..."` (e.g.
+/// `wall_village_bg` behind a walker); the spawn itself doesn't store it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EntitySpawn {
     /// What spawns.
@@ -310,7 +324,15 @@ pub struct EntitySpawn {
     /// Length of a `bienenschwarm`'s waggle run in tiles (`len = 2..=4`,
     /// [`DEFAULT_SWARM_LEN`] by default).
     pub len: u8,
+    /// Vertical offset of a `bienenschwarm`'s anchor from its cell centre
+    /// in px (`dy = N`, within ±[`MAX_SWARM_DY_PX`], 0 by default; negative
+    /// is up), e.g. -8 so a swarm anchored above the ground never dips
+    /// its bees into it.
+    pub dy: i32,
 }
+
+/// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
+pub const MAX_SWARM_DY_PX: i32 = 8;
 
 /// A `bienenschwarm`'s waggle run without `len`, in tiles.
 pub const DEFAULT_SWARM_LEN: u8 = 3;
@@ -452,6 +474,8 @@ struct RawMap {
 enum LegendEntry {
     Tile(Tile),
     Entity {
+        /// The cell's tile: `Tile::default()` or a `TileKind::Empty` tile.
+        tile: Tile,
         kind: SpawnKind,
         text: Option<String>,
         style: SignStyle,
@@ -463,6 +487,7 @@ enum LegendEntry {
         phase: u16,
         dir: u8,
         len: u8,
+        dy: i32,
     },
 }
 
@@ -540,6 +565,7 @@ impl Level {
                 match entry {
                     LegendEntry::Tile(t) => tiles.push(*t),
                     LegendEntry::Entity {
+                        tile,
                         kind,
                         text,
                         style,
@@ -551,8 +577,9 @@ impl Level {
                         phase,
                         dir,
                         len,
+                        dy,
                     } => {
-                        tiles.push(Tile::default());
+                        tiles.push(*tile);
                         entities.push(EntitySpawn {
                             kind: *kind,
                             col: col as i32,
@@ -567,6 +594,7 @@ impl Level {
                             phase: *phase,
                             dir: *dir,
                             len: *len,
+                            dy: *dy,
                         });
                     }
                 }
@@ -702,16 +730,16 @@ fn parse_legend_value(
             let entity = string_field(key, t, "entity")?;
             let allowed: &[&str] = match (tile, entity) {
                 (Some(_), None) => &["tile", "contains"],
-                (None, Some("sign")) => &["entity", "text", "style"],
-                (None, Some("festungsbahn")) => &["entity", "to"],
-                (None, Some("gondel")) => &["entity", "to", "phase"],
-                (None, Some("bienenschwarm")) => &["entity", "dir", "len", "phase"],
-                (None, Some("selfie_tourist")) => &["entity", "still"],
-                (None, Some("prop")) => &["entity", "sprite", "layer", "dx"],
-                (None, Some(_)) => &["entity"],
-                _ => {
+                (_, Some("sign")) => &["entity", "tile", "text", "style"],
+                (_, Some("festungsbahn")) => &["entity", "tile", "to"],
+                (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
+                (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
+                (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
+                (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
+                (_, Some(_)) => &["entity", "tile"],
+                (None, None) => {
                     return Err(ParseError::new(format!(
-                        "legend \"{key}\": needs exactly one of tile = \"...\" or entity = \"...\""
+                        "legend \"{key}\": needs tile = \"...\" or entity = \"...\""
                     )));
                 }
             };
@@ -722,11 +750,17 @@ fn parse_legend_value(
                 )));
             }
             match (tile, entity) {
-                (Some(name), _) => {
+                (Some(name), None) => {
                     parse_tile(key, name, string_field(key, t, "contains")?, tile_names)
                 }
-                (_, Some(name)) => parse_entity(key, name, t),
-                _ => unreachable!("checked above"),
+                (tile, Some(name)) => {
+                    let tile = match tile {
+                        None => Tile::default(),
+                        Some(tile_name) => entity_tile(key, tile_name, tile_names)?,
+                    };
+                    parse_entity(key, name, tile, t)
+                }
+                (None, None) => unreachable!("checked above"),
             }
         }
         _ => Err(ParseError::new(format!(
@@ -775,7 +809,23 @@ fn parse_tile(
     }))
 }
 
-fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, ParseError> {
+/// The tile under an entity (`tile = "..."` on an entity entry): it must
+/// not collide, so the entity behaves exactly as on empty air.
+fn entity_tile(key: &str, name: &str, tile_names: &mut Vec<String>) -> Result<Tile, ParseError> {
+    match parse_tile(key, name, None, tile_names)? {
+        LegendEntry::Tile(t) if t.kind == TileKind::Empty => Ok(t),
+        _ => Err(ParseError::new(format!(
+            "legend \"{key}\": the tile under an entity must not collide (\"{name}\" does; use a decorative tile such as wall_village_bg or railing_bg)"
+        ))),
+    }
+}
+
+fn parse_entity(
+    key: &str,
+    name: &str,
+    tile: Tile,
+    t: &toml::Table,
+) -> Result<LegendEntry, ParseError> {
     let Some(kind) = SpawnKind::from_name(name) else {
         return Err(ParseError::new(format!(
             "legend \"{key}\": unknown entity \"{name}\""
@@ -888,7 +938,13 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
         i64::from(*SWARM_LEN_RANGE.start())..=i64::from(*SWARM_LEN_RANGE.end()),
     )?
     .map_or(DEFAULT_SWARM_LEN, |n| n as u8);
+    let dy = int_field(
+        "dy",
+        -i64::from(MAX_SWARM_DY_PX)..=i64::from(MAX_SWARM_DY_PX),
+    )?
+    .unwrap_or(0) as i32;
     Ok(LegendEntry::Entity {
+        tile,
         kind,
         text,
         style,
@@ -900,6 +956,7 @@ fn parse_entity(key: &str, name: &str, t: &toml::Table) -> Result<LegendEntry, P
         phase,
         dir,
         len,
+        dy,
     })
 }
 
@@ -908,15 +965,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn salzburg_water_tiles_are_hazards() {
+    fn salzburg_water_tiles_are_water() {
         assert_eq!(
             TileKind::from_tile_name("salzach_water"),
-            Some(TileKind::Hazard)
+            Some(TileKind::Water)
         );
         assert_eq!(
             TileKind::from_tile_name("salzach_water_deep"),
-            Some(TileKind::Hazard)
+            Some(TileKind::Water)
         );
+        assert_eq!(TileKind::from_tile_name("hazard"), Some(TileKind::Hazard));
+        assert!(TileKind::Water.is_lethal() && TileKind::Hazard.is_lethal());
+        assert!(!TileKind::Solid.is_lethal() && !TileKind::Empty.is_lethal());
     }
 
     const SMALL: &str = r##"
@@ -954,6 +1014,7 @@ grid = '''
             phase: 0,
             dir: 0,
             len: DEFAULT_SWARM_LEN,
+            dy: 0,
         }
     }
 
@@ -1141,11 +1202,13 @@ P.sSC.tfG
             "{ entity = \"goal\", text = \"a\" }",
         );
         assert!(err(&entity_field).contains("field \"text\""));
-        let both = SMALL.replace(
+        let solid_under = SMALL.replace(
             "{ entity = \"goal\" }",
             "{ entity = \"goal\", tile = \"solid\" }",
         );
-        assert!(err(&both).contains("exactly one of"));
+        assert!(err(&solid_under).contains("must not collide"));
+        let neither = SMALL.replace("{ entity = \"goal\" }", "{ text = \"a\" }");
+        assert!(err(&neither).contains("needs tile"));
         let non_string = SMALL.replace("{ entity = \"goal\" }", "{ entity = 3 }");
         assert!(err(&non_string).contains("must be a string"));
 
@@ -1200,6 +1263,67 @@ P.sSC.tfG
         assert!(err(&bad_style).contains("neon"));
         let window = V2.replace("min_jump_window = 6", "min_jump_window = -1");
         assert!(Level::parse(&window).is_err());
+    }
+
+    #[test]
+    fn an_entity_can_stand_on_a_decorative_tile() {
+        let text = SMALL
+            .replace(
+                "\"G\" = { entity = \"goal\" }",
+                "\"G\" = { entity = \"goal\" }\n\
+                 \"w\" = { entity = \"nordic_walker\", tile = \"wall_village_bg\" }\n\
+                 \"o\" = { entity = \"oblate\", tile = \"railing_bg\" }\n\
+                 \"s\" = { entity = \"sign\", tile = \"wall_village_bg\", text = \"a\" }",
+            )
+            .replace("......G", "wos...G");
+        let l = Level::parse(&text).unwrap();
+        let name = |col: i32| {
+            let t = l.tile(col, 0).unwrap();
+            assert_eq!(t.kind, TileKind::Empty, "col {col}");
+            assert_eq!((t.block, t.contains), (Block::None, Contents::None));
+            l.tile_names[t.name as usize].as_str()
+        };
+        assert_eq!(name(0), "wall_village_bg");
+        assert_eq!(name(1), "railing_bg");
+        assert_eq!(name(2), "wall_village_bg");
+        assert_eq!(name(3), "");
+        let kinds: Vec<(SpawnKind, i32, i32)> =
+            l.entities.iter().map(|e| (e.kind, e.col, e.row)).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                (SpawnKind::NordicWalker, 0, 0),
+                (SpawnKind::Oblate, 1, 0),
+                (SpawnKind::Sign, 2, 0),
+                (SpawnKind::Goal, 6, 0),
+                (SpawnKind::PlayerStart, 1, 1),
+            ]
+        );
+        assert_eq!(l.entities[2].text.as_deref(), Some("a"));
+
+        // Without `tile` the cell stays empty air (name 0).
+        let plain = Level::parse(SMALL).unwrap();
+        assert_eq!(plain.tile(6, 0), Some(Tile::default()));
+
+        // Only non-colliding tiles, no contents, known names.
+        for (tile, msg) in [
+            ("solid", "must not collide"),
+            ("oneway", "must not collide"),
+            ("salzach_water", "must not collide"),
+            ("oblaten_box", "must not collide"),
+            ("lava_cake", "unknown tile"),
+        ] {
+            let bad = SMALL.replace(
+                "{ entity = \"goal\" }",
+                &format!("{{ entity = \"goal\", tile = \"{tile}\" }}"),
+            );
+            assert!(err(&bad).contains(msg), "{tile}: {}", err(&bad));
+        }
+        let contains = SMALL.replace(
+            "{ entity = \"goal\" }",
+            "{ entity = \"goal\", tile = \"empty\", contains = \"oblate\" }",
+        );
+        assert!(err(&contains).contains("field \"contains\""));
     }
 
     #[test]
@@ -1395,11 +1519,13 @@ P.sSC.tfG
                 .into_iter()
                 .find(|e| e.kind == SpawnKind::Bienenschwarm)
                 .unwrap();
-            (s.dir, s.len, s.phase)
+            (s.dir, s.len, s.phase, s.dy)
         };
-        assert_eq!(swarm(""), (0, DEFAULT_SWARM_LEN, 0), "defaults");
-        assert_eq!(swarm(", dir = 7, len = 4, phase = 99"), (7, 4, 99));
-        assert_eq!(swarm(", dir = 2, len = 2"), (2, 2, 0));
+        assert_eq!(swarm(""), (0, DEFAULT_SWARM_LEN, 0, 0), "defaults");
+        assert_eq!(swarm(", dir = 7, len = 4, phase = 99"), (7, 4, 99, 0));
+        assert_eq!(swarm(", dir = 2, len = 2"), (2, 2, 0, 0));
+        assert_eq!(swarm(", dir = 1, dy = -8"), (1, DEFAULT_SWARM_LEN, 0, -8));
+        assert_eq!(swarm(", dy = 8"), (0, DEFAULT_SWARM_LEN, 0, 8));
         for (bad, field) in [
             (", dir = 8", "dir"),
             (", dir = -1", "dir"),
@@ -1407,6 +1533,8 @@ P.sSC.tfG
             (", len = 5", "len"),
             (", len = \"3\"", "len"),
             (", phase = 70000", "phase"),
+            (", dy = -9", "dy"),
+            (", dy = 9", "dy"),
         ] {
             let e = err(&with(bad));
             assert!(
@@ -1434,8 +1562,8 @@ P.sSC.tfG
             ("jetty_post", Solid),
             ("forest_path", Solid),
             ("beute", Solid),
-            ("wolfgangsee_water", Hazard),
-            ("wolfgangsee_water_deep", Hazard),
+            ("wolfgangsee_water", Water),
+            ("wolfgangsee_water_deep", Water),
         ] {
             assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
         }

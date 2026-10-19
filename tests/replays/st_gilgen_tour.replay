@@ -1,0 +1,67 @@
+# Stage 2 golden tour (task E12, D-036 style): the real game from the title
+# with the run started at St. Gilgen (`level = st_gilgen`, D-047): START at
+# frame 21, stage intro 21..170, then the inputs of st_gilgen_solver.replay
+# unchanged from frame 171 (re-copy them after `cargo xtask solve st_gilgen
+# --write`; the xtask tour coupling test checks it), then 800 idle frames:
+# the Maibaum sequence, the tally and the route map (St. Gilgen →
+# Brunnwinkl, Wait phase at the end).
+level  = st_gilgen
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1894..1894 deaths=0 state=route_map stage=st_gilgen
+shots  = 0:title 60:intro 172:busbahnhof 436:talstation 620:gondel 810:mozartplatz 1082:checkpoint 1240:ischler_strasse 1430:seepromenade 1700:anlegestelle 1894:maibaum 2160:tally 2520:map
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 13
+RBJ 36
+RB 40
+- 800     # Maibaum sequence, tally, route map

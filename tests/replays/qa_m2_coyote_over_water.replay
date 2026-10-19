@@ -1,0 +1,38 @@
+# QA (M2, fixed in E13 by D-050): coyote time at a water edge. Water used
+# to kill on the first sub-pixel of the fall (the tiles sit flush with the
+# walking surface), so the 6 coyote frames never applied over water. Now
+# water kills once the feet have sunk player.water_sink_px (8) into it.
+# Steps: Brunnwinkl relaxed opening (Mozartkugel, boulder, walker stomp),
+# then walk right off the forest path towards the mill race (cols 43-44).
+# Step 913 is the first airborne frame (feet 0.3 px below the path top);
+# JUMP in step 914 (2nd coyote frame) jumps, she clears the 2-tile race and
+# lands at step 958 (x >= 730, no death). Without the jump she would sink
+# and die at 919. (The original bug report's step comments were 14 frames
+# off; the "R 40" before the edge is now "R 26" so the press hits 914.)
+level  = brunnwinkl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=730
+---
+R 150
+RJ 30
+R 40
+- 10
+RJ 24
+R 30
+- 20
+RJ 20
+- 40
+R 30
+- 6
+RJ 20
+L 6
+- 290
+RJ 20
+R 10
+- 30
+R 110
+R 26        # on the edge of the path at step 912
+R 1         # step 913: off the edge (should be coyote frame 1)
+RJ 20       # step 914: JUMP within the coyote window
+R 40

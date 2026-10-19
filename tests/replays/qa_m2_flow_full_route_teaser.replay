@@ -1,0 +1,171 @@
+# QA (M2 route flow, D-042/D-043/D-047): the whole M2 journey in one run of
+# the real game. Title -> Salzburg (solver route, Maibaum 1772) -> route map
+# (auto-continue) -> St. Gilgen (solver route from 2926, Maibaum 4649) -> map
+# (auto) -> Brunnwinkl (solver route from 5651; the Oblaten counter goes
+# 72 -> 99, one short of the 100th: the M2 level pass moved St. Gilgen's
+# house Oblaten off the solver's roof-top arcs) -> Maibaum 7119 -> map from
+# 7603: START in Arrive (7615) skips the walk straight to the Teaser (Resi on
+# Falkenstein, „Fortsetzung folgt …"), START in the Teaser (7655) is ignored,
+# the 180 teaser frames end on the title (7795) with the run reset to
+# Salzburg (score 0, 3 lives, 0 Oblaten, Normal); START (7856) starts the
+# Salzburg intro.
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1772..1772 deaths=0 no_event=Died event=CheckpointReached
+expect = state=stage_intro stage=salzburg score=0 lives=3 oblaten=0
+---
+- 20
+S 1         # title -> Salzburg intro
+- 150
+# salzburg_solver (play 172-1772)
+RB 64
+RBJ 36
+RB 17
+RBJ 36
+RB 62
+RBJ 20
+RB 10
+RBJ 36
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 10
+RBJ 35
+RB 57
+RBJ 36
+RB 94
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 72
+RBJ 20
+RB 24
+RBJ 36
+RB 98
+RBJ 36
+RB 120
+RBJ 36
+RB 8
+RBJ 1
+RB 18
+RBJ 36
+RB 40
+RBJ 6
+RB 2
+RBJ 20
+RB 24
+RBJ 36
+RB 6
+RBJ 20
+RB 17
+RBJ 20
+RB 62
+RBJ 20
+RB 40
+- 1154      # goal sequence, map (auto-continue 2776), St. Gilgen intro
+# st_gilgen_solver (play 2927-4649)
+RB 100
+RBJ 12
+RB 15
+RBJ 36
+RB 6
+RBJ 20
+RB 32
+RBJ 34
+RB 66
+RBJ 36
+RB 40
+RBJ 36
+RB 40
+RBJ 36
+RB 94
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 18
+RBJ 36
+RB 18
+RBJ 12
+RB 88
+RBJ 36
+RB 48
+RBJ 36
+RB 2
+RBJ 36
+RB 28
+RBJ 20
+RB 46
+RBJ 36
+RB 88
+RBJ 36
+RB 24
+RBJ 36
+RB 24
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 33
+RB 13
+RBJ 36
+RB 40
+- 1002      # goal sequence, map (auto 5501), Brunnwinkl intro
+# brunnwinkl_solver (play 5652-7119)
+RB 104
+RBJ 36
+RB 27
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 10
+RBJ 20
+RB 40
+RBJ 34
+RB 186
+RBJ 20
+RB 5
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
+RBJ 36
+RB 56
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 33
+RB 43
+RBJ 36
+RB 40
+RBJ 36
+RB 9
+RBJ 12
+RB 40
+- 495       # goal sequence; map Arrive from 7603
+S 1         # 7615: Arrive -> Teaser
+- 39
+S 1         # 7655: ignored in the Teaser
+- 200       # title at 7795
+S 1         # 7856: START -> Salzburg intro
+- 30

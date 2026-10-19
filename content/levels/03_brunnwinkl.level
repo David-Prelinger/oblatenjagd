@@ -3,8 +3,8 @@
 # (rows 15-16 ground, jetty or water), 3 empty rows on top for the goal
 # camera, the goal meadow one row lower (row 16). Exactly five houses: the
 # Kornmuehle (house 1) and houses 2-5; the bee houses are sheds.
-#   1 Uferweg          0-41   forest path, no pits. Bus sign 3 (Bus 150 /
-#                             anderes Ufer), Oblaten 6-10, ?-box 12 and M-box
+#   1 Uferweg          0-41   forest path, no pits. Bus sign 5 (Bus 150 /
+#                             fährt drüben), Oblaten 6-10, ?-box 12 and M-box
 #                             16 (row 11), rock wall 19 (2 high) turns the
 #                             Mozartkugel; Gehweg sign 22 (clear of both rocks);
 #                             boulder 25-26 (2x2); E-Biker #1 parked at 34
@@ -38,11 +38,14 @@
 #                             also the way up to both roofs.
 #   4 Fuenf Haeuser  120-199  checkpoint 122, Bus 150 / winkt rueber sign 125
 #                             (D-039), M-box 130 (row 11); paved path 132-150
-#                             with E-Biker #2 at 146 (jump over or stomp);
+#                             with the Selfie-Tourist at 140 (open ground; in
+#                             the garden 157-160 it stood where a walk off
+#                             house 2's eave lands) and E-Biker #2 at 146
+#                             (jump over or stomp);
 #                             house 2 151-156 (heights 2/4/4/4/4/2: the steps
 #                             are 2 below the ridge, so a waiting Resi is
 #                             below the walker and a jump comes down on it;
-#                             walker #3), garden 157-160 (tourist 159), house
+#                             walker #3), garden 157-160 (empty), house
 #                             3 161-166, garden 167-175 with swarm #4 at 170
 #                             (up-right, len 4, cols 169-174) whose run points
 #                             at the Zaunerstollen box over house 4 (177, row
@@ -50,23 +53,31 @@
 #                             futterschaelchen on the step beside it (176);
 #                             house 4 176-182 (the biggest, ridge 177-181)
 #                             with the Futter sign standing on the ridge and a
-#                             stone chimney on the eave step (182, rows 10-11)
-#                             that turns the Zaunerstollen back; garden
+#                             chimney stack (tile chimney) on the eave step
+#                             (182, rows 10-11) that turns the Zaunerstollen
+#                             back; garden
 #                             183-189 with the Nobelpreis board 185 and
 #                             E-Biker #3 at 188, which triggers while Resi is
 #                             on house 4's ridge and crashes into its wall;
 #                             house 5 190-195 (2/4/4/4/4/2, walker #4).
-#   5 Badesteg       200-239  jetty 201-220 over the lake: gaps 203-204 and
-#                             214-216; swarm #5 at 209 (up, len 3, cols
-#                             207-211, clear of the landing 205-206 and the
-#                             take-off 212-213) pointing at 3 Oblaten above;
-#                             Taube high above the 3-gap (row 7: above the
-#                             walking jump arcs, its wave under the HUD
-#                             labels, D-038; spawn 224, meets Resi over
-#                             ~213-217); boathouse 221-226: shore rock with
-#                             stairs (2/4/5) and a shingle roof on top (no
-#                             facade, so it doesn't read as a sixth house),
-#                             roof 6 above the meadow; Maibaum 230 on the
+#   5 Badesteg       200-239  jetty 201-226 over the lake: gaps 203-204 and
+#                             215-217 (one column right of the first draft:
+#                             the solver's window at 214-216 was 5); swarm #5
+#                             at 209 (up, len 3, cols 207-211, clear of the
+#                             landing 205-206 and the take-off 212-214)
+#                             pointing at 3 Oblaten above; Taube high above
+#                             the 3-gap (row 7: above the walking jump arcs,
+#                             its wave under the HUD labels, D-038; spawn
+#                             224, meets Resi over ~213-217); 3 jetty tiles
+#                             218-220, then the boathouse prop (back layer,
+#                             cell 223 + dx 8 = cols 221-226; a boathouse,
+#                             not a sixth house) on the jetty deck (jetty
+#                             row 15, jetty_post row 16 under it) with
+#                             invisible collision in its drawn profile
+#                             (D-038): woodpile 221 (2 high), stair tower 222
+#                             (4), roof ridge 223-226 (5; the prop's own cell
+#                             223 row 14 is an enclosed air pocket), roof 6
+#                             above the meadow; Maibaum 230 on the
 #                             meadow, Ortsende 233, level end 239 (the camera
 #                             clamps: the crown sits in the HUD gap as in
 #                             Stage 1). Walking off the roof scores 100, a
@@ -99,6 +110,8 @@ background = [
 "^" = "roof_shingle"
 "u" = "beute"
 "B" = "brick"
+"Q" = "chimney"
+"I" = "invisible"
 "?" = { tile = "oblaten_box", contains = "oblate" }
 "M" = { tile = "oblaten_box", contains = "mozartkugel" }
 "Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
@@ -108,10 +121,10 @@ background = [
 "e" = { entity = "e_biker" }
 "p" = { entity = "taube" }
 "s" = { entity = "bienenschwarm", dir = 0, len = 2 }
-"S" = { entity = "bienenschwarm", dir = 2, len = 4 }
-"T" = { entity = "bienenschwarm", dir = 2, len = 3, phase = 112 }
-"D" = { entity = "bienenschwarm", dir = 1, len = 4 }
-"V" = { entity = "bienenschwarm", dir = 2, len = 3 }
+"S" = { entity = "bienenschwarm", dir = 2, len = 4, dy = -8 }
+"T" = { entity = "bienenschwarm", dir = 2, len = 3, phase = 112, dy = -8 }
+"D" = { entity = "bienenschwarm", dir = 1, len = 4, dy = -8 }
+"V" = { entity = "bienenschwarm", dir = 2, len = 3, dy = -8 }
 "C" = { entity = "checkpoint" }
 "P" = { entity = "player_start" }
 "G" = { entity = "goal_maibaum" }
@@ -119,6 +132,7 @@ background = [
 "X" = { entity = "prop", sprite = "bienenhaus", dx = 8, layer = "back" }
 "Y" = { entity = "prop", sprite = "bienenhaus", dx = -8, layer = "back" }
 "f" = { entity = "prop", sprite = "futterschaelchen" }
+"L" = { entity = "prop", sprite = "boathouse", dx = 8, layer = "back" }
 "b" = { entity = "sign", text = "stage.brunnwinkl.sign_bus", style = "bus" }
 "y" = { entity = "sign", text = "stage.brunnwinkl.sign_gehweg" }
 "h" = { entity = "sign", text = "stage.brunnwinkl.sign_haeuser" }
@@ -141,11 +155,11 @@ grid = '''
 .................................................................................................................................................................................Z..............................................p...............
 ...........................................................o...................................oooooo.........oooooo............................................................................................................................
 ..................................................s......oofoo................................^^^^^^^^.......^^^^^^^^.........................................oo................................................ooo.............................
-.........................................................^^^^^............................................................................................n..o..o..................a..K..........n.....................o.......^^^^.............
-............?...M............ooo.........................^^^^^.................B?B...o...................n........................M.....................^^^^......^^^^..........f^^^^^K........^^^^...................o.o.....RRRRR.............
-...........................................oo...........^HHHHH^.....................o.o.................uuuu............................................HHHH.....^^HH^..........^HHHHH^........HHHH........oo.................RRRRR.............
-...................R.....RR............................^HHHHHHH^........................................uuuu...........................................^HHHH^....HHHHH^.........HHHHHHH.......^HHHH^.........................RRRRRR.............
-..Pb..ooooo........R..y..RR.......e.....hn....W..uu....HHHHHHHHH..m.....t..ooo..............z....X.S...uuuuuu...TY........C..c..........ooo.......e....HHHHHH..t.HHHHHH...D.....HHHHHHH..x..e.HHHHHH.ooo.........V...........RRRRRR.............
-###########################################~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,jj~~jjjjjjjjj~~~jjjjRRRRRR...G..O......
-###########################################ww,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,JJwwJJJJJJJJJwwwJJJJRRRRRR,,,,,,,,,,,,,
+.........................................................^^^^^............................................................................................n..o..o..................a..Q..........n.....................o.......IIII.............
+............?...M............ooo.........................^^^^^.................B?B...o...................n........................M.....................^^^^......^^^^..........f^^^^^Q........^^^^...................o.o.....IIIII.............
+...........................................oo...........^HHHHH^.....................o.o.................uuuu............................................HHHH.....^^HH^..........^HHHHH^........HHHH........oo.................IIIII.............
+...................R.....RR............................^HHHHHHH^........................................uuuu...........................................^HHHH^....HHHHH^.........HHHHHHH.......^HHHH^.........................IIIIII.............
+..P..booooo........R..y..RR.......e.....hn....W..uu....HHHHHHHHH..m.....t..ooo..............z....X.S...uuuuuu...TY........C..c..........ooo.t.....e....HHHHHH....HHHHHH...D.....HHHHHHH..x..e.HHHHHH.ooo.........V...........IILIII.............
+###########################################~~,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,jj~~jjjjjjjjjj~~~jjjjjjjjj...G..O......
+###########################################ww,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,===================,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,JJwwJJJJJJJJJJwwwJJJJJJJJJ,,,,,,,,,,,,,
 '''

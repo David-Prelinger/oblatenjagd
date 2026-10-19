@@ -1,41 +1,40 @@
 # Stage 2 (D-044): rides all three Zwölferhorn gondolas, A -> B -> C.
-# Solver opening to the forecourt, hops onto the station platform and waits
-# at its edge (x 734) for Gondel A to come back; hops onto its roof (~frame
-# 360) and rides it up to the knoll; waits on the knoll for Gondel B
-# (boards ~frame 780 by walking off the knoll edge), rides it across the
-# ravine to the pylon (~906, feet 184); walks onto the pylon and jumps onto
-# Gondel C, which is back at the pylon then (phase 245, D-048: C activates
-# while Resi stands on the station platform), rides it down to its lower
-# end (feet 216), walks off over the ledge onto the street beyond the
-# ravine (x 1401, col 87).
+# Solver opening onto the station platform (it stomps both Nordic-Walkers
+# on the way), brakes at its edge (x 737) and waits for Gondel A to come
+# back; hops onto its roof (~frame 356) and rides it up to the knoll; waits
+# on the knoll for Gondel B (boards ~frame 790 by walking off the knoll
+# edge), rides it across the ravine to the pylon (~906, feet 184); walks
+# onto the pylon (918) and tap-jumps onto Gondel C, which is just leaving
+# the pylon then (phase 245, D-048: C activates while Resi stands on the
+# station platform), rides it down to its lower end (feet 216), walks off
+# over the ledge onto the street beyond the ravine (x 1401, col 87).
 level  = st_gilgen
 seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Died state=playing player_x>=1390 player_y>=218 player_y<=218
 ---
-# solver opening (frames 0-241)
-RB 96
+# solver opening (frames 0-280)
+RB 100
 RBJ 12
-RB 17
+RB 15
 RBJ 36
-RB 18
+RB 6
 RBJ 20
-RB 24
-R 20
-R 16
-RJ 14       # onto the station platform
-L 6
-- 72        # wait at the edge for Gondel A
-RJ 8        # hop onto the roof
+RB 32
+RBJ 34
+RB 25
+L 4         # brake at the platform edge (x 737; Gondel C activates)
+- 70        # wait for Gondel A to come back
+RJ 8        # hop onto its roof (~frame 356)
 R 6
 - 125       # ride A up to the knoll
 R 60
-- 205       # wait on the knoll for Gondel B
-R 40        # walk off the edge onto B
+- 197       # wait on the knoll for Gondel B
+R 40        # walk off the edge onto B (~790)
 - 110       # ride B across the ravine
-R 14        # onto the pylon
-RJ 10       # jump onto Gondel C
-R 4
-- 130       # ride C down
-R 60        # walk off onto the ledge
+R 24        # onto the pylon (918)
+RJ 4        # tap jump onto Gondel C, just leaving the pylon (~950)
+R 8
+- 100       # ride C down to its lower end
+R 70        # walk off onto the ledge and the street
 - 20

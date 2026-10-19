@@ -36,6 +36,14 @@ use crate::tuning::Tuning;
 /// How many columns left and right [`Game::teleport_player`] searches for a floor.
 pub const TELEPORT_SEARCH_COLS: i32 = 8;
 
+/// The „Zwischenstopp" popup spawns with its text top this many px above
+/// the checkpoint's ground. Its lowest drawn row (glyph rows 0–7 incl. the
+/// descender row, then the 1 px outline at row 8) is then 44 px above the
+/// ground: 3 px of air above the 40 px bus board beside the checkpoint
+/// (the art review asks for at least 2), and it only rises from there (E12
+/// art review: it used to spawn at 40 and cover the board).
+pub const CHECKPOINT_POPUP_ABOVE_GROUND_PX: i32 = 52;
+
 /// Highest score (the HUD shows 6 digits).
 pub const MAX_SCORE: u32 = 999_999;
 
@@ -428,6 +436,7 @@ impl Game {
             self.hit_from_below(row);
         }
         self.update_entities();
+        self.follow_carried_left();
         self.interact(prev_bottom, input);
         // Counted after the hits of this frame: exactly
         // `invulnerable_frames` frames without harm.
@@ -441,7 +450,13 @@ impl Game {
         }
 
         let hb = self.player.hitbox();
-        if self.map.touches(&hb, TileKind::Hazard) {
+        // Spikes kill on touch; water only once the feet have sunk in
+        // (D-050), so coyote jumps work at water edges.
+        if self.map.touches(&hb, TileKind::Hazard)
+            || self
+                .map
+                .sunk_in_water(&hb, self.tuning.player.water_sink_px)
+        {
             self.die(DeathCause::Hazard);
             return;
         }
@@ -461,6 +476,17 @@ impl Game {
         );
         if self.mode == Mode::Playing {
             self.tick_timer();
+        }
+    }
+
+    /// D-051: the player's own movement stops at the screen's left edge,
+    /// so only a moving platform's carry can take her past it; the camera
+    /// then scrolls left by the same amount (the one exception to "never
+    /// scrolls left"), and she stays on the cabin.
+    fn follow_carried_left(&mut self) {
+        let left = self.player.x.to_px();
+        if left < self.camera.x {
+            self.camera.x = left.max(0);
         }
     }
 
@@ -799,7 +825,6 @@ impl Game {
                     old,
                     e,
                     ctx.map,
-                    ctx.screen_left,
                     &ctx.tuning.player,
                     &mut self.events,
                 );
@@ -932,8 +957,7 @@ impl Game {
             y: top - self.player.h,
             ..self.player.hitbox()
         };
-        if self.map.touches(&placed, TileKind::Solid) || self.map.touches(&placed, TileKind::Hazard)
-        {
+        if self.map.touches(&placed, TileKind::Solid) || self.map.touches_lethal(&placed) {
             self.player.bounce_grace = self.tuning.enemies.bounce_grace_frames;
         } else {
             self.player.y = placed.y;
@@ -1026,7 +1050,7 @@ impl Game {
                 self.checkpoint = Some(i as u16);
                 self.events.push(Event::CheckpointReached);
                 let x = TILE.mul_int(s.col) + TILE.div_int(2);
-                let y = TILE.mul_int(s.row + 1) - Fx::from_px(40);
+                let y = TILE.mul_int(s.row + 1) - Fx::from_px(CHECKPOINT_POPUP_ABOVE_GROUND_PX);
                 self.entities.push(popup(Popup::Checkpoint, x, y));
             }
         }

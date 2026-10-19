@@ -701,11 +701,20 @@ fn checkpoint_activates_when_the_centre_passes_its_x() {
     assert!(events.contains(&Event::CheckpointReached));
     assert_eq!(g.checkpoint(), Some(cp));
     assert_eq!(g.player().center_px().0, 8 * 16 + 8, "exactly at its x");
-    assert!(
-        g.entities()
-            .iter()
-            .any(|e| e.kind == EntityKind::Popup(Popup::Checkpoint))
-    );
+    let popup = g
+        .entities()
+        .iter()
+        .find(|e| e.kind == EntityKind::Popup(Popup::Checkpoint))
+        .expect("checkpoint popup");
+    // Its text top 52 px above the checkpoint's ground: glyph rows 0–7
+    // (incl. the descender row) and the outline row 8 end 44 px above the
+    // ground, leaving 3 px of air above the 40 px bus board (at least 2
+    // required), and the popup only rises.
+    let ground = (g.level().entities[cp].row + 1) * 16;
+    assert_eq!(popup.y.to_px(), ground - 52);
+    let lowest_row = popup.y.to_px() + 8;
+    let board_top = ground - 40;
+    assert_eq!(board_top - lowest_row - 1, 3, "px of air above the board");
     // Only once.
     let events = hold(&mut g, "R", 20);
     assert!(!events.contains(&Event::CheckpointReached));

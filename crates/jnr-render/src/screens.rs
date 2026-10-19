@@ -97,7 +97,9 @@ pub const TEXT_KEYS: [&str; 31] = [
 // Layout (y = top of the text line).
 const LOGO_Y: i32 = 24;
 const TITLE_NAME_Y: i32 = 20;
-const SUBTITLE_Y: i32 = 84;
+/// In the plain sky band under the logo, clear of every station's start
+/// tiles (the Brunnwinkl ?-boxes start at y 84; art review of E12).
+const SUBTITLE_Y: i32 = 60;
 /// Top of the title prompt line (also the band `cargo xtask wasm-smoke` watches).
 pub const PRESS_START_Y: i32 = 128;
 const INTRO_TITLE_Y: i32 = 64;
@@ -413,6 +415,48 @@ mod tests {
         assert_ne!(fb.get(px, PRESS_START_Y), Some(WHITE), "prompt off");
         // No HUD on the title screen.
         assert_ne!(fb.get(16, 4), Some(WHITE));
+    }
+
+    /// The subtitle (y 60..=68 with its shadow) sits in plain sky on every
+    /// shipped stage's title view: no tile is drawn behind it.
+    #[test]
+    fn subtitle_band_is_clear_of_tiles_on_every_stage_title() {
+        let line = crate::font::LINE_HEIGHT;
+        // Every shipped stage: content/levels/0[1-9]_*.level.
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/levels");
+        let mut stages: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                let n = p.file_name().unwrap().to_string_lossy();
+                let b = n.as_bytes();
+                b.len() > 3
+                    && b[0] == b'0'
+                    && (b'1'..=b'9').contains(&b[1])
+                    && b[2] == b'_'
+                    && n.ends_with(".level")
+            })
+            .collect();
+        stages.sort();
+        assert!(stages.len() >= 3, "{stages:?}");
+        for path in stages {
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let level = Level::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
+            let g = Game::new_at(&level, &tuning(), 1, Start::Title);
+            let cam = g.camera();
+            let tile = jnr_core::level::TILE_PX;
+            for y in (cam.y + SUBTITLE_Y - 1)..=(cam.y + SUBTITLE_Y + line) {
+                for x in (cam.x + 48)..(cam.x + WIDTH as i32 - 48) {
+                    let t = level.tile(x.div_euclid(tile), y.div_euclid(tile));
+                    assert!(
+                        t.is_none_or(|t| t.name == 0),
+                        "{name}: a tile is drawn behind the title subtitle at screen ({}, {})",
+                        x - cam.x,
+                        y - cam.y
+                    );
+                }
+            }
+        }
     }
 
     #[test]

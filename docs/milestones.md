@@ -68,7 +68,7 @@ Art (pixel-artist, art-director APPROVED)
 Levels (level-designer)
 - [x] `02_st_gilgen.level` (280 × 17) with the 6 sections; solver finishes it; `min_jump_window = 6` holds
 - [x] `03_brunnwinkl.level` (240 × 17) with the 5 sections and exactly five houses; every swarm points at its bonus; solver finishes it; `min_jump_window = 6` holds
-- [ ] `time_limit` of both set from the measured relaxed run (D-045); Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
+- [x] `time_limit` of both set from the measured relaxed run (D-045: St. Gilgen 210, Brunnwinkl 200); Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
 
 Replays and goldens
 - [ ] Mechanic replays from both "New mechanics" tables (gondolas, trench recovery, walker on the jetty, note hit + bench shelter, swarm hit + wait, bonus 1 + Zaunerstollen, e-biker stomp / crash / side hit, checkpoint respawns)

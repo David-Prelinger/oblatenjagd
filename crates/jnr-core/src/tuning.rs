@@ -146,6 +146,9 @@ pub struct PlayerTuning {
     pub invulnerable_frames: u8,
     /// Frames the game freezes while the player grows or shrinks.
     pub transform_frames: u8,
+    /// Whole pixels the player's feet sink below a water tile's top before
+    /// water kills (D-050; spikes kill on touch).
+    pub water_sink_px: i32,
 }
 
 /// Camera constants, in whole pixels of the 320×180 screen.
@@ -455,6 +458,11 @@ impl Tuning {
             return Err(ParseError::new(
                 "tuning.toml: player.transform_frames must be <= 120",
             ));
+        }
+        if !(1..=TILE_PX).contains(&p.water_sink_px) {
+            return Err(ParseError::new(format!(
+                "tuning.toml: player.water_sink_px must be 1..={TILE_PX}"
+            )));
         }
         let g = &self.game;
         if g.lives_start == 0 || g.lives_start > g.lives_max || g.lives_max > 99 {
@@ -845,6 +853,8 @@ mod tests {
             ("hitbox_h", 16),
             ("hitbox_h_big", 21),
             ("hitbox_h_big", 33),
+            ("water_sink_px", 0),
+            ("water_sink_px", 17),
             ("arrive_frames", 0),
             ("done_frame", 41),
             ("walk_px", 0),

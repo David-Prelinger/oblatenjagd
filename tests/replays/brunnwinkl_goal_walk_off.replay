@@ -1,50 +1,60 @@
-# Badesteg -> Maibaum: the solver route up to frame 1435 (Resi on the
-# boathouse roof), she stops, then walks off the roof's edge: she lands on
-# the meadow before the pole and touches it at its base: 100 points
-# (D-035/D-038: walking off scores 100).
+# Badesteg -> Maibaum: the solver route up to frame 1415 (Resi comes down
+# on the boathouse's stair tower), a hop onto its roof, she stops, then
+# walks off the roof's edge: she lands on the meadow before the pole and
+# touches it at its base (1543): 100 points (D-035/D-038: walking off
+# scores 100; brunnwinkl_wurstkranz takes the same cut and scores 4900
+# more). Re-cut on the re-solved route (M2 level pass: boathouse prop,
+# 3-gap at 215-217).
 level  = brunnwinkl
 seed   = 1
 source = handwritten
-expect = complete frames=1513..1513 score=6300 deaths=0 state=stage_clear
-# review shots (enable with goldens after an art-director verdict): 1513:touch
+expect = complete frames=1543..1543 score=6000 deaths=0 state=stage_clear
+# review shots (enable with goldens after an art-director verdict): 1543:touch
 ---
-RB 108
+# --- the first 1415 frames of brunnwinkl_solver.replay ---
+RB 104
 RBJ 36
-RB 47
+RB 27
 RBJ 36
-RB 40
+RB 2
+RBJ 36
+RB 24
 RBJ 36
 RB 18
 RBJ 36
+RB 10
+RBJ 20
 RB 40
-RBJ 36
-RB 188
-RBJ 1
-RB 18
-L 4
-RJ 36
-R 2
-RB 3
-RBJ 12
-RB 210
-RBJ 6
-RB 22
-RJ 36
-R 2
-RB 34
-RBJ 36
-RB 60
-RBJ 36
+RBJ 34
+RB 186
+RBJ 20
 RB 5
-RBJ 1
-RB 32
+RBJ 20
+RB 145
+RBJ 12
+RB 40
+RBJ 20
+RB 24
+RJ 36
+R 2
+RB 26
 RBJ 36
-RB 38
+RB 56
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 33
+RB 43
 RBJ 36
 RB 40
 RBJ 36
-RB 32
-RBJ 36
-RB 4
-- 40
-R 40
+RB 8
+# --- end of the first 1415 frames of brunnwinkl_solver.replay ---
+- 6         # land on the stair tower
+RJ 14       # hop onto the boathouse roof
+R 2
+- 40        # stand on the roof
+R 80        # walk off its edge onto the meadow and into the pole
