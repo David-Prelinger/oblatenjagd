@@ -1,0 +1,72 @@
+# QA M4 Operettensänger #2 (D-068): stomp him in his idle window. The
+# solver route to 1650 (Normal, in front of him while he inhales), wait
+# through the high C (c 40-87), walk in and jump onto him at c ~153 of
+# his cycle: stomp 200, „Bravo!", no hurt.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=6800 power=normal
+---
+# st_wolfgang_solver inputs to 1650
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 20
+RB 40
+RBJ 20
+RB 56
+RBJ 32
+RB 44
+RBJ 20
+RB 34
+RBJ 36
+RB 126
+RBJ 36
+RB 20
+RBJ 20
+RB 11
+RBJ 36
+RB 2
+RBJ 20
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 36
+RB 24
+R 38
+- 11
+# wait out the C, then stomp
+- 50
+R 30
+RJ 16
+R 10
+- 30

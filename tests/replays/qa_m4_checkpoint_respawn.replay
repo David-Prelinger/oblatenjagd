@@ -1,0 +1,63 @@
+# QA M4 checkpoint at col 150: die after it, respawn there with fresh
+# boxes. The solver route past the checkpoint (1180) to the Pilgerbrunnen,
+# a little LEFT in the air: she lands in the Markt lane and stand #2's
+# globe rolls into her (death 1426). Respawn at the checkpoint (1486, x 2402) as
+# Normal; walk right under the M-box (col 156, fresh) and bump it, catch
+# the Mozartkugel when it comes back from the basin.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = dies_at frames=1426..1426 deaths=1 lives=2 event=Respawned event=CheckpointReached event=PowerUp power=big
+---
+# st_wolfgang_solver inputs to 1290
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 20
+RB 40
+RBJ 20
+RB 56
+RBJ 32
+RB 44
+RBJ 20
+RB 34
+RBJ 36
+RB 126
+RBJ 36
+RB 12
+# a little LEFT, into the globe lane: death 1426; respawn 1486
+L 30
+- 166
+# to the M-box, bump, catch the Mozartkugel
+R 60
+- 26
+J 14
+- 160
+R 40

@@ -1,0 +1,80 @@
+# QA M4 Operettensänger #2 (D-068): the high C hurts on any contact. The
+# relaxed run as Zuckerschock to 3966 (church terrace, H-box skipped), walk
+# down to the street, stop 70 px in front of him, then a walking jump over
+# him during his second high C: the column catches her at the apex, 50 px
+# above his head (Hurt at 4491, Zuckerschock -> Normal); she floats on
+# over him during the invulnerability.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 lives=3 event=Hurt power=normal player_x>=3670
+---
+# the qa_st_wolfgang_relaxed inputs to 3966 (Zuckerschock, after the Pilger stomps)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+R 225
+RJ 10
+R 70
+- 180
+R 200
+RJ 18
+R 6
+- 345
+R 45
+RJ 12
+R 262
+- 26
+J 14
+- 160
+R 104
+RJ 8
+- 30
+RJ 20
+R 10
+- 329
+RJ 14
+R 30
+- 80
+J 10
+R 10
+- 50
+R 24
+RJ 10
+R 52
+RJ 16
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+- 110
+RJ 16
+R 40
+- 10
+# down to the street, wait, jump over him into the column
+R 330
+- 150
+R 14
+RJ 30
+R 10
+- 60

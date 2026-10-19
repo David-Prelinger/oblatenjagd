@@ -1,0 +1,15 @@
+# QA M4 Schneekugel (D-069): a globe rolling into Normal Resi is a side hit:
+# she jumps over the curb into the lane just as stand #1's first globe
+# arrives and dies (269).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = dies_at frames=269..269 deaths=1 no_event=Stomped
+---
+# over the garden wall, into the lane
+R 150
+RJ 20
+R 60
+RJ 12
+R 20
+- 20

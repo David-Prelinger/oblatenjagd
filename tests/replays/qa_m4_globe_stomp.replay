@@ -1,0 +1,16 @@
+# QA M4 Schneekugel (D-069): a hop off the curb lands on stand #1's first
+# globe: it shatters (stomp, 100) and Resi bounces into the lane.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=1300
+---
+# to the curb and over it onto the globe (stomp at 272)
+R 150
+RJ 20
+R 60
+R 4
+RJ 8
+- 12
+L 6
+- 60

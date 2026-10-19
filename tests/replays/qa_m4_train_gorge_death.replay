@@ -1,0 +1,62 @@
+# QA M4 Schafbergbahn (D-067): walking off the train's front over the gorge
+# (68-77, empty to the level bottom) is a death; the respawn (no checkpoint
+# yet) resets the train to the lower station, where it waits again. The
+# relaxed run to 1100 (the front is over the gorge), walk RIGHT off the
+# front: death at 1176. After the respawn (1236) the relaxed inputs to the
+# boarding again, the whole ride and the walk-off at the Alm halt.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = dies_at frames=1176..1176 deaths=1 lives=2 event=Respawned player_x>=1300 player_y<=90 state=playing
+---
+# the qa_st_wolfgang_relaxed inputs to 1100
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 304
+# walk off the front into the gorge (death 1176), respawn 1236
+R 60
+- 76
+# the qa_st_wolfgang_relaxed inputs to the boarding (796 frames)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+# ride the whole way, walk off at the halt
+- 580
+R 60

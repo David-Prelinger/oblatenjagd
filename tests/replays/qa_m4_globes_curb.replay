@@ -1,0 +1,21 @@
+# QA M4 Souvenirstand #1 (D-069): its globes shatter on the curb (col 25) in
+# front of Resi. The relaxed run to the curb (she stands on it from 301),
+# then three of the stand's 150-frame cycles: every globe rolls across the
+# lane 26-28 and shatters on the curb's right face; she is never hurt and
+# stomps nothing.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_y<=202 player_x>=400 score=1000
+---
+# the qa_st_wolfgang_relaxed inputs to 432 (on the curb)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+# three globe cycles
+- 450

@@ -1,0 +1,67 @@
+# QA M4 H-box (D-071) as Normal: the solver route (Normal) onto the church
+# terrace, stop under the H-box (col 194, row 8), bump it, step back and
+# jump to the Hackl on its top: PowerUp (1000), power Hackl.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=PowerUp score=7300 power=hackl
+---
+# st_wolfgang_solver inputs to 1420 (on the church terrace)
+RB 80
+RBJ 6
+RB 10
+RBJ 36
+RB 18
+RBJ 36
+RB 2
+RBJ 36
+RB 44
+RBJ 36
+RB 56
+RBJ 12
+RB 40
+L 4
+- 20
+L 4
+RB 4
+L 4
+RB 4
+- 156
+LB 8
+RBJ 20
+RB 14
+RBJ 34
+RB 7
+LB 8
+RB 3
+RJ 36
+R 2
+RB 74
+RBJ 20
+RB 40
+RBJ 20
+RB 56
+RBJ 32
+RB 44
+RBJ 20
+RB 34
+RBJ 36
+RB 126
+RBJ 36
+RB 20
+RBJ 20
+RB 11
+RBJ 36
+RB 2
+RBJ 20
+RB 33
+# under the box, bump, grab the Hackl
+- 30
+R 26
+- 22
+J 10
+- 4
+L 12
+- 10
+RJ 16
+- 30
