@@ -4,8 +4,9 @@
 # curb), over the counter, stomp Selfie-Tourist #1, ride the train, the
 # Alm (Selfie-Tourist #2 stomped on the way down), then walk off the last
 # terrace onto the road in bus #1's lane while it telegraphs: the bus
-# drives into her (Hurt at 2057, Normal) and passes through her during the
-# invulnerability.
+# drives into her (Hurt, Normal) and passes through her during the
+# invulnerability. Re-cut for the pen-wall fix (the Alm terrace 92-97 is
+# a tile lower): 18 more frames of walking to step off the last terrace.
 level  = st_wolfgang
 seed   = 1
 source = handwritten
@@ -47,5 +48,5 @@ R 80
 - 585
 R 225
 RJ 10
-R 70
-- 200
+R 88
+- 182

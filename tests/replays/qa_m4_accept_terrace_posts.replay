@@ -10,9 +10,11 @@
 level  = st_wolfgang
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt player_x>=3940 player_y>=218 state=playing oblaten=40
+expect = deaths=0 no_event=Hurt player_x>=3940 player_y>=218 state=playing oblaten=36
 ---
 # st_wolfgang_solver inputs to 1734
+# (the route as of the M4 acceptance; the pen-wall fix changed the solver
+# route, this prefix still plays the same way)
 RB 80
 RBJ 6
 RB 10

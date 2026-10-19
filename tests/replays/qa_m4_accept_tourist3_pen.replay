@@ -1,17 +1,21 @@
 # QA M4 acceptance: Selfie-Tourist #3's pen at the Markt entrance (153-162,
-# between the 1-high stone bench at 152 and the fountain basin). The
+# between the stone bench at 152 and the fountain basin, both 2 high since
+# the pen-wall fix). The
 # st_wolfgang_solver route to 1160, walk to the bench (checkpoint at 1187)
 # and stand on the street against it (x 2420) for 25 s: the tourist paces
 # x 2448-2596 and turns at the bench every time, so he never reaches the
 # road, the checkpoint or her. Then hop over the bench onto him as he comes
-# back (stomp 100) and land in the pen. (Standing ON the bench is not safe:
-# bug_m4_bench_tourist_head.)
+# back (stomp 100; a full hop over the 2-high bench) and land in the pen.
+# (Standing ON the bench is safe since the pen-wall fix:
+# qa_m4_bench_tourist_head.)
 level  = st_wolfgang
 seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt event=CheckpointReached event=Stomped score=5700 state=playing
 ---
 # st_wolfgang_solver inputs to 1160
+# (the route as of the M4 acceptance; the pen-wall fix changed the solver
+# route, this prefix still plays the same way)
 RB 80
 RBJ 6
 RB 10
@@ -54,7 +58,7 @@ RBJ 36
 RB 40
 R 40      # to the bench (x 2420), the checkpoint on the way
 - 1510    # 25 s: tourist #3 paces 2448-2596 in his pen and turns at the bench every time
-RJ 12     # hop over the bench onto him as he comes back to it
+RJ 18     # hop over the bench onto him as he comes back to it
 R 10
 - 40
 

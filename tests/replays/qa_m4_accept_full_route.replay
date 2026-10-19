@@ -9,23 +9,28 @@
 # standing, stomp Selfie-Tourist #2 at the Alm, bus #1 watched from the
 # terrace, bus #2's photo stop waited out on the shelter, checkpoint (16505),
 # over the bench into tourist #3's pen, axe on him, M-box (1000), basin ->
-# Pilgerbrunnen canopy, stomp tourist #4, axe on stand #2's globe, counter ->
-# awning -> steps -> church terrace, point-blank axes on the Pilger pair,
+# Pilgerbrunnen canopy, stomp tourist #4 (step off the basin's right end
+# into the sunken lane, bounce through its 3 Oblaten), stomp stand #2's
+# globe, awning -> steps -> church terrace, point-blank axes on the Pilger pair,
 # bump the H-box (Hackl stays), down to the street, under balcony B1
 # (singer #1 sings into the sky), axe on singer #2, along the street through
 # both decorative Kaiserterrasse posts (233, 242), the Seebad in two jumps,
-# axe on stand #3's globe, awning (the 100th Oblate: extra life), step,
+# axe on stand #3's globe, awning (the 100th Oblate, extra life, now falls before it), step,
 # landing hall, walk off to the Maibaum (100). St. Wolfgang LevelComplete at
-# 19103, the tally, then the route map St. Wolfgang -> Wolfgangsee (from
-# 19565): no level yet, so the teaser, still with Hackl Resi and the run (it
-# turns to the title at 19809, covered by qa_m4_flow_st_wolfgang_teaser_title).
-# The replay ends in the teaser.
+# ~19146, the tally, then the route map St. Wolfgang -> Wolfgangsee (from
+# ~19608): no level yet, so the teaser, still with Hackl Resi and the run (it
+# turns to the title at ~19852, covered by qa_m4_flow_st_wolfgang_teaser_title).
+# The replay ends in the teaser. Re-cut for the pen-wall fix (D-066
+# addendum): a hop out of the Ried dip onto the station step, a longer walk
+# on the Alm terrace (a tile lower) to trigger bus #1, a fuller hop over the
+# 2-high bench, and the Markt from the M-box to the church terrace (+43
+# frames from there on).
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt event=AxeHit event=ExtraLife event=CheckpointReached
-expect = state=route_map stage=st_wolfgang power=hackl lives=6 score=99400 oblaten=1
+expect = state=route_map stage=st_wolfgang power=hackl lives=6 score=99650 oblaten=3
 ---
 - 20
 S 1         # title -> Salzburg intro
@@ -361,13 +366,15 @@ B 1
 - 30
 R 60
 RJ 16
-R 100
-- 600
+R 14
+RJ 10      # out of the dip at 33-43 onto the step (col 44)
+R 96
+- 580
 R 200
 R 30
 RJ 14
-R 60
-- 230
+R 64
+- 226
 R 200
 RJ 18
 R 6
@@ -375,7 +382,7 @@ R 6
 R 45
 R 230
 - 60
-RJ 12
+RJ 14      # over the 2-high bench
 R 30
 - 200
 B 1
@@ -384,35 +391,49 @@ R 12
 - 5
 J 14
 - 60
-R 60
-RJ 8
-- 30
-J 14
-RJ 8
+R 28
+RJ 12      # onto the basin end (col 163, 2 high)
+R 10
+- 20
+RJ 16
 R 6
-- 200
-RJ 14
+- 30
+RJ 12      # onto the Pilgerbrunnen canopy
+R 8
+- 30
+R 30       # down onto the basin's right end (col 167)
+- 160      # wait for Selfie-Tourist #4 in the sunken globe lane
+R 6        # step off onto him: stomp
+- 8
+RJ 16      # bounce through the 3 Oblaten over the lane
 R 20
 - 20
-B 1
+- 35
+J 12       # stomp stand #2's globe
+- 60
+R 39
+RJ 14      # up onto the awning
+R 40       # over it, down into the dip at 181-183
 - 20
-R 50
-RJ 16
-R 60
-RJ 16
-R 40
-- 10
-RJ 16
-R 30
-- 200
+RJ 16      # up the church steps
+R 16
+RJ 8
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+RJ 8       # onto the church terrace
+R 6
+- 120
 B 1
 - 30
 B 1
 - 30
-R 55
+R 70
 - 10
 J 6
-- 60
+- 45
 R 200
 R 88
 B 1
