@@ -1,0 +1,10 @@
+# Durchkriechstein as Normal (D-057): DOWN at the mouth, the scripted crawl
+# (76 frames), out at the exit with +1 life.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=CrawlStarted event=ExtraLife lives=4 power=normal deaths=0 player_x>=384 state=playing
+---
+R 200     # into the boulder's face (the mouth)
+D 80      # crawl; input is ignored while crawling
+- 20

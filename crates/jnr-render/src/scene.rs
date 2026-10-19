@@ -24,7 +24,7 @@ use jnr_core::{
 };
 
 use crate::background::{self, BackgroundLayer};
-use crate::blit::draw_sprite;
+use crate::blit::{draw_sprite, draw_sprite_frame};
 use crate::entities::{self, EntityLooks};
 use crate::font::Font;
 use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
@@ -35,6 +35,13 @@ use crate::{Framebuffer, HEIGHT, hud, map, screens};
 pub const PLAYER_SPRITE: &str = "player";
 /// Sprite name of the Zuckerschock player.
 pub const PLAYER_BIG_SPRITE: &str = "player_big";
+/// Sprite name of the Hackl player (D-056).
+pub const PLAYER_HACKL_SPRITE: &str = "player_hackl";
+/// **Art fallback** while the atlas has no [`PLAYER_HACKL_SPRITE`]: the
+/// Hackl Resi is drawn as `player_big` (or `player`) with its dirndl red
+/// (`r`) swapped for the loden green (`G`). It goes away by itself once
+/// the pixel-artist's `player_hackl` exists (the lookup prefers it).
+pub const HACKL_FALLBACK_SWAP: (u32, u32) = (DIRNDL_RED, entities::PINE_DARK);
 /// The Maibaum pole, 16×16, repeated upwards from the goal cell's bottom.
 pub const MAIBAUM_POLE_SPRITE: &str = "maibaum_pole";
 /// The Maibaum top (wreath, ribbons, Wurstkranz), on top of the pole.
@@ -134,11 +141,16 @@ pub fn player_faces_left(p: &Player, t: &PlayerTuning) -> bool {
     }
 }
 
-/// The player sprite with one resolved anim per [`PlayerAnim`].
+/// The player sprite with one resolved anim per [`PlayerAnim`], plus the
+/// M3 poses it may lack: `throw` (Hackl; without it the movement anim
+/// shows) and `crawl` (without it Resi is hidden while crawling, the D-057
+/// fallback).
 #[derive(Clone, Debug)]
 struct PlayerLook<'a> {
     sprite: &'a AtlasSprite,
     anims: [&'a AtlasAnim; 7],
+    throw: Option<&'a AtlasAnim>,
+    crawl: Option<&'a AtlasAnim>,
 }
 
 /// A level `prop` (D-030/D-031): its sprite (`None` = grey-box outline of
@@ -168,6 +180,7 @@ pub struct RenderContext<'a> {
     tiles: TileLooks<'a>,
     player: Option<PlayerLook<'a>>,
     player_big: Option<PlayerLook<'a>>,
+    player_hackl: Option<PlayerLook<'a>>,
     maibaum_pole: Option<&'a AtlasSprite>,
     maibaum_top: Option<&'a AtlasSprite>,
     entities: EntityLooks<'a>,
@@ -211,6 +224,8 @@ impl<'a> RenderContext<'a> {
                         .find_map(|name| sprite.anim(name))
                         .unwrap_or(&sprite.anims[0])
                 }),
+                throw: sprite.anim("throw"),
+                crawl: sprite.anim("crawl"),
             })
         };
         let props = level
@@ -242,6 +257,7 @@ impl<'a> RenderContext<'a> {
             tiles,
             player: look(PLAYER_SPRITE),
             player_big: look(PLAYER_BIG_SPRITE),
+            player_hackl: look(PLAYER_HACKL_SPRITE),
             maibaum_pole: with_anims(MAIBAUM_POLE_SPRITE),
             maibaum_top: with_anims(MAIBAUM_TOP_SPRITE),
             entities: EntityLooks::new(atlas),
@@ -314,7 +330,62 @@ impl<'a> RenderContext<'a> {
     pub fn player_anim(&self, state: PlayerAnim) -> Option<&'a AtlasAnim> {
         self.player.as_ref().map(|look| look.anims[state.index()])
     }
+
+    /// The look of a power state and the colour swap to draw it with:
+    /// `player`, `player_big` (falls back to `player`), `player_hackl`
+    /// (until it exists: the big look with [`HACKL_FALLBACK_SWAP`]).
+    fn player_look(&self, power: Power) -> (Option<&PlayerLook<'a>>, Option<(u32, u32)>) {
+        let big = || self.player_big.as_ref().or(self.player.as_ref());
+        match power {
+            Power::Normal => (self.player.as_ref(), None),
+            Power::Big => (big(), None),
+            Power::Hackl => match &self.player_hackl {
+                Some(look) => (Some(look), None),
+                None => (big(), Some(HACKL_FALLBACK_SWAP)),
+            },
+        }
+    }
+
+    /// True if the atlas has the real `player_hackl` (no fallback).
+    pub fn has_player_hackl(&self) -> bool {
+        self.player_hackl.is_some()
+    }
 }
+
+/// Grey-box player (no sprite at all): hitbox height and fill per state.
+fn grey_box_player(power: Power, t: &PlayerTuning) -> (i32, u32) {
+    match power {
+        Power::Normal => (t.hitbox_h, DIRNDL_RED),
+        Power::Big => (t.hitbox_h_big, entities::WINE_DARK),
+        Power::Hackl => (t.hitbox_h_big, entities::PINE_DARK),
+    }
+}
+
+/// Draws frame `index` of `anim` of `sprite` with the optional colour swap.
+#[allow(clippy::too_many_arguments)]
+fn draw_look(
+    fb: &mut Framebuffer,
+    atlas: &Atlas,
+    sprite: &AtlasSprite,
+    anim: &AtlasAnim,
+    index: usize,
+    (x, y): (i32, i32),
+    left: bool,
+    swap: Option<(u32, u32)>,
+) {
+    draw_sprite_frame(fb, atlas, sprite, anim, index, x, y, left, swap);
+}
+
+/// The frame of the 2-frame `throw` anim `elapsed` frames into the throw
+/// pose: 0 (arm back) for the first [`THROW_WINDUP_FRAMES`], then 1 (sprite
+/// catalog: the engine picks the frame).
+pub fn throw_frame(elapsed: u32) -> usize {
+    usize::from(elapsed >= THROW_WINDUP_FRAMES)
+}
+
+/// Frames of the throw pose that show `throw` frame 0 (arm back with the
+/// Hackl raised); the rest of `hackl.throw_pose_frames` show frame 1.
+pub const THROW_WINDUP_FRAMES: u32 = 4;
 
 /// Draws one frame of the game. Deterministic: the same game state and
 /// context give identical pixels.
@@ -382,11 +453,11 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
     let p = game.player();
     let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
     let feet_y = (p.y + p.h).to_px() - cam.y;
-    let big = p.power == Power::Big;
     draw_player_pose(
         ctx,
         fb,
-        big,
+        p.power,
+        &game.tuning().player,
         PlayerAnim::Idle,
         (feet_x, feet_y),
         tick,
@@ -394,35 +465,30 @@ pub(crate) fn draw_backdrop(game: &Game, ctx: &RenderContext, fb: &mut Framebuff
     );
 }
 
-/// Resi outside play (title, intro, route map): `player` (or `player_big`
-/// when `big`, falling back to `player`) in `state` with her feet at
-/// `feet` on screen, mirrored if `left`; else the grey-box player (a
-/// 12×22 `r` box, 12×30 wine when big).
+/// Resi outside play (title, intro, route map) in her power state:
+/// `player`, `player_big` or `player_hackl` (with their fallbacks, see
+/// [`RenderContext`]) in `state` with her feet at `feet` on screen,
+/// mirrored if `left`; else the grey-box player ([`grey_box_player`]).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn draw_player_pose(
     ctx: &RenderContext,
     fb: &mut Framebuffer,
-    big: bool,
+    power: Power,
+    t: &PlayerTuning,
     state: PlayerAnim,
     (x, y): (i32, i32),
     tick: u32,
     left: bool,
 ) {
-    let look = if big {
-        ctx.player_big.as_ref().or(ctx.player.as_ref())
-    } else {
-        ctx.player.as_ref()
-    };
+    let (look, swap) = ctx.player_look(power);
     match look {
         Some(look) => {
             let anim = look.anims[state.index()];
-            draw_sprite(fb, ctx.atlas, look.sprite, anim, tick, x, y, left);
+            let i = anim.frame_index_at(tick);
+            draw_look(fb, ctx.atlas, look.sprite, anim, i, (x, y), left, swap);
         }
         None => {
-            let (h, fill) = if big {
-                (30, entities::WINE_DARK)
-            } else {
-                (22, DIRNDL_RED)
-            };
+            let (h, fill) = grey_box_player(power, t);
             fb.fill_rect(x - 6, y - h, 12, h, fill);
             fb.outline_rect(x - 6, y - h, 12, h, OUTLINE);
         }
@@ -491,24 +557,34 @@ fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
     }
 }
 
-/// Whether the player is drawn big this frame: the power state, except
-/// while transforming, when the old and new size alternate every 4 frames
-/// (starting with the old one).
-pub fn player_shown_big(p: &Player, t: &PlayerTuning) -> bool {
-    let big = p.power == Power::Big;
+/// The power state the player is drawn in this frame: hers, except while
+/// transforming, when the old (`prev_power`) and the new state's looks
+/// alternate every 4 frames (starting with the old one), for every change
+/// (growing, shrinking, Zuckerschock ↔ Hackl).
+pub fn player_shown_power(p: &Player, t: &PlayerTuning) -> Power {
     if p.transform == 0 {
-        return big;
+        return p.power;
     }
     let elapsed = u32::from(t.transform_frames.saturating_sub(p.transform));
     let show_new = (elapsed / DYING_FLASH_FRAMES) % 2 == 1;
-    if show_new { big } else { !big }
+    if show_new { p.power } else { p.prev_power }
 }
 
-/// The player: sprite `player` (Normal) or `player_big` (Zuckerschock,
-/// falls back to `player`) with its origin at the feet (bottom centre of
-/// the hitbox, D-011), else the hitbox as an `r` box (`R` when big) with a
-/// `k` outline. Blinks while dying (counted from the moment of death) and
-/// while invulnerable; alternates sizes while transforming.
+/// Whether the player is drawn big this frame (see [`player_shown_power`]).
+pub fn player_shown_big(p: &Player, t: &PlayerTuning) -> bool {
+    player_shown_power(p, t).is_big()
+}
+
+/// The player: sprite `player` (Normal), `player_big` (Zuckerschock,
+/// falls back to `player`) or `player_hackl` (Hackl, falls back to the
+/// recoloured big look, [`HACKL_FALLBACK_SWAP`]) with its origin at the
+/// feet (bottom centre of the hitbox, D-011), else the hitbox as a box in
+/// the state's colour with a `k` outline. Blinks while dying (counted from
+/// the moment of death) and while invulnerable; alternates looks while
+/// transforming. During the throw pose (Hackl) anim `throw`, its frame by
+/// the frames since the throw (without `throw`: the movement anim). While
+/// crawling anim `crawl` facing right, or nothing if the look has no
+/// `crawl` (the D-057 fallback: hidden inside the stone).
 fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     if let Mode::Dying { timer } = game.mode() {
         let elapsed = u32::from(game.tuning().game.death_frames.saturating_sub(timer));
@@ -517,38 +593,75 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
         }
     }
     let p = game.player();
-    let t = &game.tuning().player;
     if p.transform == 0 && (u32::from(p.invulnerable) / DYING_FLASH_FRAMES) % 2 == 1 {
         return;
     }
-    let big = player_shown_big(p, t);
-    let look = if big {
-        ctx.player_big.as_ref().or(ctx.player.as_ref())
-    } else {
-        ctx.player.as_ref()
-    };
-    let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
-    let feet_y = (p.y + p.h).to_px() - cam.y;
+    // Dying in the Durchkriechstein's tunnel: she stays hidden inside the
+    // stone (no crawl look, no standing look in the boulder).
+    if p.crawling() && matches!(game.mode(), Mode::Dying { .. }) {
+        return;
+    }
+    let sliding = game
+        .stage_clear()
+        .is_some_and(|c| c.phase == ClearPhase::Slide);
+    draw_resi(ctx, fb, cam, p, game.tuning(), sliding, game.frame());
+}
+
+/// [`draw_player`] without the blinking: Resi as `p` says, at `tick`.
+fn draw_resi(
+    ctx: &RenderContext,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    p: &Player,
+    tuning: &jnr_core::Tuning,
+    sliding: bool,
+    tick: u32,
+) {
+    let t = &tuning.player;
+    let power = player_shown_power(p, t);
+    let (look, swap) = ctx.player_look(power);
+    let feet = (
+        (p.x + p.w.div_int(2)).to_px() - cam.x,
+        (p.y + p.h).to_px() - cam.y,
+    );
+    let atlas = ctx.atlas;
     match look {
+        Some(look) if p.crawling() => {
+            if let Some(anim) = look.crawl {
+                let i = anim.frame_index_at(tick);
+                draw_look(fb, atlas, look.sprite, anim, i, feet, false, swap);
+            }
+        }
         Some(look) => {
-            let sliding = game
-                .stage_clear()
-                .is_some_and(|c| c.phase == ClearPhase::Slide);
-            let state = if sliding {
-                PlayerAnim::Pole
-            } else {
-                PlayerAnim::of(p, t)
+            let throw = look
+                .throw
+                .filter(|_| p.throw_pose > 0 && power == Power::Hackl);
+            let (anim, index) = match throw {
+                Some(anim) => {
+                    let total = tuning.hackl.throw_pose_frames;
+                    let elapsed = total.saturating_sub(p.throw_pose);
+                    (anim, throw_frame(u32::from(elapsed)))
+                }
+                None => {
+                    let state = if sliding {
+                        PlayerAnim::Pole
+                    } else {
+                        PlayerAnim::of(p, t)
+                    };
+                    let anim = look.anims[state.index()];
+                    (anim, anim.frame_index_at(tick))
+                }
             };
-            let anim = look.anims[state.index()];
             let left = player_faces_left(p, t);
-            let (atlas, tick) = (ctx.atlas, game.frame());
-            draw_sprite(fb, atlas, look.sprite, anim, tick, feet_x, feet_y, left);
+            draw_look(fb, atlas, look.sprite, anim, index, feet, left, swap);
         }
         None => {
-            let h = if big { t.hitbox_h_big } else { t.hitbox_h };
-            let (x, y) = (p.x.to_px() - cam.x, feet_y - h);
+            // Grey-box: the state's height (also while transforming), the
+            // 12×12 hitbox while crawling.
+            let (h, fill) = grey_box_player(power, t);
+            let h = if p.crawling() { p.h.to_px() } else { h };
+            let (x, y) = (p.x.to_px() - cam.x, feet.1 - h);
             let w = p.w.to_px();
-            let fill = if big { entities::WINE_DARK } else { DIRNDL_RED };
             fb.fill_rect(x, y, w, h, fill);
             fb.outline_rect(x, y, w, h, OUTLINE);
         }
@@ -1120,5 +1233,158 @@ mod tests {
             render_debug(&game, &ctx, &mut fb);
         }
         assert!(fb.pixels.contains(&SKY_LIGHT));
+    }
+
+    /// A 2×2 frame of one colour.
+    fn solid(rgba: u32) -> jnr_artkit::Image {
+        let mut img = jnr_artkit::Image::new(2, 2);
+        for (x, y) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
+            img.set(x, y, rgba.to_be_bytes());
+        }
+        img
+    }
+
+    /// The colour drawn just above Resi's feet by [`draw_resi`].
+    fn resi_colour(ctx: &RenderContext, p: &Player) -> Option<u32> {
+        let mut fb = testutil::fb();
+        let cam = Camera { x: 0, y: 0 };
+        draw_resi(ctx, &mut fb, cam, p, &tuning(), false, 0);
+        let (fx, fy) = p.feet();
+        fb.get(fx.to_px() - 1, fy.to_px() - 1)
+    }
+
+    #[test]
+    fn hackl_resi_falls_back_to_the_recoloured_big_look() {
+        let t = tuning().player;
+        let atlas = testutil::atlas(&[
+            testutil::sprite(
+                PLAYER_SPRITE,
+                (1, 2),
+                false,
+                vec![("idle", 0, vec![solid(A)])],
+            ),
+            testutil::sprite(
+                PLAYER_BIG_SPRITE,
+                (1, 2),
+                false,
+                vec![("idle", 0, vec![solid(DIRNDL_RED)])],
+            ),
+        ]);
+        let (texts, game) = (Texts::default(), tiny_game());
+        let ctx = RenderContext::new(&atlas, &texts, game.level());
+        assert!(!ctx.has_player_hackl());
+        let mut p = *game.player();
+        assert_eq!(resi_colour(&ctx, &p), Some(A));
+        p.power = Power::Big;
+        assert_eq!(resi_colour(&ctx, &p), Some(DIRNDL_RED));
+        p.power = Power::Hackl;
+        assert_eq!(resi_colour(&ctx, &p), Some(entities::PINE_DARK), "fallback");
+        // Zuckerschock → Hackl: the old look first, the new one 4 frames on.
+        p.prev_power = Power::Big;
+        p.transform = t.transform_frames;
+        assert_eq!(player_shown_power(&p, &t), Power::Big);
+        assert_eq!(resi_colour(&ctx, &p), Some(DIRNDL_RED));
+        p.transform = t.transform_frames - 4;
+        assert_eq!(player_shown_power(&p, &t), Power::Hackl);
+        assert_eq!(resi_colour(&ctx, &p), Some(entities::PINE_DARK));
+        p.transform = t.transform_frames - 8;
+        assert_eq!(player_shown_power(&p, &t), Power::Big);
+        // Hackl → Zuckerschock (a hit) alternates the same way.
+        p.power = Power::Big;
+        p.prev_power = Power::Hackl;
+        p.transform = t.transform_frames;
+        assert_eq!(player_shown_power(&p, &t), Power::Hackl);
+        // The throw pose without a `throw` anim: the movement anim.
+        p.power = Power::Hackl;
+        p.transform = 0;
+        p.throw_pose = 10;
+        assert_eq!(resi_colour(&ctx, &p), Some(entities::PINE_DARK));
+        // Crawling without a `crawl` anim: hidden (D-057 fallback).
+        p.throw_pose = 0;
+        p.crawl_to = Some(p.x + Fx::from_px(64));
+        p.y += p.h - Fx::from_px(12);
+        p.h = Fx::from_px(12);
+        assert_eq!(resi_colour(&ctx, &p), Some(testutil::BG));
+        // Grey-box (no sprites at all): the 12×12 crawl hitbox in green.
+        let none = empty_atlas();
+        let ctx = RenderContext::new(&none, &texts, game.level());
+        let mut fb = testutil::fb();
+        draw_resi(
+            &ctx,
+            &mut fb,
+            Camera { x: 0, y: 0 },
+            &p,
+            &tuning(),
+            false,
+            0,
+        );
+        let (x, y) = (p.x.to_px(), p.y.to_px());
+        assert_eq!(fb.get(x + 6, y + 6), Some(entities::PINE_DARK));
+        assert_eq!(fb.get(x + 6, y - 1), Some(testutil::BG), "12 px tall");
+    }
+
+    #[test]
+    fn player_hackl_throws_and_crawls_with_its_own_anims() {
+        let anims = |colour| {
+            vec![
+                ("idle", 0, vec![solid(colour)]),
+                ("throw", 0, vec![solid(C), solid(A)]),
+                ("crawl", 8, vec![solid(B), solid(B)]),
+            ]
+        };
+        let atlas = testutil::atlas(&[
+            testutil::sprite(
+                PLAYER_SPRITE,
+                (1, 2),
+                false,
+                vec![("idle", 0, vec![solid(A)])],
+            ),
+            testutil::sprite(PLAYER_HACKL_SPRITE, (1, 2), false, anims(STONE_GREY)),
+        ]);
+        let (texts, game) = (Texts::default(), tiny_game());
+        let ctx = RenderContext::new(&atlas, &texts, game.level());
+        assert!(ctx.has_player_hackl());
+        let mut p = *game.player();
+        p.power = Power::Hackl;
+        assert_eq!(resi_colour(&ctx, &p), Some(STONE_GREY), "no swap");
+        // Throw pose: frame 0 for 4 frames, then frame 1.
+        for (left, colour) in [(10, C), (7, C), (6, A), (1, A)] {
+            p.throw_pose = left;
+            assert_eq!(resi_colour(&ctx, &p), Some(colour), "{left} frames left");
+        }
+        assert_eq!((throw_frame(3), throw_frame(4)), (0, 1));
+        p.throw_pose = 0;
+        p.crawl_to = Some(p.x + Fx::from_px(64));
+        assert_eq!(resi_colour(&ctx, &p), Some(B), "crawl anim");
+        // Normal Resi has no `crawl` here: hidden.
+        p.power = Power::Normal;
+        assert_eq!(resi_colour(&ctx, &p), Some(testutil::BG));
+    }
+
+    #[test]
+    fn resi_dying_in_the_tunnel_stays_hidden() {
+        // Time is up (3 s) while she crawls through the stone at columns 8–11.
+        let text = "[meta]\nid = \"tiny\"\ntime_limit = 3\n[legend]\n\"#\" = \"solid\"\n\
+                    \"P\" = { entity = \"player_start\" }\n\"K\" = { entity = \"durchkriechstein\" }\n\
+                    [map]\ngrid = '''\n....................\n....................\n........####........\n\
+                    ........####........\n..P.....K...........\n####################\n'''\n";
+        let mut game = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
+        let step = |g: &mut Game, input: InputFrame, n: u32| {
+            for _ in 0..n {
+                g.step(input);
+            }
+        };
+        step(&mut game, InputFrame::RIGHT, 80);
+        step(&mut game, InputFrame::NONE, 30);
+        step(&mut game, InputFrame::DOWN, 1);
+        assert!(game.player().crawling());
+        while game.mode() == Mode::Playing {
+            game.step(InputFrame::NONE);
+        }
+        assert!(matches!(game.mode(), Mode::Dying { .. }));
+        assert!(game.player().crawling(), "died in the tunnel");
+        // Grey-box mode would draw her hitbox in `r`: nothing is drawn.
+        let fb = rendered(&game, &empty_atlas());
+        assert!(!fb.pixels.contains(&DIRNDL_RED));
     }
 }

@@ -15,6 +15,8 @@
 //! - [`entity`]: items, particles, popups, props, enemies (`Vec<Entity>`)
 //! - [`enemies`]: enemy patterns, thrown Mozartkugeln, defeated enemies
 //! - [`platform`]: the Festungsbahn car and the Gondel (moving one-way platforms)
+//! - [`hackl`]: the thrown Hackl and the axe-hit hook per entity kind (D-056)
+//! - [`crawl`]: the Durchkriechstein's start rule and level geometry (D-057)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
@@ -25,10 +27,12 @@
 use std::fmt;
 
 pub mod camera;
+pub mod crawl;
 pub mod enemies;
 pub mod entity;
 pub mod fx;
 pub mod game;
+pub mod hackl;
 pub mod hash;
 pub mod input;
 pub mod level;
@@ -49,6 +53,7 @@ pub use enemies::Pose;
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
 pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};
+pub use hackl::AxeHit;
 pub use input::InputFrame;
 pub use level::{
     Block, CameraMode, Contents, EntitySpawn, Level, PROP_SPRITES, PropLayer, SignStyle, SpawnKind,
@@ -56,7 +61,7 @@ pub use level::{
 };
 pub use player::{Facing, Player, Power};
 pub use replay::Replay;
-pub use route::{MapPhase, Route, RouteMap, STATIONS, Station};
+pub use route::{LabelSlot, MapPhase, Route, RouteMap, STATIONS, Station};
 pub use text::Texts;
 pub use tuning::Tuning;
 

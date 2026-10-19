@@ -107,17 +107,64 @@ pub fn label_pos(dot: (i32, i32), side: LabelSide, w: i32) -> (i32, i32) {
     (x.clamp(LABEL_MARGIN, max_x), y.max(LABEL_MARGIN))
 }
 
-/// [`label_pos`] for a station, with its fixed top edge and right limit
-/// from the route data.
+/// [`label_pos`] for a station in its primary slot: its fixed top edge
+/// and right limit from the route data.
 pub fn station_label_pos(st: &Station, w: i32) -> (i32, i32) {
+    slot_pos(st, w, st.label_top, st.label_right)
+}
+
+fn slot_pos(st: &Station, w: i32, top: Option<i32>, right: Option<i32>) -> (i32, i32) {
     let (mut x, mut y) = label_pos(st.dot, st.label, w);
-    if let Some(top) = st.label_top {
+    if let Some(top) = top {
         y = top;
     }
-    if let Some(right) = st.label_right {
+    if let Some(right) = right {
         x = x.min(right - w).max(LABEL_MARGIN);
     }
     (x, y)
+}
+
+/// Height of Resi's drawn box on the map: the 16×24 `player` sprite, or
+/// the 16×32 big ones (Zuckerschock, Hackl).
+pub fn resi_height(power: Power) -> i32 {
+    if power.is_big() { 32 } else { 24 }
+}
+
+/// Resi's drawn box `(left, top, right, bottom)`, exclusive right and
+/// bottom, standing on `dot` in `power`.
+pub fn resi_box(dot: (i32, i32), power: Power) -> (i32, i32, i32, i32) {
+    let feet = dot.1 + RESI_DY;
+    (dot.0 - 8, feet - resi_height(power), dot.0 + 8, feet)
+}
+
+/// True if a label `w` px wide at `(x, y)`, its 1 px outline included,
+/// intersects the box `(left, top, right, bottom)`.
+pub fn label_hits(x: i32, y: i32, w: i32, b: (i32, i32, i32, i32)) -> bool {
+    let (l, t, r, bt) = (x - 1, y - 1, x + w + 1, y + GLYPH_H + 1);
+    l < b.2 && b.0 < r && t < b.3 && b.1 < bt
+}
+
+/// A station's label position on a map screen that starts on station
+/// `from` and ends on the next one, with Resi in `power` (art-director,
+/// M3): the primary slot, or the station's alternate slot when Resi is big
+/// and her box at the screen's **end** dot (where she waits) intersects the
+/// primary slot; her start dot never counts (art-director: the target label
+/// stays next to its dot while she sets off). Normal Resi always keeps the
+/// primary slot (the M2 layout, whose one-row touch was approved). The
+/// choice depends only on the screen, so a label never switches slots
+/// during the walk.
+pub fn screen_label_pos(st: &Station, w: i32, from: usize, power: Power) -> (i32, i32) {
+    let primary = station_label_pos(st, w);
+    let Some(alt) = st.label_alt else {
+        return primary;
+    };
+    let end = STATIONS[(from + 1).min(STATIONS.len() - 1)].dot;
+    let covered = power.is_big() && label_hits(primary.0, primary.1, w, resi_box(end, power));
+    if covered {
+        slot_pos(st, w, alt.top, alt.right)
+    } else {
+        primary
+    }
 }
 
 /// Draws the route map of `game` (navy if it has none).
@@ -164,7 +211,8 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
             SILVER_LIGHT
         };
         let text = texts.get(STATION_KEYS[i]);
-        let (lx, ly) = station_label_pos(st, font.measure(&text));
+        let power = game.player().power;
+        let (lx, ly) = screen_label_pos(st, font.measure(&text), from, power);
         font.draw_text_outlined(fb, atlas, &text, lx, ly, colour, OUTLINE);
     }
 
@@ -175,8 +223,16 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     } else {
         PlayerAnim::Idle
     };
-    let big = game.player().power == Power::Big;
-    scene::draw_player_pose(ctx, fb, big, state, (x, y + RESI_DY), tick, left);
+    scene::draw_player_pose(
+        ctx,
+        fb,
+        game.player().power,
+        &game.tuning().player,
+        state,
+        (x, y + RESI_DY),
+        tick,
+        left,
+    );
 
     if m.phase != MapPhase::Arrive {
         draw_map_panel(ctx, fb, m);
@@ -256,7 +312,7 @@ mod tests {
     use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
     use crate::scene::render;
     use crate::testutil::{self, image};
-    use jnr_core::{InputFrame, Level, Mode, Route, Start, Texts, Tuning};
+    use jnr_core::{InputFrame, Level, Mode, Power, Route, Start, Texts, Tuning};
 
     fn texts() -> Texts {
         Texts::parse(include_str!("../../../content/text/de.toml")).unwrap()
@@ -359,6 +415,96 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn labels_per_map_screen_clear_resi_and_each_other() {
+        let texts = texts();
+        let font = crate::Font::from_atlas(jnr_assets::atlas());
+        let widths: Vec<i32> = STATION_KEYS
+            .iter()
+            .map(|k| font.measure(&texts.get(k)))
+            .collect();
+        // Every map screen (start station `from`, end `from + 1`), both
+        // form heights (Normal 24, big 32).
+        for from in 0..STATIONS.len() - 1 {
+            for power in [Power::Normal, Power::Big, Power::Hackl] {
+                let pos: Vec<(i32, i32)> = STATIONS
+                    .iter()
+                    .zip(&widths)
+                    .map(|(st, &w)| screen_label_pos(st, w, from, power))
+                    .collect();
+                for i in 0..STATIONS.len() {
+                    let (x, y, w) = (pos[i].0, pos[i].1, widths[i]);
+                    for j in i + 1..STATIONS.len() {
+                        let o = (pos[j].0 - 1, pos[j].1 - 1, pos[j].0 + widths[j] + 1);
+                        let other = (o.0, o.1, o.2, pos[j].1 + GLYPH_H + 1);
+                        assert!(
+                            !label_hits(x, y, w, other),
+                            "screen {from} {power:?}: {i} vs {j}"
+                        );
+                    }
+                    // Only the end dot counts (where she waits; art-director).
+                    {
+                        let end = from + 1;
+                        let hit = label_hits(x, y, w, resi_box(STATIONS[end].dot, power));
+                        let pair = (STATIONS[i].id, STATIONS[end].id);
+                        let allowed = LATER.contains(&pair)
+                            || (power == Power::Normal && NORMAL_TOUCH.contains(&pair));
+                        // Big forms: clear on every playable screen.
+                        assert!(
+                            !hit || allowed,
+                            "screen {from} {power:?}: label {} vs Resi on {} (label {:?})",
+                            pair.0,
+                            pair.1,
+                            (x, y, w)
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /// Normal Resi keeps the primary slots, where her box touches these
+    /// labels by its top rows / an outline column (approved in the M2 map
+    /// review; the drawn pixels only meet at the outline): (label, the dot
+    /// she stands on).
+    const NORMAL_TOUCH: [(&str, &str); 2] =
+        [("brunnwinkl", "st_gilgen"), ("falkenstein", "st_wolfgang")];
+
+    /// Known collisions on the later stations (from St. Wolfgang on, not
+    /// playable yet), for every form, left for their milestones' map
+    /// review: (label, the dot Resi stands on).
+    const LATER: [(&str, &str); 4] = [
+        ("st_wolfgang", "wolfgangsee"),
+        ("st_wolfgang", "strobl"),
+        ("bad_ischl", "bad_ischl"),
+        ("cafe_zauner", "bad_ischl"),
+    ];
+
+    #[test]
+    fn big_resi_moves_brunnwinkl_and_falkenstein_to_their_alternate_slots() {
+        let w = 48;
+        // Normal: primary slots on every screen.
+        assert_eq!(
+            screen_label_pos(&STATIONS[2], w, 0, Power::Normal),
+            (66, 43)
+        );
+        // Big, ending on St. Gilgen (Salzburg → St. Gilgen): raised; setting
+        // off from St. Gilgen to Brunnwinkl: the start dot doesn't count.
+        for power in [Power::Big, Power::Hackl] {
+            assert_eq!(screen_label_pos(&STATIONS[2], w, 0, power), (66, 20));
+            assert_eq!(screen_label_pos(&STATIONS[2], w, 1, power), (66, 43));
+        }
+        // Falkenstein (60 px wide): 172 normally, 171 with a big Resi
+        // walking Falkenstein → St. Wolfgang.
+        let right = |from, power| {
+            let (x, _) = screen_label_pos(&STATIONS[3], 60, from, power);
+            x + 60
+        };
+        assert_eq!(right(3, Power::Normal), 172);
+        assert_eq!(right(3, Power::Hackl), 171);
+        assert_eq!(right(1, Power::Hackl), 172, "far from her: primary");
     }
 
     #[test]
@@ -513,11 +659,48 @@ mod tests {
         let (t, lvl) = (texts(), stage("a"));
         let ctx = RenderContext::new(&atlas, &t, &lvl);
         let mut fb = testutil::fb();
-        scene::draw_player_pose(&ctx, &mut fb, true, PlayerAnim::Idle, (50, 100), 0, false);
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            Power::Big,
+            &tuning().player,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
         assert_eq!(fb.get(50, 75), Some(crate::entities::WINE_DARK));
         assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
         let mut fb = testutil::fb();
-        scene::draw_player_pose(&ctx, &mut fb, false, PlayerAnim::Idle, (50, 100), 0, false);
+        let hackl = Power::Hackl;
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            hackl,
+            &tuning().player,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
+        assert_eq!(
+            fb.get(50, 75),
+            Some(crate::entities::PINE_DARK),
+            "Hackl: green"
+        );
+        assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
+        let mut fb = testutil::fb();
+        let normal = Power::Normal;
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            normal,
+            &tuning().player,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
         assert_eq!(fb.get(50, 85), Some(DIRNDL_RED));
         assert_eq!(fb.get(50, 78), Some(OUTLINE), "22 px tall");
     }

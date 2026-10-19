@@ -111,6 +111,8 @@ pub struct EntityLooks<'a> {
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
+    hackl: Option<&'a AtlasSprite>,
+    hackl_thrown: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -145,6 +147,8 @@ impl<'a> EntityLooks<'a> {
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
+            hackl: s("hackl"),
+            hackl_thrown: s("hackl_thrown"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -176,7 +180,12 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Gondel => self.gondel,
             EntityKind::Steinschlag | EntityKind::Stein => self.stein,
             EntityKind::SteinDebris => self.stein_debris,
-            EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
+            EntityKind::Hackl => self.hackl,
+            EntityKind::ThrownHackl => self.hackl_thrown,
+            EntityKind::Popup(_)
+            | EntityKind::Bump
+            | EntityKind::Sign
+            | EntityKind::Durchkriechstein => None,
         }
     }
 }
@@ -208,7 +217,9 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Note => SLATE_DARK,
         EntityKind::Festungsbahn => LAKE_TEAL,
         EntityKind::Gondel => SKIN_LIGHT,
-        EntityKind::Popup(_) | EntityKind::Bump => WHITE,
+        EntityKind::Hackl => PINE_DARK,
+        EntityKind::ThrownHackl => SILVER_LIGHT,
+        EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
 
@@ -252,17 +263,20 @@ pub fn draw_entities(
     }
     for e in game.entities() {
         match e.kind {
+            // The Durchkriechstein is drawn by its prop (D-057).
             EntityKind::Debris
             | EntityKind::SteinDebris
             | EntityKind::Popup(_)
-            | EntityKind::Bump => {}
+            | EntityKind::Bump
+            | EntityKind::Durchkriechstein => {}
             EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
             EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
             EntityKind::Enemy(_)
             | EntityKind::Defeated(_)
             | EntityKind::Thrown
             | EntityKind::Stein
-            | EntityKind::Note => draw_enemy(game, looks, atlas, fb, cam, e),
+            | EntityKind::Note
+            | EntityKind::ThrownHackl => draw_enemy(game, looks, atlas, fb, cam, e),
             EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
             EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
             EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
@@ -436,6 +450,7 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Crash => ("crash", None),
         Pose::Buzz => ("buzz", None),
         Pose::Waggle => ("waggle", None),
+        Pose::Stuck => ("stuck", None),
         Pose::Crouch => ("crouch", None),
         Pose::Hop => ("hop", None),
         Pose::Rest => ("rest", None),
