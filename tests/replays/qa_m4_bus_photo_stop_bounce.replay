@@ -1,0 +1,48 @@
+# QA M4 Reisebus #2 (D-070): bounce over it at its photo stop. The relaxed
+# run onto the shelter; bus #2 stands at its photo stop (130-133) from
+# ~2190; a hop off the shelter lands on its roof (bounce, no points, no
+# damage), bounce on along the roof through the 4 Oblaten over the stop,
+# then stomp Selfie-Tourist #3, who stands right behind the bus during the
+# stop (100), and land on the road.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt oblaten=24 score=5100
+---
+# the qa_st_wolfgang_relaxed inputs to 2220 (on the shelter, bus #2 at its photo stop)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+R 225
+RJ 10
+R 70
+- 180
+R 200
+RJ 18
+R 6
+- 145
+# onto the roof, bounce, over the tourist
+RJ 12
+R 30
+RJ 30
+R 10
+- 60

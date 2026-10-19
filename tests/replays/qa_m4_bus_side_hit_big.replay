@@ -1,0 +1,51 @@
+# QA M4 Reisebus #1 (D-070): a side hit as Zuckerschock shrinks, it does not
+# kill. Mozartkugel from the start M-box (col 14, Zuckerschock at 283;
+# the big jump breaks brick 15), past stand #1 (its globe shatters on the
+# curb), over the counter, stomp Selfie-Tourist #1, ride the train, the
+# Alm (Selfie-Tourist #2 stomped on the way down), then walk off the last
+# terrace onto the road in bus #1's lane while it telegraphs: the bus
+# drives into her (Hurt at 2057, Normal) and passes through her during the
+# invulnerability.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 lives=3 event=Hurt power=normal state=playing
+---
+# Mozartkugel at the start, then to the train as Zuckerschock
+R 120
+- 26
+J 14
+- 120
+- 30
+R 20
+RJ 20
+R 30
+RJ 20
+R 37
+- 26
+J 12
+RJ 10
+- 50
+R 16
+RJ 10
+R 22
+RJ 10
+R 60
+- 40
+RJ 10
+R 40
+- 60
+RJ 14
+R 6
+- 40
+R 60
+RJ 8
+R 24
+RJ 8
+R 80
+# ride, the Alm, off the terrace into the bus lane
+- 585
+R 225
+RJ 10
+R 70
+- 200

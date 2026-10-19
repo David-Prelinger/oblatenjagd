@@ -1,0 +1,44 @@
+# QA M4 Schafbergbahn: pause mid-ride (title flow). START at 21, intro to
+# 170, the relaxed run to its frame 1000 (riding over the rock steps),
+# START: paused for 120 frames (train and rider frozen), START again: the
+# ride goes on unchanged and she walks off at the Alm halt.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 no_event=Hurt player_x>=1300 player_y<=90 state=playing
+---
+# title -> intro
+- 20
+S 1
+- 150
+# the qa_st_wolfgang_relaxed inputs to 1000
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 204
+# pause, 120 frames, resume
+S 1
+- 120
+S 1
+# the rest of the ride, walk off at the halt
+- 365
+R 60

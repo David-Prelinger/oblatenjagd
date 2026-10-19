@@ -1,0 +1,47 @@
+# QA M4 Schafbergbahn (D-067): fall off the back over the rock steps and
+# re-board. The relaxed run to frame 860 (riding, train started at ~790),
+# walk LEFT off the back of the rising train onto the street-level rock
+# steps (52-59), back to the lower station platform, wait for the empty
+# train to go up, wait 90 at the top and come back down (it waits for the
+# next rider at the lower end), walk on again, ride the whole way and walk
+# off at the Alm halt (roof flush with the platform, row 7).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=1300 player_y<=90 state=playing
+---
+# the qa_st_wolfgang_relaxed inputs to 860 (on the moving train)
+R 150
+RJ 20
+R 60
+R 2
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 64
+# walk off the back, land on the rock steps, climb to the platform
+L 40
+- 20
+L 60
+LJ 16
+L 10
+# the empty train goes up, waits, comes back down and waits
+- 1020
+# walk on: it starts; ride to the top and walk off at the halt
+R 30
+- 600
+R 60

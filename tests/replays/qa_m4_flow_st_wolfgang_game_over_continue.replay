@@ -1,0 +1,41 @@
+# QA M4 flow (D-017, D-047): game over in St. Wolfgang -> continue restarts
+# St. Wolfgang. Title flow with the run started at St. Wolfgang: three
+# times over the garden wall into stand #1's lane as its first globe
+# arrives (deaths at 440, 919, 1398, each after the 150-frame intro);
+# game over at 1458; START at 1531 -> the St. Wolfgang intro and play at
+# the Ried landing: 3 lives, score 0, 0 Oblaten.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver dies_at frames=1398..1398
+expect = state=playing stage=st_wolfgang lives=3 score=0 oblaten=0 power=normal player_x>=34 player_y>=218 player_y<=218
+---
+# title -> intro
+- 20
+S 1
+- 150
+# death 1
+R 150
+RJ 20
+R 60
+RJ 12
+R 20
+- 217
+# death 2
+R 150
+RJ 20
+R 60
+RJ 12
+R 20
+- 217
+# death 3, game over 1458
+R 150
+RJ 20
+R 60
+RJ 12
+R 20
+# START -> intro -> play
+- 160
+S 1
+- 160
