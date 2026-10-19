@@ -16,6 +16,7 @@
 //! route map and then plays the next stage's level (D-042, D-047).
 
 mod flow;
+mod power;
 
 pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
@@ -82,13 +83,19 @@ pub enum Event {
     CheckpointReached,
     /// The last life was lost.
     GameOver,
+    /// The player threw a Hackl (D-056).
+    HacklThrown,
+    /// A thrown Hackl hit a target (defeated, bounced off or shattered it).
+    AxeHit,
+    /// The player started crawling through a Durchkriechstein (D-057).
+    CrawlStarted,
 }
 
 impl Event {
     /// Every event, in declaration order. Keep in sync with the enum: a new
     /// variant fails the build in [`Event::name`] (exhaustive `match`), which
     /// is the reminder to list it here too.
-    pub const ALL: [Event; 14] = [
+    pub const ALL: [Event; 17] = [
         Event::Jumped,
         Event::Landed,
         Event::Died,
@@ -103,6 +110,9 @@ impl Event {
         Event::Stomped,
         Event::CheckpointReached,
         Event::GameOver,
+        Event::HacklThrown,
+        Event::AxeHit,
+        Event::CrawlStarted,
     ];
 
     /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
@@ -122,6 +132,9 @@ impl Event {
             Event::Stomped => "Stomped",
             Event::CheckpointReached => "CheckpointReached",
             Event::GameOver => "GameOver",
+            Event::HacklThrown => "HacklThrown",
+            Event::AxeHit => "AxeHit",
+            Event::CrawlStarted => "CrawlStarted",
         }
     }
 
@@ -403,6 +416,8 @@ impl Game {
             }
         }
         self.start_held = input.contains(InputFrame::START);
+        // In every mode, so RUN held across screens is not a new press.
+        self.player.run_held = input.run();
         &self.events
     }
 
@@ -414,30 +429,43 @@ impl Game {
             return;
         }
 
+        self.player.throw_pose = self.player.throw_pose.saturating_sub(1);
         let prev_bottom = self.player.y + self.player.h;
-        let was_on_ground = self.player.on_ground;
-        let min_x = Fx::from_px(self.camera.x);
-        let head_row = self.player.update(
-            input,
-            &self.map,
-            &self.tuning.player,
-            min_x,
-            &mut self.events,
-        );
-        crate::platform::land(
-            &mut self.player,
-            &self.entities,
-            prev_bottom,
-            was_on_ground,
-            &self.tuning.player,
-            &mut self.events,
-        );
-        if let Some(row) = head_row {
-            self.hit_from_below(row);
+        // The Durchkriechstein crawl replaces the player's own movement and
+        // every contact with entities (input ignored, can't be hurt, D-057).
+        let crawling = self.player.crawling() || self.start_crawl(input);
+        if crawling {
+            self.player.jump_held = input.jump();
+            self.step_crawl();
+        } else {
+            let was_on_ground = self.player.on_ground;
+            let min_x = Fx::from_px(self.camera.x);
+            let head_row = self.player.update(
+                input,
+                &self.map,
+                &self.tuning.player,
+                min_x,
+                &mut self.events,
+            );
+            crate::platform::land(
+                &mut self.player,
+                &self.entities,
+                prev_bottom,
+                was_on_ground,
+                &self.tuning.player,
+                &mut self.events,
+            );
+            if let Some(row) = head_row {
+                self.hit_from_below(row);
+            }
+            self.throw_hackl(input);
         }
         self.update_entities();
         self.follow_carried_left();
-        self.interact(prev_bottom, input);
+        self.axe_hits();
+        if !crawling {
+            self.interact(prev_bottom, input);
+        }
         // Counted after the hits of this frame: exactly
         // `invulnerable_frames` frames without harm.
         if self.mode == Mode::Playing && self.player.transform == 0 {
@@ -633,7 +661,7 @@ impl Game {
         }
         match (tile.block, tile.contains) {
             (Block::Brick, Contents::None) => {
-                if self.player.power == Power::Big {
+                if self.player.power.is_big() {
                     self.break_brick(col, row);
                     self.knock_enemies_on(col, row);
                     return;
@@ -727,6 +755,12 @@ impl Game {
                 feet_x,
                 TILE.mul_int(row + 1),
                 it.zaunerstollen_hitbox,
+            )),
+            Contents::Hackl => self.entities.push(Entity::at_feet(
+                EntityKind::Hackl,
+                feet_x,
+                TILE.mul_int(row + 1),
+                self.tuning.hackl.item_hitbox,
             )),
         }
     }
@@ -894,6 +928,11 @@ impl Game {
                         spawned.push(popup(Popup::ExtraLife, fx, e.y));
                     }
                 }
+                EntityKind::Hackl => {
+                    self.entities[i].removed = true;
+                    grew |= self.player.power == Power::Normal;
+                    spawned.extend(self.pick_up_hackl(fx, e.y));
+                }
                 EntityKind::Enemy(_) if !e.harmful() => {}
                 // A swarm hurts on any contact, also from above.
                 EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
@@ -928,7 +967,9 @@ impl Game {
                 | EntityKind::Checkpoint
                 | EntityKind::Sign
                 | EntityKind::Festungsbahn
-                | EntityKind::Gondel => {}
+                | EntityKind::Gondel
+                | EntityKind::ThrownHackl
+                | EntityKind::Durchkriechstein => {}
             }
         }
         if grew {
@@ -989,19 +1030,20 @@ impl Game {
         }
     }
 
-    /// A hit: Zuckerschock shrinks (with invulnerability), Normal dies.
-    /// Nothing happens while invulnerable or transforming.
+    /// A hit steps down one power state (Hackl → Zuckerschock →
+    /// Normal, with invulnerability); Normal dies. Nothing happens while
+    /// invulnerable or transforming.
     fn hurt_player(&mut self) {
         if self.player.invulnerable > 0 || self.player.transform > 0 {
             return;
         }
-        match self.player.power {
-            Power::Big => {
-                self.player.set_power(Power::Normal, &self.tuning.player);
+        match self.player.power.after_hit() {
+            Some(power) => {
+                self.player.set_power(power, &self.tuning.player);
                 self.player.invulnerable = self.tuning.player.invulnerable_frames;
                 self.events.push(Event::Hurt);
             }
-            Power::Normal => self.die(DeathCause::Hit),
+            None => self.die(DeathCause::Hit),
         }
     }
 
@@ -1193,10 +1235,7 @@ impl Game {
         let mut h = Fnv::new();
         self.hash_tiles(&mut h);
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
-        h.u8(match self.player.power {
-            Power::Normal => 0,
-            Power::Big => 1,
-        });
+        h.u8(self.player.power.id());
         for e in &self.entities {
             if matches!(
                 e.kind,
@@ -1219,6 +1258,8 @@ impl Game {
                     | EntityKind::Note
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
+                    | EntityKind::ThrownHackl
+                    | EntityKind::Durchkriechstein
             ) {
                 h.bool(e.active);
                 h.u8(e.state);

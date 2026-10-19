@@ -8,8 +8,8 @@
 //! the next station's name and the blinking prompt (or the teaser text).
 //! Full screen, no HUD.
 
+use jnr_core::Game;
 use jnr_core::route::{self, LabelSide, MapPhase, RouteMap, STATIONS, Station};
-use jnr_core::{Game, Power};
 
 use crate::palette::{
     DIRNDL_RED, MEADOW, MOZART_YELLOW, NAVY, OUTLINE, SILVER_LIGHT, STONE_GREY, WHITE,
@@ -175,8 +175,15 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     } else {
         PlayerAnim::Idle
     };
-    let big = game.player().power == Power::Big;
-    scene::draw_player_pose(ctx, fb, big, state, (x, y + RESI_DY), tick, left);
+    scene::draw_player_pose(
+        ctx,
+        fb,
+        game.player().power,
+        state,
+        (x, y + RESI_DY),
+        tick,
+        left,
+    );
 
     if m.phase != MapPhase::Arrive {
         draw_map_panel(ctx, fb, m);
@@ -256,7 +263,7 @@ mod tests {
     use crate::font::{CHARSET, FONT_SPRITE, GLYPH_ANIM};
     use crate::scene::render;
     use crate::testutil::{self, image};
-    use jnr_core::{InputFrame, Level, Mode, Route, Start, Texts, Tuning};
+    use jnr_core::{InputFrame, Level, Mode, Power, Route, Start, Texts, Tuning};
 
     fn texts() -> Texts {
         Texts::parse(include_str!("../../../content/text/de.toml")).unwrap()
@@ -513,11 +520,29 @@ mod tests {
         let (t, lvl) = (texts(), stage("a"));
         let ctx = RenderContext::new(&atlas, &t, &lvl);
         let mut fb = testutil::fb();
-        scene::draw_player_pose(&ctx, &mut fb, true, PlayerAnim::Idle, (50, 100), 0, false);
+        scene::draw_player_pose(
+            &ctx,
+            &mut fb,
+            Power::Big,
+            PlayerAnim::Idle,
+            (50, 100),
+            0,
+            false,
+        );
         assert_eq!(fb.get(50, 75), Some(crate::entities::WINE_DARK));
         assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
         let mut fb = testutil::fb();
-        scene::draw_player_pose(&ctx, &mut fb, false, PlayerAnim::Idle, (50, 100), 0, false);
+        let hackl = Power::Hackl;
+        scene::draw_player_pose(&ctx, &mut fb, hackl, PlayerAnim::Idle, (50, 100), 0, false);
+        assert_eq!(
+            fb.get(50, 75),
+            Some(crate::entities::PINE_DARK),
+            "Hackl: green"
+        );
+        assert_eq!(fb.get(50, 70), Some(OUTLINE), "30 px tall");
+        let mut fb = testutil::fb();
+        let normal = Power::Normal;
+        scene::draw_player_pose(&ctx, &mut fb, normal, PlayerAnim::Idle, (50, 100), 0, false);
         assert_eq!(fb.get(50, 85), Some(DIRNDL_RED));
         assert_eq!(fb.get(50, 78), Some(OUTLINE), "22 px tall");
     }

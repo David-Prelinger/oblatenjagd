@@ -118,6 +118,8 @@ pub enum Contents {
     /// One Oblate per hit, up to 10 or until 240 frames after the first hit
     /// (see `tuning.toml` `[items]`).
     Oblaten10,
+    /// St. Wolfgang's Hackl power-up (rises out of the box and stays, D-056).
+    Hackl,
 }
 
 impl Contents {
@@ -128,6 +130,7 @@ impl Contents {
             "mozartkugel" => Some(Contents::Mozartkugel),
             "zaunerstollen" => Some(Contents::Zaunerstollen),
             "oblaten_10" => Some(Contents::Oblaten10),
+            "hackl" => Some(Contents::Hackl),
             _ => None,
         }
     }
@@ -140,6 +143,7 @@ impl Contents {
             Contents::Mozartkugel => 2,
             Contents::Zaunerstollen => 3,
             Contents::Oblaten10 => 4,
+            Contents::Hackl => 5,
         }
     }
 }
@@ -194,11 +198,14 @@ pub enum SpawnKind {
     Bienenschwarm,
     /// A Zwölferhorn cabin (`to`, `phase`): free-running moving platform.
     Gondel,
+    /// The Durchkriechstein's tunnel (`len` cells from its cell to the
+    /// right): DOWN at its mouth starts the scripted crawl (D-057).
+    Durchkriechstein,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 17] = [
+    pub const ALL: [SpawnKind; 18] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -216,6 +223,7 @@ impl SpawnKind {
         SpawnKind::EBiker,
         SpawnKind::Bienenschwarm,
         SpawnKind::Gondel,
+        SpawnKind::Durchkriechstein,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -239,6 +247,7 @@ impl SpawnKind {
             SpawnKind::EBiker => "e_biker",
             SpawnKind::Bienenschwarm => "bienenschwarm",
             SpawnKind::Gondel => "gondel",
+            SpawnKind::Durchkriechstein => "durchkriechstein",
         }
     }
 
@@ -322,7 +331,8 @@ pub struct EntitySpawn {
     /// (`dir = 0..=7`: 0 right, 2 up, 4 left, 6 down; 0 by default).
     pub dir: u8,
     /// Length of a `bienenschwarm`'s waggle run in tiles (`len = 2..=4`,
-    /// [`DEFAULT_SWARM_LEN`] by default).
+    /// [`DEFAULT_SWARM_LEN`] by default), or of a `durchkriechstein`'s
+    /// tunnel (`len = 2..=6`, [`DEFAULT_STONE_LEN`] by default).
     pub len: u8,
     /// Vertical offset of a `bienenschwarm`'s anchor from its cell centre
     /// in px (`dy = N`, within ±[`MAX_SWARM_DY_PX`], 0 by default; negative
@@ -338,6 +348,10 @@ pub const MAX_SWARM_DY_PX: i32 = 8;
 pub const DEFAULT_SWARM_LEN: u8 = 3;
 /// Allowed `len` of a `bienenschwarm`, in tiles.
 pub const SWARM_LEN_RANGE: std::ops::RangeInclusive<u8> = 2..=4;
+/// A `durchkriechstein`'s tunnel without `len`, in tiles.
+pub const DEFAULT_STONE_LEN: u8 = 4;
+/// Allowed `len` of a `durchkriechstein`, in tiles.
+pub const STONE_LEN_RANGE: std::ops::RangeInclusive<u8> = 2..=6;
 /// Largest `|dx|` of a `gondel`'s `to`, in tiles (D-044: a rider carried
 /// back left never reaches the screen's left edge).
 pub const MAX_GONDEL_DX_TILES: i32 = 8;
@@ -734,6 +748,7 @@ fn parse_legend_value(
                 (_, Some("festungsbahn")) => &["entity", "tile", "to"],
                 (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
+                (_, Some("durchkriechstein")) => &["entity", "tile", "len"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
                 (_, Some(_)) => &["entity", "tile"],
@@ -796,7 +811,7 @@ fn parse_tile(
             }
             Contents::from_name(c).ok_or_else(|| {
                 ParseError::new(format!(
-                    "legend \"{key}\": unknown contains \"{c}\" (expected oblate, mozartkugel, zaunerstollen or oblaten_10)"
+                    "legend \"{key}\": unknown contains \"{c}\" (expected oblate, mozartkugel, zaunerstollen, oblaten_10 or hackl)"
                 ))
             })?
         }
@@ -933,11 +948,15 @@ fn parse_entity(
     };
     let phase = int_field("phase", 0..=i64::from(u16::MAX))?.unwrap_or(0) as u16;
     let dir = int_field("dir", 0..=7)?.unwrap_or(0) as u8;
+    let (len_range, len_default) = match kind {
+        SpawnKind::Durchkriechstein => (STONE_LEN_RANGE, DEFAULT_STONE_LEN),
+        _ => (SWARM_LEN_RANGE, DEFAULT_SWARM_LEN),
+    };
     let len = int_field(
         "len",
-        i64::from(*SWARM_LEN_RANGE.start())..=i64::from(*SWARM_LEN_RANGE.end()),
+        i64::from(*len_range.start())..=i64::from(*len_range.end()),
     )?
-    .map_or(DEFAULT_SWARM_LEN, |n| n as u8);
+    .map_or(len_default, |n| n as u8);
     let dy = int_field(
         "dy",
         -i64::from(MAX_SWARM_DY_PX)..=i64::from(MAX_SWARM_DY_PX),

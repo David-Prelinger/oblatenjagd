@@ -35,6 +35,7 @@ use crate::ParseError;
 use crate::game::{Event, Game, Mode, Start};
 use crate::input::InputFrame;
 use crate::level::Level;
+use crate::player::Power;
 use crate::route::{self, STATIONS};
 use crate::tuning::Tuning;
 
@@ -214,6 +215,8 @@ pub enum Expect {
     Lives(u32),
     /// `lives>=N`: at least N lives at the end.
     LivesAtLeast(u32),
+    /// `power=<normal|big|hackl>`: the player's power state at the end.
+    Power(Power),
 }
 
 /// What the expectation grammar supports (shown in "not supported yet" errors).
@@ -221,7 +224,7 @@ const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at fr
                          player_x>=PX, player_y>=PX, player_y<=PX, \
                          state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>, \
                          stage=<station id>, event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
-                         lives>=N";
+                         lives>=N, power=<normal|big|hackl>";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -276,6 +279,10 @@ impl Expect {
                 Expect::LivesAtLeast(parse_u32(n, "lives")?)
             } else if let Some(n) = w.strip_prefix("lives=") {
                 Expect::Lives(parse_u32(n, "lives")?)
+            } else if let Some(p) = w.strip_prefix("power=") {
+                Expect::Power(Power::from_name(p).ok_or_else(|| {
+                    format!("unknown power `{p}` (expected normal, big or hackl)")
+                })?)
             } else if let Some(name) = w.strip_prefix("no_event=") {
                 Expect::NoEvent(parse_event(name)?)
             } else if let Some(name) = w.strip_prefix("event=") {
@@ -315,6 +322,7 @@ impl Expect {
             Expect::Score(n) => o.score == n,
             Expect::Lives(n) => o.lives == n,
             Expect::LivesAtLeast(n) => o.lives >= n,
+            Expect::Power(p) => o.power == p,
         };
         if ok {
             return Ok(());
@@ -358,6 +366,9 @@ impl Expect {
             Expect::Lives(_) | Expect::LivesAtLeast(_) => {
                 format!("expected {self} at the end, got lives={}", o.lives)
             }
+            Expect::Power(_) => {
+                format!("expected {self} at the end, got power={}", o.power.name())
+            }
         })
     }
 }
@@ -383,6 +394,7 @@ impl fmt::Display for Expect {
             Expect::Score(n) => write!(f, "score={n}"),
             Expect::Lives(n) => write!(f, "lives={n}"),
             Expect::LivesAtLeast(n) => write!(f, "lives>={n}"),
+            Expect::Power(p) => write!(f, "power={}", p.name()),
         }
     }
 }
@@ -709,6 +721,8 @@ pub struct Outcome {
     pub lives: u32,
     /// Station of the game's route at the end (`None`: a lone level).
     pub stage: Option<u8>,
+    /// The player's power state at the end.
+    pub power: Power,
 }
 
 impl Outcome {
@@ -727,6 +741,7 @@ impl Outcome {
             score: game.score(),
             lives: u32::from(game.lives()),
             stage: game.station().map(|i| i as u8),
+            power: game.player().power,
         }
     }
 
@@ -754,6 +769,7 @@ impl Outcome {
         self.score = game.score();
         self.lives = u32::from(game.lives());
         self.stage = game.station().map(|i| i as u8);
+        self.power = game.player().power;
     }
 
     /// "deaths at frames 10, 20" or "no deaths".
@@ -876,10 +892,10 @@ RBJ 2
         let all = "level=x\nsource=solver\nexpect=complete dies_at frames=1..2 deaths<=3 \
                    player_x>=-4 state=dying state=playing state=game_over oblaten>=3 \
                    score>=100 lives=0 player_y>=-3 player_y<=7 oblaten=4 score=50 \
-                   lives>=1\n---\nLRUDBJS 1\n";
+                   lives>=1 power=hackl\n---\nLRUDBJS 1\n";
         let r = Replay::parse(all).unwrap();
         assert_eq!(r.seed, 1, "default seed");
-        assert_eq!(r.expects.len(), 15);
+        assert_eq!(r.expects.len(), 16);
         assert_eq!(Replay::parse(&r.format()).unwrap(), r);
     }
 
@@ -1020,6 +1036,7 @@ RBJ 2
             score: 4600,
             lives: 2,
             stage: Some(1),
+            power: Power::Big,
         }
     }
 
@@ -1053,6 +1070,7 @@ RBJ 2
             "score=4600",
             "lives>=2",
             "lives>=0",
+            "power=big",
         ] {
             assert_eq!(check(c, &o), Ok(()), "{c}");
         }
@@ -1122,6 +1140,15 @@ RBJ 2
         assert_eq!(
             f("lives>=3", &o),
             "expected lives>=3 at the end, got lives=2"
+        );
+        assert_eq!(
+            f("power=hackl", &o),
+            "expected power=hackl at the end, got power=big"
+        );
+        assert!(
+            Expect::parse_clauses("power=fire")
+                .unwrap_err()
+                .contains("unknown power `fire`")
         );
         assert_eq!(
             f("state=game_over", &o),

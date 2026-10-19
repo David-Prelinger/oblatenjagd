@@ -41,6 +41,11 @@ pub enum Popup {
     Wurstkranz,
     /// `popup.hoppala` („Hoppala!"), an E-Biker crashed into a wall.
     Hoppala,
+    /// `popup.hackl` („Wirf, Resi, wirf!"), picking up the Hackl.
+    Hackl,
+    /// `popup.ballast` („Ballast weg!"), a big Resi shed to Normal by the
+    /// Durchkriechstein.
+    Ballast,
 }
 
 impl Popup {
@@ -52,6 +57,8 @@ impl Popup {
             Popup::Checkpoint => Some("popup.checkpoint"),
             Popup::Wurstkranz => Some("popup.wurstkranz"),
             Popup::Hoppala => Some("popup.hoppala"),
+            Popup::Hackl => Some("popup.hackl"),
+            Popup::Ballast => Some("popup.ballast"),
         }
     }
 }
@@ -169,6 +176,15 @@ pub enum EntityKind {
     /// A Zwölferhorn cabin (free-running moving one-way platform,
     /// [`crate::platform`]).
     Gondel,
+    /// St. Wolfgang's Hackl power-up: rises out of its box, then stays.
+    Hackl,
+    /// A Hackl thrown by the player ([`crate::hackl`]): flies in a fixed
+    /// arc, hits one target, sticks in solid tiles.
+    ThrownHackl,
+    /// A Durchkriechstein's tunnel (hitbox = the tunnel cells; not drawn,
+    /// the boulder is a prop): `state` is [`crate::crawl::stone::UNUSED`]
+    /// until crawled through ([`crate::crawl::stone::USED`]).
+    Durchkriechstein,
 }
 
 impl EntityKind {
@@ -186,7 +202,12 @@ impl EntityKind {
             EntityKind::Festungsbahn => Some("festungsbahn"),
             EntityKind::Note => Some("note"),
             EntityKind::Gondel => Some("gondel"),
-            EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
+            EntityKind::Hackl => Some("hackl"),
+            EntityKind::ThrownHackl => Some("hackl_thrown"),
+            EntityKind::Popup(_)
+            | EntityKind::Bump
+            | EntityKind::Sign
+            | EntityKind::Durchkriechstein => None,
         }
     }
 
@@ -214,6 +235,8 @@ impl EntityKind {
                     Popup::Checkpoint => h.u8(2),
                     Popup::Wurstkranz => h.u8(3),
                     Popup::Hoppala => h.u8(4),
+                    Popup::Hackl => h.u8(5),
+                    Popup::Ballast => h.u8(6),
                 }
             }
             EntityKind::Bump => h.u8(6),
@@ -231,6 +254,9 @@ impl EntityKind {
             EntityKind::Thrown => h.u8(12),
             EntityKind::Note => h.u8(13),
             EntityKind::Gondel => h.u8(14),
+            EntityKind::Hackl => h.u8(15),
+            EntityKind::ThrownHackl => h.u8(16),
+            EntityKind::Durchkriechstein => h.u8(17),
         }
     }
 }
@@ -423,6 +449,17 @@ impl Entity {
                     [w, h],
                 )
             }
+            SpawnKind::Durchkriechstein => {
+                // The tunnel: `len` cells from the spawn cell to the right.
+                let len = tile.mul_int(i32::from(s.len));
+                Entity::new(
+                    EntityKind::Durchkriechstein,
+                    cell_x,
+                    tile.mul_int(s.row),
+                    len,
+                    tile,
+                )
+            }
         };
         entity.active = false;
         entity.spawn = Some(index as u16);
@@ -472,12 +509,13 @@ impl Entity {
         bump_offset_px(self.timer, t)
     }
 
-    /// For [`EntityKind::Mozartkugel`] / [`EntityKind::Zaunerstollen`]:
-    /// still rising out of its box (drawn behind the tiles).
+    /// For [`EntityKind::Mozartkugel`] / [`EntityKind::Zaunerstollen`] /
+    /// [`EntityKind::Hackl`]: still rising out of its box (drawn behind
+    /// the tiles).
     pub fn rising(&self, t: &Tuning) -> bool {
         matches!(
             self.kind,
-            EntityKind::Mozartkugel | EntityKind::Zaunerstollen
+            EntityKind::Mozartkugel | EntityKind::Zaunerstollen | EntityKind::Hackl
         ) && self.timer <= t.items.rise_frames
     }
 
@@ -496,7 +534,21 @@ impl Entity {
         let (map, t) = (ctx.map, ctx.tuning);
         self.timer = self.timer.saturating_add(1);
         match self.kind {
-            EntityKind::Oblate | EntityKind::Checkpoint | EntityKind::Sign => None,
+            EntityKind::Oblate
+            | EntityKind::Checkpoint
+            | EntityKind::Sign
+            | EntityKind::Durchkriechstein => None,
+            EntityKind::Hackl => {
+                // Rises out of its box, then stays where it is (D-056).
+                if self.timer <= t.items.rise_frames {
+                    self.y -= t.items.rise_speed;
+                }
+                None
+            }
+            EntityKind::ThrownHackl => {
+                crate::hackl::update_axe(self, map, t);
+                None
+            }
             EntityKind::Enemy(kind) => crate::enemies::update_enemy(self, kind, ctx),
             EntityKind::Defeated(_) => {
                 crate::enemies::update_defeated(self, t);

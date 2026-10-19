@@ -1,0 +1,41 @@
+# Grey-box test level for the Hackl power-up and the Durchkriechstein
+# (M3, D-056, D-057; not part of the journey).
+# Sections (columns): start 2; an H-box at 6 (row 9, 3 tiles above the
+# ground: bump it, the Hackl rises onto it, jump onto the box to take it);
+# an M-box at 12 (row 9; the Mozartkugel rolls right, the boulder turns it
+# back); the Durchkriechstein at 20-23 (tunnel row 11, `len = 4`, the
+# boulder above it is solid rows 9-10: 3 tiles to climb over; mouth 19,
+# exit 24); three still Selfie-Tourists at 40, 44 and 48 as axe targets
+# (`still = true`, D-026); goal 60.
+# Replays: tests/replays/hackl_*.replay, flow_hackl_carry_over.replay.
+
+[meta]
+id = "hackl"
+time_limit = 100
+
+[legend]
+"#" = "solid"
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"K" = { entity = "durchkriechstein", len = 4 }
+"t" = { entity = "selfie_tourist", still = true }   # a fixed target (D-026)
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+......H.....M.......####........................................
+....................####........................................
+..P.................K...................t...t...t...........G...
+################################################################
+################################################################
+'''

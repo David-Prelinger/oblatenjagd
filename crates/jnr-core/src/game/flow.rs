@@ -34,7 +34,7 @@ use crate::entity::{EntityKind, Popup, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::level::{SpawnKind, TILE_PX};
-use crate::player::{Facing, Power};
+use crate::player::Facing;
 use crate::route::{self, MapPhase, RouteMap};
 use crate::tuning::GoalTuning;
 
@@ -390,8 +390,9 @@ impl Game {
         self.death_cause = None;
         self.reset_level();
         self.place_player();
-        if power == Power::Big {
-            self.player.set_power(Power::Big, &self.tuning.player);
+        if power.is_big() {
+            // Zuckerschock and Hackl carry over (D-042, D-056).
+            self.player.set_power(power, &self.tuning.player);
             // Carried over, not eaten: no growing freeze.
             self.player.transform = 0;
             self.player.fit_head(&self.map);

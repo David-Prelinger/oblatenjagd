@@ -121,11 +121,13 @@ pub enum Pose {
     Buzz,
     /// Bienenschwarm `waggle` (on its waggle run, shaking).
     Waggle,
+    /// Thrown Hackl `stuck` (in a solid tile; `spin` while flying).
+    Stuck,
 }
 
 impl Entity {
-    /// The pose of an enemy, defeated enemy or thrown Mozartkugel; `None`
-    /// for every other kind.
+    /// The pose of an enemy, defeated enemy or projectile (thrown
+    /// Mozartkugel, note, thrown Hackl); `None` for every other kind.
     pub fn pose(&self, t: &Tuning) -> Option<Pose> {
         let e = &t.enemies;
         Some(match self.kind {
@@ -173,6 +175,8 @@ impl Entity {
             EntityKind::Defeated(EnemyKind::Taube | EnemyKind::TaubeSitting) => Pose::Tumble,
             EntityKind::Defeated(_) => Pose::Squished,
             EntityKind::Thrown => Pose::Spin,
+            EntityKind::ThrownHackl if self.state == crate::hackl::axe::STUCK => Pose::Stuck,
+            EntityKind::ThrownHackl => Pose::Spin,
             _ => return None,
         })
     }
