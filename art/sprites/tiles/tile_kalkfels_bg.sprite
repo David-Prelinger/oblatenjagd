@@ -1,0 +1,286 @@
+# Falkensteinwand back wall (decorative, NON-solid, like wall_village_bg;
+# D-038): the shaft's back wall and the Einsiedelei cave interior. The same
+# strata as kalkfels in shadow: m body, d cracks, F haze on the lit block
+# tops; no light lip, no grass. Edges are recessed, never lit: an open top
+# gets a 2 px ragged d shadow (cast by the solid rock, a plank or the cave
+# ceiling above), an open left a ragged d shadow column; open right and
+# bottom stay flat. Drawn by the pixel-artist with a throwaway script.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_kalkfels_bg
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+dddddddddddddddd
+dddmmdddmmdddmmd
+ddmmmmddmmmdmdmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 1
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmdmmmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 2
+dddddddddddddddd
+dddmmdddmmdddmmd
+ddmmmmddmmmdmdmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 3
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmdmmmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 4
+dddddddddddddddd
+dddmmdddmmdddmmd
+ddmmmmddmmmdmdmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 5
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmdmmmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 6
+dddddddddddddddd
+dddmmdddmmdddmmd
+ddmmmmddmmmdmdmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 7
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmdmmmm
+ddmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmdmmm
+dmmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+dFFmmdddddddmFFF
+dmmmmmdFFFmmmmmm
+dmmmmmdmmmmmmmmm
+ddmmmmddmmmmmmmm
+ddmmmmmmmmmmmmmm
+ddmmmmmmmmmmmmmm
+frame auto 8
+dddddddddddddddd
+dddmmdddmmdddmmd
+mmmmmmddmmmdmdmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 9
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmdmmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 10
+dddddddddddddddd
+dddmmdddmmdddmmd
+mmmmmmddmmmdmdmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 11
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmdmmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 12
+dddddddddddddddd
+dddmmdddmmdddmmd
+mmmmmmddmmmdmdmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 13
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmdmmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 14
+dddddddddddddddd
+dddmmdddmmdddmmd
+mmmmmmddmmmdmdmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+frame auto 15
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmdmmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmdmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm
+dddddmmmmmmmdddd
+FFFmmdddddddmFFF
+mmmmmmdFFFmmmmmm
+mmmmmmdmmmmmmmmm
+mmmmmmddmmmmmmmm
+mmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmm

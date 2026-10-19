@@ -1,0 +1,284 @@
+# Rockfall net (one-way; top 4 px = walking surface): a d edge rope with an
+# i highlight between k lines, a 1 px m diamond mesh (period 8) stretched
+# back to a d rope. End tiles: a k-outlined steel post i/m with d clamps
+# running down the full tile (decoration). Transparent between the mesh.
+# Only the left/right bits change the look.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_netz
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+.kkkkkkkkkkkkkk.
+.kimkiiiiiikimk.
+.kimkddddddkimk.
+.kimkkkkkkkkimk.
+.kimk......kimk.
+.kidkm.....kidk.
+.kidk.m...mkidk.
+.kimk..m.m.kimk.
+.kimk...m..kimk.
+.kimk..m.m.kimk.
+.kidk.m...mkidk.
+.kidkddddddkidk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+frame auto 1
+.kkkkkkkkkkkkkk.
+.kimkiiiiiikimk.
+.kimkddddddkimk.
+.kimkkkkkkkkimk.
+.kimk......kimk.
+.kidkm.....kidk.
+.kidk.m...mkidk.
+.kimk..m.m.kimk.
+.kimk...m..kimk.
+.kimk..m.m.kimk.
+.kidk.m...mkidk.
+.kidkddddddkidk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+frame auto 2
+.kkkkkkkkkkkkkkk
+.kimkiiiiiiiiiii
+.kimkddddddddddd
+.kimkkkkkkkkkkkk
+.kimk.......m...
+.kidkm.....m.m..
+.kidk.m...m...m.
+.kimk..m.m.....m
+.kimk...m.......
+.kimk..m.m.....m
+.kidk.m...m...m.
+.kidkddddddddddd
+.kimk...........
+.kimk...........
+.kimk...........
+.kimk...........
+frame auto 3
+.kkkkkkkkkkkkkkk
+.kimkiiiiiiiiiii
+.kimkddddddddddd
+.kimkkkkkkkkkkkk
+.kimk.......m...
+.kidkm.....m.m..
+.kidk.m...m...m.
+.kimk..m.m.....m
+.kimk...m.......
+.kimk..m.m.....m
+.kidk.m...m...m.
+.kidkddddddddddd
+.kimk...........
+.kimk...........
+.kimk...........
+.kimk...........
+frame auto 4
+.kkkkkkkkkkkkkk.
+.kimkiiiiiikimk.
+.kimkddddddkimk.
+.kimkkkkkkkkimk.
+.kimk......kimk.
+.kidkm.....kidk.
+.kidk.m...mkidk.
+.kimk..m.m.kimk.
+.kimk...m..kimk.
+.kimk..m.m.kimk.
+.kidk.m...mkidk.
+.kidkddddddkidk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+frame auto 5
+.kkkkkkkkkkkkkk.
+.kimkiiiiiikimk.
+.kimkddddddkimk.
+.kimkkkkkkkkimk.
+.kimk......kimk.
+.kidkm.....kidk.
+.kidk.m...mkidk.
+.kimk..m.m.kimk.
+.kimk...m..kimk.
+.kimk..m.m.kimk.
+.kidk.m...mkidk.
+.kidkddddddkidk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+.kimk......kimk.
+frame auto 6
+.kkkkkkkkkkkkkkk
+.kimkiiiiiiiiiii
+.kimkddddddddddd
+.kimkkkkkkkkkkkk
+.kimk.......m...
+.kidkm.....m.m..
+.kidk.m...m...m.
+.kimk..m.m.....m
+.kimk...m.......
+.kimk..m.m.....m
+.kidk.m...m...m.
+.kidkddddddddddd
+.kimk...........
+.kimk...........
+.kimk...........
+.kimk...........
+frame auto 7
+.kkkkkkkkkkkkkkk
+.kimkiiiiiiiiiii
+.kimkddddddddddd
+.kimkkkkkkkkkkkk
+.kimk.......m...
+.kidkm.....m.m..
+.kidk.m...m...m.
+.kimk..m.m.....m
+.kimk...m.......
+.kimk..m.m.....m
+.kidk.m...m...m.
+.kidkddddddddddd
+.kimk...........
+.kimk...........
+.kimk...........
+.kimk...........
+frame auto 8
+kkkkkkkkkkkkkkk.
+iiiiiiiiiiikimk.
+dddddddddddkimk.
+kkkkkkkkkkkkimk.
+....m......kimk.
+...m.m.....kidk.
+..m...m...mkidk.
+.m.....m.m.kimk.
+m.......m..kimk.
+.m.....m.m.kimk.
+..m...m...mkidk.
+dddddddddddkidk.
+...........kimk.
+...........kimk.
+...........kimk.
+...........kimk.
+frame auto 9
+kkkkkkkkkkkkkkk.
+iiiiiiiiiiikimk.
+dddddddddddkimk.
+kkkkkkkkkkkkimk.
+....m......kimk.
+...m.m.....kidk.
+..m...m...mkidk.
+.m.....m.m.kimk.
+m.......m..kimk.
+.m.....m.m.kimk.
+..m...m...mkidk.
+dddddddddddkidk.
+...........kimk.
+...........kimk.
+...........kimk.
+...........kimk.
+frame auto 10
+kkkkkkkkkkkkkkkk
+iiiiiiiiiiiiiiii
+dddddddddddddddd
+kkkkkkkkkkkkkkkk
+....m.......m...
+...m.m.....m.m..
+..m...m...m...m.
+.m.....m.m.....m
+m.......m.......
+.m.....m.m.....m
+..m...m...m...m.
+dddddddddddddddd
+................
+................
+................
+................
+frame auto 11
+kkkkkkkkkkkkkkkk
+iiiiiiiiiiiiiiii
+dddddddddddddddd
+kkkkkkkkkkkkkkkk
+....m.......m...
+...m.m.....m.m..
+..m...m...m...m.
+.m.....m.m.....m
+m.......m.......
+.m.....m.m.....m
+..m...m...m...m.
+dddddddddddddddd
+................
+................
+................
+................
+frame auto 12
+kkkkkkkkkkkkkkk.
+iiiiiiiiiiikimk.
+dddddddddddkimk.
+kkkkkkkkkkkkimk.
+....m......kimk.
+...m.m.....kidk.
+..m...m...mkidk.
+.m.....m.m.kimk.
+m.......m..kimk.
+.m.....m.m.kimk.
+..m...m...mkidk.
+dddddddddddkidk.
+...........kimk.
+...........kimk.
+...........kimk.
+...........kimk.
+frame auto 13
+kkkkkkkkkkkkkkk.
+iiiiiiiiiiikimk.
+dddddddddddkimk.
+kkkkkkkkkkkkimk.
+....m......kimk.
+...m.m.....kidk.
+..m...m...mkidk.
+.m.....m.m.kimk.
+m.......m..kimk.
+.m.....m.m.kimk.
+..m...m...mkidk.
+dddddddddddkidk.
+...........kimk.
+...........kimk.
+...........kimk.
+...........kimk.
+frame auto 14
+kkkkkkkkkkkkkkkk
+iiiiiiiiiiiiiiii
+dddddddddddddddd
+kkkkkkkkkkkkkkkk
+....m.......m...
+...m.m.....m.m..
+..m...m...m...m.
+.m.....m.m.....m
+m.......m.......
+.m.....m.m.....m
+..m...m...m...m.
+dddddddddddddddd
+................
+................
+................
+................
+frame auto 15
+kkkkkkkkkkkkkkkk
+iiiiiiiiiiiiiiii
+dddddddddddddddd
+kkkkkkkkkkkkkkkk
+....m.......m...
+...m.m.....m.m..
+..m...m...m...m.
+.m.....m.m.....m
+m.......m.......
+.m.....m.m.....m
+..m...m...m...m.
+dddddddddddddddd
+................
+................
+................
+................
