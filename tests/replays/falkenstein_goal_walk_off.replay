@@ -1,24 +1,22 @@
-# Stage 4 goal (game-design.md sec. 6 and "New mechanics"): the first 1455
-# frames of falkenstein_solver.replay (Resi in front of the Aberseeblick,
-# before the solver's running jump to the pole), then a hop onto the
-# Aberseeblick's top (row 10) and a plain walk off its right edge: a 6-tile
-# drop to the goal meadow (row 16), allowed as optional by the drop rule;
-# she survives it (the climb camera follows) and the Maibaum catches her.
-# If the solver route changes, re-copy the prefix and re-check the frame.
+# Stage 4 goal (game-design.md sec. 6 and "New mechanics"): the solver
+# route onto the Aberseeblick's top (row 10), where Resi stops instead of
+# the solver's running jump to the pole, then walks off its right edge: a
+# 6-tile drop to the goal meadow (row 16), allowed as optional by the drop
+# rule; she survives it (the climb camera follows) and the Maibaum catches
+# her.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = complete frames=1600..1600 deaths=0
+expect = complete frames=1581..1581 deaths=0
 ---
-RB 28
+# --- the first 1480 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 44
+RB 27
 RBJ 12
 RB 30
 RBJ 36
@@ -28,42 +26,41 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
 RB 56
-RBJ 6
-RB 13
-L 4
-RB 16
-RBJ 36
-RB 27
 RBJ 2
-RB 20
+RB 6
+RBJ 12
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
 RB 11
-LBJ 12
-LB 2
-RB 8
-LBJ 34
-LB 4
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 18
-RBJ 12
-RB 103
+RB 17
+RBJ 20
+RB 99
 RBJ 36
-RB 196
+RB 76
+RBJ 2
+RB 108
 RBJ 36
-RB 38
+RB 40
+RBJ 36
+RB 28
 RBJ 20
 RB 40
 RBJ 20
-RB 40
-RBJ 20
-RB 8
-- 40      # stand still in front of the tower
-RJ 14     # hop onto the Aberseeblick (row 10)
-R 30
-- 20      # stand on its top, x 3615
-R 60      # walk off the right edge: 6 tiles down to the meadow
+RB 9
+RBJ 25
+# --- end of falkenstein_solver.replay ---
+- 60       # stand on the Aberseeblick
+R 40       # walk off its right edge
 - 60

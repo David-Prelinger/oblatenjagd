@@ -2,25 +2,24 @@
 # D-054). Like falkenstein_goal_walk_off, but Resi only nudges herself off
 # the Aberseeblick's top (row 10) at a crawl (R 12, then she coasts), so
 # she falls 6 tiles straight down onto the goal meadow (row 16) and
-# *lands* there (frame 1606, hitbox top 234, x 3661, left of the pole)
-# instead of being caught by the Maibaum mid-fall: the climb camera
-# follows the fall (feet on screen at y 162 on landing) and she is alive.
-# She coasts on into the pole at its base (complete at 1615, 100 points).
-# If the solver route changes, re-copy the prefix and re-check the frames.
+# *lands* there (frame 1589, x 3652, left of the pole) instead of being
+# caught by the Maibaum mid-fall: the climb camera follows the fall and she
+# is alive. She then walks into the pole at its base (complete at 1618,
+# 100 points). If the solver route changes, re-copy the prefix and
+# re-check the frames.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = event=Landed complete frames=1615..1615 deaths=0 no_event=Hurt
+expect = event=Landed complete frames=1618..1618 deaths=0 no_event=Hurt
 ---
-RB 28
+# --- the first 1480 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 44
+RB 27
 RBJ 12
 RB 30
 RBJ 36
@@ -30,42 +29,43 @@ RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
 RB 56
-RBJ 6
-RB 13
-L 4
-RB 16
-RBJ 36
-RB 27
 RBJ 2
-RB 20
+RB 6
+RBJ 12
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
 RB 11
-LBJ 12
-LB 2
-RB 8
-LBJ 34
-LB 4
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 18
-RBJ 12
-RB 103
+RB 17
+RBJ 20
+RB 99
 RBJ 36
-RB 196
+RB 76
+RBJ 2
+RB 108
 RBJ 36
-RB 38
+RB 40
+RBJ 36
+RB 28
 RBJ 20
 RB 40
 RBJ 20
-RB 40
-RBJ 20
-RB 8
-- 40      # stand still in front of the tower
-RJ 14     # hop onto the Aberseeblick (row 10)
-R 30
-- 20      # stand on its top, x 3615
+RB 9
+RBJ 25
+# --- end of the first 1480 frames of falkenstein_solver.replay ---
+- 60      # stand still on the Aberseeblick's top (row 10, x 3617)
 R 12      # a nudge: she coasts off the edge at ~1 px/frame
-- 90      # 6 tiles down onto the meadow (1606), then into the pole's base
+- 50      # 6 tiles down onto the meadow (1589)
+R 30      # walk into the pole's base
+- 30

@@ -8,23 +8,26 @@
 # without JUMP starts the crawl at 5219; she comes out at col 154 as
 # Normal (frame ~5296, then the 30-frame freeze), lives and score as
 # before the crawl.
+# Re-cut after the QA level fixes: the Fürberg stretch (2214-2520) as in
+# qa_m3_hackl_vs_rock, and a 20-frame wait on the row-23 plank (4772)
+# while Pilger #8 drops past; the crawl starts at 5239.
 level  = hackl
 seed   = 1
 source = handwritten
 start  = title
 route  = hackl falkenstein
-expect = event=CrawlStarted no_event=ExtraLife no_event=Hurt deaths=0 power=normal lives=3 score=14700 stage=st_gilgen state=playing player_x>=2464
+expect = event=CrawlStarted no_event=ExtraLife no_event=Hurt deaths=0 power=normal lives=3 score=14500 stage=st_gilgen state=playing player_x>=2464
 ---
 - 20
-S 1       # title -> intro
+S 1
 - 150
 R 40
 - 30
-J 10      # bump the H-box: the Hackl rises onto it
+J 10
 - 50
 L 30
 - 30
-RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+RJ 25
 R 10
 - 40
 R 120
@@ -44,15 +47,14 @@ R 40
 - 40
 B 1
 - 60
-R 250     # the Maibaum
-- 830     # goal sequence, route map, Falkenstein intro; play from 2214 (frame 2214 = first play frame)
+R 250
+- 830
 R 120
 J 12
-- 60
-R 20
-RJ 20
-R 20
-R 100
+- 90
+R 4
+RJ 18
+R 108
 RJ 20
 R 30
 RJ 20
@@ -78,12 +80,9 @@ R 108
 RJ 20
 - 10
 RJ 22
-R 60
-R 20
+R 80
 RJ 14
-- 40
-- 60
-- 78
+- 178
 J 12
 - 20
 J 12
@@ -91,20 +90,17 @@ J 12
 R 40
 RJ 15
 R 90
-- 150
-- 28
+- 178
 B 1
 - 26
-R 120
-R 20
+R 140
 - 190
 R 6
 RJ 20
 R 60
 - 20
 RJ 22
-R 30
-R 10
+R 40
 RJ 10
 R 20
 J 10
@@ -114,21 +110,20 @@ R 56
 J 22
 - 20
 R 14
-- 20
+- 40
 J 22
 - 10
 L 8
 - 10
 J 22
-- 30
-- 10
+- 40
 J 22
 - 30
 R 30
 RJ 22
 R 170
 RJ 20
-R 40      # into the boulder's face at its mouth (col 149), facing right
-D 10      # DOWN without JUMP: the crawl starts
-- 90      # through the tunnel (76 frames), out at col 154 as Normal (the freeze)
+R 40
+D 10
+- 90
 R 30

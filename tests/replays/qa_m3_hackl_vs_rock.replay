@@ -8,6 +8,9 @@
 # 28 frames after rock #2 (col 92) drops, one RUN press throws an axe
 # that meets the falling rock at frame 4038: AxeHit, +50 (12450 -> 12500),
 # no hurt, still Hackl.
+# Re-cut after the QA level fixes (garden wall at col 17): the Fürberg
+# stretch (frames 2214-2520) waits for the Mozartkugel under the M-box
+# before the wall jump, then rejoins the original run.
 level  = hackl
 seed   = 1
 source = handwritten
@@ -16,15 +19,15 @@ route  = hackl falkenstein
 expect = event=AxeHit no_event=Hurt deaths=0 power=hackl score=12500 stage=st_gilgen state=playing
 ---
 - 20
-S 1       # title -> intro
+S 1
 - 150
 R 40
 - 30
-J 10      # bump the H-box: the Hackl rises onto it
+J 10
 - 50
 L 30
 - 30
-RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+RJ 25
 R 10
 - 40
 R 120
@@ -44,15 +47,14 @@ R 40
 - 40
 B 1
 - 60
-R 250     # the Maibaum
-- 830     # goal sequence, route map, Falkenstein intro; play from 2214 (frame 2214 = first play frame)
+R 250
+- 830
 R 120
 J 12
-- 60
-R 20
-RJ 20
-R 20
-R 100
+- 90
+R 4
+RJ 18
+R 108
 RJ 20
 R 30
 RJ 20
@@ -78,12 +80,9 @@ R 108
 RJ 20
 - 10
 RJ 22
-R 60
-R 20
+R 80
 RJ 14
-- 40
-- 60
-- 78
+- 178
 J 12
 - 20
 J 12
@@ -91,7 +90,6 @@ J 12
 R 40
 RJ 15
 R 90
-- 150
-- 28      # under the net; rock #2 (col 92) has just dropped
-B 1       # throw: the axe meets the falling rock (both gone, +50)
+- 178
+B 1
 - 26

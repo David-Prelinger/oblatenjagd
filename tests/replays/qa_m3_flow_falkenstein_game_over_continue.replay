@@ -1,72 +1,79 @@
 # QA M3 flow (D-017, D-025, D-047): game over in Falkenstein -> continue
 # restarts Falkenstein from its start. Title flow with the run started at
 # Falkenstein: the solver route to the saddle's take-off, then a walk into
-# the saddle cleft (death 1 at 1622, after the checkpoint); respawn at the
-# checkpoint (col 114) after the stage intro; twice a walk LEFT into the
-# Steinschlag cleft right beside it (deaths 2 and 3 at 1937 and 2227);
-# game over at 2287. START -> the Falkenstein intro (2352) and play from
-# 2502 at the Fürberg jetty (hitbox top 618 on row 40, not the
-# checkpoint's 394), 3 lives, score 0, 0 Oblaten.
+# the saddle cleft (death 1 at 1625, after the checkpoint); respawn at the
+# checkpoint (col 116) after the stage intro; twice a hop LEFT over the
+# curb into the Steinschlag cleft (deaths 2 and 3 at 1988 and 2350; since
+# the QA fix, walking left alone is stopped by the curb); game over at
+# 2410. START -> the Falkenstein intro and play at the Fürberg jetty
+# (hitbox top 618 on row 40, not the checkpoint's 394), 3 lives, score 0,
+# 0 Oblaten.
 level  = falkenstein
 seed   = 1
 source = handwritten
 start  = title
-expect = deaths=3 event=GameOver dies_at frames=2227..2227
+expect = deaths=3 event=GameOver dies_at frames=2350..2350
 expect = state=playing stage=falkenstein lives=3 score=0 oblaten=0 power=normal player_y>=618 player_y<=618
 ---
 - 20
 S 1       # title -> Falkenstein intro
 - 150
-# --- the first 1350 frames of falkenstein_solver.replay ---
-RB 28
+# --- the first 1366 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
-RBJ 36
-RB 40
+RB 56
+RBJ 2
+RB 6
 RBJ 12
-RB 13
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
-RB 3
-LBJ 36
-LB 2
-RB 3
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 13
+RB 17
 RBJ 20
-RB 98
+RB 99
 RBJ 36
-RB 188
+RB 76
+RBJ 2
+RB 108
 RBJ 36
-RB 43
-RBJ 20
-RB 31
-# --- end of the first 1350 frames of falkenstein_solver.replay ---
-R 100     # into the saddle cleft: death 1 (1622)
-- 250     # intro, respawn at the checkpoint (play 1832)
-L 40      # left into the Steinschlag cleft: death 2 (1937)
-- 250
-L 40      # again: death 3 (2227), game over (2287)
+RB 40
+RBJ 36
+RB 28
+# --- end of the first 1366 frames of falkenstein_solver.replay ---
+R 100     # into the saddle cleft: death 1 (1625)
+- 250     # intro, respawn at the checkpoint (col 116, behind the curb)
+L 6       # left: the curb (115) stops a walk ...
+LJ 16     # ... so she hops it on purpose
+L 50      # into the Steinschlag cleft: death 2 (1988)
+- 290
+L 6
+LJ 16
+L 50      # again: death 3 (2350), game over (2410)
 - 150
 S 1       # continue
-- 200     # Falkenstein intro (2352), play from 2502 at the start
+- 200     # Falkenstein intro, then play from the start

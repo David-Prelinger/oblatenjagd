@@ -1,29 +1,34 @@
 # QA M3: a relaxed full run of Stage 4 Falkenstein for the D-045 time
-# limit. Walking pace (RUN only for the one running jump onto the H-box),
-# some exploring, no deaths, no hurts: the M-box at Fürberg (the
-# Mozartkugel hops the garden wall and is caught on the shore path), the
-# Fürberg pilgrim and group A stomped one by one from the terrace below
-# the long terrace (waiting for them to come down), the ?-box, the
-# Holzstiege, pair B and #7 stomped in the trough, a wait under the
-# rockfall net and timed walks past rocks #2-#4, the checkpoint, the shaft
-# planks, the boulder top (Oblaten), the Einsiedelei (Zaunerstollen,
-# +1 life), the Wolfgang pigeon stomped, the Hackl taken as Zuckerschock
-# with a running jump onto the H-box (a walking jump can't reach it, see
-# the QA report), group C and both saddle Gams defeated with axes, a walk
-# off the Aberseeblick to the Maibaum. 52 of 68 Oblaten.
-# Measured: LevelComplete at frame 4964 (82.7 s; the timer shows 159 of 240).
+# limit. Walking pace (RUN only where the original run used it), some
+# exploring, no deaths, no hurts: the M-box at Fürberg (the Mozartkugel
+# bounces off the garden wall at col 17 and comes back to Resi under the
+# box), the Fürberg pilgrim stomped over the wall, group A stomped one by
+# one from the terrace below the long terrace (waiting for them to come
+# down), the ?-box, the Holzstiege, pair B and #7 stomped in the trough, a
+# wait under the rockfall net and timed walks past rocks #2-#4, the
+# checkpoint (col 116), the shaft planks with a short wait on the row-23
+# plank while Pilger #8 drops past on his zigzag, the boulder top
+# (Oblaten), the Einsiedelei (Zaunerstollen, +1 life), the Hackl taken as
+# Zuckerschock with a standing jump beside the H-box (164, row 8), the
+# Wolfgang pigeon and group C defeated with axes thrown from the box top,
+# both saddle Gams defeated with axes, a walk off the Aberseeblick to the
+# Maibaum. 51 of 68 Oblaten.
+# Measured: LevelComplete at frame 5098 (85.0 s): time_limit 255 = 3x.
+# Re-cut by the level-designer after the QA fixes (wall 17, Pilger #8,
+# H-box 164/8, checkpoint 116): the original inputs with new stretches at
+# Fürberg (0-323), a 20-frame wait in the shaft (2558) and the H-box
+# (3320-4173); the rest is QA's run unchanged.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = complete frames=4964..4964 deaths=0 no_event=Hurt power=hackl lives=4 oblaten=52
+expect = complete frames=5098..5098 deaths=0 no_event=Hurt power=hackl lives=4 oblaten=51
 ---
 R 120
 J 12
-- 60
-R 20
-RJ 20
-R 20
-R 100
+- 125
+R 4
+RJ 18
+R 73
 RJ 20
 R 30
 RJ 20
@@ -48,12 +53,9 @@ R 108
 RJ 20
 - 10
 RJ 22
-R 60
-R 20
+R 80
 RJ 14
-- 40
-- 60
-- 78
+- 178
 J 12
 - 20
 J 12
@@ -61,18 +63,15 @@ J 12
 R 40
 RJ 15
 R 90
-- 150
-- 55
-R 120
-R 20
+- 205
+R 140
 - 190
 R 6
 RJ 20
 R 60
 - 20
 RJ 22
-R 30
-R 10
+R 40
 RJ 10
 R 20
 J 10
@@ -82,14 +81,13 @@ R 56
 J 22
 - 20
 R 14
-- 20
+- 40
 J 22
 - 10
 L 8
 - 10
 J 22
-- 30
-- 10
+- 40
 J 22
 - 30
 R 30
@@ -107,25 +105,16 @@ J 4
 - 45
 DJ 5
 - 30
-R 60
-- 10
-J 15
-- 10
-R 8
-- 10
-J 12
-LJ 18
-L 4
-- 66
+R 50
+- 8
 J 10
-- 40
-- 5
-L 110
-- 5
-RB 44
-RBJ 20
-R 10
-- 10
+- 46
+J 8
+LJ 22
+L 4
+- 30
+R 12
+- 20
 B 1
 - 30
 B 1
@@ -134,14 +123,28 @@ B 1
 - 30
 B 1
 - 30
-R 26
+B 1
 - 30
 B 1
-- 40
-R 30
-- 10
+- 30
 B 1
-- 40
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 30
+B 1
+- 2
+R 95
+- 172
 R 140
 - 5
 B 1

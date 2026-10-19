@@ -2,58 +2,58 @@
 # mid-crawl keeps the crawl state until the respawn, then a normal
 # standing player). The falkenstein_crawl_normal route to the boulder's
 # face at the mouth, then Resi waits there until the timer shows 1 and
-# holds DOWN: the crawl starts at 14361, the timer runs out at 14400 with
+# holds DOWN: the crawl starts at 15262, the timer runs out at 15300 with
 # her half-way through the tunnel (no +1 life). She respawns at the
-# checkpoint (14460) as Normal, standing (hitbox top 394 = 22 px on row
-# 26), timer 240, and walks normally (into the curb).
+# checkpoint (15360, col 116) as Normal, standing (hitbox top 394 = 22 px
+# on row 26), timer 255, and walks normally.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = event=CrawlStarted dies_at frames=14400..14400 deaths=1 lives=2 no_event=ExtraLife event=Respawned
-expect = state=playing power=normal player_y>=394 player_y<=394 player_x>=1826
+expect = event=CrawlStarted dies_at frames=15300..15300 deaths=1 lives=2 no_event=ExtraLife event=Respawned
+expect = state=playing power=normal player_y>=394 player_y<=394 player_x>=1858
 ---
-# --- the first 995 frames of falkenstein_solver.replay ---
-RB 28
+# --- the first 1000 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
-RBJ 36
-RB 40
+RB 56
+RBJ 2
+RB 6
 RBJ 12
-RB 13
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
-RB 3
-LBJ 36
-LB 2
-RB 3
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 13
+RB 17
 RBJ 20
-RB 97
-# --- end of falkenstein_solver.replay ---
+RB 95
+# --- end of the first 1000 frames of falkenstein_solver.replay ---
 - 30
-R 20       # into the boulder's face, facing right
-- 13315   # wait at the mouth until the timer shows 1
-D 4       # crawl (14361); time-up at 14400 inside the tunnel
-- 300     # dying, respawn at the checkpoint (14460)
-R 60      # she stands and walks (stopped by the curb)
+R 50      # into the boulder's face, facing right
+- 14181   # wait at the mouth until the timer shows 1
+D 4       # crawl (15262); time-up at 15300 inside the tunnel
+- 300     # dying, respawn at the checkpoint (15360)
+R 60      # she stands and walks

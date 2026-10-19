@@ -1,71 +1,70 @@
 # Stage 4 Hackl (D-056, game-design.md "New mechanics"): the solver route
-# to the church plateau (it runs past the H-box), then Resi bumps the H-box
-# at the plateau's end (166, row 7), the Hackl rises onto it and stays; a
-# straight jump beside the box with a drift left takes it (Normal -> Hackl,
-# „Wirf, Resi, wirf!" + 1000). On the way down to the saddle she stomps the
-# Wolfgang pigeon (100). Facing right on the clear axe lane, she throws an
-# axe every 31 frames (new RUN presses) and defeats pilger group C (3 x 100,
-# outside the stomp chain) without being hurt.
+# to the church plateau (it runs under the H-box), then Resi stops, walks
+# back under the H-box (164, row 8, 2 rows above the plateau), bumps it,
+# and the Hackl rises onto it and stays; a straight jump beside the box with
+# a drift left takes it (Normal -> Hackl, „Wirf, Resi, wirf!" + 1000) and
+# she lands on the box. Facing right from the box top she throws an axe
+# every 31 frames (new RUN presses): the first takes the Wolfgang pigeon off
+# the statue, later ones defeat pilger group C (3 x 100, outside the stomp
+# chain) on the saddle's clear axe lane. No hurt.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = event=PowerUp no_event=Hurt deaths=0 score=6200
-shots  = 1235:bump 1290:pickup 1510:axes
+expect = event=PowerUp no_event=Hurt deaths=0 score=5800
+shots  = 1150:bump 1250:pickup 1660:axes
 ---
 # --- the first 1100 frames of falkenstein_solver.replay ---
-RB 28
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
-RBJ 36
-RB 40
+RB 56
+RBJ 2
+RB 6
 RBJ 12
-RB 13
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
-RB 3
-LBJ 36
-LB 2
-RB 3
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 13
+RB 17
 RBJ 20
-RB 98
+RB 99
 RBJ 36
-RB 68
+RB 60
 # --- end of falkenstein_solver.replay ---
 - 30
-R 16       # under the H-box
-- 12
+R 12       # back under the H-box
+- 4
 J 10       # bump: the Hackl rises
-- 34
-R 4
-- 8
-J 12       # straight up beside the box ...
-LJ 18      # ... and drift left onto the Hackl
-L 4
+- 50
+J 6        # straight up beside the box ...
+LJ 26      # ... and drift left onto the Hackl
+L 6
 - 40       # transformation freeze
-R 50       # down onto the saddle (stomps the pigeon on the way)
-- 16
+R 3        # face right on the box
+- 5
 B 1        # throw
 - 30
 B 1        # throw
@@ -81,4 +80,20 @@ B 1        # throw
 B 1        # throw
 - 30
 B 1        # throw
-- 60
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 30
+B 1        # throw
+- 40

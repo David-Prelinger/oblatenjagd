@@ -1,51 +1,52 @@
-# Stage 4 Durchkriechstein as Zuckerschock (D-057): the solver route into
-# the shaft, then Resi walks back to the M-box after the checkpoint (117, row
-# 22), bumps it and follows the Mozartkugel into the shaft (the curb at 115
-# keeps it there). Big, she climbs the four planks with straight jumps in
-# column 125 (the column all of them share), crosses the plateau to the
-# Durchkriechstein's mouth and holds DOWN: she crawls through and comes out
-# Normal („Ballast weg!", no points, no life). End: hitbox top 154 = Normal
-# standing on the plateau (big would be 146).
+# Stage 4 Durchkriechstein as Zuckerschock (D-057): the solver route past
+# the checkpoint (116), then Resi walks back under the M-box (117, row 22),
+# bumps it and follows the Mozartkugel into the shaft (the curb at 115 keeps
+# it there). Big, she climbs the four planks with straight jumps in column
+# 125 (the column all of them share) while Pilger #8 walks away from it on
+# the row-20 plank, crosses the plateau to the Durchkriechstein's mouth and
+# holds DOWN: she crawls through and comes out Normal („Ballast weg!", no
+# points, no life). End: hitbox top 154 = Normal on the plateau (big would
+# be 146).
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = event=PowerUp no_event=Hurt deaths=0 lives=3 player_y>=150
-shots  = 1700:mouth 1745:crawl 1790:ballast_weg
+expect = event=PowerUp event=CrawlStarted no_event=Hurt no_event=ExtraLife deaths=0 lives=3 player_y>=150
+shots  = 1676:mouth 1720:crawl 1768:ballast_weg
 ---
-# --- the first 762 frames of falkenstein_solver.replay ---
-RB 28
+# --- the first 746 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
+RB 56
+RBJ 2
+RB 6
+RBJ 12
+RB 31
 RBJ 36
-RB 40
+RB 26
 # --- end of falkenstein_solver.replay ---
 - 20
-L 56       # back to the M-box
-- 16
+L 26       # back under the M-box
+- 12
 J 10       # bump: Mozartkugel
 - 40
 R 100      # after it into the shaft (Zuckerschock)
-- 60
+- 90
 J 24       # floor -> plank row 23
 - 40
 R 17       # to column 125

@@ -6,50 +6,52 @@ level  = falkenstein
 seed   = 1
 source = handwritten
 expect = event=Stomped no_event=Hurt deaths=0
-shots  = 1430:stomp
+shots  = 1462:stomp
 ---
-# --- the first 1270 frames of falkenstein_solver.replay ---
-RB 28
+# --- the first 1290 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
-RBJ 36
-RB 40
+RB 56
+RBJ 2
+RB 6
 RBJ 12
-RB 13
+RB 31
+RBJ 36
+RB 40
 LBJ 12
 LB 2
-RB 3
-LBJ 36
-LB 2
-RB 3
+RB 11
+RJ 12
+R 5
+LB 8
+LBJ 33
+LB 5
 RBJ 20
-RB 13
+RB 17
 RBJ 20
-RB 98
+RB 99
 RBJ 36
-RB 188
+RB 76
+RBJ 2
+RB 108
 RBJ 36
-RB 14
+RB 28
 # --- end of falkenstein_solver.replay ---
 - 30
 R 18       # to the dip's edge

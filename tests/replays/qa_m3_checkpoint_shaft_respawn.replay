@@ -1,61 +1,63 @@
 # QA M3, Stage 4 checkpoint respawn in the shaft (game-design.md "New
-# mechanics": die in the shaft after the checkpoint -> respawn at 114 as
-# Normal, level reset, M-box fresh), and time-up while climbing. The
-# solver route past the checkpoint (730) to the path below the M-box
-# (col 117); Resi bumps it, follows the Mozartkugel into the shaft
-# (Zuckerschock at 909), jumps onto the row-23 plank and waits there. The
-# shaft has no enemy that could kill her (see the QA report), so the
-# timer does: time-up at 14430 on the plank (death as Zuckerschock).
-# Respawn at the checkpoint (1826, feet framed at screen y 148, timer
-# 240) as Normal; the M-box is fresh: she bumps it again and grows again
-# (second PowerUp at 14807), so the end state is Zuckerschock.
+# mechanics": die in the shaft after the checkpoint -> respawn at the
+# checkpoint as Normal, level reset, M-box fresh), and time-up while
+# climbing. The solver route past the checkpoint (col 116, 743) to the
+# path below the M-box (col 117); Resi bumps it, follows the Mozartkugel
+# into the shaft (Zuckerschock at 901), jumps onto the row-23 plank and
+# waits at its right end, where Pilger #8 coming down the zigzag lands
+# beside her and walks away. The timer kills her: time-up at 15330 on the
+# plank (death as Zuckerschock; 255 s plus the 30-frame power-up freeze).
+# Respawn at the checkpoint (15390) as Normal; the M-box is fresh: she
+# bumps it again and grows again (second PowerUp at 15718), so the end
+# state is Zuckerschock.
 # If the solver route changes, re-copy the prefix and re-check the frames.
 level  = falkenstein
 seed   = 1
 source = handwritten
-expect = dies_at frames=14430..14430 deaths=1 lives=2 event=Respawned event=CheckpointReached power=big player_x>=1880 state=playing
+expect = dies_at frames=15330..15330 deaths=1 lives=2 event=Respawned event=CheckpointReached power=big player_x>=1880 state=playing
 ---
-# --- the first 748 frames of falkenstein_solver.replay ---
-RB 28
+# --- the first 746 frames of falkenstein_solver.replay ---
+RB 40
 RBJ 36
-RB 16
+RB 38
 RBJ 36
-RB 43
+RB 56
 RBJ 36
-RB 18
-RBJ 12
-RB 43
+RB 27
 RBJ 12
 RB 30
 RBJ 36
 RB 14
 RBJ 20
-RB 43
+RB 44
 RBJ 36
 RB 40
 RBJ 36
-RB 40
+RB 34
 RBJ 6
-RB 59
-RBJ 6
-RB 40
+RB 56
+RBJ 2
+RB 6
+RBJ 12
+RB 31
 RBJ 36
 RB 26
-# --- end of the first 748 frames of falkenstein_solver.replay ---
-- 25      # past the checkpoint, sliding to a stop
-L 30      # back under the M-box
-- 15
+# --- end of the first 746 frames of falkenstein_solver.replay ---
+- 20      # past the checkpoint (116), sliding to a stop
+L 26      # back under the M-box
+- 12
 J 10      # bump: the Mozartkugel rises and rolls into the shaft
 - 40
-R 100     # after it: Zuckerschock (909)
+R 100     # after it: Zuckerschock (901)
 - 40
 J 22      # up through the row-23 plank
-- 13600   # wait: time-up at 14430, respawn at the checkpoint at 14490
-- 70
-RJ 14     # over the curb
-R 6
 - 20
+R 20      # to its right end: Pilger #8 lands left of her and walks away
+- 14500   # wait: time-up at 15330, respawn at the checkpoint at 15390
+- 70
+R 10
+- 10
 J 10      # the M-box is fresh again
 - 40
-R 100     # second Mozartkugel: Zuckerschock again (14807)
+R 100     # second Mozartkugel: Zuckerschock again (15718)
 - 40
