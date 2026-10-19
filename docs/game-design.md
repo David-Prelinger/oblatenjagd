@@ -238,8 +238,8 @@ Starting layout (pixel-artist and engine may move dots and labels by a few px to
 |---|---|---|
 | Salzburg | 28, 36 | right of the dot |
 | St. Gilgen | 100, 70 | left |
-| Brunnwinkl | 124, 58 | above-left: right-aligned to x 114, rows 43–51 (art-director M2; clear of the Salzburg label and the Salzburg→St. Gilgen route) |
-| Falkenstein | 152, 68 | below, ending at x ≤ 172 (clear of the St. Wolfgang marker) |
+| Brunnwinkl | 124, 58 | above-left: right-aligned to x 114, rows 43–51 (art-director M2; clear of the Salzburg label and the Salzburg→St. Gilgen route); alternate slot rows 20–28 on a map screen that ends with a big Resi on the St. Gilgen dot (M3) |
+| Falkenstein | 152, 68 | below, ending at x ≤ 172 (clear of the St. Wolfgang marker); alternate slot ending at x 171 on a map screen that ends with a big Resi on St. Wolfgang (M3) |
 | St. Wolfgang | 180, 84 | right |
 | Wolfgangsee (on the lake) | 196, 108 | below |
 | Strobl | 232, 118 | right |

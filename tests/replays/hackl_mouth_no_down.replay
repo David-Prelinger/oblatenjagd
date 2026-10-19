@@ -1,0 +1,20 @@
+# A big Resi at the Durchkriechstein's mouth without DOWN is never stuck
+# (D-057): as Zuckerschock she holds RIGHT against the boulder's face (a
+# wall), walks back and climbs over it.
+level  = hackl
+seed   = 1
+source = handwritten
+expect = event=PowerUp power=big no_event=CrawlStarted deaths=0 player_x>=400 state=playing
+---
+R 98
+- 30
+J 10      # the M-box
+- 30
+R 40      # Zuckerschock
+- 20
+R 150     # against the face: stopped, no crawl
+L 15
+- 20
+RJ 50     # over the boulder
+R 30
+- 20

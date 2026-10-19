@@ -41,6 +41,11 @@ pub enum Popup {
     Wurstkranz,
     /// `popup.hoppala` („Hoppala!"), an E-Biker crashed into a wall.
     Hoppala,
+    /// `popup.hackl` („Wirf, Resi, wirf!"), picking up the Hackl.
+    Hackl,
+    /// `popup.ballast` („Ballast weg!"), a big Resi shed to Normal by the
+    /// Durchkriechstein.
+    Ballast,
 }
 
 impl Popup {
@@ -52,6 +57,8 @@ impl Popup {
             Popup::Checkpoint => Some("popup.checkpoint"),
             Popup::Wurstkranz => Some("popup.wurstkranz"),
             Popup::Hoppala => Some("popup.hoppala"),
+            Popup::Hackl => Some("popup.hackl"),
+            Popup::Ballast => Some("popup.ballast"),
         }
     }
 }
@@ -190,6 +197,15 @@ pub enum EntityKind {
     Stein,
     /// A piece of a shattered rock (no collision).
     SteinDebris,
+    /// St. Wolfgang's Hackl power-up: rises out of its box, then stays.
+    Hackl,
+    /// A Hackl thrown by the player ([`crate::hackl`]): flies in a fixed
+    /// arc, hits one target, sticks in solid tiles.
+    ThrownHackl,
+    /// A Durchkriechstein's tunnel (hitbox = the tunnel cells; not drawn,
+    /// the boulder is a prop): `state` is [`crate::crawl::stone::UNUSED`]
+    /// until crawled through ([`crate::crawl::stone::USED`]).
+    Durchkriechstein,
 }
 
 impl EntityKind {
@@ -209,7 +225,12 @@ impl EntityKind {
             EntityKind::Gondel => Some("gondel"),
             EntityKind::Steinschlag | EntityKind::Stein => Some("stein"),
             EntityKind::SteinDebris => Some("stein_debris"),
-            EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Sign => None,
+            EntityKind::Hackl => Some("hackl"),
+            EntityKind::ThrownHackl => Some("hackl_thrown"),
+            EntityKind::Popup(_)
+            | EntityKind::Bump
+            | EntityKind::Sign
+            | EntityKind::Durchkriechstein => None,
         }
     }
 
@@ -237,6 +258,8 @@ impl EntityKind {
                     Popup::Checkpoint => h.u8(2),
                     Popup::Wurstkranz => h.u8(3),
                     Popup::Hoppala => h.u8(4),
+                    Popup::Hackl => h.u8(5),
+                    Popup::Ballast => h.u8(6),
                 }
             }
             EntityKind::Bump => h.u8(6),
@@ -257,6 +280,9 @@ impl EntityKind {
             EntityKind::Steinschlag => h.u8(15),
             EntityKind::Stein => h.u8(16),
             EntityKind::SteinDebris => h.u8(17),
+            EntityKind::Hackl => h.u8(18),
+            EntityKind::ThrownHackl => h.u8(19),
+            EntityKind::Durchkriechstein => h.u8(20),
         }
     }
 }
@@ -376,10 +402,12 @@ impl Entity {
                 feet_y,
                 e.taube_hitbox,
             ),
+            // Feet on its cell bottom, moved `dy` px (level field, e.g. -8
+            // to sit on a perch between two cell bottoms).
             SpawnKind::TaubeSitting => Entity::at_feet(
                 EntityKind::Enemy(EnemyKind::TaubeSitting),
                 feet_x,
-                feet_y,
+                feet_y + Fx::from_px(s.dy),
                 e.taube_hitbox,
             ),
             SpawnKind::MozartkugelVerkaeufer => Entity::at_feet(
@@ -464,6 +492,17 @@ impl Entity {
             SpawnKind::Steinschlag => {
                 crate::enemies::resting_rock(EntityKind::Steinschlag, s.col, s.row, t)
             }
+            SpawnKind::Durchkriechstein => {
+                // The tunnel: `len` cells from the spawn cell to the right.
+                let len = tile.mul_int(i32::from(s.len));
+                Entity::new(
+                    EntityKind::Durchkriechstein,
+                    cell_x,
+                    tile.mul_int(s.row),
+                    len,
+                    tile,
+                )
+            }
         };
         entity.active = false;
         entity.spawn = Some(index as u16);
@@ -513,12 +552,13 @@ impl Entity {
         bump_offset_px(self.timer, t)
     }
 
-    /// For [`EntityKind::Mozartkugel`] / [`EntityKind::Zaunerstollen`]:
-    /// still rising out of its box (drawn behind the tiles).
+    /// For [`EntityKind::Mozartkugel`] / [`EntityKind::Zaunerstollen`] /
+    /// [`EntityKind::Hackl`]: still rising out of its box (drawn behind
+    /// the tiles).
     pub fn rising(&self, t: &Tuning) -> bool {
         matches!(
             self.kind,
-            EntityKind::Mozartkugel | EntityKind::Zaunerstollen
+            EntityKind::Mozartkugel | EntityKind::Zaunerstollen | EntityKind::Hackl
         ) && self.timer <= t.items.rise_frames
     }
 
@@ -537,7 +577,21 @@ impl Entity {
         let (map, t) = (ctx.map, ctx.tuning);
         self.timer = self.timer.saturating_add(1);
         match self.kind {
-            EntityKind::Oblate | EntityKind::Checkpoint | EntityKind::Sign => None,
+            EntityKind::Oblate
+            | EntityKind::Checkpoint
+            | EntityKind::Sign
+            | EntityKind::Durchkriechstein => None,
+            EntityKind::Hackl => {
+                // Rises out of its box, then stays where it is (D-056).
+                if self.timer <= t.items.rise_frames {
+                    self.y -= t.items.rise_speed;
+                }
+                None
+            }
+            EntityKind::ThrownHackl => {
+                crate::hackl::update_axe(self, map, t);
+                None
+            }
             EntityKind::Enemy(kind) => crate::enemies::update_enemy(self, kind, ctx),
             EntityKind::Defeated(_) => {
                 crate::enemies::update_defeated(self, t);
@@ -673,6 +727,23 @@ pub fn popup(p: Popup, x: Fx, y: Fx) -> Entity {
     Entity::new(EntityKind::Popup(p), x - w.div_int(2), y, w, Fx::from_px(8))
 }
 
+/// Vertical pitch of popups spawned together ([`stacked_popups`]), whole
+/// pixels: a popup's text is drawn from its top down over a 9 px line with
+/// the 1 px outline above and below (10 px), plus 1 px of air.
+pub const POPUP_STACK_PX: i32 = 11;
+
+/// Popups that spawn together (e.g. a score and a text), stacked upwards
+/// so they never overlap: `popups[0]` lowest, with its drawn bottom (incl.
+/// the outline) 1 px above `bottom`, each next one [`POPUP_STACK_PX`]
+/// higher. All centred on `x`; they float up together.
+pub fn stacked_popups(popups: &[Popup], x: Fx, bottom: Fx) -> Vec<Entity> {
+    popups
+        .iter()
+        .zip(1..)
+        .map(|(&p, i)| popup(p, x, bottom - Fx::from_px(POPUP_STACK_PX * i) + Fx::ONE))
+        .collect()
+}
+
 /// How far a bumped tile is raised `timer` frames into its bump, whole pixels.
 pub fn bump_offset_px(timer: u16, t: &Tuning) -> i32 {
     let frames = i32::from(t.items.bump_frames.max(2));
@@ -686,6 +757,24 @@ mod tests {
 
     fn tuning() -> Tuning {
         Tuning::parse(include_str!("../../../content/tuning.toml")).unwrap()
+    }
+
+    #[test]
+    fn stacked_popups_never_overlap() {
+        let bottom = Fx::from_px(100);
+        let s = stacked_popups(&[Popup::Score(1000), Popup::Hackl], Fx::from_px(50), bottom);
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].kind, EntityKind::Popup(Popup::Score(1000)));
+        // Drawn rows: top − 1 (outline) .. top + 9 (descender + outline).
+        let rows = |e: &Entity| (e.y.to_px() - 1, e.y.to_px() + 9);
+        let (a, b) = (rows(&s[0]), rows(&s[1]));
+        assert_eq!(a.1, 99, "1 px above `bottom`");
+        assert!(
+            b.1 < a.0,
+            "the text sits clear above the score: {a:?} {b:?}"
+        );
+        assert_eq!(a.0 - b.1, 1, "1 px of air");
+        assert!(s.iter().all(|e| e.x + e.w.div_int(2) == Fx::from_px(50)));
     }
 
     #[test]

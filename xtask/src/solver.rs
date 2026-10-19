@@ -23,7 +23,10 @@
 //! then also requires the feet to be at most [`CLIMB_FEET_TOLERANCE_PX`]
 //! lower than the original route's at the checkpoint, so a missed jump
 //! in the shaft that lands on the plank below no longer counts as
-//! recovered just because x is the same.
+//! recovered just because x is the same. If the route is in the air at
+//! the checkpoint (often: a later jump within 2 s), its "feet" there are
+//! the lower of the ground before and after (`Trace::goal_feet`), never
+//! a point in the air.
 //!
 //! A finished route is cleaned up ([`clean_route`]: JUMP removed where it
 //! changes nothing) before it is measured and written.
@@ -579,12 +582,35 @@ impl JumpWindow {
     }
 }
 
-/// Per-frame record of a run: x and the feet's y (px) after each frame
-/// (index 0 = start) and events.
+/// Per-frame record of a run: x, the feet's y (px) and whether she
+/// stands on the ground after each frame (index 0 = start) and events.
 struct Trace {
     x: Vec<i32>,
     feet: Vec<i32>,
+    ground: Vec<bool>,
     events: Vec<(u32, Event)>,
+}
+
+impl Trace {
+    /// The climb height goal's feet at frame `f` (D-059 addendum, E17):
+    /// her feet if she stands on the ground then, else the lower (larger
+    /// y) of the last ground before `f` and the next ground after it. A
+    /// checkpoint can fall into the air of a later jump; its feet there
+    /// are a point no grounded run on the same floor ever reaches.
+    fn goal_feet(&self, f: usize) -> i32 {
+        if self.ground[f] {
+            return self.feet[f];
+        }
+        let before = (0..f).rev().find(|&i| self.ground[i]);
+        // The next ground may lie past the deadline; taking the lower of
+        // the two grounds can only relax the goal, never tighten it.
+        let after = (f + 1..self.feet.len()).find(|&i| self.ground[i]);
+        match (before, after) {
+            (Some(b), Some(a)) => self.feet[b].max(self.feet[a]),
+            (Some(i), None) | (None, Some(i)) => self.feet[i],
+            (None, None) => self.feet[f],
+        }
+    }
 }
 
 fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
@@ -592,6 +618,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
     let mut t = Trace {
         x: vec![g.player().x.to_px()],
         feet: vec![g.player().feet().1.to_px()],
+        ground: vec![g.player().on_ground],
         events: Vec::new(),
     };
     for &i in inputs {
@@ -599,6 +626,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
         t.events.extend(g.events().iter().map(|&e| (g.frame(), e)));
         t.x.push(g.player().x.to_px());
         t.feet.push(g.player().feet().1.to_px());
+        t.ground.push(g.player().on_ground);
     }
     t
 }
@@ -913,7 +941,7 @@ fn window(
     let check = jump.check;
     let goal = Goal {
         x: orig.x[check as usize] - PROGRESS_TOLERANCE_PX,
-        feet: climb.then(|| orig.feet[check as usize] + CLIMB_FEET_TOLERANCE_PX),
+        feet: climb.then(|| orig.goal_feet(check as usize) + CLIMB_FEET_TOLERANCE_PX),
     };
     let deadline = check
         + if climb {
@@ -2112,6 +2140,90 @@ mod tests {
             on_ground: false,
             ..p
         }));
+    }
+
+    /// A climb level with flat ground (14 rows, so the climb camera has a
+    /// full screen): nothing can fail a shift.
+    fn flat_climb_level() -> Level {
+        let w = 80;
+        let mut rows = vec![".".repeat(w); 12];
+        rows[11].replace_range(1..2, "P");
+        rows[11].replace_range(w - 2..w - 1, "G");
+        rows.extend(["#".repeat(w), "#".repeat(w)]);
+        let text = format!(
+            "[meta]\nid = \"flat_climb\"\ntime_limit = 100\ncamera = \"climb\"\n[legend]\n\
+             \"#\" = \"solid\"\n\"P\" = {{ entity = \"player_start\" }}\n\
+             \"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    /// E17 bug: a jump followed by another one within 2 s has its
+    /// checkpoint (landing + 120) in the second jump's air. The climb
+    /// height goal used the feet there, a point in the air that no run on
+    /// flat ground can stand at, so every shift failed (window 0..0).
+    #[test]
+    fn a_climb_checkpoint_in_the_air_uses_the_ground_around_it() {
+        let level = flat_climb_level();
+        let t = tuning();
+        let r = InputFrame::RIGHT;
+        let rj = r.with(InputFrame::JUMP);
+        let mut inputs = vec![r; 20];
+        inputs.extend([rj; 12]);
+        // Run to jump 1's landing.
+        let mut g = Game::new(&level, &t, 1);
+        for &i in &inputs {
+            g.step(i);
+        }
+        while !g.step(r).contains(&Event::Landed) {
+            inputs.push(r);
+        }
+        inputs.push(r);
+        let landing = inputs.len();
+        // Jump 2 is pressed 110 frames after it, so the checkpoint is 10
+        // frames into jump 2's air.
+        inputs.extend(vec![r; 109]);
+        inputs.extend([rj; 12]);
+        inputs.extend(vec![r; 80]);
+        let check = landing + CHECKPOINT_AFTER_LANDING as usize;
+        let orig = trace(&level, &t, &inputs);
+        assert!(!orig.ground[check], "the checkpoint is mid-air");
+        assert!(orig.ground[landing] && orig.ground[check - 11]);
+        assert!(orig.feet[check] < orig.feet[landing] - 8, "high in the air");
+        assert_eq!(orig.goal_feet(check), orig.feet[landing], "the ground");
+        let w = jump_windows(&level, &t, &inputs, 1);
+        assert_eq!(w.len(), 2);
+        assert_eq!((w[0].index, w[0].lo, w[0].hi), (20, -MAX_SHIFT, MAX_SHIFT));
+        assert_eq!((w[0].lo_bound, w[0].hi_bound), (Bound::Max, Bound::Max));
+    }
+
+    /// Mid-air at the checkpoint, the height goal is the lower of the
+    /// ground she left and the ground she lands on next (a jump up keeps
+    /// the ledge she jumped from; a fall keeps the floor she falls to, so a
+    /// shifted run that is already down there is not "too low").
+    #[test]
+    fn goal_feet_is_the_lower_ground_around_an_airborne_frame() {
+        let t = |feet: &[i32], ground: &[bool]| Trace {
+            x: vec![0; feet.len()],
+            feet: feet.to_vec(),
+            ground: ground.to_vec(),
+            events: Vec::new(),
+        };
+        let (y, n) = (true, false);
+        // Grounded: its own feet.
+        assert_eq!(t(&[100, 90], &[y, y]).goal_feet(1), 90);
+        // Jump up from 100 onto 52: the ledge she left.
+        let up = t(&[100, 80, 60, 52], &[y, n, n, y]);
+        assert_eq!(up.goal_feet(1), 100);
+        assert_eq!(up.goal_feet(2), 100);
+        // Walk off 52 down to 148: the floor she falls to.
+        let down = t(&[52, 60, 100, 148], &[y, n, n, y]);
+        assert_eq!(down.goal_feet(2), 148);
+        // Only one side grounded, or none: what there is.
+        assert_eq!(t(&[52, 60, 100], &[y, n, n]).goal_feet(2), 52);
+        assert_eq!(t(&[60, 100, 148], &[n, n, y]).goal_feet(0), 148);
+        assert_eq!(t(&[60, 100], &[n, n]).goal_feet(1), 100);
     }
 
     #[test]

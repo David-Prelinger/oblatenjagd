@@ -10,11 +10,11 @@
 //!   the player stands on; one-way tiles such as a `netz` shelter or a
 //!   `steig` plank in between are skipped, D-062), so the whole niche is on
 //!   screen below the HUD for a player standing there.
-//! - **Durchkriechstein geometry** (every level): the `len` tunnel cells
-//!   from the spawn cell to the right are empty with solid tiles above and
-//!   below; the mouth (the cell left of the tunnel) is empty with 2 rows of
-//!   headroom and its floor at the tunnel floor's height; the exit (the
-//!   cell right of the tunnel) has 2 empty rows over a standable floor.
+//! - **Durchkriechstein geometry** (every level): the rule lives in core,
+//!   `jnr_core::crawl::geometry_problems` (D-057, D-060): the `len` tunnel
+//!   cells from the spawn cell to the right are empty with solid tiles above
+//!   and below; the mouth and the exit each have 2 empty rows over a floor
+//!   at the tunnel floor's height.
 //! - **Shaft width** (climb levels, a warning only): a shaft is a run of
 //!   non-solid cells between two solid walls that keeps exactly those
 //!   walls for at least [`SHAFT_MIN_ROWS`] rows and has a one-way tile in
@@ -25,7 +25,7 @@
 //! "Walkable" means a solid or one-way tile with two empty cells above it
 //! (Resi is 22–30 px tall); rows above the level count as empty.
 
-use jnr_core::{CameraMode, EntitySpawn, Level, TileKind};
+use jnr_core::{CameraMode, Level, SpawnKind, TileKind};
 
 /// Drops of this many tiles are rejected in climb levels (D-054).
 pub const FORBIDDEN_DROPS: std::ops::RangeInclusive<i32> = 7..=9;
@@ -35,11 +35,6 @@ pub const NICHE_HEIGHT: std::ops::RangeInclusive<i32> = 4..=6;
 pub const MAX_SHAFT_WIDTH: i32 = 9;
 /// A walled run must be at least this many rows tall to count as a shaft.
 pub const SHAFT_MIN_ROWS: i32 = 6;
-
-/// Legend name of the rock spawner (D-058).
-const SPAWNER: &str = "steinschlag";
-/// Legend name of the Durchkriechstein (D-057).
-const CRAWL_STONE: &str = "durchkriechstein";
 
 fn kind(level: &Level, c: i32, r: i32) -> Option<TileKind> {
     if r < 0 && (0..level.width).contains(&c) {
@@ -77,9 +72,11 @@ pub fn problems(level: &Level) -> Vec<String> {
         out.extend(fall_depth_problems(level));
     }
     for e in &level.entities {
-        match e.kind.name() {
-            SPAWNER => out.extend(niche_problem(level, e.col, e.row)),
-            CRAWL_STONE => out.extend(crawl_stone_problems(level, e)),
+        match e.kind {
+            SpawnKind::Steinschlag => out.extend(niche_problem(level, e.col, e.row)),
+            SpawnKind::Durchkriechstein => {
+                out.extend(jnr_core::crawl::geometry_problems(level, e));
+            }
             _ => {}
         }
     }
@@ -166,48 +163,6 @@ pub fn niche_problem(level: &Level, col: i32, row: i32) -> Option<String> {
             ground + 1
         )
     })
-}
-
-/// The Durchkriechstein geometry for a spawn with `len` tunnel cells.
-pub fn crawl_stone_problems(level: &Level, e: &EntitySpawn) -> Vec<String> {
-    tunnel_problems(level, e.col, e.row, i32::from(e.len))
-}
-
-/// The Durchkriechstein geometry for a tunnel of `len` cells from (`col`,
-/// `row`) to the right (module docs).
-pub fn tunnel_problems(level: &Level, col: i32, row: i32, len: i32) -> Vec<String> {
-    let name = format!("durchkriechstein at {}", at(col, row));
-    let mut out = Vec::new();
-    for c in col..col + len {
-        if !empty(level, c, row) {
-            out.push(format!("{name}: tunnel cell {} is not empty", at(c, row)));
-        }
-        if !solid(level, c, row - 1) || !solid(level, c, row + 1) {
-            out.push(format!(
-                "{name}: tunnel cell {} needs solid tiles above and below",
-                at(c, row)
-            ));
-        }
-    }
-    let mouth = col - 1;
-    if !(empty(level, mouth, row)
-        && empty(level, mouth, row - 1)
-        && standable(level, mouth, row + 1))
-    {
-        out.push(format!(
-            "{name}: the mouth ({}) needs 2 empty rows over a floor at the tunnel floor's height",
-            at(mouth, row)
-        ));
-    }
-    let exit = col + len;
-    if !(empty(level, exit, row) && empty(level, exit, row - 1) && standable(level, exit, row + 1))
-    {
-        out.push(format!(
-            "{name}: the exit ({}) needs 2 empty rows over a floor at the tunnel floor's height",
-            at(exit, row)
-        ));
-    }
-    out
 }
 
 /// A walled vertical run (see the module docs).
@@ -435,30 +390,18 @@ mod tests {
     }
 
     #[test]
-    fn durchkriechstein_tunnel_mouth_and_exit() {
-        // Boulder over columns 2–5 (rows 1–2 solid), tunnel row 3, floor row 4.
-        let good = [
-            "P.......", "........", "..####..", "..####..", "........", "########",
-        ];
-        assert_eq!(
-            tunnel_problems(&grid("climb", &good), 2, 4, 4),
-            Vec::<String>::new()
-        );
-        let p = tunnel_problems(&grid("climb", &good), 2, 4, 3);
+    fn durchkriechstein_geometry_comes_from_core() {
+        // Boulder over columns 2–5, tunnel row 3 (rows 1–2 solid), no
+        // floor under the exit.
+        let text = "[meta]\nid = \"k\"\ntime_limit = 10\n[legend]\n\"#\" = \"solid\"\n\"P\" = { entity = \"player_start\" }\n\"K\" = { entity = \"durchkriechstein\" }\n[map]\ngrid = '''\nP.......\n..####..\n..####..\n..K.....\n######.#\n'''\n";
+        let level = Level::parse(text).unwrap();
+        let p = problems(&level);
         assert_eq!(p.len(), 1, "{p:?}");
-        assert!(p[0].contains("the exit (row 5, column 6)"), "{p:?}");
-        // A blocked tunnel cell, no roof over one cell, a low mouth.
-        let bad = [
-            "P.......", "........", "..###...", ".####...", "..#.....", "########",
-        ];
-        let p = tunnel_problems(&grid("climb", &bad), 2, 4, 4);
-        assert_eq!(
-            p,
-            [
-                "durchkriechstein at row 5, column 3: tunnel cell row 5, column 3 is not empty",
-                "durchkriechstein at row 5, column 3: tunnel cell row 5, column 6 needs solid tiles above and below",
-                "durchkriechstein at row 5, column 3: the mouth (row 5, column 2) needs 2 empty rows over a floor at the tunnel floor's height",
-            ]
+        assert!(
+            p[0].starts_with(
+                "durchkriechstein at row 4, column 3: the exit (column 7) needs a floor"
+            ),
+            "{p:?}"
         );
     }
 

@@ -18,12 +18,58 @@ pub enum Facing {
 }
 
 /// The player's power state (`docs/game-design.md` → "Power states").
+/// A hit steps down one state: Hackl → Big → Normal → death (D-056).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Power {
     /// Small; dies on a hit.
     Normal,
     /// Zuckerschock: taller, breaks bricks, survives one hit.
     Big,
+    /// Hackl: big like Zuckerschock, throws axes on a RUN press; a hit
+    /// drops it to Zuckerschock.
+    Hackl,
+}
+
+impl Power {
+    /// Every state, weakest first.
+    pub const ALL: [Power; 3] = [Power::Normal, Power::Big, Power::Hackl];
+
+    /// True for the big states (Zuckerschock and Hackl): the tall hitbox,
+    /// breaking bricks.
+    pub const fn is_big(self) -> bool {
+        !matches!(self, Power::Normal)
+    }
+
+    /// The state a hit leaves (`None`: the hit kills).
+    pub const fn after_hit(self) -> Option<Power> {
+        match self {
+            Power::Normal => None,
+            Power::Big => Some(Power::Normal),
+            Power::Hackl => Some(Power::Big),
+        }
+    }
+
+    /// The name used in replay files (`power=hackl`).
+    pub const fn name(self) -> &'static str {
+        match self {
+            Power::Normal => "normal",
+            Power::Big => "big",
+            Power::Hackl => "hackl",
+        }
+    }
+
+    /// The state with this name.
+    pub fn from_name(name: &str) -> Option<Power> {
+        Power::ALL.into_iter().find(|p| p.name() == name)
+    }
+
+    pub(crate) const fn id(self) -> u8 {
+        match self {
+            Power::Normal => 0,
+            Power::Big => 1,
+            Power::Hackl => 2,
+        }
+    }
 }
 
 /// The player's simulation state. The renderer places the sprite with its
@@ -56,9 +102,12 @@ pub struct Player {
     pub coyote: u8,
     /// Frames left in which a buffered JUMP press is still honoured; 0 = none.
     pub jump_buffer: u8,
-    /// Normal or Zuckerschock.
+    /// Normal, Zuckerschock or Hackl.
     pub power: Power,
-    /// Frames left of the grow/shrink freeze (the whole game stands still).
+    /// The state before the last power change (the transformation freeze
+    /// alternates its sprite with the new one's).
+    pub prev_power: Power,
+    /// Frames left of the transformation freeze (the whole game stands still).
     pub transform: u8,
     /// Frames left in which hits do no harm (after shrinking).
     pub invulnerable: u8,
@@ -68,6 +117,13 @@ pub struct Player {
     /// set by a bounce off one when the feet could not be put on its top
     /// because a solid or hazard tile was in the way (D-027).
     pub bounce_grace: u16,
+    /// RUN was held in the previous step (a new press throws a Hackl).
+    pub run_held: bool,
+    /// Frames left of the throw pose (renderer: anim `throw`).
+    pub throw_pose: u8,
+    /// While crawling through a Durchkriechstein (D-057): the hitbox x at
+    /// which the crawl ends; `None` otherwise.
+    pub crawl_to: Option<Fx>,
 }
 
 impl Player {
@@ -93,10 +149,14 @@ impl Player {
             coyote: 0,
             jump_buffer: 0,
             power: Power::Normal,
+            prev_power: Power::Normal,
             transform: 0,
             invulnerable: 0,
             stomp_chain: 0,
             bounce_grace: 0,
+            run_held: false,
+            throw_pose: 0,
+            crawl_to: None,
         }
     }
 
@@ -106,20 +166,33 @@ impl Player {
     }
 
     /// Changes the power state: sets the hitbox height (feet stay in
-    /// place) and starts the transformation freeze. Nothing happens if the
-    /// state does not change.
+    /// place) and starts the transformation freeze (every change, also
+    /// Zuckerschock ↔ Hackl, where the height stays). Nothing happens if
+    /// the state does not change.
     pub fn set_power(&mut self, power: Power, t: &PlayerTuning) {
         if power == self.power {
             return;
         }
-        let h = Fx::from_px(match power {
-            Power::Normal => t.hitbox_h,
-            Power::Big => t.hitbox_h_big,
-        });
+        let h = Fx::from_px(Player::height(power, t));
         self.y = self.y + self.h - h;
         self.h = h;
+        self.prev_power = self.power;
         self.power = power;
         self.transform = t.transform_frames;
+    }
+
+    /// The standing hitbox height of a power state, whole pixels.
+    pub fn height(power: Power, t: &PlayerTuning) -> i32 {
+        if power.is_big() {
+            t.hitbox_h_big
+        } else {
+            t.hitbox_h
+        }
+    }
+
+    /// True while crawling through a Durchkriechstein.
+    pub fn crawling(&self) -> bool {
+        self.crawl_to.is_some()
     }
 
     /// After growing (feet kept in place) the new head may be inside solid
@@ -341,13 +414,14 @@ impl Player {
         h.bool(self.jump_held);
         h.u8(self.coyote);
         h.u8(self.jump_buffer);
-        h.u8(match self.power {
-            Power::Normal => 0,
-            Power::Big => 1,
-        });
+        h.u8(self.power.id());
+        h.u8(self.prev_power.id());
         h.u8(self.transform);
         h.u8(self.invulnerable);
         h.u8(self.stomp_chain);
         h.u16(self.bounce_grace);
+        h.bool(self.run_held);
+        h.u8(self.throw_pose);
+        h.i32(self.crawl_to.map_or(i32::MIN, Fx::raw));
     }
 }

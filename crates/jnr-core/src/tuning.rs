@@ -31,6 +31,59 @@ pub struct Tuning {
     pub goal: GoalTuning,
     /// The route map between stages (D-043).
     pub map: MapTuning,
+    /// The Hackl power-up and the thrown axes (D-056).
+    pub hackl: HacklTuning,
+    /// The Durchkriechstein crawl (D-057).
+    pub crawl: CrawlTuning,
+}
+
+/// The Hackl power-up and its thrown axes (`docs/game-design.md` →
+/// "Stage 4: Falkenstein", D-056). The item's rise is the other power-ups'
+/// (`items.rise_frames`, `items.rise_speed`), its points `score.power_up`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HacklTuning {
+    /// The `hackl` item's hitbox `[w, h]`, whole pixels.
+    pub item_hitbox: [i32; 2],
+    /// A thrown axe's hitbox `[w, h]`, whole pixels.
+    pub axe_hitbox: [i32; 2],
+    /// Most axes alive at once; a RUN press with this many alive does nothing.
+    pub max_alive: u8,
+    /// Horizontal speed of a thrown axe (towards the facing side).
+    pub throw_speed_x: Fx,
+    /// Upward speed of a thrown axe at the throw.
+    pub throw_speed_y: Fx,
+    /// Gravity on a thrown axe.
+    pub gravity: Fx,
+    /// Maximum downward speed of a thrown axe.
+    pub max_fall_speed: Fx,
+    /// The axe's centre at the throw: this many px in front of the
+    /// player's centre ...
+    pub throw_ahead: i32,
+    /// ... and this many px below her hitbox top.
+    pub throw_below_top: i32,
+    /// Frames of the throw pose.
+    pub throw_pose_frames: u8,
+    /// Frames an axe stays stuck in a solid tile (harmless) before it is removed.
+    pub stuck_frames: u16,
+}
+
+/// The Durchkriechstein crawl (`docs/game-design.md` → "Stage 4:
+/// Falkenstein", D-057).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CrawlTuning {
+    /// The player's hitbox `[w, h]` while crawling, whole pixels (fits the
+    /// 1-tile tunnel).
+    pub hitbox: [i32; 2],
+    /// Crawl speed to the right.
+    pub speed: Fx,
+    /// The crawl starts when the hitbox's right edge is at most this many
+    /// px left of the tunnel mouth.
+    pub mouth_px: i32,
+    /// Points instead of the +1 life when a Normal Resi crawls through at
+    /// the lives cap.
+    pub cap_points: u32,
 }
 
 /// The route map between stages (`docs/game-design.md` → "Route map").
@@ -865,6 +918,7 @@ impl Tuning {
                 )));
             }
         }
+        self.validate_hackl()?;
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -904,6 +958,65 @@ impl Tuning {
                     "tuning.toml: {name} must be 0..=180 px"
                 )));
             }
+        }
+        Ok(())
+    }
+
+    /// The `[hackl]` and `[crawl]` sections (D-056, D-057).
+    fn validate_hackl(&self) -> Result<(), ParseError> {
+        let (h, c) = (&self.hackl, &self.crawl);
+        for (name, [w, ht]) in [
+            ("hackl.item_hitbox", h.item_hitbox),
+            ("hackl.axe_hitbox", h.axe_hitbox),
+        ] {
+            if !(1..=TILE_PX).contains(&w) || !(1..=TILE_PX).contains(&ht) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..=16 px in both directions"
+                )));
+            }
+        }
+        // The crawl hitbox fits the 1-tile tunnel and is no wider than the
+        // player (she stands up in place at the exit).
+        let [cw, ch] = c.hitbox;
+        if !(1..=self.player.hitbox_w).contains(&cw) || !(1..=TILE_PX).contains(&ch) {
+            return Err(ParseError::new(
+                "tuning.toml: need 1 <= crawl.hitbox[0] <= player.hitbox_w and 1 <= crawl.hitbox[1] <= 16",
+            ));
+        }
+        if !(1..=8).contains(&h.max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: hackl.max_alive must be 1..=8",
+            ));
+        }
+        let max_step = Fx::from_px(12);
+        for (name, v) in [
+            ("hackl.throw_speed_x", h.throw_speed_x),
+            ("hackl.throw_speed_y", h.throw_speed_y),
+            ("hackl.gravity", h.gravity),
+            ("hackl.max_fall_speed", h.max_fall_speed),
+            ("crawl.speed", c.speed),
+        ] {
+            if v <= Fx::ZERO || v >= max_step {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        for (name, v) in [
+            ("hackl.throw_ahead", h.throw_ahead),
+            ("hackl.throw_below_top", h.throw_below_top),
+            ("crawl.mouth_px", c.mouth_px),
+        ] {
+            if !(0..=TILE_PX * 2).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 0..=32 px"
+                )));
+            }
+        }
+        if !(1..=60).contains(&h.throw_pose_frames) || h.stuck_frames == 0 {
+            return Err(ParseError::new(
+                "tuning.toml: need 1 <= hackl.throw_pose_frames <= 60 and hackl.stuck_frames >= 1",
+            ));
         }
         Ok(())
     }
@@ -1075,6 +1188,17 @@ mod tests {
             ("climb_goal_feet_y", 181),
             ("climb_activate_y", -1),
             ("climb_activate_y", 181),
+            ("item_hitbox", 0),
+            ("axe_hitbox", 17),
+            ("max_alive", 0),
+            ("max_alive", 9),
+            ("throw_speed_x", 0),
+            ("throw_speed_y", 3072),
+            ("throw_ahead", 33),
+            ("throw_below_top", -1),
+            ("throw_pose_frames", 0),
+            ("stuck_frames", 0),
+            ("mouth_px", 33),
         ]
         .map(|(f, v)| (f, v.to_string()))
         .into_iter()
