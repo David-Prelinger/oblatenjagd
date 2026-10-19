@@ -37,10 +37,11 @@ use crate::tuning::Tuning;
 pub const TELEPORT_SEARCH_COLS: i32 = 8;
 
 /// The „Zwischenstopp" popup spawns with its text top this many px above
-/// the checkpoint's ground. Its lowest drawn row (8 glyph rows + the 1 px
-/// outline) is then 44 px above the ground, ≥ 2 px clear of the 40 px bus
-/// board beside the checkpoint, and it only rises from there (E12 art
-/// review: it used to spawn at 40 and cover the board).
+/// the checkpoint's ground. Its lowest drawn row (glyph rows 0–7 incl. the
+/// descender row, then the 1 px outline at row 8) is then 44 px above the
+/// ground: 3 px of air above the 40 px bus board beside the checkpoint
+/// (the art review asks for at least 2), and it only rises from there (E12
+/// art review: it used to spawn at 40 and cover the board).
 pub const CHECKPOINT_POPUP_ABOVE_GROUND_PX: i32 = 52;
 
 /// Highest score (the HUD shows 6 digits).

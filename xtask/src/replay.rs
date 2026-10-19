@@ -575,6 +575,34 @@ mod tests {
         }
     }
 
+    /// `<stage>_solver.replay` → (stage, None); `the first N frames of
+    /// <stage>_solver.replay` → (stage, Some(N)).
+    fn solver_route(s: &str) -> Option<(String, Option<usize>)> {
+        let (limit, file) = match s.strip_prefix("the first ") {
+            Some(rest) => {
+                let (n, file) = rest.split_once(" frames of ")?;
+                (Some(n.parse().ok()?), file)
+            }
+            None => (None, s),
+        };
+        let stage = file.strip_suffix("_solver.replay")?;
+        (!stage.is_empty() && !stage.contains(' ')).then(|| (stage.to_owned(), limit))
+    }
+
+    #[test]
+    fn solver_route_markers_parse() {
+        assert_eq!(
+            solver_route("brunnwinkl_solver.replay"),
+            Some(("brunnwinkl".into(), None))
+        );
+        assert_eq!(
+            solver_route("the first 375 frames of st_gilgen_solver.replay"),
+            Some(("st_gilgen".into(), Some(375)))
+        );
+        assert_eq!(solver_route("the first x frames of a_solver.replay"), None);
+        assert_eq!(solver_route("salzburg.replay"), None);
+    }
+
     /// D-049: the `flow_m2_*` replays copy solver routes between marker
     /// comments, `# --- <stage>_solver.replay inputs, unchanged ---` (the
     /// whole route) or `# --- the first N frames of <stage>_solver.replay
@@ -582,12 +610,6 @@ mod tests {
     /// must still match its solver replay, so a re-solve says "re-copy".
     #[test]
     fn flow_m2_replays_copy_the_solver_routes() {
-        let inputs = |name: &str, body: &str| -> Vec<u64> {
-            let text = format!("level = x\nsource = handwritten\n---\n{body}");
-            let replay = Replay::parse(&text)
-                .unwrap_or_else(|e| panic!("{name}: solver block does not parse: {e}"));
-            replay.frames().map(|i| u64::from(i.bits())).collect()
-        };
         let solver = |stage: &str| -> Vec<u64> {
             let name = format!("{stage}_solver.replay");
             let text = fs::read_to_string(root().join("tests/replays").join(&name)).unwrap();
@@ -608,41 +630,58 @@ mod tests {
             let name = path.file_name().unwrap().to_string_lossy().into_owned();
             let text = fs::read_to_string(&path).unwrap();
             let mut blocks = 0;
-            let mut open: Option<(String, Option<usize>, String)> = None;
-            for line in text.lines() {
-                let marker = line
+            // The open block: (stage, frame limit, its marker line, inputs).
+            let mut open: Option<(String, Option<usize>, String, String)> = None;
+            for (i, line) in text.lines().enumerate() {
+                let at = format!("tests/replays/{name}:{}", i + 1);
+                let Some(m) = line
                     .strip_prefix("# --- ")
-                    .and_then(|l| l.strip_suffix(" ---"));
-                match (marker, &mut open) {
-                    (Some(m), None) => {
-                        let (stage, limit) =
-                            if let Some(s) = m.strip_suffix("_solver.replay inputs, unchanged") {
-                                (s, None)
-                            } else if let Some(rest) = m.strip_prefix("the first ") {
-                                let (n, s) = rest.split_once(" frames of ").unwrap_or_else(|| {
-                                    panic!("{name}: bad solver marker `{line}`")
-                                });
-                                let s = s.strip_suffix("_solver.replay").unwrap_or_else(|| {
-                                    panic!("{name}: bad solver marker `{line}`")
-                                });
-                                (s, Some(n.parse::<usize>().unwrap()))
-                            } else {
-                                panic!("{name}: unknown marker `{line}`");
-                            };
-                        open = Some((stage.to_owned(), limit, String::new()));
+                    .and_then(|l| l.strip_suffix(" ---"))
+                else {
+                    if let Some((_, _, _, body)) = &mut open {
+                        body.push_str(line);
+                        body.push('\n');
                     }
-                    (Some(m), Some((stage, limit, body))) => {
-                        assert!(
-                            m.starts_with("end of"),
-                            "{name}: unclosed block before `{line}`"
+                    continue;
+                };
+                match (m.strip_prefix("end of "), open.take()) {
+                    (None, None) => {
+                        let route = m
+                            .strip_suffix(" inputs, unchanged")
+                            .or_else(|| m.starts_with("the first ").then_some(m));
+                        let (stage, limit) = route.and_then(solver_route).unwrap_or_else(|| {
+                            panic!(
+                                "{at}: unknown marker `{line}` (expected `<stage>_solver.replay \
+                                 inputs, unchanged` or `the first N frames of \
+                                 <stage>_solver.replay`)"
+                            )
+                        });
+                        open = Some((stage, limit, line.to_owned(), String::new()));
+                    }
+                    (None, Some((_, _, start, _))) => {
+                        panic!("{at}: `{line}` starts a block before `{start}` has ended")
+                    }
+                    (Some(_), None) => panic!("{at}: end without start: `{line}`"),
+                    (Some(closes), Some((stage, limit, start, body))) => {
+                        assert_eq!(
+                            solver_route(closes),
+                            Some((stage.clone(), limit)),
+                            "{at}: `{line}` does not close `{start}` (same stage and frame count)"
                         );
-                        let got = inputs(&name, body);
-                        let route = solver(stage);
+                        let text = format!("level = x\nsource = handwritten\n---\n{body}");
+                        let got: Vec<u64> = Replay::parse(&text)
+                            .unwrap_or_else(|e| {
+                                panic!("{at}: the block opened by `{start}` does not parse: {e}")
+                            })
+                            .frames()
+                            .map(|i| u64::from(i.bits()))
+                            .collect();
+                        let route = solver(&stage);
                         let expected = match limit {
                             None => &route[..],
                             Some(n) => {
-                                assert!(*n <= route.len(), "{name}: {n} > {stage} route");
-                                &route[..*n]
+                                assert!(n <= route.len(), "{at}: {n} > the {stage} route");
+                                &route[..n]
                             }
                         };
                         if let Some(i) = first_difference(&got, expected) {
@@ -655,13 +694,7 @@ mod tests {
                             );
                         }
                         blocks += 1;
-                        open = None;
                     }
-                    (None, Some((_, _, body))) => {
-                        body.push_str(line);
-                        body.push('\n');
-                    }
-                    (None, None) => {}
                 }
             }
             assert!(open.is_none(), "{name}: unclosed solver block");

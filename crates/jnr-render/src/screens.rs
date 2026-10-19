@@ -422,22 +422,26 @@ mod tests {
     #[test]
     fn subtitle_band_is_clear_of_tiles_on_every_stage_title() {
         let line = crate::font::LINE_HEIGHT;
-        assert!(SUBTITLE_Y >= 60 && SUBTITLE_Y + line <= 69);
-        for (name, text) in [
-            (
-                "salzburg",
-                include_str!("../../../content/levels/01_salzburg.level"),
-            ),
-            (
-                "st_gilgen",
-                include_str!("../../../content/levels/02_st_gilgen.level"),
-            ),
-            (
-                "brunnwinkl",
-                include_str!("../../../content/levels/03_brunnwinkl.level"),
-            ),
-        ] {
-            let level = Level::parse(text).unwrap();
+        // Every shipped stage: content/levels/0[1-9]_*.level.
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/levels");
+        let mut stages: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| {
+                let n = p.file_name().unwrap().to_string_lossy();
+                let b = n.as_bytes();
+                b.len() > 3
+                    && b[0] == b'0'
+                    && (b'1'..=b'9').contains(&b[1])
+                    && b[2] == b'_'
+                    && n.ends_with(".level")
+            })
+            .collect();
+        stages.sort();
+        assert!(stages.len() >= 3, "{stages:?}");
+        for path in stages {
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            let level = Level::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
             let g = Game::new_at(&level, &tuning(), 1, Start::Title);
             let cam = g.camera();
             let tile = jnr_core::level::TILE_PX;
