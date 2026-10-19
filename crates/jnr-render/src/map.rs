@@ -496,15 +496,35 @@ mod tests {
             assert_eq!(screen_label_pos(&STATIONS[2], w, 0, power), (66, 20));
             assert_eq!(screen_label_pos(&STATIONS[2], w, 1, power), (66, 43));
         }
-        // Falkenstein (60 px wide): 172 normally, 171 with a big Resi
+        // Falkenstein (60 px wide): 172 normally, 170 with a big Resi
         // walking Falkenstein → St. Wolfgang.
         let right = |from, power| {
             let (x, _) = screen_label_pos(&STATIONS[3], 60, from, power);
             x + 60
         };
         assert_eq!(right(3, Power::Normal), 172);
-        assert_eq!(right(3, Power::Hackl), 171);
+        assert_eq!(right(3, Power::Big), 170);
+        assert_eq!(right(3, Power::Hackl), 170);
         assert_eq!(right(1, Power::Hackl), 172, "far from her: primary");
+    }
+
+    #[test]
+    fn falkenstein_keeps_a_gap_to_a_big_resi_on_st_wolfgang() {
+        // The teaser screen Falkenstein → St. Wolfgang (QA, M3 task E19):
+        // with the real font, the label's outline doesn't even touch a
+        // 16×32 box on the St. Wolfgang dot (the box grown by 1 px all
+        // round stays clear), while the primary slot overlaps it.
+        let texts = texts();
+        let font = crate::Font::from_atlas(jnr_assets::atlas());
+        let w = font.measure(&texts.get(STATION_KEYS[3]));
+        let (l, t, r, b) = resi_box(STATIONS[4].dot, Power::Hackl);
+        let grown = (l - 1, t - 1, r + 1, b + 1);
+        for power in [Power::Big, Power::Hackl] {
+            let (x, y) = screen_label_pos(&STATIONS[3], w, 3, power);
+            assert!(!label_hits(x, y, w, grown), "{power:?}: label at {x},{y}");
+        }
+        let (x, y) = station_label_pos(&STATIONS[3], w);
+        assert!(label_hits(x, y, w, (l, t, r, b)), "primary overlaps her");
     }
 
     #[test]
