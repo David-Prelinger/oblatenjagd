@@ -6,9 +6,10 @@
 //!   Drops of 7–9 tiles are survivable but land off screen at the climb
 //!   camera's fall-follow limit.
 //! - **Rock spawner niche** (every level): a `steinschlag` spawn's cell
-//!   bottom is 4–6 tiles above the first solid or one-way tile below it
-//!   (the ground the rock hits), so the whole niche is on screen below the
-//!   HUD for a player standing there.
+//!   bottom is 4–6 tiles above the first **solid** tile below it (the path
+//!   the player stands on; one-way tiles such as a `netz` shelter or a
+//!   `steig` plank in between are skipped, D-062), so the whole niche is on
+//!   screen below the HUD for a player standing there.
 //! - **Durchkriechstein geometry** (every level): the `len` tunnel cells
 //!   from the spawn cell to the right are empty with solid tiles above and
 //!   below; the mouth (the cell left of the tunnel) is empty with 2 rows of
@@ -147,19 +148,20 @@ pub fn fall_depth_problems(level: &Level) -> Vec<String> {
     out
 }
 
-/// The niche rule for a rock spawner in cell (`col`, `row`).
+/// The niche rule for a rock spawner in cell (`col`, `row`): measured to
+/// the first solid tile below, skipping one-way tiles (D-062).
 pub fn niche_problem(level: &Level, col: i32, row: i32) -> Option<String> {
-    let ground = (row + 1..level.height).find(|&r| standable(level, col, r));
+    let ground = (row + 1..level.height).find(|&r| solid(level, col, r));
     let Some(ground) = ground else {
         return Some(format!(
-            "steinschlag at {}: no solid or one-way tile below the niche for the rock to hit",
+            "steinschlag at {}: no solid tile below the niche (the path under the rock)",
             at(col, row)
         ));
     };
     let height = ground - row - 1;
     (!NICHE_HEIGHT.contains(&height)).then(|| {
         format!(
-            "steinschlag at {}: the niche bottom is {height} tiles above the ground the rock hits (row {}); it must be 4–6 (D-058)",
+            "steinschlag at {}: the niche bottom is {height} tiles above the solid ground below it (row {}); it must be 4–6 (D-058, D-062)",
             at(col, row),
             ground + 1
         )
@@ -381,15 +383,15 @@ mod tests {
     }
 
     #[test]
-    fn rock_niches_are_4_to_6_tiles_above_their_ground() {
+    fn rock_niches_are_4_to_6_tiles_above_their_solid_ground() {
         let level = |h: usize| {
             let mut rows = vec!["......"; 12];
             rows[0] = "P.....";
             rows[1] = "######";
-            rows[2 + h] = "##-###";
+            rows[2 + h] = "######";
             grid("climb", &rows)
         };
-        // The niche cell (2, 1): its bottom is row 2's top, the plank in
+        // The niche cell (2, 1): its bottom is row 2's top, the ground in
         // row 2 + h is `h` tiles lower.
         for (h, ok) in [(3, false), (4, true), (5, true), (6, true), (7, false)] {
             let p = niche_problem(&level(h), 2, 1);
@@ -398,13 +400,37 @@ mod tests {
         let p = niche_problem(&level(3), 2, 1).unwrap();
         assert_eq!(
             p,
-            "steinschlag at row 2, column 3: the niche bottom is 3 tiles above the ground the rock hits (row 6); it must be 4–6 (D-058)"
+            "steinschlag at row 2, column 3: the niche bottom is 3 tiles above the solid ground below it (row 6); it must be 4–6 (D-058, D-062)"
         );
         let open = grid("climb", &["P..", "...", "..."]);
         assert!(
             niche_problem(&open, 1, 0)
                 .unwrap()
-                .contains("no solid or one-way tile")
+                .contains("no solid tile below the niche")
+        );
+    }
+
+    #[test]
+    fn rock_niches_skip_one_way_shelters_and_planks() {
+        // Falkenstein rock #1 (D-062): niche 6 tiles above the path, a net
+        // (or a plank) 3 tiles above the path in between.
+        for net in ["--", "==", "ww"] {
+            let mut rows = vec!["......"; 12];
+            rows[0] = "P.....";
+            rows[1] = "######";
+            let shelter = format!("..{net}..");
+            rows[5] = &shelter;
+            rows[8] = "######";
+            assert_eq!(niche_problem(&grid("climb", &rows), 2, 1), None, "{net}");
+        }
+        // Only one-way tiles below: no ground.
+        let mut rows = vec!["......"; 8];
+        rows[0] = "P.....";
+        rows[5] = "..--..";
+        assert!(
+            niche_problem(&grid("climb", &rows), 2, 1)
+                .unwrap()
+                .contains("no solid tile below the niche")
         );
     }
 
