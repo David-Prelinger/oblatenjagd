@@ -1,17 +1,18 @@
 # QA M6: time-up while standing on Kurgast #1's deck chair (time_limit
-# 270: re-cut this replay if D-045 changes it). bad_ischl_chair_rest's
+# 210, D-102: re-cut this replay if D-045 changes it). bad_ischl_chair_rest's
 # inputs (Kurgast #1 stomped under the Katrin canopy, Resi back on his
 # chair at 1002), then she stands on the chair for the rest of the clock:
 # his rest counter stays paused the whole time (c 70 of 300 from 1002 to
 # the end), so he never gets up under her and never hurts her. The clock
-# runs out at 16200 (death, time-up) and she respawns at the start (16260,
+# runs out at 12600 (death, time-up) and she respawns at the start (12660,
 # clock 0) with the world rebuilt: Kurgast #1 walks again from his spawn
 # (col 38); she stands left of the statue
-# block, out of his pen, untouched.
+# block, out of his pen, untouched. Re-cut for D-102 (E42): time_limit
+# 270 -> 210, 3600 fewer standing frames.
 level  = bad_ischl
 seed   = 1
 source = handwritten
-expect = event=Stomped dies_at frames=16200..16200 deaths=1 no_event=Hurt event=Respawned lives=2 state=playing player_x>=34 player_y>=218 player_y<=218
+expect = event=Stomped dies_at frames=12600..12600 deaths=1 no_event=Hurt event=Respawned lives=2 state=playing player_x>=34 player_y>=218 player_y<=218
 ---
 R 150
 RJ 16
@@ -30,4 +31,4 @@ LJ 8
 - 4
 L 6
 - 600
-- 15400
+- 11800

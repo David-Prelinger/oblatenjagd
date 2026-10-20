@@ -270,8 +270,8 @@ fn the_counter_runs_only_left_of_it_in_range_and_fully_on_screen() {
         "starts at its phase"
     );
     assert_eq!(light(&g), AmpelLight::RedAmber);
-    // Its cell at x 320..336 is off screen at camera x 0, then fully on
-    // screen once the camera reaches 16.
+    // Its lamp housing at x 320..336 (the cell's column, D-102) is off
+    // screen at camera x 0, then fully on screen once the camera reaches 16.
     let mut g = game(&world(60, &[(11, 20, 'a')]));
     place(&mut g, 144);
     hold(&mut g, "-", 3);
@@ -289,6 +289,44 @@ fn the_counter_runs_only_left_of_it_in_range_and_fully_on_screen() {
         );
     }
     assert_eq!(ampel(&g).state, state::COUNTING);
+}
+
+/// One frame of an Ampel at (21, 20) in a 24-row world (road top y 352:
+/// its cell 320..336 × 336..352, its lamp housing 320..336 × 304..332)
+/// with the player standing at centre x 150 and the camera put at
+/// (`cam_x`, `cam_y`) just before the step: is it counting?
+fn counts_with_camera_at(cam_x: i32, cam_y: i32) -> bool {
+    let mut text = world_text(40, &[]);
+    let (head, grid) = text.split_once("grid = '''\n").unwrap();
+    let mut rows: Vec<String> = (0..10).map(|_| ".".repeat(40)).collect();
+    rows.extend(grid.lines().take(14).map(str::to_string));
+    rows[21] = rows[21].replace('P', ".");
+    rows[21].replace_range(2..3, "P");
+    rows[21].replace_range(20..21, "a");
+    text = format!("{head}grid = '''\n{}\n'''\n", rows.join("\n"));
+    let mut g = game(&Level::parse(&text).unwrap());
+    let a = ampel(&g);
+    assert_eq!((a.x, a.y + a.h), (Fx::from_px(320), Fx::from_px(352)));
+    place(&mut g, 150);
+    g.camera = crate::Camera { x: cam_x, y: cam_y };
+    g.step(input("-"));
+    ampel(&g).state == state::COUNTING
+}
+
+#[test]
+fn the_on_screen_test_is_the_lamp_housing_not_the_spawner_cell() {
+    // D-102: the camera raised over a refuge cuts the spawner cell off
+    // (its bottom at 352) but shows the lamp housing (304..332): it counts.
+    assert!(counts_with_camera_at(16, 172), "cell and housing on screen");
+    assert!(counts_with_camera_at(16, 171), "cell cut by 1 px");
+    assert!(counts_with_camera_at(16, 152), "housing bottom on the edge");
+    // The housing cut off at the bottom or at a side: it pauses.
+    assert!(!counts_with_camera_at(16, 151), "housing cut by 1 px");
+    assert!(
+        !counts_with_camera_at(16, 305),
+        "housing cut at the top, the cell on screen"
+    );
+    assert!(!counts_with_camera_at(15, 172), "housing cut on the right");
 }
 
 #[test]

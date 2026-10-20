@@ -8,13 +8,20 @@
 # two Traun notches with Kurgast #3, the checkpoint (0.7 s), the M-box
 # (1000), the Trinkhalle, Kurgast #4 and file B, past the Kurkapelle onto
 # the wall steps (1 s), the theatre balconies B1 -> B2, the Z-box bumped
-# from B2 (its Zaunerstollen rolls off the balcony: bug
-# qa_m6_bug_zaunerstollen_rolls_off_b2; she does not chase it), down past
-# singer #2 onto the bench (0.5 s), file C, the Pfarrgasse, the Trafik and
-# a walk-off to the Maibaum (100). Movement between the pauses:
-# walking-only QA beam search (4-frame chunks, never hurt). LevelComplete
-# at 4211; ZEIT clock consumed 4180 frames = 69.67 s (201 of 270 left):
-# 3 x 69.67 = 209.0 -> 210 s (D-045).
+# from B2 (its Zaunerstollen turns at B2's stone end pier and rolls back
+# to her: ExtraLife), down past singer #2 onto the bench (0.5 s), file C,
+# the Pfarrgasse, the Trafik and a walk-off to the Maibaum (100). Movement
+# between the pauses: walking-only QA beam search (4-frame chunks, never
+# hurt). LevelComplete at 4211; ZEIT clock consumed 4180 frames = 69.67 s:
+# 3 x 69.67 = 209.0 -> 210 s (D-045, D-102).
+# Re-cut for D-102 (E42), same frames and goal touch: the notch-2 leap now
+# lands on the kerb (151), so the braking after it is shifted (2405-2440,
+# rest at the same x); B2's stone end pier (237, rows 7-10, with the bridge
+# at (236, row 8): D-102 E42 addendum) blocks the old hop over the flower
+# box, so she steps left, jumps onto the box top, hops the pier and walks
+# off onto the street (3475-3606); two walking jumps over singer #2 onto
+# the bench (3607-3730) and a brake to the old resting x (3731-3768); from
+# 3769 on her inputs and positions are the old ones.
 level  = bad_ischl
 seed   = 1
 source = handwritten
@@ -64,8 +71,7 @@ L 4
 RJ 4
 R 24
 L 8
-- 4
-- 200
+- 204
 R 12
 RJ 24
 R 40
@@ -84,10 +90,9 @@ R 36
 RJ 36
 R 20
 RJ 28
-R 36
-- 4
-L 8
-- 40
+R 34
+L 11
+- 43
 R 40
 RJ 4
 R 8
@@ -127,23 +132,23 @@ R 20
 R 6
 - 12
 J 14
-- 60
-R 20
-L 4
-J 4
-RJ 4
+- 20
+L 10
+RJ 18
+R 10
+RJ 20
+R 54
+- 22
+R 10
+RJ 14
 R 40
-RJ 4
-R 32
-RJ 4
-R 16
-RJ 4
+RJ 14
 R 24
-RJ 8
-R 28
-- 4
-L 8
-- 30
+- 1
+L 5
+- 7
+R 1
+- 24
 R 12
 RJ 8
 R 40

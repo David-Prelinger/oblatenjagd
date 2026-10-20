@@ -117,14 +117,15 @@
 #                            rows 10-15, roof 6 above the meadow, 3 Oblaten),
 #                            meadow from 266, Maibaum 270, Ortsende 273.
 # Oblaten: 78 placed + 1 in the ?-box.
-# time_limit 240: provisional (D-045, D-092); QA measures the relaxed run.
+# time_limit 230 (D-102; was 240): QA's relaxed run (qa_m6_strobl_relaxed)
+# took 75.05 s on the ZEIT clock.
 # Solver (D-092: gate 5, target narrowest 5-7): see the D-097 addendum.
 # Replays: tests/replays/strobl_*.replay.
 
 [meta]
 id = "strobl"
 title_key = "stage.strobl.title"
-time_limit = 240
+time_limit = 230
 min_jump_window = 5
 background = [
   { sprite = "bg_sky_salzburg", factor = 0 },

@@ -1122,8 +1122,11 @@ fn on_foot(e: &Entity) -> bool {
 /// Selfie-Tourists, Nordic-Walkers, Pilger, Offiziere and walking
 /// Kurgäste that overlap another enemy on foot turn away from it (after
 /// everything moved; the direction is set, not flipped, so two that
-/// overlap for several frames don't flip back and forth).
-pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
+/// overlap for several frames don't flip back and forth). A lying Kurgast
+/// counts with his chair widened by `kurgast_berth` px on each side
+/// ([`turn_box`], D-102), so a walker turns before it reaches a rider
+/// hanging past the chair.
+pub(crate) fn turn_at_enemies(entities: &mut [Entity], t: &Tuning) {
     for i in 0..entities.len() {
         let a = entities[i];
         let walks = match a.kind {
@@ -1142,13 +1145,29 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
         }
         let ac = a.x + a.w.div_int(2);
         let other = entities.iter().enumerate().find(|(j, b)| {
-            *j != i && b.active && !b.removed && on_foot(b) && b.hitbox().overlaps(&a.hitbox())
+            *j != i && b.active && !b.removed && on_foot(b) && turn_box(b, t).overlaps(&a.hitbox())
         });
         if let Some((_, b)) = other {
             let bc = b.x + b.w.div_int(2);
             let away = (ac - bc).signum() as i8;
             entities[i].dir = if away == 0 { -a.dir } else { away };
         }
+    }
+}
+
+/// The box a walker turns at in [`turn_at_enemies`]: a lying Kurgast's
+/// chair widened by `kurgast_berth` px on each side, same rows (D-102);
+/// every other enemy's hitbox.
+fn turn_box(e: &Entity, t: &Tuning) -> Aabb {
+    let b = e.hitbox();
+    if !in_chair(e) {
+        return b;
+    }
+    let berth = Fx::from_px(t.enemies.kurgast_berth);
+    Aabb {
+        x: b.x - berth,
+        w: b.w + berth.mul_int(2),
+        ..b
     }
 }
 
@@ -2100,12 +2119,31 @@ fn car_at(f: u16, cars: u8, t: &Tuning) -> Option<u16> {
     (d % gap == 0 && d / gap < u16::from(cars)).then_some(d / gap)
 }
 
+/// The lamp housing's top and bottom, px above the spawner cell's bottom
+/// (D-102; the lamp housing, rows 0–27 of the 16x48 `ampel` sprite).
+const AMPEL_HOUSING_TOP_PX: i32 = 48;
+const AMPEL_HOUSING_BOTTOM_PX: i32 = 20;
+
+/// The Ampel's lamp housing (D-102): a box 16 px wide in the spawner's
+/// column, from the cell's bottom − 48 px to its bottom − 20 px. It
+/// decides whether the Ampel is on screen ([`update_ampel`]), so a camera
+/// raised above a refuge sees the light it can see, not the road cell.
+pub(crate) fn ampel_housing(e: &Entity) -> Aabb {
+    let bottom = e.y + e.h;
+    Aabb {
+        x: e.x + e.w.div_int(2) - Fx::from_px(TILE_PX / 2),
+        y: bottom - Fx::from_px(AMPEL_HOUSING_TOP_PX),
+        w: Fx::from_px(TILE_PX),
+        h: Fx::from_px(AMPEL_HOUSING_TOP_PX - AMPEL_HOUSING_BOTTOM_PX),
+    }
+}
+
 /// The Ampel spawner (D-093). Its counter (`count`, the frame f of its
 /// `period`) runs only while the player's centre is left of the spawner
 /// cell's centre, within `range` tiles (horizontally, centre to centre),
-/// and the cell is fully on screen ([`UpdateCtx::fully_on_screen`], the
-/// Souvenirstand rule of D-069); otherwise it pauses with its light kept
-/// ([`ampel_light`]). On the first such frame it starts at `phase`. At
+/// and its lamp housing ([`ampel_housing`], D-102) is fully on screen
+/// ([`UpdateCtx::fully_on_screen`]); otherwise it pauses with its light
+/// kept ([`ampel_light`]). On the first such frame it starts at `phase`. At
 /// f = `ampel_telegraph` + k × `ampel_gap` (k < `cars`) it returns car k
 /// to spawn, unless `ampel_max_alive` of its cars are alive
 /// (`UpdateCtx::cars`, by their spawn point) or the car's hitbox would
@@ -2117,7 +2155,7 @@ pub(crate) fn update_ampel(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
         .and_then(|i| ctx.level.entities.get(usize::from(i)))?;
     let left_of = ctx.player_cx < e.x + e.w.div_int(2);
     let in_range = player_distance_px(e, ctx) <= i32::from(s.range) * TILE_PX;
-    if !(left_of && in_range && ctx.fully_on_screen(&e.hitbox())) {
+    if !(left_of && in_range && ctx.fully_on_screen(&ampel_housing(e))) {
         return None;
     }
     let period = s.period.max(1);

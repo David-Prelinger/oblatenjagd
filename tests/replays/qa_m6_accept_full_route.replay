@@ -12,13 +12,19 @@
 # no hurt, power kept): Ampel #2, the Buergelstein walkway, the Ache, the
 # Lokalbahn halt; Strobl LevelComplete at 28312 as Hackl. Idle: tally,
 # route map Strobl -> Bad Ischl (Wait), no START, the Bad Ischl intro
-# (29183) and play from 29333 (Hackl, lives 6, score 135450).
-# Bad Ischl (clock = frame - 29333): QA beam search (8-frame chunks, no
+# (29173) and play from 29323 (Hackl, lives 6, score 134950).
+# Bad Ischl (clock = frame - 29323): QA beam search (8-frame chunks, no
 # hurt, power kept) through the Kurgaeste, the three officer files, the
-# Fiaker, the Traun notches, the Kurkapelle and the singers; an extra
-# life on the 100th Oblate; Bad Ischl LevelComplete at 31188 as Hackl.
-# Idle: tally, the route map Bad Ischl -> Cafe Zauner (31720) and its
-# teaser, the title (31964) with the run reset to Salzburg.
+# Fiaker, the Traun notches (a hop over the D-102 kerb at 30277), the
+# Kurkapelle and the singers; an extra life on the 100th Oblate; from B2
+# (30812) a hurt-free solver beam search (power kept) over the D-102 pier
+# to the goal: Bad Ischl LevelComplete at 31174 as Hackl. Idle: tally,
+# the route map Bad Ischl -> Cafe Zauner (31660) and its teaser, the
+# title (31904) with the run reset to Salzburg.
+# Re-cut for D-102 (E42): Strobl's 230 s shorten its tally by 10 frames
+# (10 idle frames fewer before Bad Ischl, whose inputs keep their clock),
+# the kerb hop, and the new route from B2 on (the old one clipped the
+# 4-high pier); Bad Ischl's 210 s shorten its tally.
 # Eight LevelCompletes, no death, no hurt, all deterministic.
 level  = salzburg
 seed   = 1
@@ -951,56 +957,73 @@ RB 24
 L 8
 RB 8
 L 8
-- 1016    # tally, route map Strobl -> Bad Ischl, Bad Ischl intro
-# --- Bad Ischl as Hackl: QA beam search (goal 31188) ---
-RB 56
-RBJ 24
-RB 40
-RBJ 16
-RB 64
-RBJ 8
-RB 24
-RBJ 32
-RB 144
-RBJ 16
-RB 96
-RBJ 8
-RB 40
-RBJ 8
-RB 184
-RBJ 8
-RB 48
-RBJ 8
-RB 48
-RBJ 8
-RB 40
-RBJ 8
-RB 160
-RBJ 8
-RB 32
-RBJ 8
-RB 96
-RBJ 8
-RB 48
-RBJ 8
-RB 72
-RBJ 24
-RB 24
-RJ 8
-RBJ 16
-RB 24
-RBJ 24
-RB 24
-RBJ 32
-RB 72
-RBJ 16
-RB 48
-RBJ 8
-RB 56
-RBJ 16
-RB 16
-RBJ 40
-RB 16
-L 8
-R 16
-- 805    # tally, route map -> Cafe Zauner, teaser, title (31964)
+- 1006    # tally, route map Strobl -> Bad Ischl, Bad Ischl intro
+# --- Bad Ischl as Hackl: QA beam search to B2 (30811), then a solver beam search (goal 31174) ---
+BR 56
+BJR 24
+BR 40
+BJR 16
+BR 64
+BJR 8
+BR 24
+BJR 32
+BR 144
+BJR 16
+BR 96
+BJR 8
+BR 40
+BJR 8
+BR 184
+BJR 8
+BR 48
+BJR 8
+BR 48
+BJR 8
+BR 40
+BJR 8
+BR 25
+BJR 4
+BR 131
+BJR 8
+BR 32
+BJR 8
+BR 96
+BJR 8
+BR 48
+BJR 8
+BR 72
+BJR 24
+BR 24
+JR 8
+BJR 16
+BR 24
+BJR 25
+BR 2
+BJR 1
+BR 2
+BJR 1
+BR 2
+BJR 1
+BR 2
+BJR 6
+BR 2
+BJR 1
+BR 14
+JR 36
+R 2
+BR 8
+BJR 36
+BR 10
+BJR 20
+BR 10
+BJR 36
+BR 2
+BJR 20
+BR 2
+BJR 36
+BR 18
+BJR 36
+BR 2
+BJR 36
+BR 18
+- 761    # tally, route map -> Cafe Zauner, teaser, title (31904)

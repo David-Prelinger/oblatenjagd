@@ -62,5 +62,6 @@ const FINISH_FRAME: u32 = 731;
 /// `camera.autoscroll_ground_y`/`autoscroll_top`; M6 E38: the
 /// `enemies.kurgast_*` keys; M6 E37: `platforms.fensterladen_*` and the
 /// hashed stage clock; M6 E36: the `enemies.ampel_*` and `auto_*` keys;
-/// M6 E39: the `enemies.offizier_*` keys; route and frame unchanged).
-const FINISH_HASH: u64 = 0x3fe6_a50c_1d43_3f3f;
+/// M6 E39: the `enemies.offizier_*` keys; M6 E42: `enemies.kurgast_berth`
+/// and `offizier_sabre = [8, 10]`; route and frame unchanged).
+const FINISH_HASH: u64 = 0xd8cc_0354_e01d_2c55;

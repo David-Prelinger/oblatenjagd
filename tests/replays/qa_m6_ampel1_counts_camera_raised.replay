@@ -1,0 +1,128 @@
+# QA M6 regression (was qa_m6_bug_ampel1_stuck_red_camera_raised; fixed by
+# D-102, E42): Ampel #1 must run its cycle while Resi stands on the
+# Gastgarten terrace with the camera raised. qa_m6_strobl_relaxed's inputs
+# (walking, Zuckerschock) to the terrace: she lands on it (2680, camera y
+# 92), hops for the Oblaten over it (row 11; the camera rises to 48) and
+# stands on its right part (2752, x 2448, centre right of col 152, within
+# 12 tiles of the spawner): the camera rests at y 57, so the spawner cell
+# (row 14, y 224-240) ends 3 px below the screen. The bug: the light was
+# not "fully on screen" (D-093's cell test), stayed red while she watched,
+# and its first car hit her once the camera dropped back as she walked off
+# into the lane. Since D-102 the on-screen test is the lamp housing (y
+# 192-220 here, on screen): the counter starts at 2732, the two cars
+# (2762, 2802) drive beneath her, and after 230 frames of watching she
+# walks off the terrace's right end in the red phase, past the mouth.
+# Re-cut for D-102 (E42): she now stops at x 2624 (RIGHT released at
+# 3096), short of the Selfie-Tourist who walks towards the mouth (the old
+# inputs never got that far).
+# Expected (game-design Stage 7 section 4): no Hurt, still big, x >= 2620.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt power=big player_x>=2620 state=playing
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 8
+R 16
+RJ 4
+R 32
+RJ 24
+R 44
+RJ 12
+R 16
+L 8
+R 12
+L 12
+- 30
+R 20
+RJ 8
+R 16
+RJ 24
+R 28
+L 8
+LJ 12
+RJ 20
+R 16
+RJ 24
+R 36
+L 4
+- 4
+L 4
+- 120
+RJ 16
+R 12
+RJ 8
+R 24
+- 8
+R 8
+- 4
+R 4
+- 12
+J 14
+- 80
+R 24
+RJ 16
+R 60
+J 4
+RJ 4
+R 40
+- 4
+L 8
+- 4
+R 12
+RJ 36
+R 4
+RJ 16
+R 8
+L 4
+J 4
+RJ 12
+R 24
+L 4
+- 4
+L 4
+- 30
+R 52
+RJ 8
+R 64
+RJ 4
+R 28
+RJ 24
+R 100
+RJ 4
+R 16
+RJ 8
+R 28
+RJ 16
+R 20
+RJ 4
+R 40
+- 4
+L 8
+J 12
+RJ 4
+L 8
+R 4
+- 330
+R 56
+RJ 36
+R 164
+RJ 28
+R 16
+RJ 24
+R 40
+RJ 20
+R 12
+RJ 28
+R 32
+L 4
+- 4
+L 4
+- 230
+R 113
+- 47

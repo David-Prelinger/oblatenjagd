@@ -2,10 +2,14 @@
 # into the Kurpark, where it stomps Kurgast #4 (his chair at col 178, in
 # the pen he shares with file B). Resi walks back, hops onto the chair and
 # waits there (his rest pauses) while the file marches up, salutes and
-# marches on until the flag bearer turns at the chair. In that march a
-# held walking jump from the chair carries her over all three officers
-# (no stomp, no points), and she walks on to the bandstand under the
-# Kurkapelle's notes.
+# marches on until the flag bearer turns at the chair's berth (D-102: 16 px
+# clear of it). As that march starts she steps to the chair's right edge
+# and a held walking jump from it carries her over all three officers (no
+# stomp, no points); she walks on to the lawn wall.
+# Re-cut for D-102 (E42): with the berth the file halts 16 px further from
+# the chair and the old jump (from mid-chair at 1921) landed on two
+# officers (two stomps, 600 points); now RIGHT 1911-1921, the jump at 1922
+# (34 frames held), then she walks right into the lawn wall (x 3252).
 level  = bad_ischl
 seed   = 1
 source = handwritten
@@ -40,14 +44,11 @@ RBJ 20
 RB 18
 RBJ 36
 - 6
-L 40
-L 38
+L 78
 LJ 6
 - 3
 R 3
-- 660
-RJ 36
-R 30
-R 150
-RJ 20
-R 80
+- 650
+R 11
+RJ 34
+R 281
