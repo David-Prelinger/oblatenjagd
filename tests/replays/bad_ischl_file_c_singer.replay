@@ -1,0 +1,62 @@
+# Offizier file C with Operettensänger #2 (game-design "Stage 8" section
+# 5): the solver's route to the theatre, then the street under the
+# balconies. Resi waits out singer #2's high C, stomps him in his idle
+# window (200), drops onto the bench (cols 249-250) between him and the
+# file, and, as file C marches back towards the bench, jumps onto the
+# rear officer (200, „Abtreten!") and bounces on to the 3-high launch step.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score=9500 player_x>=4128 player_y<=170
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 65
+RBJ 12
+RB 78
+RB 60
+R 20
+- 62
+RJ 14
+R 30
+- 10
+RJ 12
+R 16
+- 35
+RJ 10
+R 6
+- 4
+RJ 6
+R 10
+J 100
+- 20

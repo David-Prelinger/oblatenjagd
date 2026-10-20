@@ -1,0 +1,28 @@
+# Hurt by a Kurgast who got up again (D-095): Resi takes the Mozartkugel
+# from the M-box (the garden wall turns it back to her), waits for the
+# pigeon to leave the Kaiser's hat, crosses the statue and stomps
+# Kurgast #1 as Zuckerschock (100). She then stands right of his deck
+# chair without stepping on it: his rest (300) and wake (40) run, he
+# stands up and shuffles into her, and she shrinks to Normal (no death).
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Stomped event=Hurt power=normal score=2550
+---
+R 128
+- 20
+J 10
+- 200
+RJ 16
+R 10
+- 220
+RJ 16
+R 6
+- 10
+RJ 20
+R 20
+- 40
+R 4
+RJ 20
+R 16
+- 520

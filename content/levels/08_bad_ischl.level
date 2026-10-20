@@ -1,6 +1,92 @@
 # Stage 8: Bad Ischl (docs/game-design.md "Stage 8: Bad Ischl", D-092 ...
-# D-098). 300 columns x 17 rows, side camera; the street top is row 15.
-# (Section notes are filled in once the layout is final.)
+# D-098; as built: the D-096 "Stage 8 as built" addendum). 300 columns x
+# 17 rows, side camera; the street top is row 15 (rows 15-16), the goal
+# square row 16. Columns are 0-based.
+#   1 Katrin       0-39    kies. Start 2, Bus 150 / jetzt leer 5, Oblaten
+#                          8-12 (row 13, clear of the bus board), M-box 14
+#                          (row 11) between bricks, garden wall 18 (2 high)
+#                          with an Oblaten arc. Statue block 22-23 (stone,
+#                          2x2) under kaiser_jagdstandbild (col 21, dx 24 =
+#                          centred on the block), taube_sitting at 23 row 11
+#                          dy -5 (on the hat brim beside the crown: the seat
+#                          is on the block's centre line, a cell centre is
+#                          8 px off it, and the pigeon has no dx). Kaiser
+#                          auf der Pirsch 26. katrin_talstation (back) col
+#                          31 dx 8, its canopy oneway_wood 30-34 (row 11, 4
+#                          up) with 4 Oblaten and a ?-box at 32 row 8.
+#                          Kurgast #1 at 38 (walls: statue 23, bench 39):
+#                          he walks left from the start, so a Resi who
+#                          crosses the statue meets him under the canopy's
+#                          left end and his chair is a step up through it.
+#   2 Kaiserpark  40-99    kies. Kurgebiet 41, steps 42/43/44, terrace
+#                          (meadow on stone) 44-53 top row 12, Habt Acht
+#                          48 on it, 3 Oblaten 51-53. File A (lead 58, 59)
+#                          on the avenue 54-66, penned by the terrace face
+#                          and the fountain basin 67-71 (2 high, column 69
+#                          3 high, Oblaten on it); an Oblaten arc 60-62
+#                          over the file. Himmel 73, Kurgast #2 78 (walls:
+#                          basin 71, step 84), Grundriss 80, kaiservilla
+#                          (back) col 83 dx 48 = over the steps 84 (2) and
+#                          85-87 (3 high, the refuge). Fiaker at 93: its
+#                          trigger (128 px, centres) is reached on the
+#                          steps from col 85.5 on.
+#   3 Esplanade  100-159   bridge (jetty) 100-106 over the Ischl, promenade
+#                          (ground on kai). seeauerhaus 112, Verlobt 110.
+#                          Notch 1 119-121 (Traun, salzach_water), Kurgast
+#                          #3 at 127 paces the landing 122-129 (ledge, bench
+#                          130). Beste Ideen 133, lehar_villa col 134 dx 16,
+#                          Selfie-Tourist #1 135 (bench 130, post block
+#                          139). Notch 2 143-146 (4), landing 147-151.
+#                          Checkpoint 152, Bus 150 / fährt zurück 155,
+#                          M-box 158 (row 11) between bricks.
+#   4 Kurpark    160-219   cobbles to 173, then kies; the lawn (meadow)
+#                          187-203. Trinkhalle 161, trinkhalle (back) col
+#                          167 dx 8, 5 Oblaten, Trinkhalle steps 173 (2).
+#                          Solebad 176. One pen 174-203 (steps 173, lawn
+#                          wall 204, both 2 high) for Kurgast #4 (182) and
+#                          file B (lead 198, 199, 200): they turn at each
+#                          other, so the file turns at his deck chair and a
+#                          held walking jump from the chair clears all
+#                          three (the spec's 2-high flower urn at 186 was cut, so
+#                          the file can reach the chair). Bandstand: floor
+#                          oneway_wood 207-214 (row 13), roof roof_shingle
+#                          207-214 (row 9, 6 Oblaten on row 8),
+#                          musikpavillon col 210 dx 8, Blasmusiker 211 on
+#                          the floor. The lawn wall stands 2 columns left
+#                          of the floor so a hop over it lands on the
+#                          street and Resi walks under the floor (with the
+#                          wall at 206 the hop always landed on the floor,
+#                          next to the musician under the roof). Wall steps
+#                          216 (2) / 217-218 (3) right of it: from 217 the
+#                          roof is 3 up (the only way onto it).
+#   5 Theater    220-259   street. Hier singt 223, kongresshaus col 231
+#                          (catalog placement), B1 balcony 225-229 (row 11)
+#                          with Operettensänger #1 at 227, B2 232-237 with
+#                          flower boxes 232/237 (row 10) and the Z-box at
+#                          235 row 8, Stollen 234. Operettensänger #2 at
+#                          245 (free street 239-244 to his left), a 2-high
+#                          bench 249-250, file C (lead 252, 253, phase 0)
+#                          between the bench and the 3-high step 258-259.
+#                          The bench is a perch between the two timings
+#                          (with the file pacing up to the singer the
+#                          solver's window there was 3 frames).
+#   6 Pfarrgasse 260-299   cobbles. Zauner: anstellen! 262, planters 265
+#                          and 275 (2) pen Selfie-Tourist #2 (270). Step
+#                          278-279 (3), the Trafik: invisible 280-285 x
+#                          rows 10-15 under the trafik prop (col 286 dx
+#                          -56), roof 6 above the square, 3 Oblaten. The
+#                          square (row 16) from 280, Maibaum 290, Café
+#                          Zauner / gleich da 293 (street style, no
+#                          Ortsende, D-097), zauner_fassade col 295 dx 8
+#                          with the warteschlange in front (col 296 dx -8:
+#                          same centre, spawned later, drawn later).
+# Oblaten: 81 placed + 1 in the ?-box. Offizier phases all 0 (drill frame
+# = clock - 1 + phase, E41). time_limit 270: provisional (D-045/D-090),
+# the solver needs 30.9 s; QA measures the relaxed run on the ZEIT clock.
+# Solver: complete 1851, 17 jumps, narrowest 8 (the running leap off the
+# Z-box over singer #2 onto the bench), then 11 (bench -> file C -> the
+# launch step), 15, 15, 16; gate min_jump_window = 4 (D-092).
+# Replays: tests/replays/bad_ischl_*.replay.
 
 [meta]
 id = "bad_ischl"
@@ -25,7 +111,7 @@ background = [
 "w" = "salzach_water_deep"
 "+" = "oneway_wood"
 "&" = "balcony"
-"-" = "wartehaus_dach"
+"r" = "roof_shingle"
 "I" = "invisible"
 "B" = "brick"
 "?" = { tile = "oblaten_box", contains = "oblate" }
@@ -85,12 +171,12 @@ grid = '''
 ............................................................................................................................................................................................................................................................................................................
 ............................................................................................................................................................................................................................................................................................................
 ................................?...............................................................................................................................................................................oooooo.....................Z................................................................
-...............................................................................................................................................................................................................--------..................................................................ooo................
+...............................................................................................................................................................................................................rrrrrrrr..................................................................ooo................
 ..............................oo.oo..........................o....................................................................................................................................oo.............................o.s....Koo.oK..........................................IIIIII..............
-.............BMB.......q......+++++.............d..ooo......o.o......o...............ooo................................o.......................oo...........BMB.................................o..o............................&&&&&..&&&&&&..............................o...o.......IIIIII..............
-.................ooo........................,,,,,,,,,,.............ooKoo.............KKK...............................o.o.....................o..o......................................ooo.......................m....................................o.........KK.......o.....o....KKIIIIII..............
-........ooooo.....K...KK...............K...KKKKKKKKKKK.............KKKKK....oo......KKKK...oo....oo..oooo.........................K........K........................ooooo....K............K...................K++++++++..o.oo.................ooo.....oo.KK.......KK.....K.........K..KKIIIIII..............
-..P..a............K..1KK..b....2......uK.cKKKKKKKKKKKK....LO.......KKKKK.e....u.f..3KKKK......F...............g.4..............u..K..h5T...K............C..i.....k.....6.....K..l.....u...K...........DEE.....K...7............n.......8..p..........s...KK.Yy....KK..v..K....T....K..KKIIIIII..............
-____________________________________________________________________________________________________jjjjjjj============~~~=====================~~~~===========================_____________,,,,,,,,,,,,,,,,,,,______________============================================================IIIIII9...G..x.zQ...
-____________________________________________________________________________________________________JwwJwwJ############www#####################wwww#############==============_____________,,,,,,,,,,,,,,,,,,,______________================================================================================
+.............BMB.......q......+++++.............d..ooo......o.o......o...............ooo................................o.......................oo...........BMB..........................o......o..o.....................o......&&&&&..&&&&&&..............................o...o.......IIIIII..............
+.................ooo........................,,,,,,,,,,.............ooKoo.............KKK...............................o.o.....................o..o......................................o.o.......................m.....KKo............................o.........KK.......o.....o....KKIIIIII..............
+........ooooo.....K...KK...............K...KKKKKKKKKKK.............KKKKK....oo......KKKK...oo....oo..oooo.........................K........K........................ooooo....K..............................K..++++++++.KKK.o.................ooo.....oo.KK.......KK.....K.........K..KKIIIIII..............
+..P..a............K..1KK..b....2......uK.cKKKKKKKKKKKK....LO.......KKKKK.e....u.f..3KKKK.....F................g.4..............u..K..h5T...K............C..i.....k.....6.....K..l.....u...............DEE...K.....7.....KKK....n.......8..p..........s...KK.Yy....KK..v..K....T....K..KKIIIIII..............
+____________________________________________________________________________________________________jjjjjjj============~~~=====================~~~~===========================_____________,,,,,,,,,,,,,,,,,________________============================================================IIIIII9...G..x.zQ...
+____________________________________________________________________________________________________JwwJwwJ############www#####################wwww#############==============_____________,,,,,,,,,,,,,,,,,________________================================================================================
 '''

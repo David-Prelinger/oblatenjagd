@@ -1,0 +1,67 @@
+# A Hackl axe passes a lying Kurgast (D-097: lying = Pass, a harmless deck
+# chair): the flow of bad_ischl_hackl_axes into Bad Ischl as Hackl; Resi
+# stomps Kurgast #1 (100, „Kurruhe!"), walks back left past his chair and
+# throws an axe to the left from right beside it (frame 3077): the axe
+# flies through the chair, gives no points and he keeps resting in it.
+# She stays beside the chair, so when he gets up after his rest and wake
+# he walks into her (Hurt, Hackl -> Zuckerschock): he was never knocked
+# off. The route's second station is St. Gilgen's slot (`stage=` names
+# the station, as in flow_hackl_carry_over).
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl bad_ischl
+expect = deaths=0 event=Stomped event=HacklThrown event=Hurt score=6950
+expect = state=playing stage=st_gilgen power=big
+---
+- 20
+S 1       # title -> intro
+- 150
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250     # the Maibaum
+- 1100    # goal sequence, route map, route_b intro
+- 14
+R 150
+R 6
+- 200
+RJ 16
+R 6
+- 10
+RJ 20
+R 20
+R 24
+- 20
+- 10
+RJ 12
+R 10
+- 40
+L 24
+- 10
+B 1
+- 320

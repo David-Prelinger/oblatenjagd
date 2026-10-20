@@ -1,0 +1,79 @@
+# The Hackl in Bad Ischl (D-097; no H-box in the stage, she brings it):
+# the real flow on the test route hackl -> bad_ischl (as in
+# flow_hackl_carry_over): the hackl run to its Maibaum, the route map, the
+# Bad Ischl intro, then play as Hackl. Resi waits behind the garden wall
+# until the pigeon has left the Kaiser's hat, crosses the statue and throws
+# an axe at Kurgast #1 walking ahead of her: Defeat, 100 (6850 -> 6950).
+# On the Kaiserpark terrace she drops onto the avenue behind file A and
+# throws at the rear officer in his march: Defeat, 200 and „Abtreten!"
+# (7550 -> 7750 after the terrace Oblaten). No hurt, still Hackl. The
+# route's second station is St. Gilgen's slot (`stage=` names the station).
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = hackl bad_ischl
+expect = deaths=0 no_event=Hurt event=HacklThrown event=AxeHit score=7750
+expect = state=playing stage=st_gilgen power=hackl
+---
+- 20
+S 1       # title -> intro
+- 150
+R 40
+- 30
+J 10      # bump the H-box: the Hackl rises onto it
+- 50
+L 30
+- 30
+RJ 25     # jump onto the box: Normal -> Hackl (the freeze)
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 250     # the Maibaum
+- 1100    # goal sequence, route map, route_b intro
+- 14
+R 150
+R 6
+- 200
+RJ 16
+R 6
+- 10
+RJ 20
+R 20
+R 24
+- 20
+- 160
+B 1
+- 20
+R 30
+RB 120
+RBJ 20
+RB 40
+- 60
+RJ 20
+R 20
+- 10
+RJ 20
+R 60
+- 20
+L 6
+R 12
+- 70
+B 1
+- 60

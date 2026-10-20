@@ -126,6 +126,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         "wolfgangsee",
         include_str!("../../../content/levels/06_wolfgangsee.level"),
     ),
+    (
+        "bad_ischl",
+        include_str!("../../../content/levels/08_bad_ischl.level"),
+    ),
 ];
 
 /// The level played when none is given: Stage 1.
