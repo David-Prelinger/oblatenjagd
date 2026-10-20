@@ -1,0 +1,15 @@
+# Written by `cargo xtask solve m5_enemies --write`; re-create it instead of editing.
+level  = m5_enemies
+seed   = 1
+source = solver
+expect = complete frames=859..859 deaths=0
+---
+RB 325
+RBJ 36
+RB 136
+RBJ 36
+RB 168
+RBJ 36
+RB 24
+RBJ 36
+RB 62

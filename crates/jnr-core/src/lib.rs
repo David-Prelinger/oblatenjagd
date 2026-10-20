@@ -50,7 +50,7 @@ pub mod tuning;
 #[cfg(test)]
 mod tests;
 
-pub use camera::{Camera, SCREEN_H, SCREEN_W};
+pub use camera::{Autoscroll, Camera, SCREEN_H, SCREEN_W, ScrollPhase};
 pub use enemies::Pose;
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;

@@ -1,0 +1,10 @@
+# Swan #1 under the deck (the safe introduction, D-078): Resi walks onto
+# the deck and stops above the swan; it hisses, charges beneath her and
+# paddles home. A deck rider is out of its reach: no hurt, no stomp.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_x>=200
+---
+R 110
+- 360

@@ -54,8 +54,8 @@ pub fn at_surface(y: Fx, surface: Fx, t: &SwimTuning) -> bool {
 ///   on a swim surface (a surface swimmer would be blocked or squeezed
 ///   there).
 ///
-/// TODO(E26): `levels lint` passes `None` until the auto-scroll zone
-/// (`[meta] autoscroll`) exists; then it passes the zone's columns.
+/// `levels lint` passes the columns an auto-scroll level's camera shows
+/// while it scrolls (`None` without a zone).
 pub fn problems(level: &Level, zone: Option<(i32, i32)>) -> Vec<String> {
     let kind = |c: i32, r: i32| level.tile(c, r).map(|t| t.kind);
     let mut out = Vec::new();

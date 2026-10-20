@@ -1,0 +1,23 @@
+# Side hit as Zuckerschock: with the Mozartkugel Resi drops to the floor
+# in front of the boat and stays there; it races into her side: Hurt,
+# back to Normal, no points.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped score=1000
+---
+R 8
+J 14
+- 40
+R 82
+RB 126
+RBJ 20
+RB 76
+RBJ 36
+RB 198
+RBJ 36
+RB 128
+DJ 4
+- 30
+R 20
+- 150

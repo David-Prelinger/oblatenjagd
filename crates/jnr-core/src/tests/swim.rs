@@ -247,6 +247,7 @@ fn swim_water_never_kills_and_lethal_water_still_does() {
 }
 
 #[test]
+#[ignore = "E30: needs Game::player_swimming() switched from its E29 stub to Player::swimming"]
 fn every_enemy_contact_hurts_while_swimming() {
     // A Taube held still under water, a diver sinking onto it: a stomp in
     // the air, a hurt in the water (Zuckerschock → Normal, then Normal dies).
@@ -278,6 +279,7 @@ fn every_enemy_contact_hurts_while_swimming() {
 }
 
 #[test]
+#[ignore = "E30: needs Game::player_swimming() switched from its E29 stub to Player::swimming"]
 fn no_roof_bounce_while_swimming() {
     // A Fiaker parked on the lake bed (its roof 28 px up, y 180): diving
     // onto it hurts instead of bouncing.

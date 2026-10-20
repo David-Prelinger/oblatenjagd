@@ -22,9 +22,19 @@
 //!   where it was without the slack). `Game` kills the player when her
 //!   hitbox top is below the screen (the death line), and level entities
 //!   activate only near the screen vertically ([`Camera::row_near`]).
+//! - `autoscroll` (D-075): the side camera, except while its left edge
+//!   lies in the level's zone `[from × 16, to × 16)`: there
+//!   [`Camera::follow_autoscroll`] moves it right by
+//!   `camera.autoscroll_speed` subpixels every frame of play, independent
+//!   of the player ([`Autoscroll`] keeps the phase, the subpixel position
+//!   and the respawn hold). `Game` pushes the player at the left edge
+//!   (squeezing her against a solid tile kills) and stops her
+//!   `autoscroll_right_margin` px before the right edge.
 
+use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::level::TILE_PX;
+use crate::physics::Aabb;
 use crate::tuning::CameraTuning;
 
 /// Screen width in pixels.
@@ -68,6 +78,64 @@ pub struct ClimbFocus {
     pub slack_x: i32,
 }
 
+/// Where the auto-scroll camera is relative to its zone (D-075).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ScrollPhase {
+    /// Before the zone: the side camera.
+    #[default]
+    LeadIn,
+    /// In the zone: the camera scrolls on its own.
+    Scroll,
+    /// After the zone: the side camera again (never back to the scroll).
+    LeadOut,
+}
+
+/// The auto-scroll camera's state (D-075); unused (the default) in other
+/// levels.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Autoscroll {
+    /// Lead-in, scroll or lead-out.
+    pub phase: ScrollPhase,
+    /// In the scroll: the camera's left edge in subpixels (the camera's x
+    /// is its whole-px floor).
+    pub pos: Fx,
+    /// In the scroll: frames of play left before it moves (after a start or
+    /// respawn framed inside the zone).
+    pub hold: u16,
+}
+
+impl Autoscroll {
+    /// The state for a camera just framed at `x` (start, respawn, stage
+    /// change) with the zone `[from, to)` in level pixels: inside the
+    /// zone the scroll waits `camera.autoscroll_hold` frames.
+    pub fn placed(x: i32, zone: (i32, i32), t: &CameraTuning) -> Autoscroll {
+        let (from, to) = zone;
+        let phase = if x < from {
+            ScrollPhase::LeadIn
+        } else if x < to {
+            ScrollPhase::Scroll
+        } else {
+            ScrollPhase::LeadOut
+        };
+        let in_scroll = phase == ScrollPhase::Scroll;
+        Autoscroll {
+            phase,
+            pos: if in_scroll { Fx::from_px(x) } else { Fx::ZERO },
+            hold: if in_scroll { t.autoscroll_hold } else { 0 },
+        }
+    }
+
+    pub(crate) fn hash(&self, h: &mut Fnv) {
+        h.u8(match self.phase {
+            ScrollPhase::LeadIn => 0,
+            ScrollPhase::Scroll => 1,
+            ScrollPhase::LeadOut => 2,
+        });
+        h.i32(self.pos.raw());
+        h.u16(self.hold);
+    }
+}
+
 impl Camera {
     /// A camera looking at `focus` (level pixels, usually the player's
     /// centre): horizontally as if it had just followed it, vertically
@@ -108,6 +176,63 @@ impl Camera {
             self.x = fx - t.follow_x;
         }
         self.x = self.x.clamp(0, (level_w - SCREEN_W).max(0));
+    }
+
+    /// One frame of the auto-scroll camera (D-075) with the zone
+    /// `[from, to)` in level pixels. Lead-in: the side camera, until
+    /// following would put x at or past `from`; then x is exactly `from`
+    /// and the scroll starts (no hold). Scroll: after the hold, the
+    /// position grows by `autoscroll_speed` subpixels; x is its whole-px
+    /// floor, and at `to` the lead-out starts. Lead-out: the side camera.
+    /// Vertically always the side camera's dead zone.
+    pub fn follow_autoscroll(
+        &mut self,
+        s: &mut Autoscroll,
+        zone: (i32, i32),
+        focus: (i32, i32),
+        level_w: i32,
+        level_h: i32,
+        t: &CameraTuning,
+    ) {
+        let (from, to) = zone;
+        match s.phase {
+            ScrollPhase::LeadIn => {
+                self.follow_x(focus.0, level_w, t);
+                if self.x >= from {
+                    self.x = from;
+                    *s = Autoscroll {
+                        phase: ScrollPhase::Scroll,
+                        pos: Fx::from_px(from),
+                        hold: 0,
+                    };
+                }
+            }
+            ScrollPhase::Scroll => {
+                if s.hold > 0 {
+                    s.hold -= 1;
+                } else {
+                    s.pos += t.autoscroll_speed;
+                }
+                self.x = s.pos.to_px();
+                if self.x >= to {
+                    self.x = to;
+                    s.phase = ScrollPhase::LeadOut;
+                }
+            }
+            ScrollPhase::LeadOut => self.follow_x(focus.0, level_w, t),
+        }
+        self.follow_y(focus.1, level_h, t);
+    }
+
+    /// True if `b` lies completely inside the screen (touching its edges
+    /// counts as inside). Enemy triggers in an auto-scroll zone need it, so
+    /// nothing starts off screen (D-075).
+    pub fn fully_on_screen(&self, b: &Aabb) -> bool {
+        let (left, top) = (Fx::from_px(self.x), Fx::from_px(self.y));
+        b.x >= left
+            && b.right() <= left + Fx::from_px(SCREEN_W)
+            && b.y >= top
+            && b.bottom() <= top + Fx::from_px(SCREEN_H)
     }
 
     /// The climb camera's start (and respawn) framing: horizontally like
@@ -241,7 +366,12 @@ mod tests {
         climb_fall_follow: 80,
         climb_goal_feet_y: 164,
         climb_activate_y: 64,
+        autoscroll_speed: Fx(192),
+        autoscroll_hold: 60,
+        autoscroll_right_margin: 64,
     };
+    /// An auto-scroll zone [8, 40) in columns, in px.
+    const ZONE: (i32, i32) = (128, 640);
     const W: i32 = 1000;
     const H: i32 = 224;
     /// A tall (climb) level: 42 rows.
@@ -598,6 +728,113 @@ mod tests {
         let mut c = Camera { x: 5, y: 0 };
         c.settle_y_towards(-40, -60, TALL, &T);
         assert_eq!(c.y, 0);
+    }
+
+    #[test]
+    fn autoscroll_starts_at_exactly_from_and_moves_192_subpx_per_frame() {
+        let mut c = Camera { x: 0, y: 44 };
+        let mut s = Autoscroll::default();
+        // Lead-in: the side camera.
+        c.follow_autoscroll(&mut s, ZONE, (200, 150), W, H, &T);
+        assert_eq!((c.x, s.phase), (56, ScrollPhase::LeadIn));
+        c.follow_autoscroll(&mut s, ZONE, (150, 150), W, H, &T);
+        assert_eq!(c.x, 56, "never left");
+        // Following would put x at 131: set to exactly 128, no hold.
+        c.follow_autoscroll(&mut s, ZONE, (275, 150), W, H, &T);
+        assert_eq!(c.x, 128);
+        assert_eq!(
+            s,
+            Autoscroll {
+                phase: ScrollPhase::Scroll,
+                pos: Fx::from_px(128),
+                hold: 0
+            }
+        );
+        // From then on 0.75 px per frame, whatever the player does; x is
+        // the floor of the subpixel position.
+        let mut xs = Vec::new();
+        for focus_x in [0, 900, 275, 275] {
+            c.follow_autoscroll(&mut s, ZONE, (focus_x, 150), W, H, &T);
+            xs.push(c.x);
+        }
+        assert_eq!(xs, [128, 129, 130, 131]);
+        assert_eq!(s.pos, Fx::from_px(131));
+        assert_eq!(c.y, 44, "vertically the side camera");
+        c.follow_autoscroll(&mut s, ZONE, (275, 100), W, H, &T);
+        assert_eq!(c.y, 100 - T.deadzone_top);
+    }
+
+    #[test]
+    fn autoscroll_hands_over_to_the_side_camera_at_to() {
+        let mut c = Camera { x: 638, y: 0 };
+        let mut s = Autoscroll {
+            phase: ScrollPhase::Scroll,
+            pos: Fx::from_px(638) + Fx(128),
+            hold: 0,
+        };
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        assert_eq!((c.x, s.phase), (639, ScrollPhase::Scroll));
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        assert_eq!((c.x, s.phase), (640, ScrollPhase::LeadOut));
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        assert_eq!(c.x, 640, "the side camera: no scroll, never left");
+        c.follow_autoscroll(&mut s, ZONE, (640 + 144 + 10, 90), W, H, &T);
+        assert_eq!((c.x, s.phase), (650, ScrollPhase::LeadOut));
+        // The lead-out never goes back to the scroll.
+        c.x = 300;
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        assert_eq!((c.x, s.phase), (300, ScrollPhase::LeadOut));
+    }
+
+    #[test]
+    fn autoscroll_placed_inside_the_zone_holds_60_frames() {
+        assert_eq!(Autoscroll::placed(127, ZONE, &T), Autoscroll::default());
+        assert_eq!(
+            Autoscroll::placed(640, ZONE, &T).phase,
+            ScrollPhase::LeadOut
+        );
+        let mut s = Autoscroll::placed(300, ZONE, &T);
+        assert_eq!(
+            s,
+            Autoscroll {
+                phase: ScrollPhase::Scroll,
+                pos: Fx::from_px(300),
+                hold: 60
+            }
+        );
+        let mut c = Camera { x: 300, y: 0 };
+        for _ in 0..60 {
+            c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+            assert_eq!(c.x, 300);
+        }
+        assert_eq!(s.hold, 0);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        assert_eq!(s.pos, Fx::from_px(300) + Fx(192), "moves on frame 61");
+    }
+
+    #[test]
+    fn fully_on_screen_needs_the_whole_box_inside() {
+        let c = Camera { x: 100, y: 50 };
+        let b = |x: i32, y: i32, w: i32, h: i32| Aabb {
+            x: Fx::from_px(x),
+            y: Fx::from_px(y),
+            w: Fx::from_px(w),
+            h: Fx::from_px(h),
+        };
+        assert!(
+            c.fully_on_screen(&b(100, 50, 320, 180)),
+            "touching the edges"
+        );
+        assert!(!c.fully_on_screen(&b(99, 60, 16, 16)), "1 px left of it");
+        assert!(
+            !c.fully_on_screen(&b(405, 60, 16, 16)),
+            "1 px past the right"
+        );
+        assert!(!c.fully_on_screen(&b(200, 49, 16, 16)), "above");
+        assert!(!c.fully_on_screen(&b(200, 215, 16, 16)), "below");
+        let mut sub = b(100, 60, 16, 16);
+        sub.x -= Fx(1);
+        assert!(!c.fully_on_screen(&sub), "one subpixel out");
     }
 
     #[test]

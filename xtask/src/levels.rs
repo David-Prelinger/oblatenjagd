@@ -6,23 +6,29 @@
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
 //! least one goal (`time_limit` is required by `Level::parse`), every
 //! `prop` names a catalog prop sprite (`jnr_core::PROP_SPRITES`), and every
-//! moving platform track (Festungsbahn, Gondel, Schafbergbahn) has 3 tiles
+//! moving platform track (Festungsbahn, Gondel, Schafbergbahn, Traundl,
+//! Dampfer) has 3 tiles
 //! of free space above the car (`jnr_core::platform::track_problems`; for
 //! the Schafbergbahn its whole swept body and the 3 tiles above its roof
 //! are free of solid and one-way tiles, D-067) and a way back up
 //! out of the pit under it: stair-stepped floor with steps up of at most 3
 //! tiles to the upper end (`jnr_core::platform::recovery_problems`, D-027,
-//! D-044; its doc comment lists what it does not check).
+//! D-044; its doc comment lists what it does not check; columns over water
+//! are skipped, D-077).
 //!
 //! Swimming (M5, D-076, `jnr_core::swim::problems`): every column of swim
 //! water ends on a solid tile inside the level (a lake bed); inside an
-//! auto-scroll zone no solid tile sits on a swim surface (wired up with
-//! E26's zone).
+//! auto-scroll zone (the columns its camera shows while scrolling) no solid
+//! tile sits on a swim surface.
 //!
 //! Climbing (M3, [`crate::climblint`]): no 7–9 tile drops in climb levels
 //! (D-054), rock spawner niches 4–6 tiles above their ground (D-058), the
 //! Durchkriechstein's tunnel, mouth and exit (D-057), and a warning (not a
 //! failure) for climb-level shafts wider than 9 columns (D-055).
+//!
+//! Auto-scroll (M5, [`crate::scrolllint`], D-075): the goal at column
+//! ≥ `to + 20`, squeeze faces in the zone at most 3 tiles above the surface
+//! in front of them, and a checkpoint in the zone on a deck tile.
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -38,11 +44,13 @@ Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
               sign text keys exist, a goal, prop sprites are catalog props,
-              3 free tiles above every Festungsbahn and Gondel track (the
-              Schafbergbahn: its swept body and 3 tiles above its roof free
-              of solid and one-way tiles), and a way back up (steps <= 3
-              tiles) from the pit under it to its upper end; swim water
-              ends on a solid lake bed in every column; climbing: no 7-9 tile drops in climb levels, rock
+              3 free tiles above every Festungsbahn, Gondel, Traundl and
+              Dampfer track (the Schafbergbahn: its swept body and 3 tiles
+              above its roof free of solid and one-way tiles), and a way
+              back up (steps <= 3 tiles) from the pit under it to its upper
+              end (columns over water skipped); swim water ends on a solid
+              lake bed in every column (in an auto-scroll zone no solid tile
+              sits on a swim surface); climbing: no 7-9 tile drops in climb levels, rock
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
               columns (warnings never fail)
@@ -162,9 +170,8 @@ pub fn lint(
             .into_iter()
             .chain(jnr_core::platform::recovery_problems(level, tuning))
             .chain(jnr_core::enemies::reisebus_lane_problems(level, tuning))
-            // TODO(E26): pass the auto-scroll zone's columns once
-            // `[meta] autoscroll` exists (no solid on a swim surface there).
-            .chain(jnr_core::swim::problems(level, None))
+            // No solid on a swim surface in the columns the scroll shows.
+            .chain(jnr_core::swim::problems(level, scroll_columns(level)))
         {
             problems.push(format!("{shown}: {p}"));
         }
@@ -172,7 +179,10 @@ pub fn lint(
             .file_name()
             .and_then(|n| n.to_str())
             .is_some_and(|n| n.starts_with("00_"));
-        for p in crate::climblint::problems(level) {
+        for p in crate::climblint::problems(level)
+            .into_iter()
+            .chain(crate::scrolllint::problems(level))
+        {
             problems.push(format!("{shown}: {p}"));
         }
         for e in level.entities.iter().filter(|e| e.still && !test_level) {
@@ -189,6 +199,17 @@ pub fn lint(
         problems.push(format!("no level with id `{id}` in content/levels"));
     }
     problems
+}
+
+/// The columns an auto-scroll camera shows while it scrolls (D-075): its
+/// left edge lies in `[from × 16, to × 16)`, so columns `from` to
+/// `to − 1 + 20` (both inclusive); `None` without a zone.
+fn scroll_columns(level: &jnr_core::Level) -> Option<(i32, i32)> {
+    let screen_cols = jnr_core::level::SCREEN_COLS;
+    level
+        .meta
+        .autoscroll_zone()
+        .map(|(from, to)| (from, to - 1 + screen_cols))
 }
 
 /// Warnings (printed, never failing): climb shafts wider than the shaft
@@ -315,6 +336,39 @@ mod tests {
                 && problems[0].contains("lake bed"),
             "{problems:?}"
         );
+    }
+
+    #[test]
+    fn no_solid_on_a_swim_surface_in_the_scroll_columns() {
+        // 50 columns, zone [2, 10]: the scroll shows columns 2..=29.
+        let level = |solid_col: usize| {
+            let mut top = ['.'; 50];
+            top[solid_col] = '#';
+            top[0] = 'P';
+            top[49] = 'G';
+            let water: String = "~".repeat(50);
+            let text = format!(
+                "[meta]\nid = \"z\"\ntime_limit = 1\ncamera = \"autoscroll\"\nautoscroll = [2, 10]\n\
+                 [legend]\n\"#\" = \"solid\"\n\"~\" = \"see_wasser\"\n\
+                 \"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n\
+                 {}\n{water}\n{}\n'''\n",
+                top.iter().collect::<String>(),
+                "#".repeat(50)
+            );
+            let l = Level::parse(&text).map_err(|e| e.to_string());
+            vec![(PathBuf::from("z.level"), l)]
+        };
+        let on_surface = |col: usize| {
+            lint(&level(col), &texts(), &tuning(), None)
+                .iter()
+                .any(|p| p.contains("sits on a swim surface"))
+        };
+        assert_eq!(
+            scroll_columns(level(5)[0].1.as_ref().unwrap()),
+            Some((2, 29))
+        );
+        assert!(on_surface(2) && on_surface(29));
+        assert!(!on_surface(1) && !on_surface(30), "outside the scroll");
     }
 
     #[test]
@@ -452,8 +506,8 @@ mod tests {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
-        // the M2 "Items and props", the M3 "Props" and the M4 "Props"
-        // tables that are props (not the checkpoint, Maibaum, signs or the
+        // the M2 "Items and props", the M3 "Props", the M4 "Props" and the
+        // M5 "Props" tables that are props (not the checkpoint, Maibaum, signs or the
         // car, which have entities of their own; the M4 train and its steam
         // are in the "Platforms" table, not read here).
         let catalog = include_str!("../../docs/sprite-catalog.md");
@@ -473,6 +527,7 @@ mod tests {
             section("### Items and props (group `props`)", "\n### "),
             section("### Props (group `props`)", "\n### "),
             section("### Props (group `props`, M4)", "\n### "),
+            section("### Props (group `props`, M5)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)

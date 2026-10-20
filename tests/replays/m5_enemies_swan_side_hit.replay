@@ -1,0 +1,19 @@
+# Side hit as Zuckerschock: Resi takes the Mozartkugel, crosses the gap
+# and stands on the beach (its top on the water line); swan #3 charges
+# onto the beach into her side: Hurt, back to Normal, no points. She
+# jumps up onto the deck in her i-frames and walks on.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped score=1000 player_x>=840
+---
+R 8
+J 14
+- 40
+R 82
+RB 126
+RBJ 20
+RB 90
+- 140
+RJ 24
+R 40

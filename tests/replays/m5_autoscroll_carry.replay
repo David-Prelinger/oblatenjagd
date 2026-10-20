@@ -1,0 +1,23 @@
+# Auto-scroll and a platform carrying Resi left (D-075: D-051 is off in the
+# scroll). She crosses the island, drops into the shallows at the end of
+# the pier (column 55) and jumps onto the Gondel's roof as it starts back
+# left (frame ~1135). The cabin carries her left at 1 px/frame while the
+# screen scrolls right: the left edge reaches her (~frame 1187), the camera
+# keeps scrolling (it doesn't follow her left as it would outside the
+# zone), and the edge pushes her across the roof until she drops off its
+# right end into the shallows (~frame 1207), where it keeps pushing her.
+level  = m5_autoscroll
+seed   = 1
+source = handwritten
+expect = deaths=0 state=playing event=Landed player_x>=980 player_y>=202
+---
+RB 152
+RBJ 36
+RB 310
+RBJ 20
+RB 10
+R 60
+- 428
+R 90
+RJ 20
+- 120

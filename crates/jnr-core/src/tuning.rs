@@ -188,6 +188,29 @@ pub struct PlatformTuning {
     /// Frames standing at the upper end (at the lower end the train waits
     /// for its rider, like the Festungsbahn).
     pub schafbergbahn_wait: u16,
+    /// Traundl hull `[w, h]` in whole pixels: its top is the deck
+    /// (left-aligned in its spawn cell, bottom on the cell's bottom edge =
+    /// the water line, like the Gondel; D-077).
+    pub traundl_size: [i32; 2],
+    /// Frames a Traundl waits at each end of its track (it never waits for
+    /// a rider: the Gondel's free-running machine, D-077).
+    pub traundl_wait: u16,
+    /// Traundl travel frames per tile: travel = |dx| × this (16 = 1 px per
+    /// frame).
+    pub traundl_frames_per_tile: u16,
+    /// Dampfer hull `[w, h]` in whole pixels, whole tiles (the deck flush
+    /// with the quays; left-aligned in its spawn cell, bottom on the cell's
+    /// bottom edge = the water line; D-077). Up to a screen wide.
+    pub dampfer_size: [i32; 2],
+    /// Dampfer travel frames per tile: travel = dx × this (20: 0.8 px per
+    /// frame). It waits for its rider, travels once and stays moored.
+    pub dampfer_frames_per_tile: u16,
+    /// The paddle wheel's hurt zone `[w, h]` in px while the Dampfer
+    /// travels, centred on the hull's centre x (D-077).
+    pub dampfer_wheel_zone: [i32; 2],
+    /// Px the wheel zone's top lies above the hull's bottom (the water
+    /// line); the rest of its height is below it.
+    pub dampfer_wheel_rise: i32,
 }
 
 /// Player movement constants (SMB-style).
@@ -283,6 +306,15 @@ pub struct CameraTuning {
     /// Climb levels: a level entity activates only while its spawn cell is
     /// at most this many px above or below the screen.
     pub climb_activate_y: i32,
+    /// Auto-scroll camera (`[meta] camera = "autoscroll"`, D-075): how far
+    /// the scroll moves the camera every frame of play, subpixels.
+    pub autoscroll_speed: Fx,
+    /// Auto-scroll camera: frames of play the scroll waits after a start or
+    /// respawn framed inside the zone.
+    pub autoscroll_hold: u16,
+    /// Auto-scroll camera: in the scroll the player's hitbox right edge
+    /// stays at most at screen x 320 minus this.
+    pub autoscroll_right_margin: i32,
 }
 
 /// Game flow constants.
@@ -562,6 +594,53 @@ pub struct EnemyTuning {
     /// Renderer: the camera flashes in its windows switch on and off every
     /// this many frames of the photo stop (off first).
     pub reisebus_flash_frames: u16,
+    /// Schwan (D-078).
+    pub schwan_hitbox: [i32; 2],
+    /// Its hitbox bottom floats this many px below the water line.
+    pub schwan_float_px: i32,
+    /// A rested swan at home that is fully on screen triggers when the
+    /// player is this close (px) ...
+    pub schwan_range: i32,
+    /// ... telegraphs (the hiss) for this many frames ...
+    pub schwan_telegraph: u16,
+    /// ... charges towards the player's side at this speed ...
+    pub schwan_charge_speed: Fx,
+    /// ... for this many frames ...
+    pub schwan_charge_frames: u16,
+    /// ... returns home at this speed ...
+    pub schwan_return_speed: Fx,
+    /// ... and rests this many frames before it can trigger again.
+    pub schwan_rest: u16,
+    /// Gelse (D-079).
+    pub gelse_hitbox: [i32; 2],
+    /// Frames fully on screen before it hunts (the telegraph) ...
+    pub gelse_wait: u16,
+    /// ... frames of the hunt, then it leaves (harmless) ...
+    pub gelse_hunt: u16,
+    /// ... per-axis velocity change per frame towards its target ...
+    pub gelse_accel: Fx,
+    /// ... per-axis speed limit ...
+    pub gelse_speed: Fx,
+    /// ... the target: the player's hitbox centre x and her hitbox top +
+    /// this many px.
+    pub gelse_target_dy: i32,
+    /// A leaving Gelse flies straight up at this speed.
+    pub gelse_leave_speed: Fx,
+    /// Regattaboot (D-080).
+    pub regattaboot_hitbox: [i32; 2],
+    /// Its hitbox bottom (the keel) lies this many px below the water line.
+    pub regattaboot_keel_px: i32,
+    /// The masthead part `[w, h]` px: centred on the hitbox, from its top
+    /// down; the only part that bounces a falling player. Below it the body
+    /// spans the whole hitbox width (D-080 refinement, E29).
+    pub regattaboot_mast: [i32; 2],
+    /// The parked boat telegraphs when the player is this close to its
+    /// centre (px) and it is fully on screen ...
+    pub regattaboot_trigger: i32,
+    /// ... for this many frames ...
+    pub regattaboot_telegraph: u16,
+    /// ... then races left at this speed, ignoring tiles.
+    pub regattaboot_speed: Fx,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -579,6 +658,57 @@ pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
         }
     }
     None
+}
+
+impl PlatformTuning {
+    /// The M5 boat keys (Traundl, Dampfer; D-077).
+    fn validate_boats(&self, scroll_speed: Fx) -> Result<(), ParseError> {
+        // A Traundl's whole cycle fits the u16 frame counter (as the
+        // Gondel's; `frames_per_tile` <= 64 keeps the position product in
+        // i32).
+        let period = 2
+            * (u32::from(self.traundl_wait)
+                + u32::from(self.traundl_frames_per_tile) * crate::level::MAX_TRACK_TILES as u32);
+        if period > u32::from(u16::MAX) || self.traundl_frames_per_tile > 64 {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.traundl_frames_per_tile <= 64 and 2 × (traundl_wait + 64 × traundl_frames_per_tile) <= 65535 frames",
+            ));
+        }
+        // The steamer's hull is whole tiles (its deck on the tile grid,
+        // flush with the quays) and at most a screen wide.
+        let [w, h] = self.dampfer_size;
+        if !(TILE_PX..=crate::camera::SCREEN_W).contains(&w)
+            || !(TILE_PX..=64).contains(&h)
+            || w % TILE_PX != 0
+            || h % TILE_PX != 0
+        {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.dampfer_size must be whole tiles, 16..=320 px wide and 16..=64 px high",
+            ));
+        }
+        // At least as fast as the auto-scroll (a standing rider is never
+        // pushed, D-077): 16 px × 256 / frames per tile >= the scroll speed.
+        // <= 64 frames per tile keeps the travel (64 tiles) in the counter
+        // and the position product in i32.
+        let speed = TILE_PX * 256 / i32::from(self.dampfer_frames_per_tile.max(1));
+        if self.dampfer_frames_per_tile > 64 || speed < scroll_speed.raw() {
+            return Err(ParseError::new(format!(
+                "tuning.toml: platforms.dampfer_frames_per_tile must be 1..=64 and keep the Dampfer at least as fast as the auto-scroll (camera.autoscroll_speed = {} subpx/frame: at most {} frames per tile)",
+                scroll_speed.raw(),
+                TILE_PX * 256 / scroll_speed.raw().max(1)
+            )));
+        }
+        let [zw, zh] = self.dampfer_wheel_zone;
+        if !(1..=w).contains(&zw)
+            || !(1..=64).contains(&zh)
+            || !(0..=zh).contains(&self.dampfer_wheel_rise)
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.dampfer_wheel_zone 1..=dampfer width × 1..=64 px and 0 <= dampfer_wheel_rise <= its height",
+            ));
+        }
+        Ok(())
+    }
 }
 
 impl EnemyTuning {
@@ -690,6 +820,97 @@ impl EnemyTuning {
 }
 
 impl EnemyTuning {
+    /// The M5 lake enemies' keys (Schwan, Gelse, Regattaboot; D-078 …
+    /// D-080).
+    fn validate_lake(&self) -> Result<(), ParseError> {
+        for (name, [w, h], max_w, max_h) in [
+            ("enemies.schwan_hitbox", self.schwan_hitbox, 24, 24),
+            ("enemies.gelse_hitbox", self.gelse_hitbox, TILE_PX, TILE_PX),
+            (
+                "enemies.regattaboot_hitbox",
+                self.regattaboot_hitbox,
+                32,
+                64,
+            ),
+        ] {
+            if !(1..=max_w).contains(&w) || !(1..=max_h).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..={max_w} px wide and 1..={max_h} px high"
+                )));
+            }
+        }
+        let max = Fx::from_px(12);
+        for (name, v) in [
+            ("enemies.schwan_charge_speed", self.schwan_charge_speed),
+            ("enemies.schwan_return_speed", self.schwan_return_speed),
+            ("enemies.gelse_speed", self.gelse_speed),
+            ("enemies.gelse_leave_speed", self.gelse_leave_speed),
+            ("enemies.regattaboot_speed", self.regattaboot_speed),
+        ] {
+            if v <= Fx::ZERO || v >= max {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        let [mw, mh] = self.regattaboot_mast;
+        let [bw, bh] = self.regattaboot_hitbox;
+        if !(1..=bw).contains(&mw) || !(1..bh).contains(&mh) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.regattaboot_mast must be 1..=hitbox wide and 1..hitbox high",
+            ));
+        }
+        if self.gelse_accel <= Fx::ZERO || self.gelse_accel > self.gelse_speed {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 < enemies.gelse_accel <= gelse_speed",
+            ));
+        }
+        for (name, v, range) in [
+            (
+                "enemies.schwan_float_px",
+                self.schwan_float_px,
+                0..=self.schwan_hitbox[1],
+            ),
+            (
+                "enemies.regattaboot_keel_px",
+                self.regattaboot_keel_px,
+                0..=TILE_PX.min(self.regattaboot_hitbox[1]),
+            ),
+            ("enemies.gelse_target_dy", self.gelse_target_dy, 0..=32),
+            (
+                "enemies.schwan_range",
+                self.schwan_range,
+                TILE_PX..=crate::camera::SCREEN_W,
+            ),
+            (
+                "enemies.regattaboot_trigger",
+                self.regattaboot_trigger,
+                0..=crate::camera::SCREEN_W * 2,
+            ),
+        ] {
+            if !range.contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be {}..={} px",
+                    range.start(),
+                    range.end()
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.schwan_telegraph", self.schwan_telegraph),
+            ("enemies.schwan_charge_frames", self.schwan_charge_frames),
+            ("enemies.schwan_rest", self.schwan_rest),
+            ("enemies.gelse_wait", self.gelse_wait),
+            ("enemies.gelse_hunt", self.gelse_hunt),
+            ("enemies.regattaboot_telegraph", self.regattaboot_telegraph),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -869,6 +1090,7 @@ impl Tuning {
         self.enemies.validate_m3(self.player.max_fall_speed)?;
         self.enemies.validate_singer_and_stand()?;
         self.enemies.validate_reisebus()?;
+        self.enemies.validate_lake()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -897,6 +1119,7 @@ impl Tuning {
                 "platforms.schafbergbahn_size",
                 self.platforms.schafbergbahn_size,
             ),
+            ("platforms.traundl_size", self.platforms.traundl_size),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -968,6 +1191,14 @@ impl Tuning {
             (
                 "platforms.schafbergbahn_frames_per_tile",
                 self.platforms.schafbergbahn_frames_per_tile,
+            ),
+            (
+                "platforms.traundl_frames_per_tile",
+                self.platforms.traundl_frames_per_tile,
+            ),
+            (
+                "platforms.dampfer_frames_per_tile",
+                self.platforms.dampfer_frames_per_tile,
             ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
@@ -1050,6 +1281,8 @@ impl Tuning {
                 "tuning.toml: need platforms.schafbergbahn_frames_per_tile <= 64 and schafbergbahn_wait + 64 × schafbergbahn_frames_per_tile <= 32767 frames",
             ));
         }
+        self.platforms
+            .validate_boats(self.camera.autoscroll_speed)?;
         let n = e.blasmusiker_notes;
         if n[0] < e.blasmusiker_inhale
             || n.windows(2).any(|w| w[0] >= w[1])
@@ -1137,6 +1370,7 @@ impl Tuning {
         }
         self.validate_hackl()?;
         self.validate_swim()?;
+        self.validate_autoscroll()?;
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -1209,10 +1443,8 @@ impl Tuning {
     /// form's hitbox (it is measured from the top, so the Normal height is
     /// the limit); the band is at most a tile. A stroke is slower than a
     /// jump-out, so a stroke can never be mistaken for one.
-    ///
-    /// TODO(E26): once `camera.autoscroll_speed` exists, also require
-    /// `camera.autoscroll_speed < swim.speed` (D-075: a swimmer can always
-    /// gain on the scrolling edge).
+    /// The auto-scroll is slower than swimming (D-075: a swimmer can
+    /// always gain on the scrolling edge).
     fn validate_swim(&self) -> Result<(), ParseError> {
         let s = &self.swim;
         if !(1..self.player.hitbox_h).contains(&s.chest_px) {
@@ -1243,6 +1475,35 @@ impl Tuning {
         if s.stroke_speed >= self.player.jump_speed_walk {
             return Err(ParseError::new(
                 "tuning.toml: swim.stroke_speed must be < player.jump_speed_walk (a stroke is weaker than a jump-out)",
+            ));
+        }
+        if self.camera.autoscroll_speed >= s.speed {
+            return Err(ParseError::new(
+                "tuning.toml: need camera.autoscroll_speed < swim.speed (a swimmer gains on the scrolling edge)",
+            ));
+        }
+        Ok(())
+    }
+
+    /// The auto-scroll camera's keys (D-075): `0 < autoscroll_speed <
+    /// player.walk_speed` (walking always gains on the screen; and
+    /// `< swim.speed`, checked in `validate_swim`), `autoscroll_hold` 0..=600 frames,
+    /// `autoscroll_right_margin` 0..=160 px.
+    fn validate_autoscroll(&self) -> Result<(), ParseError> {
+        let c = &self.camera;
+        if c.autoscroll_speed <= Fx::ZERO || c.autoscroll_speed >= self.player.walk_speed {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 < camera.autoscroll_speed < player.walk_speed",
+            ));
+        }
+        if c.autoscroll_hold > 600 {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_hold must be 0..=600 frames",
+            ));
+        }
+        if !(0..=160).contains(&c.autoscroll_right_margin) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_right_margin must be 0..=160 px",
             ));
         }
         Ok(())
@@ -1328,6 +1589,9 @@ mod tests {
             Fx::from_px(e.gams_hop_tiles * TILE_PX),
             "exactly the swept tiles"
         );
+        let c = t.camera;
+        assert_eq!(c.autoscroll_speed, Fx(192), "0.75 px/frame (D-075)");
+        assert_eq!((c.autoscroll_hold, c.autoscroll_right_margin), (60, 64));
     }
 
     #[test]
@@ -1373,6 +1637,68 @@ mod tests {
         assert!(wait(0).is_ok());
         assert!(wait(32_767 - 1536).is_ok());
         assert!(wait(32_767 - 1535).is_err());
+    }
+
+    #[test]
+    fn boat_numbers_are_validated() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.traundl_size, [48, 16]);
+        assert_eq!((pl.traundl_wait, pl.traundl_frames_per_tile), (30, 16));
+        assert_eq!(pl.dampfer_size, [160, 16]);
+        assert_eq!(pl.dampfer_frames_per_tile, 20);
+        assert_eq!(pl.dampfer_wheel_zone, [32, 20]);
+        assert_eq!(pl.dampfer_wheel_rise, 4);
+        let with = |old: &str, new: &str| {
+            assert!(REAL.contains(old), "{old}");
+            Tuning::parse(&REAL.replace(old, new))
+        };
+        // The Dampfer at least as fast as the scroll: 21 frames per tile
+        // (195 subpx/frame) is still >= 192, 22 (186) is not.
+        let fpt = "dampfer_frames_per_tile = 20";
+        assert!(with(fpt, "dampfer_frames_per_tile = 21").is_ok());
+        let e = with(fpt, "dampfer_frames_per_tile = 22")
+            .unwrap_err()
+            .to_string();
+        assert!(e.contains("at least as fast as the auto-scroll"), "{e}");
+        assert!(with(fpt, "dampfer_frames_per_tile = 0").is_err());
+        assert!(with(fpt, "dampfer_frames_per_tile = 1").is_ok());
+        let size = "dampfer_size = [160, 16]";
+        assert!(with(size, "dampfer_size = [320, 32]").is_ok());
+        for bad in [
+            "[336, 16]",
+            "[150, 16]",
+            "[160, 20]",
+            "[0, 16]",
+            "[160, 80]",
+        ] {
+            assert!(
+                with(size, &format!("dampfer_size = {bad}")).is_err(),
+                "{bad}"
+            );
+        }
+        let zone = "dampfer_wheel_zone = [32, 20]";
+        assert!(with(zone, "dampfer_wheel_zone = [160, 64]").is_ok());
+        for bad in ["[161, 20]", "[0, 20]", "[32, 0]", "[32, 65]"] {
+            assert!(
+                with(zone, &format!("dampfer_wheel_zone = {bad}")).is_err(),
+                "{bad}"
+            );
+        }
+        let rise = "dampfer_wheel_rise = 4";
+        assert!(with(rise, "dampfer_wheel_rise = 20").is_ok());
+        assert!(with(rise, "dampfer_wheel_rise = 21").is_err());
+        assert!(with(rise, "dampfer_wheel_rise = -1").is_err());
+        let size = "traundl_size = [48, 16]";
+        assert!(with(size, "traundl_size = [64, 16]").is_ok());
+        assert!(with(size, "traundl_size = [65, 16]").is_err());
+        let tf = "traundl_frames_per_tile = 16";
+        assert!(with(tf, "traundl_frames_per_tile = 0").is_err());
+        assert!(with(tf, "traundl_frames_per_tile = 65").is_err());
+        // 2 × (wait + 64 × 16) <= 65535.
+        let wait = "traundl_wait = 30";
+        assert!(with(wait, "traundl_wait = 31743").is_ok());
+        assert!(with(wait, "traundl_wait = 31744").is_err());
     }
 
     #[test]
@@ -1538,6 +1864,11 @@ mod tests {
             ("climb_goal_feet_y", 181),
             ("climb_activate_y", -1),
             ("climb_activate_y", 181),
+            ("autoscroll_speed", 0),
+            ("autoscroll_speed", 384), // = walk_speed
+            ("autoscroll_hold", 601),
+            ("autoscroll_right_margin", -1),
+            ("autoscroll_right_margin", 161),
             ("item_hitbox", 0),
             ("axe_hitbox", 17),
             ("max_alive", 0),
@@ -1635,9 +1966,93 @@ mod tests {
                 "{field} = {bad}: {err}"
             );
         }
+        // The auto-scroll is slower than swimming (D-075).
+        assert!(swim("speed", "193").is_ok());
+        let err = swim("speed", "192").unwrap_err().to_string();
+        assert!(err.contains("autoscroll_speed < swim.speed"), "{err}");
         let (head, tail) = REAL.split_once("[swim]").unwrap();
         let missing = format!("{head}[swim]{}", tail.replace("\ndecel = ", "\n#decel = "));
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("decel"), "{err}");
+    }
+
+    #[test]
+    fn lake_enemy_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-078: 16×12, 4 px under the water line, 96 px, 32 / 1.5 × 64 /
+        // 0.5 / 60.
+        assert_eq!((t.schwan_hitbox, t.schwan_float_px), ([16, 12], 4));
+        assert_eq!(t.schwan_range, 96, "< 97 px, 6 tiles");
+        assert_eq!(
+            (
+                t.schwan_telegraph,
+                t.schwan_charge_speed,
+                t.schwan_charge_frames,
+                t.schwan_return_speed,
+                t.schwan_rest
+            ),
+            (32, Fx(384), 64, Fx(128), 60)
+        );
+        // D-079: 8×8, wait 60, hunt 480, 1/32 px/frame², 0.75 px/frame,
+        // her top + 4, leaves at 1 px/frame.
+        assert_eq!(t.gelse_hitbox, [8, 8]);
+        assert_eq!((t.gelse_wait, t.gelse_hunt), (60, 480));
+        assert_eq!((t.gelse_accel, t.gelse_speed), (Fx(8), Fx(192)));
+        assert_eq!((t.gelse_target_dy, t.gelse_leave_speed), (4, Fx(256)));
+        // D-080: 24×56 with the keel 12 px under the water line, < 161 px,
+        // 60 frames, 1.5 px/frame.
+        assert_eq!(
+            (t.regattaboot_hitbox, t.regattaboot_keel_px),
+            ([24, 56], 12)
+        );
+        assert_eq!(t.regattaboot_mast, [8, 20], "the masthead part");
+        assert_eq!(
+            (
+                t.regattaboot_trigger,
+                t.regattaboot_telegraph,
+                t.regattaboot_speed
+            ),
+            (160, 60, Fx(384))
+        );
+        for (field, bad, named) in [
+            ("schwan_hitbox", "[25, 12]", "schwan_hitbox"),
+            ("schwan_hitbox", "[16, 0]", "schwan_hitbox"),
+            ("schwan_float_px", "-1", "schwan_float_px"),
+            ("schwan_float_px", "13", "schwan_float_px"),
+            ("schwan_range", "15", "schwan_range"),
+            ("schwan_range", "321", "schwan_range"),
+            ("schwan_telegraph", "0", "schwan_telegraph"),
+            ("schwan_charge_speed", "0", "schwan_charge_speed"),
+            ("schwan_charge_speed", "3072", "schwan_charge_speed"),
+            ("schwan_charge_frames", "0", "schwan_charge_frames"),
+            ("schwan_return_speed", "0", "schwan_return_speed"),
+            ("schwan_rest", "0", "schwan_rest"),
+            ("gelse_hitbox", "[17, 8]", "gelse_hitbox"),
+            ("gelse_wait", "0", "gelse_wait"),
+            ("gelse_hunt", "0", "gelse_hunt"),
+            ("gelse_accel", "0", "gelse_accel"),
+            ("gelse_accel", "193", "gelse_accel"),
+            ("gelse_speed", "0", "gelse_speed"),
+            ("gelse_speed", "3072", "gelse_speed"),
+            ("gelse_target_dy", "-1", "gelse_target_dy"),
+            ("gelse_target_dy", "33", "gelse_target_dy"),
+            ("gelse_leave_speed", "0", "gelse_leave_speed"),
+            ("regattaboot_hitbox", "[33, 56]", "regattaboot_hitbox"),
+            ("regattaboot_hitbox", "[24, 65]", "regattaboot_hitbox"),
+            ("regattaboot_keel_px", "-1", "regattaboot_keel_px"),
+            ("regattaboot_mast", "[0, 20]", "regattaboot_mast"),
+            ("regattaboot_mast", "[25, 20]", "regattaboot_mast"),
+            ("regattaboot_mast", "[8, 56]", "regattaboot_mast"),
+            ("regattaboot_keel_px", "17", "regattaboot_keel_px"),
+            ("regattaboot_trigger", "-1", "regattaboot_trigger"),
+            ("regattaboot_trigger", "641", "regattaboot_trigger"),
+            ("regattaboot_telegraph", "0", "regattaboot_telegraph"),
+            ("regattaboot_speed", "0", "regattaboot_speed"),
+            ("regattaboot_speed", "3072", "regattaboot_speed"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(named), "{field} = {bad}: {err}");
+        }
     }
 }

@@ -71,8 +71,10 @@ impl EnemyKind {
             | EnemyKind::Pilger
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schneekugel => AxeHit::Defeat,
-            EnemyKind::Fiaker | EnemyKind::Reisebus => AxeHit::Bounce,
+            | EnemyKind::Schneekugel
+            | EnemyKind::Schwan
+            | EnemyKind::Gelse => AxeHit::Defeat,
+            EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }
@@ -104,6 +106,8 @@ impl Entity {
             | EntityKind::Festungsbahn
             | EntityKind::Gondel
             | EntityKind::Schafbergbahn
+            | EntityKind::Traundl
+            | EntityKind::Dampfer
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
             | EntityKind::SteinDebris
@@ -217,6 +221,8 @@ mod tests {
             EntityKind::Defeated(SelfieTourist),
             EntityKind::Gondel,
             EntityKind::Schafbergbahn,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
         ] {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }

@@ -517,6 +517,23 @@ mod tests {
     }
 
     #[test]
+    fn steg_pfahl_autotiles_on_its_own_name_vertically() {
+        // A pier pile under a deck end: surface look at the top (no pile
+        // above), deep water below it, the gravel heap above the bed (no
+        // pile below). Its 16 frames ignore E/W, so the swim water beside
+        // it changes nothing: no family rule needed.
+        let l = level(
+            "\"-\" = \"steg\"\n\"~\" = \"see_wasser\"\n\"t\" = \"see_wasser_tief\"\n\"|\" = \"steg_pfahl\"\n\"#\" = \"seegrund\"\n",
+            "P...\n.--.\n~|~~\nt|tt\nt|tt\n####\n",
+        );
+        let m = TileMap::from_level(&l);
+        let ns = |r: i32| autotile_mask(&m, &[], 1, r) & (MASK_N | MASK_S);
+        assert_eq!(ns(2), MASK_S, "top: open above (the deck)");
+        assert_eq!(ns(3), MASK_N | MASK_S, "middle");
+        assert_eq!(ns(4), MASK_N, "bottom: the bed below");
+    }
+
+    #[test]
     fn swim_water_grey_box_is_blue_not_the_lethal_red() {
         let l = level(
             "\"~\" = \"see_wasser\"\n\"t\" = \"see_wasser_tief\"\n\"|\" = \"steg_pfahl\"\n\"w\" = \"wolfgangsee_water\"\n\"#\" = \"solid\"\n",
