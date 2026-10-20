@@ -1,0 +1,93 @@
+# Stage 6: Wolfgangsee (docs/game-design.md "Stage 6: Wolfgangsee",
+# D-074 ... D-083). 260 columns x 17 rows, camera = "autoscroll" with the
+# zone [8, 208]: the side camera on the St. Wolfgang quay, the scroll
+# (0.75 px/frame) from the moment Resi's centre passes column 17 until the
+# camera's left edge reaches column 208, then the side camera again for
+# the Strobl landing and the Maibaum. Decks on row 11, swim water rows
+# 12-15 (see_wasser / see_wasser_tief), lake bed (seegrund) row 16, the
+# goal meadow row 16. No lethal tile in the stage.
+# (Section notes are filled in below the grid generator's output.)
+
+[meta]
+id = "wolfgangsee"
+title_key = "stage.wolfgangsee.title"
+time_limit = 270
+min_jump_window = 5
+camera = "autoscroll"
+autoscroll = [8, 208]
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_suedufer", factor = 8 },
+]
+
+[legend]
+"K" = "kai"
+"=" = "steg"
+"-" = "steg"
+"|" = "steg_pfahl"
+"~" = "see_wasser"
+"w" = "see_wasser_tief"
+"_" = "seegrund"
+"p" = "poller"
+"B" = "brick"
+"I" = "invisible"
+"," = "meadow"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
+"*" = { entity = "oblate" }
+"u" = { entity = "oblate", tile = "see_wasser_tief" }
+"P" = { entity = "player_start" }
+"C" = { entity = "checkpoint" }
+"G" = { entity = "goal_maibaum" }
+"D" = { entity = "dampfer", to = [40, 0] }
+# traundl A
+"T" = { entity = "traundl", to = [6, 0], phase = 182 }
+# traundl B
+"U" = { entity = "traundl", to = [6, 0], phase = 181 }
+# traundl C
+"V" = { entity = "traundl", to = [6, 0], phase = 179 }
+# traundl D
+"X" = { entity = "traundl", to = [5, 0], phase = 214 }
+"S" = { entity = "schwan", tile = "see_wasser" }
+"g" = { entity = "gelse" }
+"R" = { entity = "regattaboot", tile = "see_wasser" }
+"d" = { entity = "prop", sprite = "dalben" }
+"r" = { entity = "prop", sprite = "schilf" }
+"y" = { entity = "prop", sprite = "startboje" }
+"L" = { entity = "prop", sprite = "adventlaterne", layer = "back" }
+"h" = { entity = "prop", sprite = "schiffsstation", dx = -8, layer = "back" }
+"H" = { entity = "prop", sprite = "schiffsstation", dx = -56, layer = "back" }
+"1" = { entity = "sign", text = "stage.wolfgangsee.sign_bus", style = "bus" }
+"2" = { entity = "sign", text = "stage.wolfgangsee.sign_baden" }
+"3" = { entity = "sign", text = "stage.wolfgangsee.sign_dampfer" }
+"4" = { entity = "sign", text = "stage.wolfgangsee.sign_baujahr" }
+"5" = { entity = "sign", text = "stage.wolfgangsee.sign_schwan" }
+"6" = { entity = "sign", text = "stage.wolfgangsee.sign_gelsen" }
+"7" = { entity = "sign", text = "stage.wolfgangsee.sign_checkpoint", style = "bus" }
+"8" = { entity = "sign", text = "stage.wolfgangsee.sign_venedig" }
+"9" = { entity = "sign", text = "stage.wolfgangsee.sign_grenze" }
+"0" = { entity = "sign", text = "stage.wolfgangsee.sign_regatta" }
+"!" = { entity = "sign", text = "stage.wolfgangsee.sign_strobl" }
+"O" = { entity = "sign", text = "stage.wolfgangsee.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+...............................................................................................................................................................................Z....................................................................................
+....................................................................................................................................................................................................................................................................
+...........................................................................................................................................................................g........................................................................................
+........BMB............................................................?........................................................BMB.............................g.............*.*p..................................................................................
+..............*................*.......*.......*............................................................g................................................................-----..........***.....................................................................
+......**.....*.*..............*.*.....*.*.....*.*...............................................................****.......***.*....*.........*****........****.......***...........................................................................................
+..Ph.1.....2p...3....................................................4.***.5.............................................pC...7....L.p................9...........................................................................!.******....IIIIII................
+KKKKKKKKKKKKK...KKD.................................................========.........................6.r..r.....====.....=============....8dT........d==dU........ddV........d........0..dX.......d.....y.....y.....yr...r....KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKK~~~KK~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~~~~~|~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~|~~~~~|~~~~~~~~~~~|~~~~~~~~~~~~~~~~||~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~R~~~~~R~~~~~R~~~~~~~~~~~KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKuuuKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwww_______wwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww______KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwuuuuuuuuwwwwwww_______wwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwuuuuuuuuwwwwwwwwwwwwwwwwwww__________KKKKKKKKKKKKKKKKIIIIIIH.....G..O......
+KKKKKKKKKKKKK___KK____________________________________________________________________________________________________________________________________________________________________________________________________________KKKKKKKKKKKKKKKK,,,,,,,,,,,,,,,,,,,,,,
+'''

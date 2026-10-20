@@ -1,0 +1,54 @@
+# Written by `cargo xtask solve wolfgangsee --write`; re-create it instead of editing.
+level  = wolfgangsee
+seed   = 1
+source = solver
+expect = complete frames=4541..4541 deaths=0
+---
+RB 64
+RBJ 36
+RB 953
+L 4
+RB 8
+- 4
+RB 4
+DJ 1
+- 3
+RB 404
+LBJ 12
+LB 2
+RB 4
+- 4
+L 4
+RBJ 36
+RB 1929
+RBJ 20
+RB 17
+RBJ 20
+RB 272
+RBJ 20
+RB 2
+RBJ 36
+RB 62
+RBJ 33
+RB 5
+RBJ 32
+RB 66
+RBJ 33
+RB 5
+RBJ 31
+RB 118
+RBJ 6
+RB 22
+- 16
+LB 8
+RB 4
+DJ 1
+- 3
+L 4
+RB 7
+L 4
+- 8
+RBJ 20
+RB 104
+RBJ 36
+RB 54
