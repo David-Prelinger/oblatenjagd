@@ -73,13 +73,20 @@ struct Rendered {
 /// golden name (`a_b` + `c` and `a` + `b_c`) are an error.
 fn render_all(root: &Path) -> Result<Vec<Rendered>, String> {
     let mut out = Vec::new();
+    let mut with_shots = Vec::new();
     for path in all_replays(root)? {
         let replay = content::load_replay(&path)?;
-        if replay.shots.is_empty() {
-            continue;
+        if !replay.shots.is_empty() {
+            with_shots.push((path, replay));
         }
+    }
+    // Each replay is independent: play them on all cores (results in file order).
+    let played = crate::par::map_ordered(&with_shots, crate::par::threads(), |(path, replay)| {
         let frames: Vec<u32> = replay.shots.iter().map(|s| s.frame).collect();
-        let played = play(root, &path, &frames)?;
+        play(root, path, &frames)
+    });
+    for ((_, replay), played) in with_shots.iter().zip(played) {
+        let played = played?;
         for shot in &replay.shots {
             out.push(Rendered {
                 replay: played.name.clone(),

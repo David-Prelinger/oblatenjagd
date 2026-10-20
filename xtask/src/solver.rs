@@ -158,6 +158,8 @@ pub const DEFAULT_TIME_LIMIT: Duration = Duration::from_secs(60);
 const BUDGET_PER_PX: u32 = 3;
 /// Most threads used to expand a bucket.
 const MAX_THREADS: usize = 8;
+/// Threads per level when `verify` solves several levels at once.
+const LEVEL_THREADS: usize = 3;
 /// Buckets smaller than this are expanded on the calling thread.
 const PARALLEL_MIN_NODES: usize = 16;
 
@@ -193,6 +195,10 @@ pub struct SolveOptions {
     pub time_limit: Duration,
     /// Threads for expanding nodes; the result does not depend on it.
     pub threads: usize,
+    /// Threads for measuring the jump windows; the result does not depend
+    /// on it. No clock runs there, so `verify` gives it every core even
+    /// while other levels are solved at the same time.
+    pub window_threads: usize,
 }
 
 impl SolveOptions {
@@ -209,6 +215,7 @@ impl SolveOptions {
             frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32,
             time_limit: DEFAULT_TIME_LIMIT,
             threads,
+            window_threads: threads,
         }
     }
 }
@@ -1204,7 +1211,7 @@ pub fn solve(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Solution {
     let mut inputs = search.best.inputs();
     let windows = if search.complete() {
         inputs = clean_route(level, tuning, &inputs);
-        jump_windows(level, tuning, &inputs, opts.threads)
+        jump_windows(level, tuning, &inputs, opts.window_threads)
     } else {
         Vec::new()
     };
@@ -1273,6 +1280,9 @@ struct Args {
     shots: bool,
     beam: Option<usize>,
     time_limit: Option<Duration>,
+    /// Threads for one level's (search, jump windows) (default: up to
+    /// `MAX_THREADS` each); the result does not depend on them.
+    threads: Option<(usize, usize)>,
 }
 
 /// `cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S]`.
@@ -1283,6 +1293,7 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
         shots: false,
         beam: None,
         time_limit: None,
+        threads: None,
     };
     let mut it = args.iter();
     while let Some(arg) = it.next() {
@@ -1395,6 +1406,10 @@ fn solve_and_report(
     if let Some(t) = a.time_limit {
         opts.time_limit = t;
     }
+    if let Some((search, windows)) = a.threads {
+        opts.threads = search;
+        opts.window_threads = windows;
+    }
     let sol = solve(level, &tuning, &opts);
     let id = &sol.level;
     let mut files = Files::default();
@@ -1485,27 +1500,44 @@ pub fn window_problem(level: &Level, sol: &Solution) -> Option<String> {
 /// jump window at least `min_jump_window` (if set, [`window_problem`]).
 /// Returns (ok, output, note with the narrowest jump window per level).
 pub fn verify(root: &Path) -> (bool, String, String) {
-    verify_into(root, &OutDirs::of(root))
+    match all_levels(root) {
+        Ok(l) if l.is_empty() => (false, "no levels in content/levels".into(), String::new()),
+        Ok(levels) => verify_into(root, &OutDirs::of(root), &levels, crate::par::threads()),
+        Err(e) => (false, e, String::new()),
+    }
 }
 
-fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
-    let levels = match all_levels(root) {
-        Ok(l) if l.is_empty() => {
-            return (false, "no levels in content/levels".into(), String::new());
-        }
-        Ok(l) => l,
-        Err(e) => return (false, e, String::new()),
-    };
+/// [`verify`] for `levels`, writing into `dirs`. The levels are solved in
+/// parallel with `threads` threads in all (largest level first, so the long
+/// stages start at once), split between the levels running at the same
+/// time and each level's search ([`split_threads`]). Neither changes a
+/// route (see the module doc), and the output is in `levels` order.
+fn verify_into(
+    root: &Path,
+    dirs: &OutDirs,
+    levels: &[Level],
+    threads: usize,
+) -> (bool, String, String) {
+    let (outer, inner) = split_threads(threads, levels.len());
     let a = Args {
         target: None,
         write: false,
         shots: false,
         beam: None,
         time_limit: None,
+        threads: Some((inner, threads.max(1))),
     };
+    let order = largest_first(levels);
+    let solved = crate::par::map_ordered(&order, outer, |&i| {
+        solve_and_report(root, &levels[i], &a, dirs)
+    });
+    let mut results: Vec<Option<_>> = levels.iter().map(|_| None).collect();
+    for (i, r) in order.into_iter().zip(solved) {
+        results[i] = Some(r);
+    }
     let (mut ok, mut out, mut notes) = (true, String::new(), Vec::new());
-    for level in &levels {
-        match solve_and_report(root, level, &a, dirs) {
+    for (level, result) in levels.iter().zip(results) {
+        match result.expect("every level is solved once") {
             Ok((sol, text)) => {
                 ok &= sol.search.complete();
                 out.push_str(&text);
@@ -1532,6 +1564,24 @@ fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
         }
     }
     (ok, out, notes.join("; "))
+}
+
+/// Splits `threads` into (levels solved at once, threads per level): about
+/// `LEVEL_THREADS` per level, as many levels at once as that allows (at
+/// most `levels`), the rest spread over them (at most `MAX_THREADS` each).
+fn split_threads(threads: usize, levels: usize) -> (usize, usize) {
+    let threads = threads.max(1);
+    let outer = (threads / LEVEL_THREADS).clamp(1, levels.max(1));
+    let inner = (threads / outer).clamp(1, MAX_THREADS);
+    (outer, inner)
+}
+
+/// Indices of `levels`, the largest (width × height in tiles) first; ties
+/// keep their order.
+fn largest_first(levels: &[Level]) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..levels.len()).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(levels[i].width.max(0) * levels[i].height.max(0)));
+    order
 }
 
 fn usage_err(msg: &str) -> ExitCode {
@@ -1614,12 +1664,22 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
     }
 
-    /// Fresh output directories under `$CARGO_TARGET_DIR/tmp/xtask-solver-test/<name>`,
-    /// so tests never touch the real preview/reports/replays folders.
+    /// Fresh output directories under
+    /// `$CARGO_TARGET_DIR/tmp/xtask-solver-test/<pid>/<name>`, so tests never
+    /// touch the real preview/reports/replays folders, and two test runs at
+    /// the same time (`check` and `verify`) never delete each other's files.
     fn tmp_dirs(name: &str) -> OutDirs {
-        let base = crate::target_dir(&root())
-            .join("tmp/xtask-solver-test")
-            .join(name);
+        let all = crate::target_dir(&root()).join("tmp/xtask-solver-test");
+        // Left over from finished test runs (Linux: no /proc/<pid> any more).
+        for entry in fs::read_dir(&all).into_iter().flatten().flatten() {
+            let pid = entry.file_name();
+            let is_pid = pid.to_str().is_some_and(|p| p.parse::<u32>().is_ok());
+            if is_pid && Path::new("/proc/self").exists() && !Path::new("/proc").join(&pid).exists()
+            {
+                let _ = fs::remove_dir_all(entry.path());
+            }
+        }
+        let base = all.join(std::process::id().to_string()).join(name);
         if base.exists() {
             fs::remove_dir_all(&base).unwrap();
         }
@@ -1639,6 +1699,7 @@ mod tests {
             shots: false,
             beam: None,
             time_limit: None,
+            threads: None,
         }
     }
 
@@ -2266,35 +2327,126 @@ mod tests {
         assert_eq!(jumped(&clean), 1);
     }
 
+    /// Synthetic levels for the `verify_into` tests: quick to solve, no
+    /// `min_jump_window`, of different sizes (so `largest_first` reorders).
+    fn verify_levels() -> Vec<Level> {
+        [(2, "syn_small"), (5, "syn_large"), (3, "syn_mid")]
+            .into_iter()
+            .map(|(gap, id)| {
+                let mut l = gap_level(gap);
+                l.meta.id = id.into();
+                l
+            })
+            .collect()
+    }
+
+    /// The `SOLVED`/`STUCK`/`FAIL` lines of a verify output, without the
+    /// runtimes (the last `, …s` of a summary).
+    fn result_lines(out: &str) -> Vec<String> {
+        out.lines()
+            .filter(|l| {
+                ["SOLVED ", "STUCK ", "FAIL "]
+                    .iter()
+                    .any(|p| l.starts_with(p))
+            })
+            .map(|l| match l.rsplit_once(", ") {
+                Some((head, tail)) if tail.ends_with('s') && !l.starts_with("FAIL ") => {
+                    head.to_owned()
+                }
+                _ => l.to_owned(),
+            })
+            .collect()
+    }
+
+    /// The `solver` step itself runs over every real level in `verify`;
+    /// this checks its bookkeeping on synthetic levels (it used to solve
+    /// every real level twice inside `cargo test`, D-0XX).
     #[test]
     fn verify_fails_without_the_committed_solver_replay() {
         let dirs = tmp_dirs("verify_missing_replay");
-        // Every level in content/levels, whatever they are.
-        let ids: Vec<String> = all_levels(&root())
-            .unwrap()
-            .into_iter()
-            .map(|l| l.meta.id)
-            .collect();
-        assert!(ids.contains(&"testbed".to_owned()), "{ids:?}");
-        let (ok, out, note) = verify_into(&root(), &dirs);
+        let levels = verify_levels();
+        let (ok, out, note) = verify_into(&root(), &dirs, &levels, 4);
         assert!(!ok, "{out}");
-        assert!(out.contains("missing solver replay"), "{out}");
-        for id in &ids {
+        for l in &levels {
+            let id = &l.meta.id;
+            let replay = dirs.replays.join(format!("{id}_solver.replay"));
             assert!(
-                out.contains(&format!("`cargo xtask solve {id} --write`")),
+                out.contains(&format!(
+                    "FAIL {id}: missing solver replay {} (create it with `cargo xtask solve {id} --write`",
+                    replay.display()
+                )),
                 "{id}: {out}"
             );
             assert!(note.contains(&format!("{id}: ")), "{note}");
         }
         // With the replays present (any content: the `replays` step checks them).
-        for id in &ids {
+        for l in &levels {
+            let id = &l.meta.id;
             fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
         }
-        // Other failures (a level's `min_jump_window`) are not this test's
-        // business: whatever fails is reported as a FAIL line.
-        let (ok, out, _) = verify_into(&root(), &dirs);
-        assert!(!out.contains("missing solver replay"), "{out}");
-        assert_eq!(ok, !out.contains("FAIL "), "{out}");
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(ok, "{out}");
+        assert!(!out.contains("FAIL "), "{out}");
+    }
+
+    #[test]
+    fn verify_output_is_in_level_order_for_any_thread_count() {
+        let dirs = tmp_dirs("verify_threads");
+        let levels = verify_levels();
+        let (ok1, out1, note1) = verify_into(&root(), &dirs, &levels, 1);
+        let first = result_lines(&out1);
+        let solved: Vec<&str> = first
+            .iter()
+            .filter_map(|l| l.strip_prefix("SOLVED "))
+            .map(|l| l.split(':').next().unwrap())
+            .collect();
+        assert_eq!(solved, ["syn_small", "syn_large", "syn_mid"], "{out1}");
+        for threads in [2, 3, 9, 14] {
+            let (ok, out, note) = verify_into(&root(), &dirs, &levels, threads);
+            assert_eq!(ok, ok1, "{threads} threads");
+            assert_eq!(result_lines(&out), first, "{threads} threads");
+            assert_eq!(note, note1, "{threads} threads");
+        }
+    }
+
+    #[test]
+    fn verify_reports_a_stuck_level_among_solved_ones() {
+        let dirs = tmp_dirs("verify_stuck");
+        let mut levels = verify_levels();
+        let mut broken = gap_level(14);
+        broken.meta.id = "syn_broken".into();
+        levels.insert(1, broken);
+        for l in &levels {
+            let id = &l.meta.id;
+            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
+        }
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 8);
+        assert!(!ok, "{out}");
+        let lines = result_lines(&out);
+        assert_eq!(lines.len(), 4, "{out}");
+        assert!(lines[0].starts_with("SOLVED syn_small:"), "{out}");
+        assert!(lines[1].starts_with("STUCK syn_broken:"), "{out}");
+        assert!(lines[2].starts_with("SOLVED syn_large:"), "{out}");
+        assert!(lines[3].starts_with("SOLVED syn_mid:"), "{out}");
+    }
+
+    #[test]
+    fn threads_are_split_between_levels_and_searches() {
+        // (threads, levels) -> (levels at once, threads per level)
+        assert_eq!(split_threads(14, 17), (4, 3));
+        assert_eq!(split_threads(14, 2), (2, 7));
+        assert_eq!(split_threads(32, 17), (10, 3));
+        assert_eq!(split_threads(64, 1), (1, MAX_THREADS));
+        assert_eq!(split_threads(2, 17), (1, 2));
+        assert_eq!(split_threads(1, 5), (1, 1));
+        assert_eq!(split_threads(0, 0), (1, 1));
+    }
+
+    #[test]
+    fn largest_levels_are_solved_first() {
+        assert_eq!(largest_first(&verify_levels()), vec![1, 2, 0]);
+        let same = [gap_level(2), gap_level(2)];
+        assert_eq!(largest_first(&same), vec![0, 1], "ties keep their order");
     }
 
     #[test]
