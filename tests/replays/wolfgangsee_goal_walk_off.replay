@@ -3,12 +3,12 @@
 # the quay's last tile and up onto the Schiffsstation's roof (row 10, the
 # launch, 6 tiles above the goal meadow), where Resi stops at x 3830 and
 # then walks off its right edge: the Maibaum catches her low, 100 points
-# (score 2600 -> 2700; the Wurstkranz is wolfgangsee_wurstkranz). If the
+# (score 3000 -> 3100; the Wurstkranz is wolfgangsee_wurstkranz). If the
 # solver route changes, re-copy the prefix and re-check the frames.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = complete frames=4515..4515 score=2700 deaths=0 state=stage_clear
+expect = complete frames=4515..4515 score=3100 deaths=0 state=stage_clear
 ---
 # --- the first 4272 frames of wolfgangsee_solver.replay ---
 RB 64
@@ -18,33 +18,30 @@ R 8
 LB 8
 - 4
 L 4
-- 392
-RB 742
-RBJ 33
-RB 5
-RBJ 36
-RB 1934
-- 16
+- 388
+RB 758
 RBJ 20
-RB 301
-RBJ 33
-RB 5
-RBJ 12
-RB 22
-LB 8
-L 4
-- 72
+RB 10
+RBJ 36
+RB 1950
+RBJ 6
+RB 2
+RBJ 36
+RB 278
 RBJ 20
 RB 2
 RBJ 36
-RB 8
-LB 16
-RB 4
-- 32
-RBJ 20
+RB 62
+RBJ 33
 RB 5
-RBJ 36
-RB 16
+RBJ 31
+RB 29
+LB 14
+- 40
+RBJ 20
+RB 2
+RBJ 35
+RB 17
 LB 14
 RB 3
 - 24

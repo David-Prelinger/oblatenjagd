@@ -28,8 +28,13 @@
 #                            rows 8-9). Swan #1 at 46 charges under the
 #                            deck. Gschwendt pier (steg) 68-75 with
 #                            steg_pfahl under its ends, ?-box 71 (row 7),
-#                            3 Oblaten, Baujahr 1873 68, Seit 1950 76 (moved clear of the pier Oblaten, art-director golden round 2)
-#                            (signs 6 apart: the boards are ~5 tiles wide).
+#                            3 Oblaten (row 10, 73-75), Baujahr 1873 70
+#                            (on the pier from its first plank: the moored
+#                            steamer, drawn over signs, ends at 67 and no
+#                            longer covers the board), Seit 1950 78 (in the
+#                            water, clear of the Oblate at 75; signs >= 6
+#                            apart: the boards are ~5 tiles wide; M5
+#                            art-director acceptance).
 #   3 Seebad         76-119  open water 76-111 (the required swim). Swan #2
 #                            at 90, 8 Oblaten on the bed (row 15, 85-92) in
 #                            its charge zone. Reed belt 100-106 over the
@@ -67,7 +72,9 @@
 #                            (row 7) and the Z-box at 173 (row 4, D-087: the
 #                            item lands short of the bollard), reached
 #                            from C's far end. Swan #3 at 184.
-#   6 Regatta       180-211  Regatta / Vorrang: wir 182 (in the water).
+#   6 Regatta       180-211  Regatta / Vorrang: wir 180 (in the water; was
+#                            182, moved out of Gelse #3's hunt lane: its
+#                            dark body vanished on the navy board).
 #                            Traundl D 186 (to [5, 0], phase 214) between
 #                            dalben 185 and 194. Regatta boats at 198, 204
 #                            and 210 (a start buoy 2 columns right of
@@ -160,8 +167,8 @@ grid = '''
 ........BMB............................................................?.......................................................BMB...............................................p..................................................................................
 .......*.....***...............*.......*.......*............................................................g................................................................-----..........***.....................................................................
 .......*......................*.*.....*.*.....*.*...............................................................****................*.........*****........****.......***.**........................................................................................
-..Ph1.....2.p...3...................................................4..***...............................................pC...7....L.p................9...........................................................................!..******...IIIIII................
-KKKKKKKKKKKKK...KKD.................................................========5........................6.r..r.....====.....=============..8..dT........d==dU........ddV........d........0..dX.......d.....y.....y.....y.r..r....KKKKKKKKKKKKKKKKIIIIII................
+..Ph1.....2.p...3.....................................................4..***.............................................pC...7....L.p................9...........................................................................!..******...IIIIII................
+KKKKKKKKKKKKK...KKD.................................................========..5......................6.r..r.....====.....=============..8..dT........d==dU........ddV........d......0....dX.......d.....y.....y.....y.r..r....KKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKK~~~KK~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~~~~~|~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~|~~~~~|~~~~~~~~~~~|~~~~~~~~~~~~~~~~||~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~R~~~~~R~~~~~R~~~~~~~~~~~KKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKKuuuKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wuuuuwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww______KKKKKKKKKKKKKKKKIIIIII................
