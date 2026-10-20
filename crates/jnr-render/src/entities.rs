@@ -10,14 +10,17 @@
 //! 1. [`draw_behind_tiles`]: Schafbergbahn tracks, power-ups still rising
 //!    out of their box
 //! 2. tiles (scene), raised by `Game::tile_bump_px` while bumped
-//! 3. [`draw_entities`]: Gondel cables first, then items, props, enemies
-//!    (animation by `Entity::pose`, facing by `Entity::dir`, the swarm's
-//!    shake by `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), the
-//!    Steinschlag niches (resting/wobbling rock and the `kiesel` trickle),
-//!    falling rocks, the Operettensänger's high-C column (`hohes_c` rings),
-//!    the Souvenirstand vendors, snow globes, the Festungsbahn, the Gondel
-//!    cabins, the Schafbergbahn with its steam puffs, the Traundl boats and
-//!    the Dampfer with the `gischt` spray of its turning paddle wheel
+//! 3. [`draw_entities`], in three layers ([`Layer`], D-086): Gondel cables
+//!    and sign boards first (so Oblaten and Resi are always in front of a
+//!    board); then items, props, the Steinschlag niches (resting/wobbling
+//!    rock and the `kiesel` trickle), the Souvenirstand vendors, the
+//!    Festungsbahn, the Gondel cabins, the Schafbergbahn with its steam
+//!    puffs, the Traundl boats and the Dampfer with the `gischt` spray of
+//!    its turning paddle wheel; then enemies and projectiles (animation by
+//!    `Entity::pose`, facing by `Entity::dir`, the swarm's shake by
+//!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), falling
+//!    rocks, the Operettensänger's high-C column (`hohes_c` rings) and
+//!    snow globes, so a hazard never hides behind a hull or car
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
 //!    popups on top (the last world pass, under the HUD)
@@ -345,7 +348,35 @@ pub fn draw_behind_tiles(game: &Game, looks: &EntityLooks, atlas: &Atlas, fb: &m
     }
 }
 
-/// Items, props and enemies (not rising power-ups, debris or popups).
+/// The draw layers of [`draw_entities`], back to front (D-086).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Layer {
+    /// Sign boards: behind everything else, so no board hides an Oblate.
+    Signs,
+    /// Items, props, checkpoints and the moving platforms.
+    Middle,
+    /// Enemies and their projectiles: in front of every hull and car.
+    Enemies,
+}
+
+impl Layer {
+    /// The layer an entity of `kind` is drawn in.
+    pub fn of(kind: EntityKind) -> Layer {
+        match kind {
+            EntityKind::Sign => Layer::Signs,
+            EntityKind::Enemy(_)
+            | EntityKind::Defeated(_)
+            | EntityKind::Thrown
+            | EntityKind::Stein
+            | EntityKind::Note
+            | EntityKind::ThrownHackl => Layer::Enemies,
+            _ => Layer::Middle,
+        }
+    }
+}
+
+/// Items, props and enemies (not rising power-ups, debris or popups), layer
+/// by layer ([`Layer`]); within a layer in entity order.
 pub fn draw_entities(
     game: &Game,
     looks: &EntityLooks,
@@ -361,37 +392,56 @@ pub fn draw_entities(
             draw_cable(game, fb, cam, e);
         }
     }
-    for e in game.entities() {
-        match e.kind {
-            // The Durchkriechstein is drawn by its prop (D-057).
-            EntityKind::Debris
-            | EntityKind::SteinDebris
-            | EntityKind::SchneekugelScherben
-            | EntityKind::Popup(_)
-            | EntityKind::Bump
-            | EntityKind::Durchkriechstein => {}
-            EntityKind::Enemy(EnemyKind::Operettensaenger) => {
-                draw_high_c(game, looks, atlas, fb, cam, e);
-                draw_enemy(game, looks, atlas, fb, cam, e);
+    for layer in [Layer::Signs, Layer::Middle, Layer::Enemies] {
+        for e in game.entities() {
+            if Layer::of(e.kind) == layer {
+                draw_entity(game, looks, atlas, font, texts, fb, cam, e);
             }
-            EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
-            EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
-            EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
-            EntityKind::Enemy(_)
-            | EntityKind::Defeated(_)
-            | EntityKind::Thrown
-            | EntityKind::Stein
-            | EntityKind::Note
-            | EntityKind::ThrownHackl => draw_enemy(game, looks, atlas, fb, cam, e),
-            EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
-            EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
-            EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
-            EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
-            EntityKind::Traundl => draw_traundl(game, looks, atlas, fb, cam, e),
-            EntityKind::Dampfer => draw_dampfer(game, looks, atlas, fb, cam, e),
-            _ if e.rising(game.tuning()) => {}
-            _ => draw_body(game, looks, atlas, fb, cam, e),
         }
+    }
+}
+
+/// One entity of [`draw_entities`].
+#[allow(clippy::too_many_arguments)]
+fn draw_entity(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    font: &Font,
+    texts: &jnr_core::Texts,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    match e.kind {
+        // The Durchkriechstein is drawn by its prop (D-057).
+        EntityKind::Debris
+        | EntityKind::SteinDebris
+        | EntityKind::SchneekugelScherben
+        | EntityKind::Popup(_)
+        | EntityKind::Bump
+        | EntityKind::Durchkriechstein => {}
+        EntityKind::Enemy(EnemyKind::Operettensaenger) => {
+            draw_high_c(game, looks, atlas, fb, cam, e);
+            draw_enemy(game, looks, atlas, fb, cam, e);
+        }
+        EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
+        EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
+        EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
+        EntityKind::Enemy(_)
+        | EntityKind::Defeated(_)
+        | EntityKind::Thrown
+        | EntityKind::Stein
+        | EntityKind::Note
+        | EntityKind::ThrownHackl => draw_enemy(game, looks, atlas, fb, cam, e),
+        EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
+        EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
+        EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
+        EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
+        EntityKind::Traundl => draw_traundl(game, looks, atlas, fb, cam, e),
+        EntityKind::Dampfer => draw_dampfer(game, looks, atlas, fb, cam, e),
+        _ if e.rising(game.tuning()) => {}
+        _ => draw_body(game, looks, atlas, fb, cam, e),
     }
 }
 
@@ -2169,5 +2219,142 @@ mod tests {
         assert_ne!(fb.get(x, bottom), Some(A));
         assert_eq!(fb.get(x, bottom - 64), Some(A), "64 px tall");
         assert_ne!(fb.get(x, bottom - 65), Some(A));
+    }
+
+    // ------------------------------------------------ draw layers (D-086)
+
+    /// A 20×10 grey-box level from `grid` (10 rows) with `legend` entries
+    /// added to solid ground and the player start; stepped once so every
+    /// entity is active.
+    fn layered_game(grid: &str, legend: &str) -> Game {
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"P\" = {{ entity = \"player_start\" }}\n{legend}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        let mut g = Game::new(&Level::parse(&text).unwrap(), &tuning(), 1);
+        g.step(InputFrame::NONE);
+        g
+    }
+
+    #[test]
+    fn layers_put_signs_first_and_enemies_last() {
+        assert_eq!(Layer::of(EntityKind::Sign), Layer::Signs);
+        for kind in [
+            EntityKind::Oblate,
+            EntityKind::Checkpoint,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
+            EntityKind::Gondel,
+            EntityKind::Festungsbahn,
+            EntityKind::Schafbergbahn,
+        ] {
+            assert_eq!(Layer::of(kind), Layer::Middle, "{kind:?}");
+        }
+        for kind in [
+            EntityKind::Enemy(EnemyKind::Gelse),
+            EntityKind::Enemy(EnemyKind::Schwan),
+            EntityKind::Enemy(EnemyKind::Operettensaenger),
+            EntityKind::Defeated(EnemyKind::Gelse),
+            EntityKind::Thrown,
+            EntityKind::Stein,
+            EntityKind::Note,
+            EntityKind::ThrownHackl,
+        ] {
+            assert_eq!(Layer::of(kind), Layer::Enemies, "{kind:?}");
+        }
+    }
+
+    #[test]
+    fn an_oblate_is_drawn_in_front_of_a_sign_board_listed_after_it() {
+        // The Oblate (row 7) comes before the sign (row 8) in the entity
+        // list, and its box lies inside the grey-box board (x 104..184,
+        // y 116..140): drawn in list order, the board would cover it.
+        let grid = "\
+....................
+....................
+....................
+....................
+....................
+....................
+....................
+.........o..........
+.P.......s..........
+####################
+";
+        let g = layered_game(
+            grid,
+            "\"o\" = { entity = \"oblate\" }\n\"s\" = { entity = \"sign\", text = \"t.s\", style = \"street\" }",
+        );
+        let kinds: Vec<_> = g.entities().iter().map(|e| e.kind).collect();
+        let (o, s) = (
+            kinds.iter().position(|&k| k == EntityKind::Oblate).unwrap(),
+            kinds.iter().position(|&k| k == EntityKind::Sign).unwrap(),
+        );
+        assert!(o < s, "the Oblate is listed first: {kinds:?}");
+        let fb = rendered(&g);
+        let oblate = g.entities()[o];
+        let (cx, cy) = (
+            (oblate.x + oblate.w.div_int(2)).to_px(),
+            (oblate.y + oblate.h.div_int(2)).to_px(),
+        );
+        assert!((116..140).contains(&cy), "over the board: y {cy}");
+        assert_eq!(fb.get(cx, cy), Some(OBLATE_GOLD), "the Oblate in front");
+        assert_eq!(fb.get(170, 130), Some(CREAM), "the board is drawn");
+    }
+
+    #[test]
+    fn an_enemy_is_drawn_in_front_of_a_boat_listed_after_it() {
+        // The Gelse (row 6, hitbox x 68..76, y 100..108) comes before the
+        // Traundl (row 7, hull x 32..80) in the entity list and overlaps the
+        // grey-box rower (x 70..76, y 98..112): drawn in list order, the
+        // rower would hide it (the Gelse under Traundl B, E32).
+        let grid = "\
+....................
+....................
+....................
+....................
+....................
+....................
+....g...............
+..b.................
+.P..................
+####################
+";
+        let g = layered_game(
+            grid,
+            "\"g\" = { entity = \"gelse\" }\n\"b\" = { entity = \"traundl\", to = [4, 0] }",
+        );
+        let kinds: Vec<_> = g.entities().iter().map(|e| e.kind).collect();
+        let gelse = EntityKind::Enemy(EnemyKind::Gelse);
+        let (i, j) = (
+            kinds.iter().position(|&k| k == gelse).unwrap(),
+            kinds
+                .iter()
+                .position(|&k| k == EntityKind::Traundl)
+                .unwrap(),
+        );
+        assert!(i < j, "the Gelse is listed first: {kinds:?}");
+        let boat = g.entities()[j];
+        let rower_x = boat.x.to_px() + TRAUNDL_ROWER.0;
+        let fb = rendered(&g);
+        let e = g.entities()[i];
+        let (cx, cy) = (
+            (e.x + e.w.div_int(2)).to_px(),
+            (e.y + e.h.div_int(2)).to_px(),
+        );
+        assert!(
+            (rower_x..rower_x + TRAUNDL_ROWER.1[0]).contains(&cx),
+            "over the rower: x {cx}, rower {rower_x}"
+        );
+        assert_eq!(
+            fb.get(cx, cy),
+            Some(grey_box_colour(gelse)),
+            "the Gelse in front"
+        );
+        assert_eq!(
+            fb.get(rower_x, boat.y.to_px() - 1),
+            Some(PINE_DARK),
+            "the rower is drawn"
+        );
     }
 }

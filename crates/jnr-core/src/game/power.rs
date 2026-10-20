@@ -45,7 +45,7 @@ impl Game {
         let points = self.tuning.score.power_up;
         let mut shown = vec![Popup::Score(points)];
         if self.player.power != Power::Hackl {
-            self.player.set_power(Power::Hackl, &self.tuning.player);
+            self.set_player_power(Power::Hackl);
             self.events.push(Event::PowerUp);
             shown.push(Popup::Hackl);
         }
@@ -180,7 +180,7 @@ impl Game {
             }
             Power::Big | Power::Hackl => {
                 // Shed to Normal: the freeze, no invulnerability frames.
-                self.player.set_power(Power::Normal, &self.tuning.player);
+                self.set_player_power(Power::Normal);
                 Popup::Ballast
             }
         };

@@ -453,3 +453,68 @@ fn a_tap_jump_out_falls_back_in_and_floats_again() {
     assert!(chest_y(&g) >= Fx::from_px(SURFACE), "back in the water");
     assert!(!g.player().leaving_water);
 }
+// --------------------------- power changes while swimming (D-086, QA M5)
+
+/// A floater's chest point stays in the surface band through a power change
+/// and she keeps floating with no input (QA `qa_m5_shrink_while_floating`:
+/// a hurt Zuckerschock kept her feet, so Normal's chest landed at surface
+/// + 8, outside the `< 8` band, and she sank to the bed).
+#[test]
+fn a_power_change_while_floating_keeps_the_chest_point() {
+    let band = Fx::from_px(tuning().swim.surface_band);
+    for (from, to) in [
+        (Power::Big, Power::Normal),
+        (Power::Hackl, Power::Normal),
+        (Power::Normal, Power::Big),
+        (Power::Normal, Power::Hackl),
+    ] {
+        let mut g = game(&pool(20, 4..16, &[(8, 8, 'S')]), from);
+        settle(&mut g);
+        let chest = chest_y(&g);
+        g.set_player_power(to);
+        assert_eq!(g.player().power, to);
+        assert_eq!(chest_y(&g), chest, "{from:?} -> {to:?}: the chest stays");
+        g.player.transform = 0;
+        hold(&mut g, "-", 120);
+        let p = g.player();
+        assert!(
+            p.swimming && !p.on_ground,
+            "{from:?} -> {to:?}: still floating"
+        );
+        assert!(
+            chest_y(&g) - Fx::from_px(SURFACE) < band,
+            "{from:?} -> {to:?}: in the surface band"
+        );
+        // ... so JUMP is a jump-out, not a stroke.
+        let events = g.step(input("J")).to_vec();
+        assert!(events.contains(&Event::Jumped), "{from:?} -> {to:?}");
+    }
+}
+
+/// Standing on the lake bed, or with no room under her for a grown hitbox
+/// just above it, a power change keeps the feet as on land.
+#[test]
+fn a_power_change_on_or_just_above_the_bed_keeps_the_feet() {
+    let bed = Fx::from_px(208);
+    // On the bed: both ways keep the feet on it.
+    for (from, to) in [(Power::Big, Power::Normal), (Power::Normal, Power::Big)] {
+        let mut g = game(&pool(20, 4..16, &[(8, 8, 'S')]), from);
+        until(&mut g, "D", 300, |g| g.player().on_ground);
+        g.set_player_power(to);
+        assert_eq!(g.player().feet().1, bed, "{from:?} -> {to:?} on the bed");
+    }
+    // Sinking 4 px above the bed: growing by 8 px from the top would reach
+    // into the bed, so the feet stay.
+    let mut g = game(&pool(20, 4..16, &[(8, 8, 'S')]), Power::Normal);
+    until(&mut g, "D", 300, |g| g.player().on_ground);
+    g.player.y -= Fx::from_px(4);
+    g.player.on_ground = false;
+    g.set_player_power(Power::Big);
+    assert_eq!(g.player().feet().1, bed - Fx::from_px(4));
+    // On land nothing changed: the feet stay.
+    let mut g = game(&pool(20, 4..16, &[]), Power::Big);
+    hold(&mut g, "-", 5);
+    let feet = g.player().feet().1;
+    g.set_player_power(Power::Normal);
+    assert_eq!(g.player().feet().1, feet);
+}

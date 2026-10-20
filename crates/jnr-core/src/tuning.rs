@@ -315,6 +315,14 @@ pub struct CameraTuning {
     /// Auto-scroll camera: in the scroll the player's hitbox right edge
     /// stays at most at screen x 320 minus this.
     pub autoscroll_right_margin: i32,
+    /// Auto-scroll levels (D-086): grounded or swimming at the surface, the
+    /// camera settles back to its rest (the level's bottom clamp) by at
+    /// most this many px per frame.
+    pub autoscroll_settle_speed: i32,
+    /// Auto-scroll levels (D-086): in the lead-out the side camera moves
+    /// right at most this many px per frame, so it catches up with her
+    /// after the scroll instead of snapping to the follow line.
+    pub autoscroll_catch_up_speed: i32,
 }
 
 /// Game flow constants.
@@ -1488,7 +1496,9 @@ impl Tuning {
     /// The auto-scroll camera's keys (D-075): `0 < autoscroll_speed <
     /// player.walk_speed` (walking always gains on the screen; and
     /// `< swim.speed`, checked in `validate_swim`), `autoscroll_hold` 0..=600 frames,
-    /// `autoscroll_right_margin` 0..=160 px.
+    /// `autoscroll_right_margin` 0..=160 px, `autoscroll_settle_speed`
+    /// 1..=16 px/frame, `autoscroll_catch_up_speed` ≤ 16 px/frame and
+    /// faster than `player.run_speed` (so the camera always catches up).
     fn validate_autoscroll(&self) -> Result<(), ParseError> {
         let c = &self.camera;
         if c.autoscroll_speed <= Fx::ZERO || c.autoscroll_speed >= self.player.walk_speed {
@@ -1504,6 +1514,17 @@ impl Tuning {
         if !(0..=160).contains(&c.autoscroll_right_margin) {
             return Err(ParseError::new(
                 "tuning.toml: camera.autoscroll_right_margin must be 0..=160 px",
+            ));
+        }
+        if !(1..=16).contains(&c.autoscroll_settle_speed) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_settle_speed must be 1..=16 px/frame",
+            ));
+        }
+        let catch_up = c.autoscroll_catch_up_speed;
+        if catch_up > 16 || Fx::from_px(catch_up) <= self.player.run_speed {
+            return Err(ParseError::new(
+                "tuning.toml: need player.run_speed < camera.autoscroll_catch_up_speed <= 16 px/frame",
             ));
         }
         Ok(())
@@ -1592,6 +1613,10 @@ mod tests {
         let c = t.camera;
         assert_eq!(c.autoscroll_speed, Fx(192), "0.75 px/frame (D-075)");
         assert_eq!((c.autoscroll_hold, c.autoscroll_right_margin), (60, 64));
+        assert_eq!(
+            c.autoscroll_settle_speed, 2,
+            "like the climb settle (D-086)"
+        );
     }
 
     #[test]
@@ -1869,6 +1894,10 @@ mod tests {
             ("autoscroll_hold", 601),
             ("autoscroll_right_margin", -1),
             ("autoscroll_right_margin", 161),
+            ("autoscroll_settle_speed", 0),
+            ("autoscroll_settle_speed", 17),
+            ("autoscroll_catch_up_speed", 2), // < run_speed 2.5
+            ("autoscroll_catch_up_speed", 17),
             ("item_hitbox", 0),
             ("axe_hitbox", 17),
             ("max_alive", 0),

@@ -1,0 +1,33 @@
+# QA M5 (fixed in E32, D-086: a power change while floating keeps the
+# chest point; was qa_m5_bug_shrink_while_floating_sinks) (D-076 "floating at the surface: no gravity unless DOWN is
+# held", "same numbers in every form"; backlog note "the chest point moves
+# by 8 px"): a hurt while floating at the surface as Zuckerschock drops
+# Normal Resi out of the surface band, so she sinks without DOWN.
+# Resi bumps the start M-box (col 9) and catches the Mozartkugel (big at
+# 159), hops the bollard and the notch onto the Dampfer (lands 362), rides
+# it to Gschwendt, walks off the pier's far end and floats at the surface
+# with no input: big, top 184 = chest point 192 exactly on the water line
+# (surface y 192). Swan #2 charges into her: Hurt at 1756, Zuckerschock ->
+# Normal. Shrinking keeps the feet (214), so the top drops to 192 and the
+# chest point to 200 = surface + 8, which is not "less than surface_band
+# = 8 px below the surface": from the end of the 30-frame freeze (1788)
+# she sinks at 1 px/frame to the lake bed (top 221 at 1822, on the bed at
+# 1835), and a JUMP press now strokes instead of jumping out.
+# Expected (correct): after the shrink she still floats at the surface
+# (chest point in the surface band, top <= 191) with no input.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Hurt power=normal swimming=true player_y<=191
+---
+R 76
+J 20
+- 100
+L 50
+- 10
+RB 44
+RBJ 36
+RB 4
+- 820
+R 500
+- 170
