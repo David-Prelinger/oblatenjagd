@@ -18,6 +18,10 @@
 //! (D-054), rock spawner niches 4–6 tiles above their ground (D-058), the
 //! Durchkriechstein's tunnel, mouth and exit (D-057), and a warning (not a
 //! failure) for climb-level shafts wider than 9 columns (D-055).
+//!
+//! Auto-scroll (M5, [`crate::scrolllint`], D-075): the goal at column
+//! ≥ `to + 20`, squeeze faces in the zone at most 3 tiles above the surface
+//! in front of them, and a checkpoint in the zone on a deck tile.
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -163,7 +167,10 @@ pub fn lint(
             .file_name()
             .and_then(|n| n.to_str())
             .is_some_and(|n| n.starts_with("00_"));
-        for p in crate::climblint::problems(level) {
+        for p in crate::climblint::problems(level)
+            .into_iter()
+            .chain(crate::scrolllint::problems(level))
+        {
             problems.push(format!("{shown}: {p}"));
         }
         for e in level.entities.iter().filter(|e| e.still && !test_level) {

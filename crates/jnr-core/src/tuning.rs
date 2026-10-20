@@ -255,6 +255,15 @@ pub struct CameraTuning {
     /// Climb levels: a level entity activates only while its spawn cell is
     /// at most this many px above or below the screen.
     pub climb_activate_y: i32,
+    /// Auto-scroll camera (`[meta] camera = "autoscroll"`, D-075): how far
+    /// the scroll moves the camera every frame of play, subpixels.
+    pub autoscroll_speed: Fx,
+    /// Auto-scroll camera: frames of play the scroll waits after a start or
+    /// respawn framed inside the zone.
+    pub autoscroll_hold: u16,
+    /// Auto-scroll camera: in the scroll the player's hitbox right edge
+    /// stays at most at screen x 320 minus this.
+    pub autoscroll_right_margin: i32,
 }
 
 /// Game flow constants.
@@ -1108,6 +1117,7 @@ impl Tuning {
             }
         }
         self.validate_hackl()?;
+        self.validate_autoscroll()?;
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -1172,6 +1182,30 @@ impl Tuning {
                     "tuning.toml: {name} must be 0..=180 px"
                 )));
             }
+        }
+        Ok(())
+    }
+
+    /// The auto-scroll camera's keys (D-075): `0 < autoscroll_speed <
+    /// player.walk_speed` (walking always gains on the screen; E27 adds
+    /// `< swim.speed`), `autoscroll_hold` 0..=600 frames,
+    /// `autoscroll_right_margin` 0..=160 px.
+    fn validate_autoscroll(&self) -> Result<(), ParseError> {
+        let c = &self.camera;
+        if c.autoscroll_speed <= Fx::ZERO || c.autoscroll_speed >= self.player.walk_speed {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 < camera.autoscroll_speed < player.walk_speed",
+            ));
+        }
+        if c.autoscroll_hold > 600 {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_hold must be 0..=600 frames",
+            ));
+        }
+        if !(0..=160).contains(&c.autoscroll_right_margin) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_right_margin must be 0..=160 px",
+            ));
         }
         Ok(())
     }
@@ -1256,6 +1290,9 @@ mod tests {
             Fx::from_px(e.gams_hop_tiles * TILE_PX),
             "exactly the swept tiles"
         );
+        let c = t.camera;
+        assert_eq!(c.autoscroll_speed, Fx(192), "0.75 px/frame (D-075)");
+        assert_eq!((c.autoscroll_hold, c.autoscroll_right_margin), (60, 64));
     }
 
     #[test]
@@ -1466,6 +1503,11 @@ mod tests {
             ("climb_goal_feet_y", 181),
             ("climb_activate_y", -1),
             ("climb_activate_y", 181),
+            ("autoscroll_speed", 0),
+            ("autoscroll_speed", 384), // = walk_speed
+            ("autoscroll_hold", 601),
+            ("autoscroll_right_margin", -1),
+            ("autoscroll_right_margin", 161),
             ("item_hitbox", 0),
             ("axe_hitbox", 17),
             ("max_alive", 0),

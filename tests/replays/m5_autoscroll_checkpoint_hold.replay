@@ -1,0 +1,38 @@
+# Auto-scroll respawn hold (D-075): Resi follows the solver's route to the
+# checkpoint on the pier (column 72), then keeps walking right at the
+# right clamp until the pier ends and she falls into the water gap
+# (columns 80-82). She respawns on the checkpoint, framed inside the zone
+# (camera x 1016): the scroll holds for 60 frames of play, then goes on;
+# she waits, walks to the pier end at the right clamp, jumps the gap once
+# the clamp lets her and finishes in the lead-out (side camera) at the
+# Maibaum.
+level  = m5_autoscroll
+seed   = 1
+source = handwritten
+expect = complete frames=1884..1884 deaths=1 dies_at frames=1324..1324 event=CheckpointReached event=Respawned
+---
+RB 152
+RBJ 36
+RB 310
+RBJ 20
+RB 10
+L 4
+RB 8
+L 4
+RB 8
+L 4
+RB 8
+L 4
+RB 8
+L 4
+RB 8
+L 4
+RB 8
+RB 406
+RBJ 20
+RB 124
+R 240
+- 86
+R 80
+RJ 30
+R 300

@@ -804,6 +804,20 @@ pub(crate) struct UpdateCtx<'a> {
     pub globes: &'a [(Fx, Fx)],
 }
 
+impl UpdateCtx<'_> {
+    /// True if `b` lies completely inside the screen
+    /// ([`crate::Camera::fully_on_screen`]): enemy triggers in an
+    /// auto-scroll zone need it, so no threat starts off screen (D-075).
+    #[allow(dead_code)] // E26 provides it; E29's swan, Gelse and regatta triggers use it.
+    pub(crate) fn fully_on_screen(&self, b: &Aabb) -> bool {
+        let camera = crate::Camera {
+            x: self.screen_left.to_px(),
+            y: self.screen_top.to_px(),
+        };
+        camera.fully_on_screen(b)
+    }
+}
+
 /// A popup centred on `x` with its top at `y`.
 pub fn popup(p: Popup, x: Fx, y: Fx) -> Entity {
     let w = Fx::from_px(16);

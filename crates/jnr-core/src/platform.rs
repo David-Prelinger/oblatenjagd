@@ -381,12 +381,16 @@ pub(crate) fn land(
 ///
 /// Unlike the player's own movement the carry is not stopped at the
 /// screen's left edge: the camera follows a rider carried past it
-/// (D-051, `Game::follow_carried_left`).
+/// (D-051, `Game::follow_carried_left`); in an auto-scroll the left edge
+/// pushes her back instead (D-075). Moving right, the carry stops like at
+/// a wall where her hitbox's right edge reaches `max_x` (the scroll's
+/// right clamp; `Fx::MAX` elsewhere), and never moves her left for it.
 pub(crate) fn carry(
     p: &mut Player,
     old: Aabb,
     car: &Entity,
     map: &TileMap,
+    max_x: Fx,
     t: &PlayerTuning,
     events: &mut Vec<Event>,
 ) {
@@ -394,6 +398,9 @@ pub(crate) fn carry(
     let feet = b.bottom();
     if p.on_ground && stands_on(&b, &old) {
         map.move_x(&mut b, car.x - old.x);
+        if b.right() > max_x && b.x > p.x {
+            b.x = (max_x - b.w).max(p.x);
+        }
         map.move_y(&mut b, car.y - old.y, false);
         p.x = b.x;
         p.y = b.y;

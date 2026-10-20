@@ -536,7 +536,7 @@ pub struct BackgroundLayer {
     pub factor_y: u32,
 }
 
-/// How the camera follows the player vertically (`[meta] camera`, D-054).
+/// How the camera follows the player (`[meta] camera`, D-054, D-075).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CameraMode {
@@ -546,6 +546,10 @@ pub enum CameraMode {
     /// The SMW-style climb camera: settles on the ground, follows falls
     /// only a little way, and a fall below the screen kills.
     Climb,
+    /// The side camera with an auto-scroll zone (`[meta] autoscroll =
+    /// [from, to]`, D-075): while the camera's left edge lies in the zone
+    /// it scrolls right on its own and its edges push and stop the player.
+    Autoscroll,
 }
 
 /// The `[meta]` table.
@@ -568,9 +572,27 @@ pub struct LevelMeta {
     /// Smallest jump window (frames) the solver must measure on this level.
     #[serde(default)]
     pub min_jump_window: Option<u32>,
-    /// Vertical camera behaviour (`"side"` by default, `"climb"`; D-054).
+    /// Camera behaviour (`"side"` by default, `"climb"`, D-054;
+    /// `"autoscroll"`, D-075).
     #[serde(default)]
     pub camera: CameraMode,
+    /// The auto-scroll zone `[from, to]` in columns: the camera scrolls on
+    /// its own while its left edge lies in `[from × 16, to × 16)`. Required
+    /// with `camera = "autoscroll"`, an error with any other camera;
+    /// `0 ≤ from < to ≤ width − 20` (D-075).
+    #[serde(default)]
+    pub autoscroll: Option<[i32; 2]>,
+}
+
+impl LevelMeta {
+    /// The auto-scroll zone `(from, to)` in columns, if the level has one
+    /// (`camera = "autoscroll"`, D-075).
+    pub fn autoscroll_zone(&self) -> Option<(i32, i32)> {
+        match (self.camera, self.autoscroll) {
+            (CameraMode::Autoscroll, Some([from, to])) => Some((from, to)),
+            _ => None,
+        }
+    }
 }
 
 /// Largest `time_limit` (the HUD shows 3 digits).
@@ -784,6 +806,7 @@ impl Level {
                 }
             )));
         }
+        validate_autoscroll(&raw.meta, width as i32)?;
 
         Ok(Level {
             meta: raw.meta,
@@ -854,6 +877,35 @@ fn validate_meta(meta: &LevelMeta) -> Result<(), ParseError> {
         }
     }
     Ok(())
+}
+
+/// The screen's width in columns: an auto-scroll zone ends at least this
+/// far left of the level's right edge (`to ≤ width − 20`, D-075), so the
+/// camera at `to × 16` still fits into the level.
+pub const SCREEN_COLS: i32 = crate::camera::SCREEN_W / TILE_PX;
+
+/// `[meta] autoscroll` (D-075): required with `camera = "autoscroll"`
+/// (`0 ≤ from < to ≤ width − 20`), an error with any other camera.
+fn validate_autoscroll(meta: &LevelMeta, width: i32) -> Result<(), ParseError> {
+    match (meta.camera, meta.autoscroll) {
+        (CameraMode::Autoscroll, None) => Err(ParseError::new(
+            "meta.autoscroll = [from, to] is required with camera = \"autoscroll\"",
+        )),
+        (CameraMode::Autoscroll, Some([from, to])) => {
+            let last = width - SCREEN_COLS;
+            if 0 <= from && from < to && to <= last {
+                Ok(())
+            } else {
+                Err(ParseError::new(format!(
+                    "meta.autoscroll = [{from}, {to}]: need 0 <= from < to <= width - {SCREEN_COLS} = {last}"
+                )))
+            }
+        }
+        (CameraMode::Side | CameraMode::Climb, Some(_)) => Err(ParseError::new(
+            "meta.autoscroll is only allowed with camera = \"autoscroll\"",
+        )),
+        (CameraMode::Side | CameraMode::Climb, None) => Ok(()),
+    }
 }
 
 /// Index of `name` in `tile_names`, appending it if new.
@@ -2113,6 +2165,44 @@ P.sSC.tfG
         assert_eq!(mode("camera = \"side\""), CameraMode::Side);
         assert_eq!(mode("camera = \"climb\""), CameraMode::Climb);
         assert!(err(&with_meta("camera = \"top\"")).contains("camera"));
+    }
+
+    #[test]
+    fn autoscroll_needs_its_zone_and_the_zone_its_camera() {
+        // 40 columns wide: `to` may be at most 40 - 20 = 20.
+        let wide = |meta: &str| {
+            format!(
+                "[meta]\nid = \"a\"\ntime_limit = 1\n{meta}\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP{}\n'''\n",
+                ".".repeat(39)
+            )
+        };
+        let zone = |meta: &str| Level::parse(&wide(meta)).unwrap().meta.autoscroll_zone();
+        let l = Level::parse(&wide("camera = \"autoscroll\"\nautoscroll = [8, 20]")).unwrap();
+        assert_eq!(l.meta.camera, CameraMode::Autoscroll);
+        assert_eq!(l.meta.autoscroll_zone(), Some((8, 20)));
+        assert_eq!(
+            zone("camera = \"autoscroll\"\nautoscroll = [0, 1]"),
+            Some((0, 1))
+        );
+        let e = err(&wide("camera = \"autoscroll\""));
+        assert!(e.contains("autoscroll = [from, to] is required"), "{e}");
+        for bad in ["[8, 21]", "[8, 8]", "[9, 8]", "[-1, 4]"] {
+            let e = err(&wide(&format!(
+                "camera = \"autoscroll\"\nautoscroll = {bad}"
+            )));
+            assert!(
+                e.contains("need 0 <= from < to <= width - 20 = 20"),
+                "{bad}: {e}"
+            );
+        }
+        for camera in ["", "camera = \"side\"", "camera = \"climb\""] {
+            let e = err(&wide(&format!("{camera}\nautoscroll = [8, 20]")));
+            assert!(
+                e.contains("only allowed with camera = \"autoscroll\""),
+                "{camera}: {e}"
+            );
+            assert_eq!(zone(camera), None);
+        }
     }
 
     #[test]

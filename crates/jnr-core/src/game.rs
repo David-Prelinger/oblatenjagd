@@ -22,14 +22,14 @@ pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
-use crate::camera::{Camera, ClimbFocus, SCREEN_H, SCREEN_W};
+use crate::camera::{Autoscroll, Camera, ClimbFocus, SCREEN_H, SCREEN_W, ScrollPhase};
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
 use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
-use crate::player::{Player, Power};
+use crate::player::{Bounds, Player, Power};
 use crate::rng::Rng;
 use crate::route::{Route, RouteMap};
 use crate::tuning::Tuning;
@@ -196,6 +196,9 @@ pub enum DeathCause {
     Hit,
     /// The timer reached 0.
     TimeUp,
+    /// Pushed by the auto-scroll camera's left edge against a solid tile
+    /// (D-075); drawn as the normal hit death.
+    Squeezed,
 }
 
 /// Progress of an `oblaten_10` brick that has been hit.
@@ -235,6 +238,9 @@ pub struct Game {
     settle_feet: i32,
     /// Climb camera (D-065): [`ClimbFocus::slack_x`]; 0 in side levels.
     slack_x: i32,
+    /// Auto-scroll camera (D-075): phase, subpixel position and hold; the
+    /// default (unused) in other levels.
+    pub(crate) scroll: Autoscroll,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
@@ -332,6 +338,7 @@ impl Game {
             ground_feet: 0,
             settle_feet: 0,
             slack_x: 0,
+            scroll: Autoscroll::default(),
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
@@ -451,12 +458,12 @@ impl Game {
             self.step_crawl();
         } else {
             let was_on_ground = self.player.on_ground;
-            let min_x = Fx::from_px(self.camera.x);
+            let bounds = self.player_bounds();
             let head_row = self.player.update(
                 input,
                 &self.map,
                 &self.tuning.player,
-                min_x,
+                bounds,
                 &mut self.events,
             );
             crate::platform::land(
@@ -508,7 +515,18 @@ impl Game {
         if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
             self.touch_goal(goal);
         }
+        // Also on the frame the scroll hands over to the lead-out.
+        let was_scrolling = self.scrolling();
         self.follow_camera();
+        // The auto-scroll camera's left edge pushes (D-075); against a
+        // solid tile she is squeezed.
+        if self.mode == Mode::Playing
+            && (was_scrolling || self.scrolling())
+            && self.push_from_left_edge()
+        {
+            self.die(DeathCause::Squeezed);
+            return;
+        }
         // The climb camera's death line (D-054): the hitbox top below the
         // screen is a fall out of the level.
         if self.mode == Mode::Playing
@@ -528,10 +546,70 @@ impl Game {
         self.level.meta.camera == CameraMode::Climb
     }
 
-    /// One frame of the level's camera (side: dead zone; climb: D-054).
+    /// The auto-scroll zone `[from, to)` in level pixels (D-075), if the
+    /// level has one.
+    fn autoscroll_zone(&self) -> Option<(i32, i32)> {
+        let (from, to) = self.level.meta.autoscroll_zone()?;
+        Some((from * TILE_PX, to * TILE_PX))
+    }
+
+    /// True while the auto-scroll camera scrolls (also during its hold):
+    /// the left edge pushes, the right clamp holds and D-051 is off.
+    fn scrolling(&self) -> bool {
+        self.scroll.phase == ScrollPhase::Scroll && self.autoscroll_zone().is_some()
+    }
+
+    /// The scroll's right clamp (D-075): the player's hitbox right edge
+    /// stays at most `autoscroll_right_margin` px left of the screen's
+    /// right edge, for her own movement and any carry. No limit outside
+    /// the scroll.
+    fn right_clamp(&self) -> Fx {
+        if !self.scrolling() {
+            return Fx::MAX;
+        }
+        let margin = self.tuning.camera.autoscroll_right_margin;
+        Fx::from_px(self.camera.x + SCREEN_W - margin)
+    }
+
+    /// The limits of the player's own movement this frame: the screen's
+    /// left edge, and in the scroll the right clamp, which moves at the
+    /// scroll speed (not during the hold).
+    fn player_bounds(&self) -> Bounds {
+        let mut bounds = Bounds::left(Fx::from_px(self.camera.x));
+        if self.scrolling() {
+            bounds.max_x = self.right_clamp();
+            if self.scroll.hold == 0 {
+                bounds.max_x_speed = self.tuning.camera.autoscroll_speed;
+            }
+        }
+        bounds
+    }
+
+    /// The scroll's left edge (D-075, SMB3): a hitbox left of the camera's
+    /// x is moved right by the difference with tile collision. Returns true
+    /// if a solid tile stopped that move (she is squeezed).
+    fn push_from_left_edge(&mut self) -> bool {
+        let edge = Fx::from_px(self.camera.x);
+        if self.player.x >= edge {
+            return false;
+        }
+        let mut b = self.player.hitbox();
+        self.map.move_x(&mut b, edge - self.player.x);
+        self.player.x = b.x;
+        b.x < edge
+    }
+
+    /// One frame of the level's camera (side: dead zone; climb: D-054;
+    /// autoscroll: D-075).
     fn follow_camera(&mut self) {
         let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
         let t = &self.tuning.camera;
+        if let Some(zone) = self.autoscroll_zone() {
+            let focus = self.player.center_px();
+            self.camera
+                .follow_autoscroll(&mut self.scroll, zone, focus, w, h, t);
+            return;
+        }
         if !self.climb() {
             self.camera.follow(self.player.center_px(), w, h, t);
             return;
@@ -555,8 +633,12 @@ impl Game {
     /// D-051: the player's own movement stops at the screen's left edge,
     /// so only a moving platform's carry can take her past it; the camera
     /// then scrolls left by the same amount (the one exception to "never
-    /// scrolls left"), and she stays on the cabin.
+    /// scrolls left"), and she stays on the cabin. Off in the auto-scroll
+    /// (D-075): there the left edge pushes her across the deck instead.
     fn follow_carried_left(&mut self) {
+        if self.scrolling() {
+            return;
+        }
         let left = self.player.x.to_px();
         if left < self.camera.x {
             self.camera.x = left.max(0);
@@ -686,6 +768,12 @@ impl Game {
             self.settle_feet = 0;
             self.slack_x = 0;
         }
+        // Auto-scroll (D-075): framed as in side levels; inside the zone
+        // the scroll waits `autoscroll_hold` frames.
+        self.scroll = match self.autoscroll_zone() {
+            Some(zone) => Autoscroll::placed(self.camera.x, zone, t),
+            None => Autoscroll::default(),
+        };
     }
 
     // ------------------------------------------------------------ blocks
@@ -888,6 +976,7 @@ impl Game {
         let level = &self.level;
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
+        let max_x = self.right_clamp();
         // Every Souvenirstand counts its own globes by their spawn point.
         let globes: Vec<(Fx, Fx)> = self
             .entities
@@ -951,6 +1040,7 @@ impl Game {
                     old,
                     e,
                     ctx.map,
+                    max_x,
                     &ctx.tuning.player,
                     &mut self.events,
                 );
@@ -1344,6 +1434,10 @@ impl Game {
         h.i32(self.ground_feet);
         h.i32(self.settle_feet);
         h.i32(self.slack_x);
+        // Only auto-scroll levels have it (other hashes stay as they were).
+        if self.autoscroll_zone().is_some() {
+            self.scroll.hash(&mut h);
+        }
         h.u64(self.rng.state());
         h.u32(self.deaths);
         self.hash_tiles(&mut h);
@@ -1363,6 +1457,7 @@ impl Game {
             Some(DeathCause::Pit) => 2,
             Some(DeathCause::Hit) => 3,
             Some(DeathCause::TimeUp) => 4,
+            Some(DeathCause::Squeezed) => 5,
         });
         h.bool(self.start_held);
         h.finish()
@@ -1382,6 +1477,12 @@ impl Game {
         self.hash_tiles(&mut h);
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
         h.u8(self.player.power.id());
+        // The scroll (phase, position, hold): with the same player state a
+        // later scroll start is a different state (D-075). Only auto-scroll
+        // levels, so the other levels' search is unchanged.
+        if self.autoscroll_zone().is_some() {
+            self.scroll.hash(&mut h);
+        }
         for e in &self.entities {
             if matches!(
                 e.kind,
@@ -1458,6 +1559,11 @@ impl Game {
     /// The camera.
     pub fn camera(&self) -> Camera {
         self.camera
+    }
+    /// The auto-scroll camera's state (D-075; the default in levels
+    /// without a zone).
+    pub fn autoscroll(&self) -> Autoscroll {
+        self.scroll
     }
     /// The current tile grid (collision and looks; bricks break, boxes empty).
     pub fn map(&self) -> &TileMap {

@@ -12,6 +12,7 @@ mod golden;
 mod levels;
 mod replay;
 mod report;
+mod scrolllint;
 mod solver;
 mod sprites;
 mod steps;

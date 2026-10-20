@@ -1,6 +1,7 @@
 //! Integration-style tests of the whole simulation (game feel, game flow,
 //! determinism, the testbed level). Unit tests live next to their modules.
 
+mod autoscroll;
 mod climb;
 mod enemies;
 mod feel;

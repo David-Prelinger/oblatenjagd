@@ -13,7 +13,8 @@
 //! that frame. The search ends at the first bucket at or after the earliest
 //! completion found, so the route is the earliest completion the beam sees.
 //! It fails when no node survives, after the frame budget (3× the level
-//! width in pixels; climb levels: 3× width + height) or after the
+//! width in pixels; climb levels: 3× width + height; auto-scroll levels:
+//! plus the frames the scroll takes, [`scroll_frames`], D-075) or after the
 //! wall-clock limit (default 60 s).
 //!
 //! **Climb levels** (`[meta] camera = "climb"`, D-054): "furthest right"
@@ -197,16 +198,18 @@ pub struct SolveOptions {
 
 impl SolveOptions {
     /// The defaults for `level`: beam 64, budget 3× its width in pixels
-    /// (climb levels: width + height), 60 s, up to 8 threads.
-    pub fn for_level(level: &Level) -> SolveOptions {
+    /// (climb levels: width + height; auto-scroll levels: plus the frames
+    /// the scroll takes, D-075), 60 s, up to 8 threads.
+    pub fn for_level(level: &Level, tuning: &Tuning) -> SolveOptions {
         let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
         let tiles = match level.meta.camera {
-            CameraMode::Side => level.width.max(1),
+            CameraMode::Side | CameraMode::Autoscroll => level.width.max(1),
             CameraMode::Climb => level.width.max(1) + level.height.max(0),
         };
         SolveOptions {
             beam_width: DEFAULT_BEAM,
-            frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32,
+            frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32
+                + scroll_frames(level, tuning),
             time_limit: DEFAULT_TIME_LIMIT,
             threads,
         }
@@ -256,13 +259,25 @@ impl Node {
     }
 }
 
+/// Frames the auto-scroll takes to cross its zone (D-075): the zone's
+/// length in subpixels over `camera.autoscroll_speed`, rounded up; 0
+/// without a zone.
+pub fn scroll_frames(level: &Level, tuning: &Tuning) -> u32 {
+    let Some((from, to)) = level.meta.autoscroll_zone() else {
+        return 0;
+    };
+    let len = jnr_core::Fx::from_px((to - from) * jnr_core::level::TILE_PX).raw();
+    let speed = tuning.camera.autoscroll_speed.raw().max(1);
+    (len + speed - 1).div_euclid(speed).max(0) as u32
+}
+
 /// How far a state has come, in subpixels: the player's x; in climb levels
 /// (D-054) plus the height her feet gained above the player start's feet
 /// (negative below it). The search ranks by it.
 pub fn search_progress(game: &Game) -> i32 {
     let p = game.player();
     match game.level().meta.camera {
-        CameraMode::Side => p.x.raw(),
+        CameraMode::Side | CameraMode::Autoscroll => p.x.raw(),
         CameraMode::Climb => {
             let start = game.level().player_start();
             let start_feet = jnr_core::Fx::from_px((start.row + 1) * jnr_core::level::TILE_PX);
@@ -1388,7 +1403,7 @@ fn solve_and_report(
     out: &OutDirs,
 ) -> Result<(Solution, String), String> {
     let tuning = content::tuning(root)?;
-    let mut opts = SolveOptions::for_level(level);
+    let mut opts = SolveOptions::for_level(level, &tuning);
     if let Some(b) = a.beam {
         opts.beam_width = b;
     }
@@ -1582,7 +1597,7 @@ mod tests {
     fn opts(level: &Level, threads: usize) -> SolveOptions {
         SolveOptions {
             threads,
-            ..SolveOptions::for_level(level)
+            ..SolveOptions::for_level(level, &tuning())
         }
     }
 
@@ -2102,12 +2117,29 @@ mod tests {
         assert_eq!(g.player().feet().1.to_px(), 21 * 16);
         assert_eq!(search_progress(&g), g.player().x.raw() + 48 * 256);
         // The budget covers the climb too.
-        let budget = SolveOptions::for_level(&level).frame_budget;
+        let budget = SolveOptions::for_level(&level, &t).frame_budget;
         assert_eq!(budget, 3 * (64 + 40) * 16);
         assert_eq!(
-            SolveOptions::for_level(&gap_level(3)).frame_budget,
+            SolveOptions::for_level(&gap_level(3), &t).frame_budget,
             3 * gap_level(3).width as u32 * 16
         );
+    }
+
+    #[test]
+    fn the_budget_covers_the_auto_scroll() {
+        let t = tuning();
+        let level = content::find_level(&root(), "m5_autoscroll").unwrap();
+        // Zone [8, 80]: 1152 px at 192 subpx per frame.
+        assert_eq!(scroll_frames(&level, &t), 1536);
+        assert_eq!(
+            SolveOptions::for_level(&level, &t).frame_budget,
+            3 * 112 * 16 + 1536
+        );
+        assert_eq!(scroll_frames(&gap_level(3), &t), 0);
+        // Rounded up: 1 px more is 2 frames more (1 px = 256 subpx).
+        let mut slow = t;
+        slow.camera.autoscroll_speed = jnr_core::Fx(100);
+        assert_eq!(scroll_frames(&level, &slow), (1152 * 256_u32).div_ceil(100));
     }
 
     #[test]

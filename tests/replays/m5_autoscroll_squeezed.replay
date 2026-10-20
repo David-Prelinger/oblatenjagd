@@ -1,0 +1,17 @@
+# Auto-scroll squeeze (D-075): Resi jumps the water gap onto the pier,
+# walks up to the island (columns 44-46, its face 3 tiles high: the lint's
+# limit) and stays in front of it, holding nothing. The left edge pushes
+# her into the wall; the wall stops the push, so she is squeezed
+# (`DeathCause::Squeezed`, unit test
+# `a_solid_tile_in_the_way_of_the_push_squeezes_her`): she dies standing
+# on the pier (top y 154), flush with the wall (x 692 = 704 - 12), not in
+# the water.
+level  = m5_autoscroll
+seed   = 1
+source = handwritten
+expect = dies_at frames=854..854 deaths=1 state=dying player_x>=692 player_y>=154 player_y<=154
+---
+RB 152
+RBJ 36
+R 300
+- 380

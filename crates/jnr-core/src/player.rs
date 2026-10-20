@@ -72,6 +72,32 @@ impl Power {
     }
 }
 
+/// The horizontal limits of the player's own movement in one tick.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Bounds {
+    /// The hitbox never goes left of this (the camera's left edge).
+    pub min_x: Fx,
+    /// Moving right, the hitbox's right edge stops here like at a wall,
+    /// never pulled back left by it (the auto-scroll's right clamp, D-075;
+    /// `Fx::MAX` elsewhere).
+    pub max_x: Fx,
+    /// Stopped at `max_x`, the horizontal speed drops to at most this (the
+    /// clamp moves with the screen at the scroll speed).
+    pub max_x_speed: Fx,
+}
+
+impl Bounds {
+    /// Only the left edge (side and climb cameras, the lead-in and
+    /// lead-out of an auto-scroll).
+    pub fn left(min_x: Fx) -> Bounds {
+        Bounds {
+            min_x,
+            max_x: Fx::MAX,
+            max_x_speed: Fx::ZERO,
+        }
+    }
+}
+
 /// The player's simulation state. The renderer places the sprite with its
 /// feet at the bottom centre of the hitbox.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -257,17 +283,22 @@ impl Player {
     }
 
     /// Advances the player by one tick: horizontal speed, jump, gravity,
-    /// then movement with tile collision (X, then Y). The hitbox never goes
-    /// left of `min_x` (the camera's left edge). Returns the grid row of the
-    /// solid tile the head bumped into, if any.
+    /// then movement with tile collision (X, then Y). The hitbox stays
+    /// inside `bounds` horizontally (see [`Bounds`]). Returns the grid row
+    /// of the solid tile the head bumped into, if any.
     pub fn update(
         &mut self,
         input: InputFrame,
         map: &TileMap,
         t: &PlayerTuning,
-        min_x: Fx,
+        bounds: Bounds,
         events: &mut Vec<Event>,
     ) -> Option<i32> {
+        let Bounds {
+            min_x,
+            max_x,
+            max_x_speed,
+        } = bounds;
         self.update_horizontal_speed(input, t);
         let drop_through = self.update_jump(input, map, t, events);
 
@@ -290,6 +321,12 @@ impl Player {
         if b.x < min_x {
             b.x = min_x;
             self.vx = self.vx.max(Fx::ZERO);
+        }
+        if b.right() > max_x && b.x > self.x {
+            b.x = (max_x - b.w).max(self.x);
+            // Like a wall, but one that moves with the screen: the speed
+            // drops to the edge's own, so holding right she keeps pace.
+            self.vx = self.vx.min(max_x_speed);
         }
         let was_on_ground = self.on_ground;
         let mut head_row = None;

@@ -44,6 +44,10 @@ climb_catch_up_speed = 6  # px: grounded with the top above climb_top, the camer
 climb_fall_follow = 80    # px: and follows a fall at most this far below the last ground's settle framing
 climb_goal_feet_y = 164   # px: the goal sequence settles the feet here (frames the meadow like Stages 1-3)
 climb_activate_y = 64     # px: an entity activates only while its spawn cell is this close to the screen vertically
+# Auto-scroll camera, levels with `[meta] camera = "autoscroll"` (D-075); other levels ignore these.
+autoscroll_speed = 192    # subpx/frame: 0.75 px/frame, half the walk speed (must be > 0 and < player.walk_speed)
+autoscroll_hold = 60      # frames of play the scroll waits after a start or respawn framed inside the zone
+autoscroll_right_margin = 64  # px: in the scroll the hitbox's right edge stays <= camera x + 320 - this
 
 [game]
 death_frames = 60         # 1 s from death to respawn
