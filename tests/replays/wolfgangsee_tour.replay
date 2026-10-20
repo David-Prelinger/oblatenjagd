@@ -5,7 +5,9 @@
 # `cargo xtask solve wolfgangsee --write`; the xtask tour coupling test
 # checks it), then 800 idle frames: the Maibaum sequence, the tally, the
 # route map Wolfgangsee -> Strobl, which has no level yet, so the teaser
-# („Fortsetzung folgt …", D-072) and the title (5316) with the run reset.
+# („Fortsetzung folgt …", D-072) and the title (5250; 5240 with the
+# 260 s limit: the 270 s limit adds 10 s of Zeitbonus, 10 tally frames)
+# with the run reset.
 # The solver route hops the bathing notch, rides the Dampfer from the quay
 # (the scroll starts), sees swan #1 hiss and charge under the deck, swims
 # the Seebad with Gelse #1 waiting at the water line behind her, passes
@@ -13,7 +15,10 @@
 # takes the regatta by diving and a masthead bounce, then the Strobl quay
 # and a running jump off the landing hall to the Maibaum. Route re-copied
 # in E32 (D-086: the solver found another route after the camera rest;
-# same completion frame, shot frames unchanged).
+# same completion frame, shot frames unchanged) and again in E34 (D-090:
+# the high-ground rest and the top clamp steer the search onto another
+# route from frame ~572 that skips the swan #3 stomp; same completion
+# frame, shot frames unchanged).
 level  = wolfgangsee
 seed   = 1
 source = handwritten
@@ -34,39 +39,35 @@ L 4
 - 392
 RB 742
 RBJ 33
-RB 5
-RBJ 36
-RB 1934
-- 16
+RB 15
 RBJ 20
-RB 301
-RBJ 33
-RB 5
-RBJ 12
-RB 22
+RB 2
 LB 8
-L 4
-- 72
+RB 1942
+RBJ 20
+RB 315
+RBJ 20
+RB 5
+RBJ 31
+RB 67
 RBJ 20
 RB 2
 RBJ 36
-RB 8
-LB 16
-RB 4
+RB 62
+RBJ 33
+RB 5
+RBJ 31
+RB 29
+LB 14
+- 48
+RBJ 33
+RB 5
+LB 8
+- 32
+L 4
 - 32
 RBJ 20
-RB 5
+RB 104
 RBJ 36
-RB 16
-LB 14
-RB 3
-- 24
-RBJ 20
-RB 24
-LB 14
-- 64
-RBJ 33
-RB 103
-RBJ 36
-RB 55
+RB 54
 - 800     # Maibaum sequence, tally, route map, teaser, title

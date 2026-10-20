@@ -13,15 +13,19 @@
 # so she swims on to B's far berth and jumps out onto B (press 3047), hops
 # on at once to C as it docks (running jump, press 3077), rides C to its
 # far berth and jumps up onto the Zaunerstollen perch (press 3192). Gelse
-# #3 comes up to her there; a standing full jump (press 3248) bumps the
-# Z-box (col 173) and stomps the Gelse on the way down, and the
-# Zaunerstollen comes back to her: 1-up (lives 2 -> 3), standing on the
-# perch at the end.
+# #3 comes up to her there. Under the row-5 Z-box (D-090) a standing jump
+# is too short for a stomp, so she walks right clear of the box (to 3239),
+# stomps the Gelse with a standing full jump (press 3255, stomp 3294),
+# walks back under the box (3319-3330) and bumps it (press 3341, bump
+# 3343); the Zaunerstollen comes back to her: 1-up (3439, lives 2 -> 3),
+# standing on the perch at the end.
 # Hand-measured press windows (only that press shifted, every other input
 # at its frame; counted = the replay still passes): bollard hop not
 # measured (no timing), jump-out onto A 39 frames (>=, -20..18), Gelse #2
 # stomp 8 (-1..6), jump-out onto B 12 (-9..2), B -> C 15 (>=, -2..12),
-# C -> perch 18 (>=, -15..2), Gelse #3 stomp + box bump 18 (-8..9).
+# C -> perch 18 (>=, -15..2), Gelse #3 stomp 18 (-3..14; the stomp alone
+# 22, -6..15), box bump >= 40 (-9..30; later presses run past the
+# replay's end before the 1-up).
 level  = wolfgangsee
 seed   = 1
 source = handwritten
@@ -38,9 +42,11 @@ L 4
 - 392
 RB 742
 RBJ 33
-RB 5
-RBJ 36
-RB 711
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 707
 - 99
 # --- handwritten ---
 R 104
@@ -61,6 +67,11 @@ RBJ 20
 - 95
 RJ 16
 R 16
-- 24
+R 16
+- 15
 J 24
-- 100
+- 40
+L 12
+- 10
+J 10
+- 120

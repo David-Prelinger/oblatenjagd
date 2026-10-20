@@ -5,7 +5,7 @@
 //! the cross-task rows of the Stage 6 "New mechanics" table.
 
 use super::*;
-use crate::camera::{Autoscroll, ScrollPhase};
+use crate::camera::{Autoscroll, Rest, ScrollPhase};
 use crate::enemies::state;
 use crate::platform::car;
 use crate::player::Power;
@@ -418,40 +418,228 @@ fn the_camera_rests_at_the_surface_and_on_the_bed_but_not_diving_or_in_the_air()
     assert!(airborne);
 }
 
-#[test]
-fn wolfgangsee_rests_on_its_bottom_clamp_wherever_she_stands_or_floats() {
-    // The art-director finding (E32): on Stage 6 the camera stayed ~17 px
-    // (decks) to ~48 px (the steamer) above its rest, so the lake bed never
-    // showed while she swam at the surface. The solver route: from the
-    // start, and once she has rested for 30 frames, the camera is at y 92
-    // (decks at screen y 84, the water at 100, the bed at 164) unless the
-    // dead zone holds her higher up (the perch).
+/// The text of `tests/replays/<name>.replay`.
+macro_rules! replay_text {
+    ($name:literal) => {
+        include_str!(concat!("../../../../tests/replays/", $name, ".replay"))
+    };
+}
+
+/// Stage 6 and a Stage 6 replay's text, ready to play.
+fn wolfgangsee(replay: &str) -> (Game, crate::Replay) {
     let level = Level::parse(include_str!(
         "../../../../content/levels/06_wolfgangsee.level"
     ))
     .unwrap();
-    let replay = crate::Replay::parse(include_str!(
-        "../../../../tests/replays/wolfgangsee_solver.replay"
-    ))
-    .unwrap();
+    let replay = crate::Replay::parse(replay).unwrap();
+    let g = replay.new_game(&[level], &tuning()).unwrap();
+    (g, replay)
+}
+
+/// The D-090 top clamp: the auto-scroll camera's y never goes above this.
+const TOP: i32 = 24;
+
+/// The camera y the high-ground rest settles at for `rest` (D-090), or
+/// `None` in the air or diving.
+fn rest_y(rest: Rest) -> Option<i32> {
+    match rest {
+        Rest::None => None,
+        Rest::Ground(top) => Some((top - 84).clamp(TOP, REST)),
+        Rest::Surface => Some(REST),
+    }
+}
+
+#[test]
+fn wolfgangsee_camera_rests_where_she_stands_or_floats() {
+    // D-086, D-090: on the solver route, the Traundl chain up the perch and
+    // the relaxed run (Zuckerschock, the perch bounce), once she has rested
+    // on the same ground for 30 frames the camera is at that ground's rest
+    // (decks, boats, quays, the bed and the surface y 92; the perch 44)
+    // unless the dead zone holds her elsewhere, and it never goes above the
+    // top clamp, y 24.
     let t = tuning();
-    let mut g = replay.new_game(&[level], &t).unwrap();
-    assert_eq!(g.camera().y, REST, "the start");
-    let (mut resting, mut checked) = (0, 0);
+    let mut perch = 0;
+    for (name, text) in [
+        ("solver", replay_text!("wolfgangsee_solver")),
+        ("traundl", replay_text!("wolfgangsee_traundl")),
+        ("relaxed", replay_text!("qa_m5_wolfgangsee_relaxed")),
+    ] {
+        let (mut g, replay) = wolfgangsee(text);
+        assert_eq!(g.camera().y, REST, "{name}: the start");
+        let (mut resting, mut last, mut checked) = (0, Rest::None, 0);
+        for i in replay.frames() {
+            g.step(i);
+            if g.mode() != Mode::Playing {
+                continue;
+            }
+            let y = g.camera().y;
+            assert!(y >= TOP, "{name} frame {}: camera y {y}", g.frame());
+            let rest = g.camera_rest();
+            resting = if rest != Rest::None && rest == last {
+                resting + 1
+            } else {
+                0
+            };
+            last = rest;
+            let Some(target) = rest_y(rest) else { continue };
+            let cy = g.player().center_px().1 - target;
+            let in_dead_zone = (t.camera.deadzone_top..=t.camera.deadzone_bottom).contains(&cy);
+            if resting >= 30 && in_dead_zone {
+                checked += 1;
+                perch += usize::from(target == 44);
+                assert_eq!(y, target, "{name} frame {}: {rest:?}", g.frame());
+            }
+        }
+        assert!(checked > 1500, "{name}: checked {checked} frames");
+    }
+    assert!(perch > 100, "the perch rest is checked ({perch} frames)");
+}
+
+#[test]
+fn the_zaunerstollen_stays_clear_of_the_hud() {
+    // QA M5 (`qa_m5_zaunerstollen_clear_of_hud`, was
+    // `qa_m5_bug_zaunerstollen_under_hud`, D-090): with the box at row 4
+    // and the dead zone holding the camera at y 53 on the perch, the 1-up
+    // rose to screen y ~1-11, behind „LEBEN" (HUD rows 0-21, D-029). Now
+    // (perch rest y 44, box on row 5) its drawn top (the sprite is 2 px
+    // above its hitbox) stays at screen y >= 22 on every frame, and she
+    // gets it: lives +1.
+    const HUD_BOTTOM: i32 = 22;
+    const SPRITE_ABOVE_HITBOX: i32 = 2;
+    let (mut g, replay) = wolfgangsee(replay_text!("qa_m5_zaunerstollen_clear_of_hud"));
+    let lives = g.lives();
+    let (mut seen, mut min_top, mut extra_life) = (0, i32::MAX, false);
+    for i in replay.frames() {
+        extra_life |= g.step(i).contains(&Event::ExtraLife);
+        for e in g
+            .entities()
+            .iter()
+            .filter(|e| e.kind == EntityKind::Zaunerstollen)
+        {
+            let top = e.y.to_px() - SPRITE_ABOVE_HITBOX - g.camera().y;
+            assert!(
+                top >= HUD_BOTTOM,
+                "frame {}: item top at screen y {top}",
+                g.frame()
+            );
+            seen += 1;
+            min_top = min_top.min(top);
+        }
+    }
+    assert!(seen > 80, "the item is on screen for {seen} frames");
+    assert_eq!(min_top, 24, "rolling along the box top");
+    assert!(extra_life);
+    assert_eq!(g.lives(), lives + 1);
+}
+
+/// The frame each enemy of `kind` first leaves `state` (its trigger), by
+/// spawn index, and the first frame each was horizontally inside the
+/// screen; asserts on every frame that an enemy of `kind` horizontally on
+/// screen is fully on screen (the camera's y never hides it, D-090).
+fn triggers(text: &str, kind: EntityKind, state: u8) -> Vec<(u16, u32, u32)> {
+    let (mut g, replay) = wolfgangsee(text);
+    let mut out: Vec<(u16, u32, Option<u32>)> = Vec::new();
     for i in replay.frames() {
         g.step(i);
         if g.mode() != Mode::Playing {
             continue;
         }
-        resting = if g.camera_rests() { resting + 1 } else { 0 };
-        let cy = g.player().center_px().1;
-        if resting >= 30 && cy - REST >= t.camera.deadzone_top {
-            checked += 1;
-            assert_eq!(g.camera().y, REST, "frame {}", g.frame());
+        let c = g.camera();
+        assert!(c.y >= TOP, "frame {}: camera y {}", g.frame(), c.y);
+        for e in g.entities().iter().filter(|e| e.kind == kind && e.active) {
+            let Some(spawn) = e.spawn else { continue };
+            let b = e.hitbox();
+            let left = Fx::from_px(c.x);
+            let inside_x = b.x >= left && b.right() <= left + Fx::from_px(crate::SCREEN_W);
+            assert!(
+                !inside_x || c.fully_on_screen(&b),
+                "frame {}: {spawn} hidden",
+                g.frame()
+            );
+            let k = match out.iter().position(|o| o.0 == spawn) {
+                Some(k) => k,
+                None => {
+                    out.push((spawn, 0, None));
+                    out.len() - 1
+                }
+            };
+            if inside_x && out[k].1 == 0 {
+                out[k].1 = g.frame();
+            }
+            if e.state != state && out[k].2.is_none() {
+                out[k].2 = Some(g.frame());
+            }
         }
     }
-    assert!(checked > 2000, "checked {checked} frames");
+    out.into_iter()
+        .filter_map(|(s, seen, start)| Some((s, seen, start?)))
+        .collect()
 }
+
+#[test]
+fn the_perch_bounce_keeps_the_lake_on_screen() {
+    // QA M5 (`qa_m5_perch_bounce_lake_on_screen`, was
+    // `qa_m5_bug_perch_bounce_lake_off_screen`, D-090): a stomp bounce from
+    // the perch took the camera to y 0 (3710-3792), the water off the screen,
+    // and swan #3 (col 184) only became fully on screen, and telegraphed,
+    // as the camera came back down (3801). Now the camera stays at y >= 24
+    // (the water line at screen y <= 168) on every frame, and swan #3
+    // telegraphs on the frame after its hitbox is first horizontally on
+    // screen (the trigger reads the camera of the frame before).
+    let text = replay_text!("qa_m5_perch_bounce_lake_on_screen");
+    let (mut g, replay) = wolfgangsee(text);
+    let mut at_clamp = 0;
+    for i in replay.frames() {
+        g.step(i);
+        let y = g.camera().y;
+        assert!(y >= TOP, "frame {}: camera y {y}", g.frame());
+        assert!(
+            WATER_LINE - y <= 168,
+            "frame {}: water line at screen y {}",
+            g.frame(),
+            WATER_LINE - y
+        );
+        at_clamp += usize::from(g.frame() >= 3696 && y == TOP);
+    }
+    assert!(
+        at_clamp > 80,
+        "the bounce reaches the clamp ({at_clamp} frames)"
+    );
+    let swans = triggers(text, SWAN, state::HOME);
+    let swan3 = swans
+        .iter()
+        .find(|s| s.1 >= 3700)
+        .expect("swan #3 telegraphs");
+    assert_eq!(swan3.2, swan3.1 + 1, "swan #3: {swans:?}");
+    assert_eq!(swan3.2, 3795);
+}
+
+#[test]
+fn masthead_bounces_never_delay_a_regatta_start() {
+    // QA M5 (D-090): on the E33 solver route a held masthead bounce took
+    // the camera to y 20 and the third regatta boat's keel off the screen,
+    // so it started 8 frames late (3905 instead of its scroll-fixed 3897).
+    // With the top clamp each boat starts the frame after its hitbox is
+    // horizontally on screen, on the solver route (masthead and stomp
+    // bounces, the camera at the clamp) and on the relaxed run along the
+    // bed alike, and at the same frames.
+    let solver = triggers(replay_text!("wolfgangsee_solver"), BOAT, state::PARKED);
+    let relaxed = triggers(
+        replay_text!("qa_m5_wolfgangsee_relaxed"),
+        BOAT,
+        state::PARKED,
+    );
+    assert_eq!(solver.len(), 3, "{solver:?}");
+    for (s, seen, start) in &solver {
+        assert_eq!(*start, seen + 1, "boat {s}: {solver:?}");
+    }
+    let frames = |v: &[(u16, u32, u32)]| v.iter().map(|b| b.2).collect::<Vec<_>>();
+    // The relaxed run's scroll starts 469 frames after the solver's (its
+    // lead-in), so every scroll-fixed frame is shifted by as much.
+    let shifted: Vec<u32> = frames(&solver).iter().map(|f| f + 469).collect();
+    assert_eq!(frames(&relaxed), shifted);
+}
+
 #[test]
 fn the_lead_out_camera_catches_up_without_a_snap() {
     // QA M5 (`qa_m5_leadout_camera_catch_up`, was `..._bug_leadout_camera_snap`):

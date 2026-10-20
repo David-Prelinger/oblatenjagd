@@ -50,6 +50,8 @@ autoscroll_hold = 60      # frames of play the scroll waits after a start or res
 autoscroll_right_margin = 64  # px: in the scroll the hitbox's right edge stays <= camera x + 320 - this
 autoscroll_settle_speed = 2   # px/frame: grounded or swimming at the surface, the camera settles back to its rest, the level's bottom clamp (D-086)
 autoscroll_catch_up_speed = 4 # px/frame: in the lead-out the camera catches up with her at most this fast, no snap at the hand-over (> run_speed; D-086)
+autoscroll_ground_y = 84      # screen y: standing, the camera settles with her ground's top here (decks on row 11 -> the bottom clamp; D-090)
+autoscroll_top = 24           # level y: the camera's top clamp in every phase; at 24 the row-12 water line is at screen y 168 and swans/regatta keels stay fully on screen (D-090)
 
 [game]
 death_frames = 60         # 1 s from death to respawn

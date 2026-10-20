@@ -323,6 +323,13 @@ pub struct CameraTuning {
     /// right at most this many px per frame, so it catches up with her
     /// after the scroll instead of snapping to the follow line.
     pub autoscroll_catch_up_speed: i32,
+    /// Auto-scroll levels (D-090): standing, the camera settles towards the
+    /// framing with the top of her ground at this screen y (decks: the
+    /// bottom clamp; a perch or a box top: higher).
+    pub autoscroll_ground_y: i32,
+    /// Auto-scroll levels (D-090): the camera's y never goes above this
+    /// level y, in every phase (the top clamp; the water stays on screen).
+    pub autoscroll_top: i32,
 }
 
 /// Game flow constants.
@@ -1527,6 +1534,20 @@ impl Tuning {
                 "tuning.toml: need player.run_speed < camera.autoscroll_catch_up_speed <= 16 px/frame",
             ));
         }
+        // Standing at the rest her centre (8..=15 px above the feet: half of
+        // the smallest and of the tallest player hitbox, 16 and 30 px) must lie
+        // inside the dead zone, so the rest and the dead zone never fight.
+        let g = c.autoscroll_ground_y;
+        if g - 15 < c.deadzone_top || g - 8 > c.deadzone_bottom {
+            return Err(ParseError::new(
+                "tuning.toml: need camera.deadzone_top + 15 <= autoscroll_ground_y <= deadzone_bottom + 8",
+            ));
+        }
+        if !(0..=crate::camera::SCREEN_H / 2).contains(&c.autoscroll_top) {
+            return Err(ParseError::new(
+                "tuning.toml: camera.autoscroll_top must be 0..=90 px",
+            ));
+        }
         Ok(())
     }
 
@@ -1617,6 +1638,7 @@ mod tests {
             c.autoscroll_settle_speed, 2,
             "like the climb settle (D-086)"
         );
+        assert_eq!((c.autoscroll_ground_y, c.autoscroll_top), (84, 24), "D-090");
     }
 
     #[test]
@@ -1898,6 +1920,10 @@ mod tests {
             ("autoscroll_settle_speed", 17),
             ("autoscroll_catch_up_speed", 2), // < run_speed 2.5
             ("autoscroll_catch_up_speed", 17),
+            ("autoscroll_ground_y", 78), // centre above the dead zone
+            ("autoscroll_ground_y", 129),
+            ("autoscroll_top", -1),
+            ("autoscroll_top", 91),
             ("item_hitbox", 0),
             ("axe_hitbox", 17),
             ("max_alive", 0),

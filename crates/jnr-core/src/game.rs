@@ -22,7 +22,7 @@ pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
-use crate::camera::{Autoscroll, Camera, ClimbFocus, SCREEN_H, SCREEN_W, ScrollPhase};
+use crate::camera::{Autoscroll, Camera, ClimbFocus, Rest, SCREEN_H, SCREEN_W, ScrollPhase};
 use crate::enemies::Contact;
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
@@ -615,7 +615,7 @@ impl Game {
         let t = &self.tuning.camera;
         if let Some(zone) = self.autoscroll_zone() {
             let focus = self.player.center_px();
-            let rest = self.camera_rests();
+            let rest = self.camera_rest();
             self.camera
                 .follow_autoscroll(&mut self.scroll, zone, focus, rest, w, h, t);
             return;
@@ -640,19 +640,27 @@ impl Game {
         self.slack_x = focus.slack_x;
     }
 
-    /// The auto-scroll camera settles back to its rest (D-086) while she
-    /// stands (a tile, a deck, a boat or the lake bed) or swims at the
-    /// surface; not in the air and not diving.
-    pub(crate) fn camera_rests(&self) -> bool {
+    /// The auto-scroll camera settles towards a rest (D-086, D-090) while
+    /// she stands (a tile, a deck, a boat or the lake bed: framed by the
+    /// top of that ground, her feet) or swims at the surface; not in the
+    /// air and not diving.
+    pub(crate) fn camera_rest(&self) -> Rest {
         let p = &self.player;
         if p.on_ground {
-            return true;
+            return Rest::Ground((p.y + p.h).to_px());
         }
         let st = &self.tuning.swim;
-        p.swimming
+        let floating = p.swimming
             && !p.leaving_water
             && swim::swim_surface(p, &self.map, st)
-                .is_some_and(|surface| swim::at_surface(swim::chest(p, st).1, surface, st))
+                .is_some_and(|surface| swim::at_surface(swim::chest(p, st).1, surface, st));
+        if floating { Rest::Surface } else { Rest::None }
+    }
+
+    /// True if the auto-scroll camera settles this frame ([`Game::camera_rest`]).
+    #[cfg(test)]
+    pub(crate) fn camera_rests(&self) -> bool {
+        self.camera_rest() != Rest::None
     }
 
     /// D-051: the player's own movement stops at the screen's left edge,

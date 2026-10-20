@@ -37,9 +37,11 @@ S 1
 # --- wolfgangsee_checkpoint.replay frames 1200-2168 (the sting at its 2148) ---
 RB 124
 RBJ 33
-RB 5
-RBJ 36
-RB 711
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 707
 - 60
 # --- the stage intro after the death (title flow) ---
 - 150
