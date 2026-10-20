@@ -683,3 +683,7 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 
 ## D-088 Oblaten clear of sign boards (engine, M5 task E33; follows D-086's draw layers)
 - Since signs draw first (D-086), `levels lint` fails on any placed Oblate sharing a pixel with a sign board's face and frame as drawn (posts left out, overflowing text included); the 12 findings in Stages 2–5 at the time are allowlisted as warnings in `signlint::KNOWN` until the level-designer moves them (validation.md L3, `xtask/src/signlint.rs`).
+
+## D-089 Stage 6 time limit stays 260 (game-designer, M5 acceptance)
+- Confirms D-087. The re-cut relaxed run `qa_m5_wolfgangsee_relaxed` completes at 83.2 s; 3 × 83.2 rounded up would be 250, but that run is 8 frames under the 250/260 boundary (83.34 s) and walks along the steamer deck; a relaxed rider who stands on the deck gives ~85.5 s (260). The scroll fixes 68.3 s of every run, so only the lead-in (the notch swim lesson) and the lead-out vary; their spread straddles the boundary, and D-045's "relaxed for explorers" takes the generous end. A fresh QA relaxed run anywhere in 80.0–86.7 s confirms 260; outside that D-045 applies strictly. Not taken: 250 (re-cuts every Stage 6 HUD golden for no gameplay gain).
+- As built (M5 acceptance): „Baujahr 1873" stands at col 68 and „Seit 1950" at col 76 (D-085 accepted 69; both moved for the D-088 board clearance in the art-director's golden round 2).
