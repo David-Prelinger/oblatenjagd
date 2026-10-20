@@ -563,6 +563,7 @@ mod tests {
             "brunnwinkl",
             "falkenstein",
             "st_wolfgang",
+            "wolfgangsee",
         ] {
             let route = frames(&format!("{stage}_solver.replay"));
             let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
