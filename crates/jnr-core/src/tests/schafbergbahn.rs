@@ -89,7 +89,8 @@ fn travel_is_24_frames_per_tile_along_the_major_axis() {
         car_timing(TRAIN, Some(spawn), &t),
         CarTiming {
             travel: 384,
-            wait: 90
+            wait: 90,
+            moor: false
         }
     );
     // Stage 5's track (D-067): 24 tiles = 576 frames (9.6 s).

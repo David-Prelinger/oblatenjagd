@@ -1,6 +1,20 @@
 //! Moving one-way platforms: the Festungsbahn car (`docs/game-design.md`
-//! → "Festungsbahn car", D-026), the Zwölferhorn Gondel (D-044) and the
-//! Schafbergbahn (D-067).
+//! → "Festungsbahn car", D-026), the Zwölferhorn Gondel (D-044), the
+//! Schafbergbahn (D-067) and the Wolfgangsee boats (D-077).
+//!
+//! The boats (M5): the **Traundl** (`{ entity = "traundl", to = [dx, 0],
+//! phase = N }`, 2 ≤ |dx| ≤ 8) is the Gondel's free-running ping-pong with
+//! its own hull and timing ([`free_timing`]: `traundl_size`,
+//! `traundl_wait`, `traundl_frames_per_tile`). The **Dampfer**
+//! (`{ entity = "dampfer", to = [dx, 0] }`, 8 ≤ dx ≤ 64) is the
+//! Festungsbahn's waiting machine **one way** ([`CarTiming::moor`]): it
+//! waits for its rider, travels dx × `dampfer_frames_per_tile` frames and
+//! then stays [`car::MOORED`] until the level resets. While it travels its
+//! paddle wheel hurts the player ([`paddle_wheel`]). Both are placed like
+//! the car (left-aligned in the spawn cell, bottom on the cell's bottom =
+//! the water line) and share landing, carrying, crush, never-despawn and
+//! the lints; the pit-recovery lint skips columns over water (a fall is a
+//! swim, [`recovery_problems`]).
 //!
 //! The Schafbergbahn (`{ entity = "schafbergbahn", to = [dx, dy] }`,
 //! 4 ≤ |dx| ≤ 32) is the Festungsbahn's waiting state machine with its own
@@ -71,6 +85,9 @@ pub mod car {
     pub const WAIT_UPPER: u8 = 2;
     /// Travelling down: `count` frames (1..=travel) from the upper end.
     pub const DOWN: u8 = 3;
+    /// Arrived at the far end for good (a one-way car, the Dampfer, D-077):
+    /// it stays there until the level resets (`count` stays 0).
+    pub const MOORED: u8 = 4;
 }
 
 /// Whether the car's spawn cell is the upper end of its track (`to` goes
@@ -89,29 +106,41 @@ pub(crate) fn initial_state(spawn: &EntitySpawn) -> u8 {
     }
 }
 
-/// The timing of a car that waits for its rider: frames from one end to
-/// the other, and frames standing at the upper end.
+/// The timing of a moving platform: frames from one end to the other, and
+/// frames standing at an end (a waiting car: at its upper end; a
+/// free-running one: at each end).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CarTiming {
     /// Frames of travel between the ends (at least 1).
     pub travel: u16,
-    /// Frames standing at the upper end.
+    /// Frames standing at the upper end (free-running: at each end).
     pub wait: u16,
+    /// One way: a waiting car that stays [`car::MOORED`] at the far end
+    /// instead of waiting and coming back (the Dampfer, D-077).
+    pub moor: bool,
 }
 
 /// The timing of a waiting car of `kind` spawned from `spawn`: the
-/// Festungsbahn's fixed `festungsbahn_travel` / `festungsbahn_wait`, or the
-/// Schafbergbahn's [`schafbergbahn_travel`] / `schafbergbahn_wait`.
+/// Festungsbahn's fixed `festungsbahn_travel` / `festungsbahn_wait`, the
+/// Schafbergbahn's [`schafbergbahn_travel`] / `schafbergbahn_wait`, or the
+/// Dampfer's [`dampfer_travel`], one way.
 pub fn car_timing(kind: EntityKind, spawn: Option<&EntitySpawn>, t: &Tuning) -> CarTiming {
     let p = &t.platforms;
     match kind {
         EntityKind::Schafbergbahn => CarTiming {
             travel: spawn.map_or(1, |s| schafbergbahn_travel(s, t)),
             wait: p.schafbergbahn_wait,
+            moor: false,
+        },
+        EntityKind::Dampfer => CarTiming {
+            travel: spawn.map_or(1, |s| dampfer_travel(s, t)),
+            wait: 0,
+            moor: true,
         },
         _ => CarTiming {
             travel: p.festungsbahn_travel.max(1),
             wait: p.festungsbahn_wait,
+            moor: false,
         },
     }
 }
@@ -119,9 +148,11 @@ pub fn car_timing(kind: EntityKind, spawn: Option<&EntitySpawn>, t: &Tuning) -> 
 /// The state machine's next `(state, count)` after `(state, count)`;
 /// `rider` = the player stands on the car this frame.
 pub fn next_state(state: u8, count: u16, rider: bool, timing: CarTiming) -> (u8, u16) {
-    let CarTiming { travel, wait } = timing;
+    let CarTiming { travel, wait, moor } = timing;
     let travel = travel.max(1);
     match state {
+        car::MOORED => (car::MOORED, 0),
+        car::UP if count >= travel && moor => (car::MOORED, 0),
         car::UP if count >= travel => {
             if wait == 0 {
                 (car::DOWN, 1)
@@ -146,7 +177,7 @@ pub fn height_fraction(state: u8, count: u16, timing: CarTiming) -> (i32, i32) {
     let count = i32::from(count).min(travel);
     let k = match state {
         car::UP => count,
-        car::WAIT_UPPER => travel,
+        car::WAIT_UPPER | car::MOORED => travel,
         car::DOWN => travel - count,
         _ => 0,
     };
@@ -173,6 +204,34 @@ pub fn gondel_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
     per_tile_travel(spawn, t.platforms.gondel_frames_per_tile)
 }
 
+/// Travel frames of the Dampfer from its spawn to its mooring: dx tiles ×
+/// `dampfer_frames_per_tile` (at least 1; Stage 6's 40 tiles: 800 frames).
+pub fn dampfer_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
+    per_tile_travel(spawn, t.platforms.dampfer_frames_per_tile)
+}
+
+/// The timing of a free-running platform of `kind` (Gondel, Traundl):
+/// travel = max(|dx|, |dy|) tiles × its frames per tile, and its wait at
+/// each end (it never waits for a rider).
+pub fn free_timing(kind: EntityKind, spawn: &EntitySpawn, t: &Tuning) -> CarTiming {
+    let p = &t.platforms;
+    let (wait, frames_per_tile) = match kind {
+        EntityKind::Traundl => (p.traundl_wait, p.traundl_frames_per_tile),
+        _ => (p.gondel_wait, p.gondel_frames_per_tile),
+    };
+    CarTiming {
+        travel: per_tile_travel(spawn, frames_per_tile),
+        wait,
+        moor: false,
+    }
+}
+
+/// Frames of a free-running platform's whole cycle: 2 × (wait + travel).
+pub fn free_period(kind: EntityKind, spawn: &EntitySpawn, t: &Tuning) -> u16 {
+    let CarTiming { travel, wait, .. } = free_timing(kind, spawn, t);
+    2 * (wait + travel)
+}
+
 /// Travel frames of a Schafbergbahn from one end to the other:
 /// max(|dx|, |dy|) tiles × `schafbergbahn_frames_per_tile` (at least 1;
 /// Stage 5's 24-tile track: 576 frames).
@@ -182,7 +241,7 @@ pub fn schafbergbahn_travel(spawn: &EntitySpawn, t: &Tuning) -> u16 {
 
 /// Frames of a Gondel's whole cycle: 2 × (wait + travel).
 pub fn gondel_period(spawn: &EntitySpawn, t: &Tuning) -> u16 {
-    2 * (t.platforms.gondel_wait + gondel_travel(spawn, t))
+    free_period(EntityKind::Gondel, spawn, t)
 }
 
 /// How far along its track (frames of travel from the spawn end, 0..=
@@ -204,11 +263,12 @@ pub fn gondel_progress(k: u16, travel: u16, wait: u16) -> u16 {
     }
 }
 
-/// Puts a Gondel where its `count` says, recomputed from the spawn end
-/// (`base_x`/`base_y`), so it never drifts; `vx`/`vy` hold the movement.
-pub(crate) fn place_gondel(e: &mut Entity, spawn: &EntitySpawn, t: &Tuning) {
-    let travel = gondel_travel(spawn, t);
-    let k = i32::from(gondel_progress(e.count, travel, t.platforms.gondel_wait));
+/// Puts a free-running platform (Gondel, Traundl) where its `count` says,
+/// recomputed from the spawn end (`base_x`/`base_y`), so it never drifts;
+/// `vx`/`vy` hold the movement.
+pub(crate) fn place_free(e: &mut Entity, spawn: &EntitySpawn, t: &Tuning) {
+    let CarTiming { travel, wait, .. } = free_timing(e.kind, spawn, t);
+    let k = i32::from(gondel_progress(e.count, travel, wait));
     let n = i32::from(travel);
     let (dx, dy) = track_delta(spawn);
     let x = e.base_x + dx.mul_int(k).div_int(n);
@@ -219,13 +279,37 @@ pub(crate) fn place_gondel(e: &mut Entity, spawn: &EntitySpawn, t: &Tuning) {
     e.y = y;
 }
 
-/// One frame of a Gondel (called from `Entity::update`).
-pub(crate) fn update_gondel(e: &mut Entity, ctx: &UpdateCtx) {
+/// One frame of a free-running platform (Gondel, Traundl; called from
+/// `Entity::update`).
+pub(crate) fn update_free(e: &mut Entity, ctx: &UpdateCtx) {
     let Some(spawn) = e.spawn.and_then(|i| ctx.level.entities.get(usize::from(i))) else {
         return;
     };
-    e.count = (e.count + 1) % gondel_period(spawn, ctx.tuning);
-    place_gondel(e, spawn, ctx.tuning);
+    e.count = (e.count + 1) % free_period(e.kind, spawn, ctx.tuning);
+    place_free(e, spawn, ctx.tuning);
+}
+
+/// The Dampfer's paddle wheel (D-077): while it travels, a
+/// `dampfer_wheel_zone` rectangle centred on the hull's centre x, its top
+/// `dampfer_wheel_rise` px above the hull's bottom (the water line), the
+/// rest below it. It hurts the player on contact like an enemy that can't
+/// be stomped (`Game::interact`); a rider on the deck never reaches it.
+/// `None` while the Dampfer waits or is moored (the wheel is still) and for
+/// every other entity. Not an entity: the axe can't meet it.
+pub fn paddle_wheel(e: &Entity, t: &Tuning) -> Option<Aabb> {
+    if e.kind != EntityKind::Dampfer || e.state != car::UP || !e.active || e.removed {
+        return None;
+    }
+    let p = &t.platforms;
+    let [w, h] = p.dampfer_wheel_zone;
+    let (w, h) = (Fx::from_px(w), Fx::from_px(h));
+    let (cx, bottom) = e.feet();
+    Some(Aabb {
+        x: cx - w.div_int(2),
+        y: bottom - Fx::from_px(p.dampfer_wheel_rise),
+        w,
+        h,
+    })
 }
 
 /// Both end points of a moving platform's track as the feet (bottom centre
@@ -270,7 +354,7 @@ pub fn track_offset(kind: SpawnKind, delta: (Fx, Fx), k: i32, n: i32) -> (Fx, Fx
     (x, delta.1.mul_int(k).div_int(n))
 }
 
-/// Where a waiting car (Festungsbahn, Schafbergbahn) spawned from `spawn`
+/// Where a waiting car (Festungsbahn, Schafbergbahn, Dampfer) spawned from `spawn`
 /// at `(base_x, base_y)` is in `(state, count)`: its hitbox top-left,
 /// recomputed from the spawn point ([`track_offset`]), so it never drifts.
 /// The renderer uses it for the steam puffs left behind.
@@ -416,6 +500,8 @@ fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)>
         SpawnKind::Festungsbahn => t.platforms.festungsbahn_travel.max(1),
         SpawnKind::Gondel => gondel_travel(s, t),
         SpawnKind::Schafbergbahn => schafbergbahn_travel(s, t),
+        SpawnKind::Traundl => free_timing(EntityKind::Traundl, s, t).travel,
+        SpawnKind::Dampfer => dampfer_travel(s, t),
         _ => return None,
     };
     let car = Entity::from_spawn(s, i, t)?;
@@ -496,9 +582,10 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
 /// need: a walking jump reaches 4 tiles, minus one tile of safety margin.
 pub const MAX_STEP_UP_TILES: i32 = 3;
 
-/// Problems of every moving platform (Festungsbahn, Gondel, Schafbergbahn) whose pit has
-/// no way back up (D-027, D-044: falling off means waiting for the car or
-/// climbing back, never a softlock). Empty if fine.
+/// Problems of every moving platform (Festungsbahn, Gondel, Schafbergbahn,
+/// Traundl, Dampfer) whose pit has no way back up (D-027, D-044: falling
+/// off means waiting for the car or climbing back, never a softlock).
+/// Empty if fine.
 ///
 /// The check (cheap, deliberately simple): for each column the car passes
 /// over, the floor is the topmost solid or one-way tile at or below the
@@ -511,7 +598,9 @@ pub const MAX_STEP_UP_TILES: i32 = 3;
 /// above the car still counts as the step it is). Walking from the far
 /// end of the track to the exit, no step up from one floor to the next
 /// may exceed [`MAX_STEP_UP_TILES`]. Columns without a floor (bottomless
-/// or hazard pits: deaths, not softlocks) are skipped.
+/// or hazard pits: deaths, not softlocks) are skipped, and so are columns
+/// over water (D-077: the first tile below the track's top is water; under
+/// a boat a fall is a swim, not a softlock); an exit over water passes.
 ///
 /// Limits: it does not check headroom above a step, jump distances across
 /// skipped columns, that the camera (which never scrolls back) leaves the
@@ -536,10 +625,23 @@ pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
                 *h = (*h).min(y);
             }
         }
+        // The floor row; `None` when there is none or water comes first.
         let floor = |col: i32, y_px: i32| {
             (0..map.height)
                 .filter(|&r| r * TILE_PX >= y_px)
-                .find(|&r| matches!(map.kind_at(col, r), TileKind::Solid | TileKind::OneWay))
+                .find(|&r| {
+                    matches!(
+                        map.kind_at(col, r),
+                        TileKind::Solid | TileKind::OneWay | TileKind::Water // E27: | Swim
+                    )
+                })
+                .filter(|&r| map.kind_at(col, r) != TileKind::Water) // E27: | Swim
+        };
+        let over_water = |col: i32, y_px: i32| {
+            (0..map.height)
+                .filter(|&r| r * TILE_PX >= y_px)
+                .find(|&r| map.kind_at(col, r) != TileKind::Empty)
+                .is_some_and(|r| map.kind_at(col, r) == TileKind::Water) // E27: | Swim
         };
         let upper_top = (car.y + delta.1.min(Fx::ZERO)).to_px();
         let at = format!(
@@ -551,6 +653,9 @@ pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
         // The way out towards one side: `Err` describes why it fails.
         let climb = |right: bool| -> Result<(), String> {
             let exit = if right { c1 + 1 } else { c0 - 1 };
+            if over_water(exit, upper_top - TRACK_CLEARANCE_PX) {
+                return Ok(());
+            }
             let Some(exit_floor) = floor(exit, upper_top - TRACK_CLEARANCE_PX) else {
                 return Err(format!(
                     "{at}: no floor in column {} beyond the upper end of its track",
@@ -639,7 +744,8 @@ mod tests {
             timing,
             CarTiming {
                 travel: 150,
-                wait: 60
+                wait: 60,
+                moor: false
             }
         );
         assert_eq!(height_fraction(car::WAIT_LOWER, 0, timing), (0, 150));
@@ -1005,6 +1111,136 @@ mod tests {
             "{}",
             p[0]
         );
+    }
+
+    #[test]
+    fn a_one_way_car_travels_once_and_stays_moored() {
+        let timing = CarTiming {
+            travel: 320,
+            wait: 0,
+            moor: true,
+        };
+        // Nobody boards: it waits at its spawn.
+        assert!(
+            heights_with(timing, (car::WAIT_LOWER, 0), 500, |_| false)
+                .iter()
+                .all(|&k| k == 0)
+        );
+        // A rider from frame 10 (index 9) to 400: leaves, arrives after 320
+        // frames and stays at the far end for good, rider or not.
+        let k = heights_with(timing, (car::WAIT_LOWER, 0), 5000, |i| {
+            (9..400).contains(&i)
+        });
+        assert_eq!((k[8], k[9], k[9 + 319]), (0, 1, 320));
+        assert!(k[9 + 319..].iter().all(|&k| k == 320), "never comes back");
+        let (mut s, mut c) = (car::UP, 319);
+        (s, c) = next_state(s, c, false, timing);
+        assert_eq!((s, c), (car::UP, 320));
+        (s, c) = next_state(s, c, false, timing);
+        assert_eq!((s, c), (car::MOORED, 0));
+        assert_eq!(next_state(s, c, true, timing), (car::MOORED, 0));
+        assert_eq!(height_fraction(car::MOORED, 0, timing), (320, 320));
+    }
+
+    /// A 17-row lake level (decks on row 11, water rows 12–15, bed row 16)
+    /// from `rows` for rows 10–16, with a boat `B` (`entity` with `to`).
+    fn lake_level(entity: &str, to: &str, rows: &[&str]) -> Level {
+        let width = rows[0].len();
+        let mut grid: Vec<String> = vec![".".repeat(width); 17 - rows.len()];
+        grid.extend(rows.iter().map(|r| r.to_string()));
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"=\" = \"steg\"\n\"~\" = \"wolfgangsee_water\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"B\" = {{ entity = \"{entity}\", to = {to} }}\n[map]\ngrid = '''\n{}\n'''\n",
+            grid.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    #[test]
+    fn boats_skip_the_pit_recovery_over_water() {
+        let t = tuning();
+        // A Dampfer (10 tiles) from the quay (columns 0–1) 8 tiles right to
+        // a pier (columns 20–23) over open water: every column under it is
+        // water, so a fall is a swim, never a softlock (D-077).
+        let lake = [
+            "P.....................G.", // row 10
+            "##B.................====", // row 11: quay, pier
+            "##~~~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~~~",
+            "########################", // row 16: the lake bed
+        ];
+        let lvl = lake_level("dampfer", "[8, 0]", &lake);
+        assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
+        assert_eq!(track_problems(&lvl, &t), Vec::<String>::new());
+        // The same basin dry: a 5-tile step up from its floor to the pier.
+        let dry: Vec<String> = lake.iter().map(|r| r.replace('~', ".")).collect();
+        let dry: Vec<&str> = dry.iter().map(String::as_str).collect();
+        let p = recovery_problems(&lake_level("dampfer", "[8, 0]", &dry), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with("dampfer at row 12, column 3: no way back up")
+                && p[0].contains("a 5-tile step up to column 21"),
+            "{}",
+            p[0]
+        );
+        // A Traundl whose far end is open water (the exit is a swim too).
+        let open = [
+            "P....................G", // row 10
+            "##B...................",
+            "##~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~",
+            "##~~~~~~~~~~~~~~~~~~~~",
+            "######################",
+        ];
+        let lvl = lake_level("traundl", "[6, 0]", &open);
+        assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
+        // Its clearance: a solid tile 2 tiles above the deck on its way.
+        let mut low = open.to_vec();
+        low.insert(0, "..........#...........");
+        low.insert(1, "......................");
+        let p = track_problems(&lake_level("traundl", "[6, 0]", &low), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with("traundl at row 12, column 3: less than 48 px free"),
+            "{}",
+            p[0]
+        );
+    }
+
+    #[test]
+    fn the_paddle_wheel_turns_only_while_the_dampfer_travels() {
+        let t = tuning();
+        let mut ship = Entity::at_feet(
+            EntityKind::Dampfer,
+            Fx::from_px(80),
+            Fx::from_px(192),
+            t.platforms.dampfer_size,
+        );
+        assert_eq!(ship.x, Fx::ZERO);
+        for state in [car::WAIT_LOWER, car::MOORED] {
+            ship.state = state;
+            assert_eq!(paddle_wheel(&ship, &t), None, "{state}");
+        }
+        ship.state = car::UP;
+        // 32×20, centred on the hull's centre x (80), from 4 px above the
+        // water line (192) to 16 px below it.
+        assert_eq!(
+            paddle_wheel(&ship, &t),
+            Some(Aabb {
+                x: Fx::from_px(64),
+                y: Fx::from_px(188),
+                w: Fx::from_px(32),
+                h: Fx::from_px(20),
+            })
+        );
+        ship.active = false;
+        assert_eq!(paddle_wheel(&ship, &t), None, "not before activation");
+        let mut other = ship;
+        other.active = true;
+        other.kind = EntityKind::Festungsbahn;
+        assert_eq!(paddle_wheel(&other, &t), None, "only the Dampfer");
     }
 
     #[test]

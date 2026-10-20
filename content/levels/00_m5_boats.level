@@ -1,0 +1,64 @@
+# Grey-box test level for the Wolfgangsee boats (M5 task E28, D-077; not
+# part of the journey; side camera). 17 rows like Stage 6: decks on row 11,
+# the water line = the top of row 12, the lake bed on row 16. Swim water
+# (E27) doesn't exist yet: the lake is the lethal `wolfgangsee_water`
+# (E27: switch `~`/`w` to `see_wasser`/`see_wasser_tief`).
+# Sections (columns): the St. Wolfgang quay (`kai`, 0-11, start at 2); the
+# Dampfer in cell (12, 11), `to = [16, 0]`: its 160x16 hull (12-21) is
+# flush with the quay, Resi walks on, which calls it; it travels 16 tiles
+# in 320 frames (0.8 px/frame) and stays moored at 28-37, flush with the
+# Gschwendt pier (`steg`, 38-44). Under the first part of its way a dry
+# dock (12-27: air on row 12, its floor on row 13), where a player can
+# stand under the hull and meet the paddle wheel (32x20 at the hull's
+# middle while it travels: the spec's "any player overlapping it" until
+# E27's swimmers); open water from 28. Traundl A (46, `to = [6, 0]`,
+# 46-48 <-> 52-54), the raft (`steg`, 56-58), Traundl B (60, `to = [6, 0]`,
+# `phase = 126`: half a period out of step, 60-62 <-> 66-68), `dalben` piles at every track end (45, 55, 59,
+# 69), the Strobl quay (`kai`) from 70 with a `poller` at 74 and the goal at
+# 86. Props `schilf`, `startboje` (in the water) and `adventlaterne` (back,
+# on the pier). Every boat deck has 3 free tiles above its track; the
+# pit-recovery lint skips the water columns (a fall is a swim, D-077).
+# Replays: tests/replays/m5_boats_*.replay.
+
+[meta]
+id = "m5_boats"
+time_limit = 300
+
+[legend]
+"K" = "kai"
+"=" = "steg"
+"o" = "poller"
+"_" = "seegrund"
+"~" = "wolfgangsee_water"       # E27: see_wasser
+"w" = "wolfgangsee_water_deep"  # E27: see_wasser_tief
+"D" = { entity = "dampfer", to = [16, 0] }
+"A" = { entity = "traundl", to = [6, 0] }
+"B" = { entity = "traundl", to = [6, 0], phase = 126 }
+"d" = { entity = "prop", sprite = "dalben" }
+"s" = { entity = "prop", sprite = "schilf" }
+"b" = { entity = "prop", sprite = "startboje" }
+"L" = { entity = "prop", sprite = "adventlaterne", layer = "back" }
+"*" = { entity = "oblate" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+.........................**......................**............**.........................
+........................*..*..............................................................
+..P......................................L................................o...........G...
+KKKKKKKKKKKKD..................s...b..=======dA........d===dB........dKKKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKK................~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~KKKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKKKKKKKKKKK__________________________________________KKKKKKKKKKKKKKKKKKKK
+'''

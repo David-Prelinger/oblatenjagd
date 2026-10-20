@@ -1,0 +1,11 @@
+# E28 (D-077): the Dampfer goes one way. Resi rides it to the Gschwendt
+# pier and stays on board for another 900 frames: it stays moored there
+# (no wait-and-return like the Festungsbahn), so she is still at the pier
+# at the end, never carried back.
+level  = m5_boats
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Jumped state=playing player_x>=539
+---
+R 162     # onto the deck, to its middle
+- 1200    # the ride (320 frames) and 900 more
