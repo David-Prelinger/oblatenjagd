@@ -1,0 +1,63 @@
+# Dalben: a cluster of three tarred mooring piles (d with an l lit
+# stripe) with pointed O/l conical caps (never flat: not a platform,
+# D-038), lashed with two o/O rope bands, k outline above the water. The
+# water line is sprite row 32: below it the piles continue one tile as a
+# b/T tint (no outline), with w ripples at the line. Front-layer prop.
+# Origin 8,32 (catalog said 8,48): placed in the air cell above the
+# surface, its origin sits on the water line, so the bottom tile reaches
+# under the surface.
+# Drawn by the pixel-artist with a throwaway script; the grid is the source.
+sprite = dalben
+size   = 16x48
+origin = 8,32
+anim   = idle frames=1
+---
+frame idle 0
+................
+................
+................
+.......kk.......
+......kOlk......
+......kOlk......
+......kOlk......
+......kldk..kk..
+......kldk.kOlk.
+..kk..kldk.kOlk.
+.kOlk.kldk.kOlk.
+.kOlk.kldk.kldk.
+.kOlk.kldk.kldk.
+.kldk.kldk.kldk.
+.koookooookoook.
+.kOOOkOOOOkOOOk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.koookooookoook.
+.kOOOkOOOOkOOOk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kldk.kldk.kldk.
+.kkkk.kkkk.kkkk.
+wbTbbwbTbbwbTbbw
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
+.bTbb.bTbb.bTbb.
