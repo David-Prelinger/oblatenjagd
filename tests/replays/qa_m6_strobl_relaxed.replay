@@ -1,0 +1,177 @@
+# QA M6 relaxed run of Strobl (D-045 measurement, ZEIT clock up to the goal
+# touch, D-090). Sensible non-speedrun play at walking speed (RUN never
+# held): 1.5 s at the start by the „Bus 150“ board, the M-box and its
+# Mozartkugel (Zuckerschock from ~350), past Nordic-Walker #1, 2 s in the
+# Pension Seeblick garden watching shutter #1, up onto the balcony, the
+# Z-box bumped and the Zaunerstollen caught as it rolls back from the
+# corner post (1-up), the staircase #2 -> #3 -> annex roof, down the steps,
+# along the promenade and the Dorfplatz onto shelter B, where she waits
+# out the whole Postbus halt (5.5 s), the checkpoint, the M-box (1000),
+# 4 s on the Gastgarten terrace watching Ampel #1's cars pass beneath her,
+# across Ampel #2's lane via shelter C (1 s there), 0.7 s on deck A, the
+# walkway with Gelse #1, 2 s on the Klausbruecke watching E-Biker #1 crash,
+# the Ache after E-Biker #2, the halt roof and a walk-off to the Maibaum
+# (100). Movement between the pauses: walking-only QA beam search (4-frame
+# chunks, never hurt). LevelComplete at 4534; ZEIT clock consumed 4503
+# frames = 75.05 s (165 of 240 left): 3 x 75.05 = 225.2 -> 230 s (D-045).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = complete frames=4534..4534 deaths=0 no_event=Hurt no_event=Died event=PowerUp event=ExtraLife event=CheckpointReached power=big state=stage_clear
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 8
+R 16
+RJ 4
+R 32
+RJ 24
+R 44
+RJ 12
+R 16
+L 8
+R 12
+L 12
+- 30
+R 20
+RJ 8
+R 16
+RJ 24
+R 28
+L 8
+LJ 12
+RJ 20
+R 16
+RJ 24
+R 36
+L 4
+- 4
+L 4
+- 120
+RJ 16
+R 12
+RJ 8
+R 24
+- 8
+R 8
+- 4
+R 4
+- 12
+J 14
+- 80
+R 24
+RJ 16
+R 60
+J 4
+RJ 4
+R 40
+- 4
+L 8
+- 4
+R 12
+RJ 36
+R 4
+RJ 16
+R 8
+L 4
+J 4
+RJ 12
+R 24
+L 4
+- 4
+L 4
+- 30
+R 52
+RJ 8
+R 64
+RJ 4
+R 28
+RJ 24
+R 100
+RJ 4
+R 16
+RJ 8
+R 28
+RJ 16
+R 20
+RJ 4
+R 40
+- 4
+L 8
+J 12
+RJ 4
+L 8
+R 4
+- 330
+R 56
+RJ 36
+R 164
+RJ 28
+R 16
+RJ 24
+R 40
+RJ 20
+R 12
+RJ 28
+R 32
+L 4
+- 4
+L 4
+- 240
+R 44
+RJ 36
+R 24
+RJ 28
+R 92
+- 4
+L 8
+- 8
+J 16
+- 4
+R 4
+L 4
+- 60
+R 236
+- 4
+L 8
+- 40
+R 24
+RJ 12
+R 16
+RJ 4
+R 32
+RJ 4
+R 28
+RJ 28
+R 52
+RJ 20
+R 4
+RJ 12
+R 48
+J 4
+RJ 20
+R 32
+RJ 12
+R 76
+- 4
+L 8
+- 120
+R 16
+RJ 36
+R 40
+RJ 28
+R 24
+RJ 20
+R 16
+RJ 4
+R 24
+RJ 16
+R 12
+RJ 36
+R 8
+- 4
+R 80
