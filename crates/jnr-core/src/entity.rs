@@ -299,6 +299,9 @@ pub enum EntityKind {
     /// way (moored for good at the far end), with a paddle-wheel hurt zone
     /// while it travels ([`crate::platform::paddle_wheel`], D-077).
     Dampfer,
+    /// A Fensterladen: a stationary one-way platform that is there only
+    /// while open on the stage clock ([`crate::platform::shutter`], D-094).
+    Fensterladen,
 }
 
 impl EntityKind {
@@ -325,6 +328,7 @@ impl EntityKind {
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Traundl => Some("traundl"),
             EntityKind::Dampfer => Some("dampfer"),
+            EntityKind::Fensterladen => Some("fensterladen"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -332,9 +336,10 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn,
-    /// Traundl, Dampfer): one-way tops that carry the player and never
-    /// despawn (D-027).
+    /// True for the platforms (Festungsbahn, Gondel, Schafbergbahn,
+    /// Traundl, Dampfer, and the stationary Fensterladen): one-way tops that
+    /// carry the player and never despawn (D-027). A Fensterladen's top is
+    /// there only while it is open ([`crate::platform::carries`], D-094).
     pub const fn is_platform(self) -> bool {
         matches!(
             self,
@@ -343,6 +348,7 @@ impl EntityKind {
                 | EntityKind::Schafbergbahn
                 | EntityKind::Traundl
                 | EntityKind::Dampfer
+                | EntityKind::Fensterladen
         )
     }
 
@@ -377,6 +383,8 @@ impl EntityKind {
             EntityKind::Schafbergbahn => 23,
             EntityKind::Traundl => 24,
             EntityKind::Dampfer => 25,
+            // 26–27: E36 (traffic); 28–29: E37.
+            EntityKind::Fensterladen => 28,
         }
     }
 
@@ -608,6 +616,20 @@ impl Entity {
                 crate::platform::place_free(&mut cab, s, t);
                 cab
             }
+            SpawnKind::Fensterladen => {
+                // Left-aligned in its cell with its top on the cell's top
+                // edge (D-094), in its state at stage clock 0.
+                let [w, h] = t.platforms.fensterladen_size;
+                let mut shutter = Entity::new(
+                    EntityKind::Fensterladen,
+                    cell_x,
+                    tile.mul_int(s.row),
+                    Fx::from_px(w),
+                    Fx::from_px(h),
+                );
+                crate::platform::place_shutter(&mut shutter, s, 0);
+                shutter
+            }
             SpawnKind::NordicWalker => Entity::at_feet(
                 EntityKind::Enemy(EnemyKind::NordicWalker),
                 feet_x,
@@ -787,10 +809,13 @@ impl Entity {
         let (map, t) = (ctx.map, ctx.tuning);
         self.timer = self.timer.saturating_add(1);
         match self.kind {
+            // A Fensterladen follows the stage clock, not its own update
+            // (`Game::tick_timer`, D-094).
             EntityKind::Oblate
             | EntityKind::Checkpoint
             | EntityKind::Sign
-            | EntityKind::Durchkriechstein => None,
+            | EntityKind::Durchkriechstein
+            | EntityKind::Fensterladen => None,
             EntityKind::Hackl => {
                 // Rises out of its box, then stays where it is (D-056).
                 if self.timer <= t.items.rise_frames {
@@ -1018,6 +1043,7 @@ mod tests {
                 EntityKind::SchneekugelScherben => 23,
                 EntityKind::Traundl => 24,
                 EntityKind::Dampfer => 25,
+                EntityKind::Fensterladen => 26,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -1048,6 +1074,7 @@ mod tests {
             EntityKind::SchneekugelScherben,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Fensterladen,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -1197,6 +1224,7 @@ mod tests {
             dy: 0,
             lead: false,
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
+            open: crate::level::DEFAULT_FENSTERLADEN_OPEN,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
         };
@@ -1223,6 +1251,8 @@ mod tests {
                     // line), a boat's keel 12 px; a Gelse is centred.
                     SpawnKind::Schwan => 12,
                     SpawnKind::Regattaboot | SpawnKind::Gelse => 4,
+                    // A shutter's 8 px body hangs from its cell's top.
+                    SpawnKind::Fensterladen => 8,
                     _ => 0,
                 };
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");
@@ -1253,6 +1283,8 @@ mod tests {
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
         assert!(EntityKind::Schafbergbahn.is_platform());
         assert!(EntityKind::Traundl.is_platform() && EntityKind::Dampfer.is_platform());
+        assert!(EntityKind::Fensterladen.is_platform());
+        assert_eq!(EntityKind::Fensterladen.sprite(), Some("fensterladen"));
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);

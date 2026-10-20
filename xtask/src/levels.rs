@@ -6,8 +6,8 @@
 //! set) and every sign's `text` key exist in `content/text/de.toml`, at
 //! least one goal (`time_limit` is required by `Level::parse`), every
 //! `prop` names a catalog prop sprite (`jnr_core::PROP_SPRITES`), and every
-//! moving platform track (Festungsbahn, Gondel, Schafbergbahn, Traundl,
-//! Dampfer) has 3 tiles
+//! platform track (Festungsbahn, Gondel, Schafbergbahn, Traundl,
+//! Dampfer; a Fensterladen is a zero-length track, D-094) has 3 tiles
 //! of free space above the car (`jnr_core::platform::track_problems`; for
 //! the Schafbergbahn its whole swept body and the 3 tiles above its roof
 //! are free of solid and one-way tiles, D-067) and a way back up
@@ -49,8 +49,8 @@ Commands:
   lint [id]   lint every content/levels/*.level (or only the level with this
               meta.id): parses (incl. time_limit), unique id, title_key and
               sign text keys exist, a goal, prop sprites are catalog props,
-              3 free tiles above every Festungsbahn, Gondel, Traundl and
-              Dampfer track (the Schafbergbahn: its swept body and 3 tiles
+              3 free tiles above every Festungsbahn, Gondel, Traundl,
+              Dampfer and Fensterladen (the Schafbergbahn: its swept body and 3 tiles
               above its roof free of solid and one-way tiles), and a way
               back up (steps <= 3 tiles) from the pit under it to its upper
               end (columns over water skipped); swim water ends on a solid

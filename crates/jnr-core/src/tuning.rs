@@ -211,6 +211,20 @@ pub struct PlatformTuning {
     /// Px the wheel zone's top lies above the hull's bottom (the water
     /// line); the rest of its height is below it.
     pub dampfer_wheel_rise: i32,
+    /// Fensterladen body `[w, h]` in whole pixels (D-094): whole tiles
+    /// wide, at most a tile high; left-aligned in its spawn cell with its
+    /// top on the cell's top edge.
+    pub fensterladen_size: [i32; 2],
+    /// The last frames of a Fensterladen's open phase that rattle (the
+    /// closing telegraph, drawn by the renderer only; the body never
+    /// moves). At most the shortest open phase
+    /// ([`crate::level::FENSTERLADEN_MIN_OPEN`]).
+    pub fensterladen_rattle: u16,
+    /// The last frames of a Fensterladen's closed phase that show the
+    /// landlady at the window (the opening telegraph, renderer only). At
+    /// most the shortest closed phase
+    /// ([`crate::level::FENSTERLADEN_MIN_CLOSED`]).
+    pub fensterladen_warn: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -676,6 +690,28 @@ pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
 }
 
 impl PlatformTuning {
+    /// The Fensterladen keys (D-094): a body whole tiles wide and at most a
+    /// tile high (its top on the cell's top edge, so it stays in its cell
+    /// row), and telegraphs that fit the shortest open and closed phases a
+    /// level may give it.
+    fn validate_fensterladen(&self) -> Result<(), ParseError> {
+        use crate::level::{FENSTERLADEN_MIN_CLOSED, FENSTERLADEN_MIN_OPEN};
+        let [w, h] = self.fensterladen_size;
+        if !(TILE_PX..=64).contains(&w) || w % TILE_PX != 0 || !(1..=TILE_PX).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.fensterladen_size must be whole tiles 16..=64 px wide and 1..=16 px high",
+            ));
+        }
+        if !(1..=FENSTERLADEN_MIN_OPEN).contains(&self.fensterladen_rattle)
+            || !(1..=FENSTERLADEN_MIN_CLOSED).contains(&self.fensterladen_warn)
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need platforms.fensterladen_rattle 1..={FENSTERLADEN_MIN_OPEN} (the shortest open phase) and fensterladen_warn 1..={FENSTERLADEN_MIN_CLOSED} (the shortest closed phase)"
+            )));
+        }
+        Ok(())
+    }
+
     /// The M5 boat keys (Traundl, Dampfer; D-077).
     fn validate_boats(&self, scroll_speed: Fx) -> Result<(), ParseError> {
         // A Traundl's whole cycle fits the u16 frame counter (as the
@@ -1298,6 +1334,7 @@ impl Tuning {
         }
         self.platforms
             .validate_boats(self.camera.autoscroll_speed)?;
+        self.platforms.validate_fensterladen()?;
         let n = e.blasmusiker_notes;
         if n[0] < e.blasmusiker_inhale
             || n.windows(2).any(|w| w[0] >= w[1])
@@ -1684,6 +1721,39 @@ mod tests {
         assert!(wait(0).is_ok());
         assert!(wait(32_767 - 1536).is_ok());
         assert!(wait(32_767 - 1535).is_err());
+    }
+
+    #[test]
+    fn fensterladen_numbers_are_validated() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.fensterladen_size, [32, 8]);
+        assert_eq!((pl.fensterladen_rattle, pl.fensterladen_warn), (30, 20));
+        let with = |old: &str, new: &str| {
+            assert!(REAL.contains(old), "{old}");
+            Tuning::parse(&REAL.replace(old, new))
+        };
+        let size = "fensterladen_size = [32, 8]";
+        for ok in ["[16, 1]", "[64, 16]", "[48, 8]"] {
+            assert!(
+                with(size, &format!("fensterladen_size = {ok}")).is_ok(),
+                "{ok}"
+            );
+        }
+        for bad in ["[24, 8]", "[0, 8]", "[80, 8]", "[32, 0]", "[32, 17]"] {
+            let e = with(size, &format!("fensterladen_size = {bad}"))
+                .unwrap_err()
+                .to_string();
+            assert!(e.contains("fensterladen_size"), "{bad}: {e}");
+        }
+        let rattle = "fensterladen_rattle = 30";
+        assert!(with(rattle, "fensterladen_rattle = 60").is_ok());
+        assert!(with(rattle, "fensterladen_rattle = 61").is_err());
+        assert!(with(rattle, "fensterladen_rattle = 0").is_err());
+        let warn = "fensterladen_warn = 20";
+        assert!(with(warn, "fensterladen_warn = 30").is_ok());
+        assert!(with(warn, "fensterladen_warn = 31").is_err());
+        assert!(with(warn, "fensterladen_warn = 0").is_err());
     }
 
     #[test]

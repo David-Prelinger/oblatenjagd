@@ -175,6 +175,7 @@ pub struct EntityLooks<'a> {
     traundl: Option<&'a AtlasSprite>,
     dampfer: Option<&'a AtlasSprite>,
     gischt: Option<&'a AtlasSprite>,
+    fensterladen: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -225,6 +226,7 @@ impl<'a> EntityLooks<'a> {
             traundl: s("traundl"),
             dampfer: s("dampfer"),
             gischt: s("gischt"),
+            fensterladen: s("fensterladen"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -269,6 +271,7 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Schafbergbahn => self.schafbergbahn,
             EntityKind::Traundl => self.traundl,
             EntityKind::Dampfer => self.dampfer,
+            EntityKind::Fensterladen => self.fensterladen,
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -317,6 +320,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Schafbergbahn => OUTLINE,
         EntityKind::Traundl => LEATHER_DARK,
         EntityKind::Dampfer => WHITE,
+        EntityKind::Fensterladen => DIRNDL_RED,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
@@ -440,6 +444,7 @@ fn draw_entity(
         EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
         EntityKind::Traundl => draw_traundl(game, looks, atlas, fb, cam, e),
         EntityKind::Dampfer => draw_dampfer(game, looks, atlas, fb, cam, e),
+        EntityKind::Fensterladen => draw_fensterladen(game, looks, atlas, fb, cam, e),
         _ if e.rising(game.tuning()) => {}
         _ => draw_body(game, looks, atlas, fb, cam, e),
     }
@@ -462,6 +467,80 @@ fn draw_festungsbahn(
             draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
         }
         None => draw_body(game, looks, atlas, fb, cam, e),
+    }
+}
+
+/// A Fensterladen's sprite origin lies this many px below its body's top
+/// (sprite-catalog: 32×24, origin 16,24, the body's top on sprite row 0).
+pub const FENSTERLADEN_SPRITE_H: i32 = 24;
+/// Ticks per step of the grey box's rattle (1 px down every other step).
+pub const FENSTERLADEN_RATTLE_TICKS: u32 = 4;
+/// The grey box's folded-up leaves: this wide, this tall, from the body's
+/// top down at both of its ends.
+pub const FENSTERLADEN_LEAF: [i32; 2] = [4, 20];
+
+/// A Fensterladen (D-094) in its look from the stage clock
+/// (`platform::shutter_look`): sprite `fensterladen` with the anim of that
+/// name (`open`, `rattle`, `closed`, `warn`; the rattle's shake is in its
+/// frames) at the body's top + [`FENSTERLADEN_SPRITE_H`], never mirrored.
+/// Else the grey box: open, the body; rattling, the body shaken 1 px down
+/// every other [`FENSTERLADEN_RATTLE_TICKS`] ticks (drawn only, the body
+/// never moves); closed, two leaves folded up at its ends and no ledge;
+/// warning, the leaves and the landlady's face (a `SKIN_LIGHT` square)
+/// between them.
+fn draw_fensterladen(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    use jnr_core::platform::{ShutterLook, shutter_look};
+    let Some(look) = shutter_look(e, game.level(), game.tuning()) else {
+        return;
+    };
+    let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+    let (w, h) = (e.w.to_px(), e.h.to_px());
+    if let Some(s) = looks.fensterladen {
+        let name = match look {
+            ShutterLook::Open => "open",
+            ShutterLook::Rattle => "rattle",
+            ShutterLook::Closed => "closed",
+            ShutterLook::Warn => "warn",
+        };
+        let anim = s.anim(name).unwrap_or(&s.anims[0]);
+        let x = left + w / 2;
+        draw_sprite(
+            fb,
+            atlas,
+            s,
+            anim,
+            game.frame(),
+            x,
+            top + FENSTERLADEN_SPRITE_H,
+            false,
+        );
+        return;
+    }
+    match look {
+        ShutterLook::Open | ShutterLook::Rattle => {
+            let shake =
+                look == ShutterLook::Rattle && (game.frame() / FENSTERLADEN_RATTLE_TICKS) % 2 == 1;
+            let y = top + i32::from(shake);
+            fb.fill_rect(left, y, w, h, DIRNDL_RED);
+            fb.outline_rect(left, y, w, h, OUTLINE);
+        }
+        ShutterLook::Closed | ShutterLook::Warn => {
+            let [lw, lh] = FENSTERLADEN_LEAF;
+            for x in [left, left + w - lw] {
+                fb.fill_rect(x, top, lw, lh, DIRNDL_RED);
+                fb.outline_rect(x, top, lw, lh, OUTLINE);
+            }
+            if look == ShutterLook::Warn {
+                fb.fill_rect(left + w / 2 - 3, top + 4, 6, 6, SKIN_LIGHT);
+            }
+        }
     }
 }
 
@@ -1842,6 +1921,7 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Fensterladen,
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
@@ -2080,6 +2160,122 @@ mod tests {
         assert_eq!(shown(&g), (Some(A), Some(A)), "moored");
     }
 
+    /// A 20×10 grey-box level, ground in row 9, the player at (2, 8) and a
+    /// Fensterladen `{ entity = "fensterladen", period = 120, open = 60 }`
+    /// in cell (8, 5): body x 128..160, y 80..88. Its cycle on the stage
+    /// clock: open 0..30, rattle 30..60, closed 60..100, warn 100..120.
+    fn shutter_game() -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 20])
+            .collect();
+        rows[8][2] = 'P';
+        rows[5][8] = 'f';
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"f\" = {{ entity = \"fensterladen\", period = 120, open = 60 }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    fn the_shutter(g: &Game) -> Entity {
+        *g.entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Fensterladen)
+            .unwrap()
+    }
+
+    /// Grey box (D-094): open, the red body; rattling, the body shaken 1 px
+    /// down every other 4 ticks while the core body stays put; closed, only
+    /// the two folded-up leaves (no ledge); warning, the leaves and the
+    /// landlady's face. The look follows the stage clock.
+    #[test]
+    fn the_grey_box_fensterladen_shows_open_rattle_closed_and_warn() {
+        use jnr_core::platform::{ShutterLook, shutter_look};
+        let mut g = shutter_game();
+        let e = the_shutter(&g);
+        let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+        assert_eq!((e.w.to_px(), e.h.to_px()), (32, 8));
+        // (the ledge 2 px below the top, the row just under the ledge is
+        // its shaken outline, a folded-up leaf, the landlady's face)
+        let probe = |g: &Game| {
+            let fb = rendered(g);
+            (
+                fb.get(left + 16, top + 2) == Some(DIRNDL_RED),
+                fb.get(left + 16, top + 8) == Some(OUTLINE),
+                fb.get(left + 1, top + 12) == Some(DIRNDL_RED),
+                fb.get(left + 16, top + 6) == Some(SKIN_LIGHT),
+            )
+        };
+        let mut seen = Vec::new();
+        for clock in 0..120 {
+            assert_eq!(g.stage_clock(), clock);
+            let look = shutter_look(&the_shutter(&g), g.level(), g.tuning()).unwrap();
+            seen.push((look, probe(&g), g.frame()));
+            g.step(InputFrame::NONE);
+        }
+        for (clock, &(look, probe, frame)) in seen.iter().enumerate() {
+            let shaken = (frame / FENSTERLADEN_RATTLE_TICKS) % 2 == 1;
+            let want = match clock {
+                0..30 => (ShutterLook::Open, (true, false, false, false)),
+                30..60 => (ShutterLook::Rattle, (true, shaken, false, false)),
+                60..100 => (ShutterLook::Closed, (false, false, true, false)),
+                _ => (ShutterLook::Warn, (false, false, true, true)),
+            };
+            assert_eq!((look, probe), want, "clock {clock}");
+        }
+        assert!(seen[30..60].iter().any(|s| s.1.1), "it shakes");
+        // The body itself never moves.
+        let now = the_shutter(&g);
+        assert_eq!((now.x, now.y), (e.x, e.y));
+    }
+
+    /// With its sprite: the anim named after the look, drawn with its
+    /// origin 24 px below the body's top (the sprite spans the body's top
+    /// row down to 23 px below it), never mirrored.
+    #[test]
+    fn the_fensterladen_picks_its_anim_from_the_stage_clock() {
+        use crate::testutil::{A, B, C, atlas, image, sprite};
+        let frame = |c: &str| image(&vec![c.repeat(32).as_str(); 24]);
+        let shutter = sprite(
+            "fensterladen",
+            (16, 24),
+            false,
+            vec![
+                ("open", 0, vec![frame("a")]),
+                ("rattle", 0, vec![frame("b")]),
+                ("closed", 0, vec![frame("c")]),
+                ("warn", 0, vec![frame("b")]),
+            ],
+        );
+        let atlas = atlas(&[shutter]);
+        let texts = Texts::default();
+        let mut g = shutter_game();
+        let e = the_shutter(&g);
+        let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let inside = (fb.get(left, top), fb.get(left + 31, top + 23));
+            let outside = [fb.get(left + 16, top - 1), fb.get(left + 16, top + 24)];
+            assert!(!outside.contains(&inside.0), "{outside:?} vs {inside:?}");
+            inside
+        };
+        let mut seen = Vec::new();
+        for _ in 0..120 {
+            seen.push(shown(&g));
+            g.step(InputFrame::NONE);
+        }
+        assert!(seen[..30].iter().all(|&c| c == (Some(A), Some(A))));
+        assert!(seen[30..60].iter().all(|&c| c == (Some(B), Some(B))));
+        assert!(seen[60..100].iter().all(|&c| c == (Some(C), Some(C))));
+        assert!(seen[100..].iter().all(|&c| c == (Some(B), Some(B))));
+    }
     /// The Traundl: grey box with the rower stub at the stern; with its
     /// sprite `idle` while it waits at an end and `ride` while it moves.
     #[test]

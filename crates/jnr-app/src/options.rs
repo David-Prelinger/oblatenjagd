@@ -67,6 +67,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_m5_swim.level"),
     ),
     (
+        "m6_shutters",
+        include_str!("../../../content/levels/00_m6_shutters.level"),
+    ),
+    (
         "route_a",
         include_str!("../../../content/levels/00_route_a.level"),
     ),

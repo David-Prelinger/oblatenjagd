@@ -19,6 +19,7 @@ mod modes;
 mod reisebus;
 mod route;
 mod schafbergbahn;
+mod shutters;
 mod swim;
 mod testbed;
 

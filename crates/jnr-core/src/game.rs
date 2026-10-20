@@ -260,6 +260,10 @@ pub struct Game {
     pub(crate) time: u16,
     /// Frames into the current second.
     time_frames: u8,
+    /// The stage clock (D-094): frames of play since the stage started or
+    /// since the last respawn, i.e. the frames the ZEIT timer counts
+    /// (frozen, paused, dying and goal-sequence frames don't count).
+    pub(crate) stage_clock: u32,
     /// Index into `Level::entities` of the furthest checkpoint passed.
     checkpoint: Option<u16>,
     death_cause: Option<DeathCause>,
@@ -356,6 +360,7 @@ impl Game {
             lives: tuning.game.lives_start,
             time: 0,
             time_frames: 0,
+            stage_clock: 0,
             checkpoint: None,
             death_cause: None,
             start_held: false,
@@ -678,8 +683,11 @@ impl Game {
         }
     }
 
-    /// One frame of the countdown; at 0 the player dies.
+    /// One frame of the countdown and of the stage clock (every
+    /// Fensterladen follows it at once, D-094); at 0 the player dies.
     fn tick_timer(&mut self) {
+        self.stage_clock = self.stage_clock.saturating_add(1);
+        self.place_shutters();
         self.time_frames += 1;
         if u32::from(self.time_frames) < crate::TICKS_PER_SECOND {
             return;
@@ -705,7 +713,25 @@ impl Game {
         self.events.push(Event::Died);
     }
 
-    /// Back to the level's start state: tiles, entities, timer.
+    /// Every Fensterladen (active or not: it is drawn before activation)
+    /// in its state at the current stage clock (D-094).
+    fn place_shutters(&mut self) {
+        let clock = self.stage_clock;
+        for e in &mut self.entities {
+            if e.kind != EntityKind::Fensterladen {
+                continue;
+            }
+            if let Some(spawn) = e
+                .spawn
+                .and_then(|i| self.level.entities.get(usize::from(i)))
+            {
+                crate::platform::place_shutter(e, spawn, clock);
+            }
+        }
+    }
+
+    /// Back to the level's start state: tiles, entities, timer, and the
+    /// stage clock at 0 (the entities spawn in their state at clock 0).
     fn reset_level(&mut self) {
         self.map = Arc::clone(&self.start_map);
         self.changed_cells.clear();
@@ -719,6 +745,7 @@ impl Game {
             .collect();
         self.time = self.level.meta.time_limit.min(u32::from(u16::MAX)) as u16;
         self.time_frames = 0;
+        self.stage_clock = 0;
     }
 
     /// Puts a Normal player at the checkpoint (or the start) and the camera
@@ -1262,6 +1289,7 @@ impl Game {
                 | EntityKind::Schafbergbahn
                 | EntityKind::Traundl
                 | EntityKind::Dampfer
+                | EntityKind::Fensterladen
                 | EntityKind::ThrownHackl
                 | EntityKind::Durchkriechstein => {}
             }
@@ -1572,6 +1600,7 @@ impl Game {
         h.u8(self.lives);
         h.u16(self.time);
         h.u8(self.time_frames);
+        h.u32(self.stage_clock);
         h.u8(match self.death_cause {
             None => 0,
             Some(DeathCause::Hazard) => 1,
@@ -1634,6 +1663,7 @@ impl Game {
                     | EntityKind::Schafbergbahn
                     | EntityKind::Traundl
                     | EntityKind::Dampfer
+                    | EntityKind::Fensterladen
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {
@@ -1725,6 +1755,14 @@ impl Game {
     pub fn lives(&self) -> u8 {
         self.lives
     }
+    /// The stage clock (D-094, shared with the Offiziere's drill, D-096):
+    /// frames of play since the stage started or since the last respawn,
+    /// exactly the frames the ZEIT timer counts (frozen, paused, dying and
+    /// goal-sequence frames don't count). Fensterläden run on it.
+    pub fn stage_clock(&self) -> u32 {
+        self.stage_clock
+    }
+
     /// Seconds left on the timer.
     pub fn time_left(&self) -> u16 {
         self.time
