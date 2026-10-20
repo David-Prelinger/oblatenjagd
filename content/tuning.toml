@@ -215,6 +215,12 @@ ampel_max_alive = 4           # at most 4 of an Ampel's cars alive; a car whose 
 auto_hitbox = [28, 14]        # sprite 32x16; the hitbox starts 2 px into the spawner cell, bottom on the road ...
 auto_spawn_dx = 2             # ... (this many px)
 auto_speed = 512              # it drives left at 2.0 px/frame through tiles, enemies and platforms until it leaves the screen
+# M6 Kurgast (D-095, E38): a slow Nordic-Walker who lies down in his deck chair when stomped.
+kurgast_hitbox = [12, 22]     # sprite 16x24 while walking
+kurgast_speed = 96            # 0.375 px/frame towards the player at activation; turns at walls, enemies on foot and ledges
+kurgast_chair = [16, 16]      # stomped: the deck chair (sprite liegestuhl 24x16), centred on him, bottom on his feet: a one-way top
+kurgast_rest = 300            # he rests 300 frames in the chair ...
+kurgast_wake = 40             # ... then sits up and stretches for 40 (the telegraph); both pause while Resi stands on the chair
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

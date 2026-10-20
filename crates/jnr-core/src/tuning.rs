@@ -678,6 +678,18 @@ pub struct EnemyTuning {
     pub auto_spawn_dx: i32,
     /// It drives left at this speed, ignoring tiles.
     pub auto_speed: Fx,
+    /// Kurgast walking (D-095).
+    pub kurgast_hitbox: [i32; 2],
+    /// He walks at this speed (the Nordic-Walker's turn rules).
+    pub kurgast_speed: Fx,
+    /// Stomped, his hitbox becomes this deck chair `[w, h]` px: centred on
+    /// him, its bottom on his feet, a one-way top platform.
+    pub kurgast_chair: [i32; 2],
+    /// He rests this many frames in the chair ...
+    pub kurgast_rest: u16,
+    /// ... then shows the wake telegraph for this many frames before he
+    /// stands up; both counters pause while the player stands on him.
+    pub kurgast_wake: u16,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -1003,6 +1015,38 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The M6 Kurgast's keys (D-095).
+    fn validate_kurgast(&self) -> Result<(), ParseError> {
+        let [w, h] = self.kurgast_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        // The chair is a platform as wide as a tile at most twice, and no
+        // taller than he stands (standing up only grows him upwards).
+        let [cw, ch] = self.kurgast_chair;
+        if !(1..=2 * TILE_PX).contains(&cw) || !(1..=h).contains(&ch) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_chair must be 1..=32 px wide and 1..=kurgast_hitbox's height high",
+            ));
+        }
+        if self.kurgast_speed <= Fx::ZERO || self.kurgast_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.kurgast_rest", self.kurgast_rest),
+            ("enemies.kurgast_wake", self.kurgast_wake),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1184,6 +1228,7 @@ impl Tuning {
         self.enemies.validate_reisebus()?;
         self.enemies.validate_lake()?;
         self.enemies.validate_traffic()?;
+        self.enemies.validate_kurgast()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -2150,6 +2195,32 @@ mod tests {
         let missing = format!("{head}[swim]{}", tail.replace("\ndecel = ", "\n#decel = "));
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("decel"), "{err}");
+    }
+
+    #[test]
+    fn kurgast_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-095: 12×22, 0.375 px/frame, a 16×16 chair, rest 300 + wake 40.
+        assert_eq!(t.kurgast_hitbox, [12, 22]);
+        assert_eq!(t.kurgast_speed, Fx(96), "0.375 px/frame");
+        assert_eq!(t.kurgast_chair, [16, 16]);
+        assert_eq!((t.kurgast_rest, t.kurgast_wake), (300, 40));
+        for (field, bad) in [
+            ("kurgast_hitbox", "[17, 22]"),
+            ("kurgast_hitbox", "[12, 0]"),
+            ("kurgast_hitbox", "[12, 33]"),
+            ("kurgast_speed", "0"),
+            ("kurgast_speed", "3072"),
+            ("kurgast_chair", "[0, 16]"),
+            ("kurgast_chair", "[33, 16]"),
+            ("kurgast_chair", "[16, 23]"),
+            ("kurgast_rest", "0"),
+            ("kurgast_wake", "0"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
     }
 
     #[test]

@@ -174,23 +174,35 @@ pub const STATIONS: [Station; 9] = [
         id: "bad_ischl",
         dot: (276, 98),
         // Above, not below as in the starting layout: below it would touch
-        // the Strobl label.
+        // the Strobl label. Alternate (M6, D-098): left of the dot, level
+        // with it (top 94, right-aligned to x 266), on the screen ending on
+        // Bad Ischl, for every form (Resi waits on the dot and covers the
+        // primary slot; it also clears the map's church spire).
         label: LabelSide::Above,
         label_top: None,
         label_right: None,
-        label_alt: None,
-        label_alt_ends: &[],
+        label_alt: Some(LabelSlot {
+            top: Some(94),
+            right: Some(266),
+        }),
+        label_alt_ends: &["bad_ischl"],
         path_in: &[(252, 112), (264, 104)],
     },
     Station {
         id: "cafe_zauner",
         dot: (300, 76),
         // Left of the dot and the cake, clear of Resi (art-director, M2).
+        // Alternate (M6, D-098): raised to top 58 (same right edge) on the
+        // screen ending on Bad Ischl, for every form (Resi on that dot
+        // touches the primary's bottom rows).
         label: LabelSide::Left,
         label_top: Some(69),
         label_right: Some(290),
-        label_alt: None,
-        label_alt_ends: &[],
+        label_alt: Some(LabelSlot {
+            top: Some(58),
+            right: Some(290),
+        }),
+        label_alt_ends: &["bad_ischl"],
         path_in: &[(288, 88)],
     },
 ];

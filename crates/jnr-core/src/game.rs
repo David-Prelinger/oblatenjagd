@@ -903,13 +903,16 @@ impl Game {
     }
 
     /// A block was hit from below (bumped or broken): enemies standing on
-    /// it are knocked off for `score.bump_enemy` each, items on it hop.
+    /// it are knocked off for `score.bump_enemy` each (nothing for a
+    /// Kurgast who has scored, D-095), items on it hop.
     fn knock_enemies_on(&mut self, col: i32, row: i32) {
         let knocked = crate::enemies::knock_off_block(&mut self.entities, col, row, &self.tuning);
-        for (kind, x, y) in knocked {
-            let points = self.tuning.score.bump_enemy;
-            self.add_score(points);
-            self.entities.push(popup(Popup::Score(points), x, y));
+        for (kind, x, y, scores) in knocked {
+            if scores {
+                let points = self.tuning.score.bump_enemy;
+                self.add_score(points);
+                self.entities.push(popup(Popup::Score(points), x, y));
+            }
             self.entities
                 .extend(crate::enemies::defeat_popup(kind, x, y));
         }
@@ -1221,6 +1224,22 @@ impl Game {
                     let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
                     let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
                     match crate::enemies::contact(kind, from_above, swimming) {
+                        // A stomped Kurgast lies down in his deck chair
+                        // instead (D-095): 100 in the chain on his first
+                        // stomp only; a later one only bounces her (no
+                        // points, the chain neither advances nor resets).
+                        // „Kurruhe!" stacks above the score popup.
+                        Contact::Stomp if kind == EnemyKind::Kurgast => {
+                            bounced = true;
+                            let scores = crate::enemies::scores_on_defeat(&e);
+                            crate::enemies::lie_down(&mut self.entities[i], &self.tuning);
+                            let mut top = e.y;
+                            if scores {
+                                spawned.extend(self.stomp_reward(kind, fx, e.y));
+                                top -= Fx::from_px(crate::entity::POPUP_STACK_PX);
+                            }
+                            spawned.push(popup(Popup::Kurruhe, fx, top));
+                        }
                         Contact::Stomp => {
                             bounced = true;
                             crate::enemies::defeat(
@@ -1364,9 +1383,12 @@ impl Game {
             self.entities
                 .extend(crate::enemies::globe_shards(&e, &self.tuning));
         }
-        self.add_score(points);
         let (fx, _) = e.feet();
-        self.entities.push(popup(Popup::Score(points), fx, e.y));
+        // A Kurgast who has scored is knocked off for nothing (D-095).
+        if points > 0 {
+            self.add_score(points);
+            self.entities.push(popup(Popup::Score(points), fx, e.y));
+        }
         if let EntityKind::Defeated(kind) = e.kind {
             self.entities
                 .extend(crate::enemies::defeat_popup(kind, fx, e.y));

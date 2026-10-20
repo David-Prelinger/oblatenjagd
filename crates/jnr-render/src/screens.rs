@@ -51,7 +51,7 @@ pub const TITLE_LOGO_SPRITE: &str = "title_logo";
 /// Every text key the engine uses by name (not counting level signs, which
 /// `cargo xtask levels lint` checks). Per-stage keys are listed for the
 /// fallback stage; the route map's keys are [`crate::map`]'s.
-pub const TEXT_KEYS: [&str; 35] = [
+pub const TEXT_KEYS: [&str; 36] = [
     TITLE_NAME_KEY,
     SUBTITLE_KEY,
     PRESS_START_KEY,
@@ -94,6 +94,10 @@ pub const TEXT_KEYS: [&str; 35] = [
         None => "",
     },
     match Popup::Beleidigt.text_key() {
+        Some(k) => k,
+        None => "",
+    },
+    match Popup::Kurruhe.text_key() {
         Some(k) => k,
         None => "",
     },

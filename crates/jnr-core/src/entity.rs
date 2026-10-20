@@ -50,6 +50,9 @@ pub enum Popup {
     Bravo,
     /// `popup.beleidigt` („Beleidigt!"), a defeated Schwan (D-078).
     Beleidigt,
+    /// `popup.kurruhe` („Kurruhe!"), a Kurgast lying down in his deck
+    /// chair (D-095).
+    Kurruhe,
 }
 
 impl Popup {
@@ -65,11 +68,12 @@ impl Popup {
             Popup::Ballast => Some("popup.ballast"),
             Popup::Bravo => Some("popup.bravo"),
             Popup::Beleidigt => Some("popup.beleidigt"),
+            Popup::Kurruhe => Some("popup.kurruhe"),
         }
     }
 }
 
-/// The enemy types of Stages 1–7.
+/// The enemy types of Stages 1–8.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -115,6 +119,10 @@ pub enum EnemyKind {
     /// `auto`: a car from an Ampel's side street, drives left ignoring
     /// tiles; not stompable, its roof only bounces (D-093).
     Auto,
+    /// `kurgast`: a slow walker (the Nordic-Walker's turn rules); stomped
+    /// he lies down in his deck chair, a one-way top platform, and gets up
+    /// again after a rest (D-095, [`crate::enemies::update_kurgast`]).
+    Kurgast,
 }
 
 impl EnemyKind {
@@ -153,7 +161,9 @@ impl EnemyKind {
             | EnemyKind::Pilger
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schneekugel => true,
+            | EnemyKind::Schneekugel
+            // Walking or lying in his deck chair (D-097).
+            | EnemyKind::Kurgast => true,
             EnemyKind::Taube
             | EnemyKind::TaubeSitting
             | EnemyKind::Fiaker
@@ -208,6 +218,7 @@ impl EnemyKind {
             EnemyKind::Gelse => "gelse",
             EnemyKind::Regattaboot => "regattaboot",
             EnemyKind::Auto => "auto",
+            EnemyKind::Kurgast => "kurgast",
         }
     }
 
@@ -231,6 +242,8 @@ impl EnemyKind {
             EnemyKind::Gelse => 15,
             EnemyKind::Regattaboot => 16,
             EnemyKind::Auto => 17,
+            // E38 (M6): 19, with 20 reserved.
+            EnemyKind::Kurgast => 19,
         }
     }
 }
@@ -411,6 +424,7 @@ impl EntityKind {
                 Popup::Ballast => h.u8(6),
                 Popup::Bravo => h.u8(7),
                 Popup::Beleidigt => h.u8(8),
+                Popup::Kurruhe => h.u8(9),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -718,6 +732,12 @@ impl Entity {
                 cell_x + tile,
                 tile.mul_int(s.row) + Fx::from_px(e.regattaboot_keel_px),
                 e.regattaboot_hitbox,
+            ),
+            SpawnKind::Kurgast => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Kurgast),
+                feet_x,
+                feet_y,
+                e.kurgast_hitbox,
             ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
@@ -1107,6 +1127,7 @@ mod tests {
                 EnemyKind::Gelse => 15,
                 EnemyKind::Regattaboot => 16,
                 EnemyKind::Auto => 17,
+                EnemyKind::Kurgast => 18,
             }
         }
         let enemies = [
@@ -1128,6 +1149,7 @@ mod tests {
             EnemyKind::Gelse,
             EnemyKind::Regattaboot,
             EnemyKind::Auto,
+            EnemyKind::Kurgast,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1136,6 +1158,15 @@ mod tests {
         ids.sort_unstable();
         ids.dedup();
         assert_eq!(ids.len(), enemies.len(), "an EnemyKind id is used twice");
+        // M6 ranges (parallel tasks): E38's Kurgast 19 (19–20 reserved),
+        // its „Kurruhe!“ popup sub-tag 9.
+        assert_eq!(EnemyKind::Kurgast.id(), 19);
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::Kurruhe).hash(&mut h);
+        let mut nine = crate::hash::Fnv::new();
+        nine.u8(EntityKind::Popup(Popup::Kurruhe).hash_tag());
+        nine.u8(9);
+        assert_eq!(h.finish(), nine.finish());
     }
 
     use super::*;

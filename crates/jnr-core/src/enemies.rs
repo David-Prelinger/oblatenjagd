@@ -131,6 +131,17 @@ pub mod state {
     /// Gelse: leaving straight up, harmless (`satt`).
     pub const LEAVE: u8 = 2;
 
+    // Kurgast (D-095): `WALK` (0) until his first stomp, which scores.
+    /// Kurgast: lying in his deck chair (a one-way top platform, harmless;
+    /// `count` = frames of the rest, paused while the player stands on it).
+    pub const LIE: u8 = 1;
+    /// Kurgast: the wake telegraph, still in the chair (`count` = frames of
+    /// it, paused like the rest).
+    pub const WAKE: u8 = 2;
+    /// Kurgast: walking again after a rest; a stomp lays him down again but
+    /// scores nothing.
+    pub const RESTED: u8 = 3;
+
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
@@ -209,6 +220,11 @@ pub enum Pose {
     Wait,
     /// Gelse `leave` (full, flying away).
     Leave,
+    /// Kurgast lying in his deck chair (`liegestuhl` `idle`, or the
+    /// `kurgast` sprite's `liegen`).
+    Liegen,
+    /// Kurgast's wake telegraph in the chair (`wake`).
+    Wake,
 }
 
 impl Entity {
@@ -296,6 +312,11 @@ impl Entity {
                 state::LEAVE => Pose::Leave,
                 _ => Pose::Wait,
             },
+            EntityKind::Enemy(EnemyKind::Kurgast) => match self.state {
+                state::LIE => Pose::Liegen,
+                state::WAKE => Pose::Wake,
+                _ => Pose::Walk,
+            },
             // The niche is empty from the drop until the refill.
             EntityKind::Steinschlag => steinschlag_pose(self, t)?,
             EntityKind::Stein => Pose::Fall,
@@ -333,14 +354,37 @@ impl Entity {
     }
 
     /// False for an enemy that can't touch the player right now (a
-    /// crashed E-Biker, a leaving Gelse); true for every other enemy.
+    /// crashed E-Biker, a leaving Gelse, a Kurgast in his deck chair);
+    /// true for every other enemy.
     pub fn harmful(&self) -> bool {
         match self.kind {
             EntityKind::Enemy(EnemyKind::EBiker) => self.state != state::CRASH,
             EntityKind::Enemy(EnemyKind::Gelse) => self.state != state::LEAVE,
+            EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(self),
             _ => true,
         }
     }
+}
+
+/// True for a Kurgast in his deck chair (resting or waking, D-095).
+fn in_chair(e: &Entity) -> bool {
+    e.kind == EntityKind::Enemy(EnemyKind::Kurgast) && matches!(e.state, state::LIE | state::WAKE)
+}
+
+/// **The enemy-as-platform hook** (D-095): true for an enemy whose hitbox
+/// is a one-way top platform right now, a Kurgast in his deck chair. Such
+/// a platform never moves, so it needs only the shared landing code
+/// ([`crate::platform::land`]), no carry; it despawns like any enemy.
+pub(crate) fn is_platform_now(e: &Entity) -> bool {
+    in_chair(e)
+}
+
+/// True if defeating `e` now scores its points: false for a Kurgast whose
+/// first stomp has scored (lying, waking or walking again), so his points
+/// total 100 at most (D-095: a bump or an axe after the stomp gives
+/// nothing); true for every other enemy.
+pub(crate) fn scores_on_defeat(e: &Entity) -> bool {
+    e.kind != EntityKind::Enemy(EnemyKind::Kurgast) || e.state == state::WALK
 }
 
 /// The initial state of an enemy kind (at spawn and on level reset).
@@ -427,6 +471,10 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_auto(e, ctx);
             None
         }
+        EnemyKind::Kurgast => {
+            update_kurgast(e, ctx);
+            None
+        }
         EnemyKind::Bienenschwarm => {
             let len = e
                 .spawn
@@ -458,6 +506,13 @@ fn floor_at(map: &TileMap, x: Fx, feet: Fx) -> bool {
 /// other way in the same frame). It only falls when the floor under it
 /// disappears.
 fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
+    e.state = state::STRIDE;
+    walk_turning_at_ledges(e, ctx, ctx.tuning.enemies.walker_speed);
+}
+
+/// The Nordic-Walker's walk at `speed` (see [`update_walker`]); also the
+/// Kurgast's (D-095). Leaves `state` alone.
+fn walk_turning_at_ledges(e: &mut Entity, ctx: &UpdateCtx, speed: Fx) {
     let (map, t) = (ctx.map, ctx.tuning);
     // At activation it starts towards the player (game-design.md).
     let cx = e.x + e.w.div_int(2);
@@ -475,8 +530,7 @@ fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
     if e.dir != 0 && standing && !floor_at(map, ahead, feet) {
         e.dir = -e.dir;
     }
-    e.state = state::STRIDE;
-    e.vx = t.enemies.walker_speed.mul_int(i32::from(e.dir));
+    e.vx = speed.mul_int(i32::from(e.dir));
     e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
     let mut b = e.hitbox();
     if map.move_x(&mut b, e.vx) {
@@ -1027,7 +1081,9 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::NordicWalker)
         | EntityKind::Enemy(EnemyKind::Blasmusiker)
         | EntityKind::Enemy(EnemyKind::Pilger)
-        | EntityKind::Enemy(EnemyKind::Operettensaenger) => true,
+        | EntityKind::Enemy(EnemyKind::Operettensaenger)
+        // Walking, or lying in his deck chair: walkers turn at it (D-095).
+        | EntityKind::Enemy(EnemyKind::Kurgast) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
         EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => e.state != state::DRIVE,
@@ -1037,19 +1093,20 @@ fn on_foot(e: &Entity) -> bool {
     }
 }
 
-/// Selfie-Tourists, Nordic-Walkers and Pilger that overlap another enemy on foot
-/// turn away from it (after everything moved; the direction is set, not
-/// flipped, so two that overlap for several frames don't flip back and
-/// forth).
+/// Selfie-Tourists, Nordic-Walkers, Pilger and walking Kurgäste that
+/// overlap another enemy on foot turn away from it (after everything
+/// moved; the direction is set, not flipped, so two that overlap for
+/// several frames don't flip back and forth).
 pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
     for i in 0..entities.len() {
         let a = entities[i];
-        let walks = matches!(
-            a.kind,
+        let walks = match a.kind {
             EntityKind::Enemy(
-                EnemyKind::SelfieTourist | EnemyKind::NordicWalker | EnemyKind::Pilger
-            )
-        );
+                EnemyKind::SelfieTourist | EnemyKind::NordicWalker | EnemyKind::Pilger,
+            ) => true,
+            EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(&a),
+            _ => false,
+        };
         // `dir == 0`: a `still` tourist (test levels) never turns.
         if !a.active || a.removed || a.dir == 0 || !walks {
             continue;
@@ -1068,14 +1125,16 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
 
 /// A block at (`col`, `row`) was bumped from below: every stompable enemy
 /// standing on it (feet exactly on its top, overlapping the cell) is
-/// knocked off (defeated, tumbling). Rolling items standing on it hop.
-/// Returns the knocked enemies' kind and feet (for points and popups).
+/// knocked off (defeated, tumbling), a Kurgast also from his deck chair.
+/// Rolling items standing on it hop. Returns the knocked enemies' kind,
+/// feet (for points and popups) and whether they score
+/// ([`scores_on_defeat`]).
 pub(crate) fn knock_off_block(
     entities: &mut [Entity],
     col: i32,
     row: i32,
     t: &Tuning,
-) -> Vec<(EnemyKind, Fx, Fx)> {
+) -> Vec<(EnemyKind, Fx, Fx, bool)> {
     let (left, top) = (TILE.mul_int(col), TILE.mul_int(row));
     let mut knocked = Vec::new();
     for e in entities.iter_mut() {
@@ -1085,8 +1144,9 @@ pub(crate) fn knock_off_block(
         }
         match e.kind {
             EntityKind::Enemy(kind) if kind.stompable() && on_foot(e) => {
+                let scores = scores_on_defeat(e);
                 defeat(e, kind, true, t);
-                knocked.push((kind, e.x + e.w.div_int(2), e.y));
+                knocked.push((kind, e.x + e.w.div_int(2), e.y, scores));
             }
             EntityKind::Mozartkugel | EntityKind::Zaunerstollen if !e.rising(t) => {
                 e.vy = -t.enemies.knock_speed;
@@ -1756,22 +1816,99 @@ fn move_clear_of_water(e: &mut Entity, map: &TileMap) {
     e.y = b.y;
 }
 
+// ---------------------------------------------------------- M6 (D-095)
+
+/// The Kurgast (D-095). Walking (`WALK`, `RESTED`) he is a Nordic-Walker
+/// at `kurgast_speed`: towards the player at activation, turning at walls,
+/// enemies on foot and ledges. Stomped he lies down ([`lie_down`], `LIE`):
+/// his hitbox is the deck chair, a one-way top platform
+/// ([`is_platform_now`]), harmless and still. He rests `kurgast_rest`
+/// frames, then shows the wake telegraph (`WAKE`) for `kurgast_wake`;
+/// **both counters pause while the player stands on the chair**, so he
+/// never stands up under her. Then he stands up ([`stand_up`]: feet and
+/// centre kept), faces the player and walks on (`RESTED`), harmful again;
+/// he takes no step in the frame he stands up.
+fn update_kurgast(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let (limit, next) = match e.state {
+        state::LIE => (et.kurgast_rest, state::WAKE),
+        state::WAKE => (et.kurgast_wake, state::RESTED),
+        _ => return walk_turning_at_ledges(e, ctx, et.kurgast_speed),
+    };
+    let rider = ctx
+        .player_standing
+        .is_some_and(|p| crate::platform::stands_on(&p, &e.hitbox()));
+    if !rider {
+        e.count += 1;
+    }
+    if e.count < limit {
+        return;
+    }
+    e.state = next;
+    e.count = 0;
+    if next == state::RESTED {
+        stand_up(e, ctx.tuning);
+        let cx = e.x + e.w.div_int(2);
+        if ctx.player_cx != cx {
+            e.dir = (ctx.player_cx - cx).signum() as i8;
+        }
+    }
+}
+
+/// Re-sizes `e` to `[w, h]` px around the same centre x, with the same
+/// feet.
+fn resize_at_feet(e: &mut Entity, [w, h]: [i32; 2]) {
+    let (cx, feet) = e.feet();
+    e.w = Fx::from_px(w);
+    e.h = Fx::from_px(h);
+    e.x = cx - e.w.div_int(2);
+    e.y = feet - e.h;
+}
+
+/// A stomped Kurgast lies down in his deck chair where he stood (D-095):
+/// the hitbox becomes `kurgast_chair`, centred on him with its bottom on
+/// his feet; the rest starts. Also after a later stomp (no points then,
+/// `Game::interact`). The chair never moves (no gravity): he only walks
+/// where there is floor (ledge rule) and a bump knocks him off, so in play
+/// it always stands on the ground.
+pub(crate) fn lie_down(e: &mut Entity, t: &Tuning) {
+    resize_at_feet(e, t.enemies.kurgast_chair);
+    e.state = state::LIE;
+    e.count = 0;
+    e.vx = Fx::ZERO;
+    e.vy = Fx::ZERO;
+}
+
+/// The Kurgast gets up from his chair: `kurgast_hitbox` again, feet and
+/// centre kept.
+fn stand_up(e: &mut Entity, t: &Tuning) {
+    resize_at_feet(e, t.enemies.kurgast_hitbox);
+    e.vx = Fx::ZERO;
+    e.vy = Fx::ZERO;
+}
+
 /// **Defeat by projectile** (the one path for the thrown Hackl, D-056,
 /// D-060): what a projectile does to entity `e`, by its
 /// [`Entity::axe_hit`] class. Every `Defeat` enemy is knocked off (tumbling
 /// off the screen) for its base points (`score.stomp_chain[chain_start]`:
-/// 100 / 200, outside the stomp chain); a falling rock (`Shatter`) breaks
+/// 100 / 200, outside the stomp chain; 0 for a Kurgast who has scored,
+/// [`scores_on_defeat`]); a falling rock (`Shatter`) breaks
 /// for `enemies.stein_points` (50). Returns the points, or `None` for no
 /// effect (`Bounce`, `Pass`). `Game::defeat_by_projectile` adds the score,
-/// the popup and the rock's debris.
+/// the popup (none for 0 points) and the rock's debris.
 pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
     if !e.active || e.removed {
         return None;
     }
     match (e.axe_hit(), e.kind) {
         (crate::hackl::AxeHit::Defeat, EntityKind::Enemy(kind)) => {
+            let points = if scores_on_defeat(e) {
+                t.score.stomp_chain[kind.chain_start()]
+            } else {
+                0
+            };
             defeat(e, kind, true, t);
-            Some(t.score.stomp_chain[kind.chain_start()])
+            Some(points)
         }
         (crate::hackl::AxeHit::Shatter, EntityKind::Stein) => {
             e.state = state::SHATTERED;

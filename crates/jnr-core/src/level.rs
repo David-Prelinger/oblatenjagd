@@ -59,20 +59,22 @@ impl TileKind {
     /// lake bed `seegrund`, the quay wall `kai` and the bollard `poller` are
     /// solid, the pier planks `steg` one-way (D-077); the swim water
     /// `see_wasser` (surface), `see_wasser_tief` (deep) and `steg_pfahl`
-    /// (water with a pier post) are swim water (D-076).
+    /// (water with a pier post) are swim water (D-076). M6: the Bürglstein
+    /// walkway `felssteg` is one-way, the gravel path `kies` solid, the side
+    /// street's mouth `einfahrt_bg` decorative.
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
             | "netz_post" | "terrasse_post_l" | "terrasse_post_r" | "tunnel_bg"
             | "tunnel_bg_lamp" | "zahnrad_gleis_0" | "zahnrad_gleis_1" | "zahnrad_gleis_2"
-            | "zahnrad_gleis_3" => Some(TileKind::Empty),
+            | "zahnrad_gleis_3" | "einfahrt_bg" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
             | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
-            | "strasse" | "seegrund" | "kai" | "poller" => Some(TileKind::Solid),
+            | "strasse" | "seegrund" | "kai" | "poller" | "kies" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" => {
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" | "felssteg" => {
                 Some(TileKind::OneWay)
             }
             "hazard" => Some(TileKind::Hazard),
@@ -263,11 +265,13 @@ pub enum SpawnKind {
     /// An `ampel` traffic-light spawner at a side street's mouth that sends
     /// out `auto` cars (`period`, `cars`, `phase`, `range`; D-093).
     Ampel,
+    /// Enemy `kurgast` (a slow walker who becomes a deck chair, D-095).
+    Kurgast,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 31] = [
+    pub const ALL: [SpawnKind; 32] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -299,6 +303,7 @@ impl SpawnKind {
         SpawnKind::Gelse,
         SpawnKind::Regattaboot,
         SpawnKind::Ampel,
+        SpawnKind::Kurgast,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -336,6 +341,7 @@ impl SpawnKind {
             SpawnKind::Gelse => "gelse",
             SpawnKind::Regattaboot => "regattaboot",
             SpawnKind::Ampel => "ampel",
+            SpawnKind::Kurgast => "kurgast",
         }
     }
 
@@ -637,6 +643,20 @@ pub const PROP_SPRITES: &[&str] = &[
     "dalben",
     "schilf",
     "startboje",
+    "buste",
+    "pension",
+    "gasthof_strobl",
+    "lokalbahn_haltestelle",
+    "kaiser_jagdstandbild",
+    "katrin_talstation",
+    "kaiservilla",
+    "seeauerhaus",
+    "lehar_villa",
+    "trinkhalle",
+    "kongresshaus",
+    "trafik",
+    "zauner_fassade",
+    "warteschlange",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -2104,6 +2124,67 @@ P.sSC.tfG
         }
         let e = err(&boat_level("dampfer", ", to = [40, 0], phase = 1"));
         assert!(e.contains("field \"phase\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn m6_tiles_and_props_parse_with_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("felssteg", OneWay),
+            ("kies", Solid),
+            ("einfahrt_bg", Empty),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        // A level using the three tiles and an M6 prop on each layer.
+        let text = SMALL
+            .replace(
+                "\"G\" = { entity = \"goal\" }",
+                "\"G\" = { entity = \"goal\" }\n\"f\" = \"felssteg\"\n\"k\" = \"kies\"\n\"e\" = \"einfahrt_bg\"\n\"z\" = { entity = \"prop\", sprite = \"zauner_fassade\", layer = \"back\" }\n\"b\" = { entity = \"prop\", sprite = \"buste\" }",
+            )
+            .replace("......G", "ez.b..G")
+            .replace(".P.--..", ".P.ff..")
+            .replace("###^###", "kkk^###");
+        let l = Level::parse(&text).unwrap();
+        let named = |col, row| {
+            let t = l.tile(col, row).unwrap();
+            (l.tile_names[t.name as usize].clone(), t.kind)
+        };
+        assert_eq!(named(0, 0), ("einfahrt_bg".to_string(), Empty));
+        assert_eq!(named(3, 1), ("felssteg".to_string(), OneWay));
+        assert_eq!(named(4, 1), ("felssteg".to_string(), OneWay));
+        assert_eq!(named(0, 2), ("kies".to_string(), Solid));
+        let props: Vec<(&str, PropLayer, i32)> = l
+            .entities
+            .iter()
+            .filter(|e| e.kind == SpawnKind::Prop)
+            .map(|e| (e.sprite.as_deref().unwrap(), e.layer, e.col))
+            .collect();
+        assert_eq!(
+            props,
+            [
+                ("zauner_fassade", PropLayer::Back, 1),
+                ("buste", PropLayer::Front, 3)
+            ]
+        );
+        for prop in [
+            "buste",
+            "pension",
+            "gasthof_strobl",
+            "lokalbahn_haltestelle",
+            "kaiser_jagdstandbild",
+            "katrin_talstation",
+            "kaiservilla",
+            "seeauerhaus",
+            "lehar_villa",
+            "trinkhalle",
+            "kongresshaus",
+            "trafik",
+            "zauner_fassade",
+            "warteschlange",
+        ] {
+            assert!(PROP_SPRITES.contains(&prop), "{prop}");
+        }
     }
 
     #[test]
