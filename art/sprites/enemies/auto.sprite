@@ -1,0 +1,119 @@
+# Auto: a small friendly car from the side street (D-093). Three looks as
+# separate anims, picked by spawn index: drive_0 a wine-red R hatchback,
+# drive_1 a white w/i estate with a dark m/d roof box, drive_2 a pale-blue
+# h/s/S camper van with orange o curtains. Dark windows d with faint heads E,
+# k/d wheels with i hubs, headlight w and Y indicator at the front (left),
+# r tail lamp (R on the camper). Faces LEFT, no mirror (like the bus). The roof (or roof box)
+# is one flat line of 21+ px on hitbox row 2: the bounce surface.
+# drive = hubs turn, body bounces 1 px (wheels stay on the road).
+# Built with a scratch script (body templates + wheels), frozen here.
+sprite = auto
+size   = 32x16
+origin = 16,16
+hitbox = 2,2,28,14
+anim   = drive_0 frames=2 ticks=4 loop
+anim   = drive_1 frames=2 ticks=4 loop
+anim   = drive_2 frames=2 ticks=4 loop
+---
+frame drive_0 0
+................................
+................................
+.........kkkkkkkkkkkkkkkkkkkkk..
+........krrrrrrrrrrrrrrrrrrrrRk.
+.......kRdddddddRdddddddRddddRk.
+......kRddddEEddRddEEdddRdddRRk.
+.....kRdddddEEddRddEEdddRddRRRk.
+.kkkkrrrrRRRRRRRRRRRRRRRRRRRRRk.
+kwwrrrRkkkkRRRRRRRRRRkkkkRRRRrk.
+kYRRRRkddddkRRRRlRRRkddddkRRRrk.
+kRRRRkddddddkRRRlRRkddddddkRRRk.
+kdddlkddimddkllllllkddimddkdddk.
+.kkklkddiiddkllllllkddiiddklkkk.
+....kkddddddkkkkkkkkddddddkk....
+......kddddk........kddddk......
+.......kkkk..........kkkk.......
+frame drive_0 1
+................................
+................................
+................................
+.........kkkkkkkkkkkkkkkkkkkkk..
+........krrrrrrrrrrrrrrrrrrrrRk.
+.......kRdddddddRdddddddRddddRk.
+......kRddddEEddRddEEdddRdddRRk.
+.....kRdddddEEddRddEEdddRddRRRk.
+.kkkkrrkkkkRRRRRRRRRRkkkkRRRRRk.
+kwwrrrkddddkRRRRRRRRkddddkRRRrk.
+kYRRRkddddddkRRRlRRkddddddkRRrk.
+kRRRRkddiiddkRRRlRRkddiiddkRRRk.
+kdddlkddmiddkllllllkddmiddkdddk.
+.kkklkddddddkllllllkddddddklkkk.
+....kkkddddkkkkkkkkkkddddkkk....
+.......kkkk..........kkkk.......
+frame drive_1 0
+................................
+................................
+........kkkkkkkkkkkkkkkkkkkkk...
+.......kmmmmmmmmmmmmmmmmmmddkk..
+......kwwwwwwwwwwwwwwwwwwwwwwik.
+.....kwdddEEddwdddEEddwdddddiik.
+....kwddddEEddwdddEEddwdddddiik.
+.kkkwwwwwwwwwwwwwwwwwwwwwwwwwik.
+kwiwwwwkkkkwwwwwwwwwwkkkkwwwwrk.
+kYiwwwkddddkwwwiwwwwkddddkwwwik.
+kiwwwkddddddkwwiwwwkddddddkwwik.
+kdddikddimddkiiiiiikddimddkdddk.
+.kkkmkddiiddkmmmmmmkddiiddkmkkk.
+....kkddddddkkkkkkkkddddddkk....
+......kddddk........kddddk......
+.......kkkk..........kkkk.......
+frame drive_1 1
+................................
+................................
+................................
+........kkkkkkkkkkkkkkkkkkkkk...
+.......kmmmmmmmmmmmmmmmmmmddkk..
+......kwwwwwwwwwwwwwwwwwwwwwwik.
+.....kwdddEEddwdddEEddwdddddiik.
+....kwddddEEddwdddEEddwdddddiik.
+.kkkwwwkkkkwwwwwwwwwwkkkkwwwwik.
+kwiwwwkddddkwwwwwwwwkddddkwwwrk.
+kYiwwkddddddkwwiwwwkddddddkwwik.
+kiwwwkddiiddkwwiwwwkddiiddkwwik.
+kdddikddmiddkiiiiiikddmiddkdddk.
+.kkkmkddddddkmmmmmmkddddddkmkkk.
+....kkkddddkkkkkkkkkkddddkkk....
+.......kkkk..........kkkk.......
+frame drive_2 0
+................................
+................................
+.....kkkkkkkkkkkkkkkkkkkkkkkkk..
+....khhhhhhhhhhhhhhhhhhhhhhhssk.
+...ksddddssooooooossooooooossSk.
+..ksddEEdssoddddoossoddddoossSk.
+..ksddEEdssoddddoossoddddoossSk.
+.ksssssssssssssssssssssssssssSk.
+kwssssskkkksssssSsssskkkkssssRk.
+kYSSSSkddddkSSSSSSSSkddddkSSSSk.
+ksssskddddddksssSsskddddddkssSk.
+kdddSkddimddkSSSSSSkddimddkdddk.
+.kkkSkddiiddkSSSSSSkddiiddkSkkk.
+....kkddddddkkkkkkkkddddddkk....
+......kddddk........kddddk......
+.......kkkk..........kkkk.......
+frame drive_2 1
+................................
+................................
+................................
+.....kkkkkkkkkkkkkkkkkkkkkkkkk..
+....khhhhhhhhhhhhhhhhhhhhhhhssk.
+...ksddddssooooooossooooooossSk.
+..ksddEEdssoddddoossoddddoossSk.
+..ksddEEdssoddddoossoddddoossSk.
+.kssssskkkksssssssssskkkkssssSk.
+kwsssskddddkssssSssskddddksssRk.
+kYSSSkddddddkSSSSSSkddddddkSSSk.
+ksssskddiiddksssSsskddiiddkssSk.
+kdddSkddmiddkSSSSSSkddmiddkdddk.
+.kkkSkddddddkSSSSSSkddddddkSkkk.
+....kkkddddkkkkkkkkkkddddkkk....
+.......kkkk..........kkkk.......
