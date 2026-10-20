@@ -98,11 +98,6 @@ fn settle(g: &mut Game, token: &str) {
     panic!("never settled");
 }
 
-/// Runs `frames` frames with `token`; returns the events.
-fn run(g: &mut Game, token: &str, frames: u32) -> Vec<Event> {
-    hold(g, token, frames)
-}
-
 // ------------------------------------------------------------- the swan
 
 #[test]
@@ -112,7 +107,7 @@ fn a_charging_swan_hurts_a_surface_swimmer_and_passes_over_a_diver() {
     // At the surface (Zuckerschock): it triggers, hisses, charges: Hurt.
     let mut g = game(&lake(40, None, &marks), Power::Big);
     settle(&mut g, "-");
-    let events = run(&mut g, "-", 200);
+    let events = hold(&mut g, "-", 200);
     assert!(events.contains(&Event::Hurt), "{events:?}");
     assert!(!events.contains(&Event::Stomped));
     // A diver on the bed: the same charge passes over her.
@@ -194,7 +189,7 @@ fn a_gelse_waits_at_the_water_line_over_a_diver_and_stings_a_swimmer() {
     // stings her (Zuckerschock → Normal).
     let mut g = game(&lake(40, None, &marks), Power::Big);
     settle(&mut g, "-");
-    let events = run(&mut g, "-", 300);
+    let events = hold(&mut g, "-", 300);
     assert!(events.contains(&Event::Hurt), "{events:?}");
 }
 
@@ -205,7 +200,7 @@ fn a_regatta_boat_hurts_a_surface_swimmer_and_passes_over_a_diver() {
     let marks = [(12, 10, 'S'), (12, 16, 'b')];
     let mut g = game(&lake(40, None, &marks), Power::Big);
     settle(&mut g, "-");
-    let events = run(&mut g, "-", 200);
+    let events = hold(&mut g, "-", 200);
     assert!(events.contains(&Event::Hurt) && !events.contains(&Event::Stomped));
     let mut g = game(&lake(40, None, &marks), Power::Big);
     settle(&mut g, "D");
@@ -230,7 +225,7 @@ fn the_paddle_wheel_hurts_a_swimmer_but_never_its_rider() {
     let mut g = game(&level, Power::Big);
     until(&mut g, "R", 200, |g| ship(g).state == car::UP);
     let mut events = until(&mut g, "R", 300, |g| g.player().swimming);
-    events.extend(run(&mut g, "-", 300));
+    events.extend(hold(&mut g, "-", 300));
     assert!(events.contains(&Event::Hurt), "{events:?}");
     assert_eq!(g.player().power, Power::Normal);
     // A rider standing over the wheel the whole way: never hurt.
@@ -240,7 +235,7 @@ fn the_paddle_wheel_hurts_a_swimmer_but_never_its_rider() {
     events.extend(until(&mut g, "R", 200, |g| {
         g.player().x + g.player().w.div_int(2) >= wheel_x
     }));
-    events.extend(run(&mut g, "-", 300));
+    events.extend(hold(&mut g, "-", 300));
     assert!(!events.contains(&Event::Hurt) && !g.player().swimming);
     assert_eq!(ship(&g).state, car::MOORED);
 }
@@ -328,5 +323,4 @@ fn a_respawn_on_a_raft_in_the_zone_holds_the_scroll_then_the_edge_pushes_her_int
     assert!(!events.contains(&Event::Died));
     assert!(g.camera().x > cam);
     assert!(g.player().x >= Fx::from_px(g.camera().x));
-    let _ = WATER_LINE;
 }

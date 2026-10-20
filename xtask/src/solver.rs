@@ -56,8 +56,8 @@
 //! (or, if the press made no jump, after its buffer ran out) reaches it
 //! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames
 //! (a shifted jump that ends in swim water re-plans from its first swimming
-//! step; a swimmer never counts as standing). So
-//! a later press that a 1-frame shift makes miss its buffer no longer
+//! step; a surface swimmer never counts as standing, the lake bed is ground).
+//! So a later press that a 1-frame shift makes miss its buffer no longer
 //! collapses the window: a player would simply press it a frame later. The
 //! jump window is the contiguous successful range around d = 0. Each side
 //! records why it stopped ([`Bound`]): a failed shift, the route (the

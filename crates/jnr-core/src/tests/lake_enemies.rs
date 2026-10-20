@@ -546,48 +546,65 @@ fn the_hunt_accelerates_1_32_per_axis_up_to_0_75() {
     assert!(e.facing_left());
 }
 
+/// [`world`] with its lake (`~`) of `kind`: swim water (`see_wasser`) or
+/// the lethal `wolfgangsee_water`; the Gelse avoids both (D-079, E30).
+fn world_of(kind: TileKind, width: usize, marks: &[(usize, usize, char)]) -> Level {
+    let text = world_text(width, marks);
+    let text = match kind {
+        TileKind::Swim => text,
+        TileKind::Water => text.replace("\"~\" = \"see_wasser\"", "\"~\" = \"wolfgangsee_water\""),
+        other => panic!("not water: {other:?}"),
+    };
+    let level = Level::parse(&text).unwrap();
+    assert_eq!(level.tile(20, 13).map(|t| t.kind), Some(kind));
+    level
+}
+
 #[test]
 fn a_gelse_never_enters_water_and_waits_at_the_water_line_above_a_diver() {
-    let level = world(40, &[(8, 10, 'g')]);
-    let map = TileMap::from_level(&level);
-    let mut e = spawned_gelse(&level);
-    e.state = state::HUNT;
-    // A diver 3 tiles down, 2 tiles to the right.
-    let diver = (168 + 32, WATER_LINE + 48);
-    for k in 0..300 {
-        gelse_update(&mut e, &level, diver, (0, 0));
-        assert!(!map.touches(&e.hitbox(), TileKind::Swim), "frame {k}");
+    for kind in [TileKind::Swim, TileKind::Water] {
+        let level = world_of(kind, 40, &[(8, 10, 'g')]);
+        let map = TileMap::from_level(&level);
+        let mut e = spawned_gelse(&level);
+        e.state = state::HUNT;
+        // A diver 3 tiles down, 2 tiles to the right.
+        let diver = (168 + 32, WATER_LINE + 48);
+        for k in 0..300 {
+            gelse_update(&mut e, &level, diver, (0, 0));
+            assert!(!map.touches(&e.hitbox(), kind), "{kind:?} frame {k}");
+        }
+        assert_eq!(
+            e.y + e.h,
+            Fx::from_px(WATER_LINE),
+            "{kind:?}: waits on the water line"
+        );
+        assert_eq!(e.vy, Fx::ZERO, "{kind:?}: its fall cut");
+        let cx = e.x + e.w.div_int(2);
+        assert!(
+            (cx - Fx::from_px(diver.0)).abs() <= Fx::from_px(24),
+            "{kind:?}: above her"
+        );
     }
-    assert_eq!(
-        e.y + e.h,
-        Fx::from_px(WATER_LINE),
-        "waits on the water line"
-    );
-    assert_eq!(e.vy, Fx::ZERO, "its fall cut");
-    let cx = e.x + e.w.div_int(2);
-    assert!(
-        (cx - Fx::from_px(diver.0)).abs() <= Fx::from_px(24),
-        "above her"
-    );
 }
 
 #[test]
 fn a_gelse_is_stopped_at_the_side_of_a_water_tile() {
-    // A column of water above the surface at column 20 (rows 5–11).
-    let marks: Vec<_> = (5..12).map(|r| (r, 20, '~')).collect();
-    let mut marks = marks;
-    marks.push((8, 14, 'g'));
-    let level = world(40, &marks);
-    let map = TileMap::from_level(&level);
-    let mut e = spawned_gelse(&level);
-    e.state = state::HUNT;
-    let mut stopped = false;
-    for k in 0..200 {
-        gelse_update(&mut e, &level, (500, 130), (0, 0));
-        assert!(!map.touches(&e.hitbox(), TileKind::Swim), "frame {k}");
-        stopped |= e.right() == Fx::from_px(320) && e.vx == Fx::ZERO;
+    for kind in [TileKind::Swim, TileKind::Water] {
+        // A column of water above the surface at column 20 (rows 5–11).
+        let mut marks: Vec<_> = (5..12).map(|r| (r, 20, '~')).collect();
+        marks.push((8, 14, 'g'));
+        let level = world_of(kind, 40, &marks);
+        let map = TileMap::from_level(&level);
+        let mut e = spawned_gelse(&level);
+        e.state = state::HUNT;
+        let mut stopped = false;
+        for k in 0..200 {
+            gelse_update(&mut e, &level, (500, 130), (0, 0));
+            assert!(!map.touches(&e.hitbox(), kind), "{kind:?} frame {k}");
+            stopped |= e.right() == Fx::from_px(320) && e.vx == Fx::ZERO;
+        }
+        assert!(stopped, "{kind:?}: cut at the column's left edge");
     }
-    assert!(stopped, "cut at the column's left edge");
 }
 
 #[test]
