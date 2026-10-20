@@ -1,0 +1,50 @@
+# Stage 7 checkpoint (col 132): a death in Ampel #2's lane and the respawn.
+# strobl_ampel_watch's inputs past Ampel #1, a walk into Ampel #2's lane
+# (its counter starts at 2001), then she stands in the lane at col 177:
+# the green's first car hits her (2249, Normal: death). Respawn at the
+# checkpoint (2309, clock 0, Normal; the Ampeln, shutters and the Postbus
+# back at their start). Holding LEFT she walks onto open road: the Postbus,
+# parked again at 119, triggers once her centre is within 160 px (clock
+# 61) and drives away from her, off the screen; she stops at the screen's
+# left edge (x 1976), untouched.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=2249..2249 event=Respawned lives=2 player_x>=1976 deaths<=1 state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 110
+L 10
+- 4
+J 20
+- 300
+L 200

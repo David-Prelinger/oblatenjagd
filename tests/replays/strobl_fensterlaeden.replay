@@ -1,0 +1,56 @@
+# Stage 7 Fensterlaeden (D-094, game-design.md "Stage 7" section 2): the
+# solver's first 320 frames to the Pension Seeblick garden, then shutter #1
+# (phase 0): she jumps up onto it at 386, four frames before it closes
+# (clock 390), drops into the garden unhurt, waits, jumps up through it as
+# it opens again (480) and lands on its top (502); a hop over the flower
+# box onto the balcony, a bump of the Z-box (581): the Zaunerstollen rolls
+# off the box top, turns at the 3-high stopper (55) and comes back to her
+# (ExtraLife 644). Back over the flower box and #1 to the street, then the
+# pair: #2 (phase 90) at 912, #3 (phase 150) at 942 (both open at clock
+# 870-959), the annex roof at 967, its Oblaten, down to the promenade.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4 player_x>=1300 state=playing
+---
+RB 96
+RBJ 6
+RB 9
+RBJ 20
+RB 40
+RBJ 36
+RB 64
+RBJ 20
+RB 29
+L 16
+L 12
+- 6
+J 20
+- 20
+- 76
+J 20
+- 20
+R 4
+RJ 16
+R 6
+- 10
+R 8
+- 8
+R 8
+- 8
+J 16
+- 70
+L 10
+- 4
+LJ 14
+L 40
+- 6
+RB 138
+L 6
+J 18
+- 6
+R 6
+RJ 18
+- 8
+RJ 18
+RB 90
