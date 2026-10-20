@@ -1,0 +1,20 @@
+# The deck chair as a step (D-095): Resi hops onto the 2-high wall at 9,
+# drops into pen A and jumps straight up as Kurgast #1 shuffles under her:
+# the stomp (100, „Kurruhe!") lays him in his chair, she lands on it (the
+# rest pauses while she stands there), and a short straight jump (JUMP held
+# 16 frames: a 54 px rise, short of the ledge from the floor) takes her
+# from the chair onto the 4-tile ledge for its 3 Oblaten.
+level  = m6_kurgast
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped oblaten>=3 score=700
+---
+R 40
+RJ 20
+R 21
+- 10
+J 4
+- 68
+J 16
+- 12
+R 30

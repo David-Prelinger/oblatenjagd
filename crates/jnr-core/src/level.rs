@@ -262,11 +262,13 @@ pub enum SpawnKind {
     Gelse,
     /// Enemy `regattaboot` (the Reisebus's machine on the water, D-080).
     Regattaboot,
+    /// Enemy `kurgast` (a slow walker who becomes a deck chair, D-095).
+    Kurgast,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 30] = [
+    pub const ALL: [SpawnKind; 31] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -297,6 +299,7 @@ impl SpawnKind {
         SpawnKind::Schwan,
         SpawnKind::Gelse,
         SpawnKind::Regattaboot,
+        SpawnKind::Kurgast,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -333,6 +336,7 @@ impl SpawnKind {
             SpawnKind::Schwan => "schwan",
             SpawnKind::Gelse => "gelse",
             SpawnKind::Regattaboot => "regattaboot",
+            SpawnKind::Kurgast => "kurgast",
         }
     }
 
