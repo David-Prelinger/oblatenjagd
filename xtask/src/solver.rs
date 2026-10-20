@@ -40,7 +40,8 @@
 //! generous: the testbed takes about 0.6 s.
 //!
 //! **Difficulty** (D-033: jump windows measure recoverability). For every
-//! jump of the route (a JUMP press followed by a `Jumped`), the whole
+//! jump of the route (a JUMP press followed by a `Jumped`, incl. a jump-out
+//! of swim water; a press that swims a `Stroke` is skipped, D-076), the whole
 //! held-JUMP segment is shifted by d ∈ [-12, +12] frames with the rest of
 //! the inputs unchanged (padded with the last input past the end of the
 //! route). Its checkpoint is the first landing after that `Jumped` + 2 s,
@@ -671,7 +672,8 @@ fn progress(start: &Game, inputs: &[InputFrame], check: u32) -> Option<Progress>
 
 /// Where a shifted jump leaves the player for re-planning, running
 /// `inputs` from `start` (a state of the same route before the press):
-/// after the step that lands it (the first `Landed` after its `Jumped`),
+/// after the step that lands it (the first `Landed` after its `Jumped`, or
+/// the first step in swim water),
 /// or, if the press made no jump, after the jump buffer ran out.
 /// `Err(true)`: the level was completed on the way (success), `Err(false)`:
 /// died or never landed before `deadline` (failure).
@@ -703,7 +705,9 @@ fn after_shifted_jump(
             if !jumped && f >= press + buffer {
                 return Ok(g);
             }
-        } else if jumped && g.events().contains(&Event::Landed) {
+        } else if jumped && (g.events().contains(&Event::Landed) || g.player().swimming) {
+            // A jump that ends in swim water ends there too (D-076): the
+            // re-planning swims on from it.
             return Ok(g);
         }
     }
@@ -878,6 +882,11 @@ pub fn jump_windows(
         .into_iter()
         .filter_map(|(s, e)| {
             let press = s as u32 + 1;
+            // A swim stroke is no jump (D-076): its press makes a `Stroke`,
+            // and a jump-out pressed within its buffer frames is its own hold.
+            if first(Event::Stroke, press, press).is_some() {
+                return None;
+            }
             let jumped = first(Event::Jumped, press, press + buffer)?;
             let landing = first(Event::Landed, jumped + 1, total).unwrap_or(total);
             let from = s.saturating_sub(MAX_SHIFT as usize) as u32;
@@ -1957,6 +1966,58 @@ mod tests {
         level([&air, &air, &air, &top], &ground)
     }
 
+    /// A pool of swim water (rows 2–4, bed in row 5) with dry ground right
+    /// of it (rows 1–5, 1 tile above the water) and the start `S` in the
+    /// water at row `start_row`.
+    fn swim_level(start_row: usize) -> Level {
+        let mut rows: Vec<String> = vec![
+            format!("{}{}", ".".repeat(12), "........G."),
+            format!("{}{}", ".".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            "#".repeat(22),
+        ];
+        rows[start_row].replace_range(4..5, "S");
+        let text = format!(
+            "[meta]\nid = \"swim\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\
+             \"~\" = \"see_wasser\"\n\
+             \"S\" = {{ entity = \"player_start\", tile = \"see_wasser\" }}\n\
+             \"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    #[test]
+    fn jump_windows_skip_strokes_and_count_jump_outs() {
+        let t = tuning();
+        // On the lake bed: three strokes, no jump.
+        let level = swim_level(4);
+        let mut inputs = vec![NONE; 5];
+        for _ in 0..3 {
+            inputs.push(InputFrame::JUMP);
+            // Long enough to sink back to the bed before the next stroke.
+            inputs.extend([NONE; 90]);
+        }
+        let orig = trace(&level, &t, &inputs);
+        let strokes = orig.events.iter().filter(|e| e.1 == Event::Stroke).count();
+        assert_eq!(strokes, 3);
+        assert!(jump_windows(&level, &t, &inputs, 1).is_empty());
+        // Floating at the surface: a held jump-out to the right onto the
+        // bank is a jump with a window.
+        let level = swim_level(2);
+        let mut inputs = vec![NONE; 30];
+        inputs.extend([RJ; 30]);
+        inputs.extend([R; 200]);
+        let orig = trace(&level, &t, &inputs);
+        assert!(orig.events.iter().any(|e| e.1 == Event::Jumped));
+        assert!(!orig.events.iter().any(|e| e.1 == Event::Stroke));
+        let windows = jump_windows(&level, &t, &inputs, 1);
+        assert_eq!(windows.len(), 1, "{windows:?}");
+        assert_eq!(windows[0].index, 30);
+    }
+
     #[test]
     fn jump_windows_do_not_depend_on_the_thread_count() {
         let level = three_pit_level();
@@ -1997,6 +2058,21 @@ mod tests {
         assert_eq!(progress(&later, &inputs, 100), Some(landed));
         // Past the end of the inputs: where the route ends.
         assert_eq!(progress(&start, &inputs, 10_000), Some(landed));
+    }
+
+    #[test]
+    fn after_shifted_jump_stops_in_swim_water() {
+        // A jump-out that falls back into the water (a tap, no RIGHT) never
+        // lands: the re-planning takes over on its first swimming step.
+        let level = swim_level(2);
+        let t = tuning();
+        let start = Game::new(&level, &t, 1);
+        let mut inputs = vec![NONE; 30];
+        inputs.push(InputFrame::JUMP);
+        inputs.extend([NONE; 200]);
+        let g = after_shifted_jump(&start, &t, &inputs, 31, 230).unwrap();
+        assert!(g.player().swimming && !g.player().leaving_water);
+        assert!(g.frame() > 31 + 5, "back in the water at {}", g.frame());
     }
 
     #[test]

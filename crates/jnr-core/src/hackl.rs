@@ -172,7 +172,7 @@ pub(crate) fn update_axe(e: &mut Entity, map: &TileMap, t: &Tuning) {
     e.x = b.x;
     e.y = b.y;
     e.vy = (e.vy + h.gravity).min(h.max_fall_speed);
-    if map.touches_lethal(&b) {
+    if map.swallows(&b) {
         e.removed = true;
     } else if hit_x || hit_y {
         stick(e);

@@ -35,6 +35,34 @@ pub struct Tuning {
     pub hackl: HacklTuning,
     /// The Durchkriechstein crawl (D-057).
     pub crawl: CrawlTuning,
+    /// Swimming in swim water (D-076).
+    pub swim: SwimTuning,
+}
+
+/// Swimming in swim water (`docs/game-design.md` → "Swimming", D-076).
+/// The same numbers in every power state; a jump-out uses
+/// `player.jump_speed_walk`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SwimTuning {
+    /// Whole px below the hitbox top of her chest point (hitbox centre x);
+    /// she swims while it is in a swim tile.
+    pub chest_px: i32,
+    /// Whole px: the chest less than this below a swim surface is "at the
+    /// surface" (floating, JUMP jumps out).
+    pub surface_band: i32,
+    /// Gravity while sinking.
+    pub gravity: Fx,
+    /// Maximum sinking speed.
+    pub max_sink: Fx,
+    /// Upward speed of a stroke (a JUMP press below the surface band).
+    pub stroke_speed: Fx,
+    /// Horizontal acceleration towards the held direction.
+    pub accel: Fx,
+    /// Horizontal deceleration with no direction held.
+    pub decel: Fx,
+    /// Top horizontal speed (RUN makes no difference).
+    pub speed: Fx,
 }
 
 /// The Hackl power-up and its thrown axes (`docs/game-design.md` →
@@ -1108,6 +1136,7 @@ impl Tuning {
             }
         }
         self.validate_hackl()?;
+        self.validate_swim()?;
         let c = &self.camera;
         if !(0..crate::camera::SCREEN_W).contains(&c.follow_x) {
             return Err(ParseError::new(
@@ -1172,6 +1201,49 @@ impl Tuning {
                     "tuning.toml: {name} must be 0..=180 px"
                 )));
             }
+        }
+        Ok(())
+    }
+
+    /// The `[swim]` section (D-076). The chest point lies inside every
+    /// form's hitbox (it is measured from the top, so the Normal height is
+    /// the limit); the band is at most a tile. A stroke is slower than a
+    /// jump-out, so a stroke can never be mistaken for one.
+    ///
+    /// TODO(E26): once `camera.autoscroll_speed` exists, also require
+    /// `camera.autoscroll_speed < swim.speed` (D-075: a swimmer can always
+    /// gain on the scrolling edge).
+    fn validate_swim(&self) -> Result<(), ParseError> {
+        let s = &self.swim;
+        if !(1..self.player.hitbox_h).contains(&s.chest_px) {
+            return Err(ParseError::new(
+                "tuning.toml: swim.chest_px must be 1..player.hitbox_h (inside every form's hitbox)",
+            ));
+        }
+        if !(1..=TILE_PX).contains(&s.surface_band) {
+            return Err(ParseError::new(
+                "tuning.toml: swim.surface_band must be 1..=16 px",
+            ));
+        }
+        let max_step = Fx::from_px(12);
+        for (name, v) in [
+            ("swim.gravity", s.gravity),
+            ("swim.max_sink", s.max_sink),
+            ("swim.stroke_speed", s.stroke_speed),
+            ("swim.accel", s.accel),
+            ("swim.decel", s.decel),
+            ("swim.speed", s.speed),
+        ] {
+            if v <= Fx::ZERO || v >= max_step {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        if s.stroke_speed >= self.player.jump_speed_walk {
+            return Err(ParseError::new(
+                "tuning.toml: swim.stroke_speed must be < player.jump_speed_walk (a stroke is weaker than a jump-out)",
+            ));
         }
         Ok(())
     }
@@ -1520,5 +1592,52 @@ mod tests {
         let missing = REAL.replace("reisebus_restart = ", "#reisebus_restart = ");
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("reisebus_restart"), "{err}");
+    }
+    #[test]
+    fn swim_keys_are_validated() {
+        let s = Tuning::parse(REAL).unwrap().swim;
+        assert_eq!((s.chest_px, s.surface_band), (8, 8));
+        assert_eq!(
+            [s.gravity, s.max_sink, s.stroke_speed],
+            [Fx(16), Fx(256), Fx(448)]
+        );
+        assert_eq!([s.accel, s.decel, s.speed], [Fx(16), Fx(8), Fx(320)]);
+        // Replaces a value inside the `[swim]` section only (other sections
+        // have keys of the same name, e.g. `gravity`).
+        let swim = |field: &str, value: &str| {
+            let (head, tail) = REAL.split_once("[swim]").unwrap();
+            let tail = tail.replacen(
+                &format!("\n{field} = "),
+                &format!("\n{field} = {value} #"),
+                1,
+            );
+            Tuning::parse(&format!("{head}[swim]{tail}"))
+        };
+        assert!(swim("chest_px", "21").is_ok(), "inside the Normal hitbox");
+        assert!(swim("surface_band", "16").is_ok());
+        assert!(swim("stroke_speed", "1047").is_ok());
+        for (field, bad) in [
+            ("chest_px", "0"),
+            ("chest_px", "22"),
+            ("surface_band", "0"),
+            ("surface_band", "17"),
+            ("gravity", "0"),
+            ("max_sink", "3072"),
+            ("stroke_speed", "1048"),
+            ("accel", "0"),
+            ("decel", "-8"),
+            ("speed", "0"),
+            ("speed", "3072"),
+        ] {
+            let err = swim(field, bad).unwrap_err().to_string();
+            assert!(
+                err.contains(&format!("swim.{field}")),
+                "{field} = {bad}: {err}"
+            );
+        }
+        let (head, tail) = REAL.split_once("[swim]").unwrap();
+        let missing = format!("{head}[swim]{}", tail.replace("\ndecel = ", "\n#decel = "));
+        let err = Tuning::parse(&missing).unwrap_err().to_string();
+        assert!(err.contains("decel"), "{err}");
     }
 }

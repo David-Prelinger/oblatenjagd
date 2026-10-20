@@ -49,6 +49,12 @@ pub const MAIBAUM_TOP_SPRITE: &str = "maibaum_top";
 /// Prefix of tile sprites: a tile named `ground` in the legend uses `tile_ground`.
 pub const TILE_SPRITE_PREFIX: &str = "tile_";
 
+/// The optional air bubble of a diving Resi (D-076, sprite catalog `blase`).
+pub const BUBBLE_SPRITE: &str = "blase";
+
+/// A bubble rises from her mouth every this many frames while she dives ...
+pub const BUBBLE_PERIOD: u32 = 40;
+
 /// The player blinks during `Dying` and while invulnerable, and alternates
 /// sizes while transforming: this many frames per phase.
 const DYING_FLASH_FRAMES: u32 = 4;
@@ -70,11 +76,15 @@ pub enum PlayerAnim {
     Skid,
     /// Sliding down the Maibaum (goal sequence; never from [`PlayerAnim::of`]).
     Pole,
+    /// Swimming (D-076; also on the lake bed). Its frame counts from the
+    /// last stroke ([`jnr_core::Player::swim_frames`]); without a `swim`
+    /// anim the `jump` anim shows.
+    Swim,
 }
 
 impl PlayerAnim {
     /// Every state, in the order of [`PlayerAnim::index`].
-    pub const ALL: [PlayerAnim; 7] = [
+    pub const ALL: [PlayerAnim; 8] = [
         PlayerAnim::Idle,
         PlayerAnim::Walk,
         PlayerAnim::Run,
@@ -82,11 +92,14 @@ impl PlayerAnim {
         PlayerAnim::Fall,
         PlayerAnim::Skid,
         PlayerAnim::Pole,
+        PlayerAnim::Swim,
     ];
 
     /// The state of a player.
     pub fn of(p: &Player, t: &PlayerTuning) -> PlayerAnim {
-        if !p.on_ground {
+        if p.swimming {
+            PlayerAnim::Swim
+        } else if !p.on_ground {
             if p.vy < Fx::ZERO {
                 PlayerAnim::Jump
             } else {
@@ -113,6 +126,7 @@ impl PlayerAnim {
             PlayerAnim::Fall => 4,
             PlayerAnim::Skid => 5,
             PlayerAnim::Pole => 6,
+            PlayerAnim::Swim => 7,
         }
     }
 
@@ -126,6 +140,7 @@ impl PlayerAnim {
             PlayerAnim::Fall => &["fall", "jump"],
             PlayerAnim::Skid => &["skid", "walk"],
             PlayerAnim::Pole => &["pole", "fall"],
+            PlayerAnim::Swim => &["swim", "jump", "fall"],
         }
     }
 }
@@ -148,7 +163,7 @@ pub fn player_faces_left(p: &Player, t: &PlayerTuning) -> bool {
 #[derive(Clone, Debug)]
 struct PlayerLook<'a> {
     sprite: &'a AtlasSprite,
-    anims: [&'a AtlasAnim; 7],
+    anims: [&'a AtlasAnim; PlayerAnim::ALL.len()],
     throw: Option<&'a AtlasAnim>,
     crawl: Option<&'a AtlasAnim>,
 }
@@ -183,6 +198,8 @@ pub struct RenderContext<'a> {
     player_hackl: Option<PlayerLook<'a>>,
     maibaum_pole: Option<&'a AtlasSprite>,
     maibaum_top: Option<&'a AtlasSprite>,
+    /// `blase` (optional; without it no bubbles).
+    blase: Option<&'a AtlasSprite>,
     entities: EntityLooks<'a>,
     /// The level's props, in spawn order.
     props: Vec<PropLook<'a>>,
@@ -260,6 +277,7 @@ impl<'a> RenderContext<'a> {
             player_hackl: look(PLAYER_HACKL_SPRITE),
             maibaum_pole: with_anims(MAIBAUM_POLE_SPRITE),
             maibaum_top: with_anims(MAIBAUM_TOP_SPRITE),
+            blase: with_anims(BUBBLE_SPRITE),
             entities: EntityLooks::new(atlas),
             props,
             title_logo: with_anims(screens::TITLE_LOGO_SPRITE),
@@ -423,6 +441,7 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
     draw_goals(game, ctx, fb, cam);
     entities::draw_entities(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     draw_player(game, ctx, fb, cam);
+    draw_bubble(game, ctx, fb, cam);
     entities::draw_front(game, &ctx.entities, ctx.atlas, &ctx.font, ctx.texts, fb);
     hud::draw_hud(game, ctx, fb);
     screens::draw_overlays(game, ctx, fb);
@@ -649,7 +668,13 @@ fn draw_resi(
                         PlayerAnim::of(p, t)
                     };
                     let anim = look.anims[state.index()];
-                    (anim, anim.frame_index_at(tick))
+                    // A stroke restarts the swim anim at frame 0.
+                    let at = if state == PlayerAnim::Swim {
+                        u32::from(p.swim_frames)
+                    } else {
+                        tick
+                    };
+                    (anim, anim.frame_index_at(at))
                 }
             };
             let left = player_faces_left(p, t);
@@ -666,6 +691,48 @@ fn draw_resi(
             fb.outline_rect(x, y, w, h, OUTLINE);
         }
     }
+}
+
+/// The diver's bubble (D-076, renderer only, from the frame counter):
+/// while she swims with her chest below the surface band, a `blase` rises
+/// from her mouth (3 px in front of her centre, 6 px below her hitbox top)
+/// every [`BUBBLE_PERIOD`] frames at 0.5 px/frame and is gone once it
+/// reaches the water line. It follows her mouth sideways (no state is
+/// kept). Nothing without the sprite or while dying.
+fn draw_bubble(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
+    let Some(s) = ctx.blase else {
+        return;
+    };
+    let p = game.player();
+    if !p.swimming || matches!(game.mode(), Mode::Dying { .. }) {
+        return;
+    }
+    let st = &game.tuning().swim;
+    let (cx, cy) = jnr_core::swim::chest(p, st);
+    let Some(surface) = jnr_core::swim::surface(game.map(), cx, cy) else {
+        return;
+    };
+    if jnr_core::swim::at_surface(cy, surface, st) {
+        return;
+    }
+    let ahead = if p.facing == Facing::Left { -3 } else { 3 };
+    let x = cx.to_px() + ahead;
+    let rise = (game.frame() % BUBBLE_PERIOD) as i32 / 2;
+    // The sprite's origin is its bottom centre; its top must stay below the line.
+    let y = p.y.to_px() + 6 - rise;
+    if y - s.height as i32 <= surface.to_px() {
+        return;
+    }
+    draw_sprite(
+        fb,
+        ctx.atlas,
+        s,
+        &s.anims[0],
+        game.frame(),
+        x - cam.x,
+        y - cam.y,
+        false,
+    );
 }
 
 fn outline_aabb(fb: &mut Framebuffer, b: &Aabb, cam: Camera, rgba: u32) {
@@ -900,6 +967,105 @@ mod tests {
         let mut fb = Framebuffer::new();
         render(&game, &ctx, &mut fb);
         assert_eq!(fb.get(100, 179), Some(SKY_LIGHT), "sunk off the screen");
+        assert!(!fb.pixels.contains(&A));
+    }
+
+    #[test]
+    fn swimming_shows_the_swim_anim_from_the_last_stroke_or_jump() {
+        let t = tuning();
+        let p = Player {
+            swimming: true,
+            on_ground: true,
+            vx: Fx(320),
+            ..Player::spawn(2, 2, &t.player)
+        };
+        assert_eq!(PlayerAnim::of(&p, &t.player), PlayerAnim::Swim);
+        let out = Player {
+            swimming: false,
+            ..p
+        };
+        assert_eq!(PlayerAnim::of(&out, &t.player), PlayerAnim::Walk);
+
+        let texts = Texts::default();
+        let game = tiny_game();
+        // Without `swim`: the `jump` anim (sprite catalog fallback).
+        let jump_only = testutil::atlas(&[testutil::sprite(
+            PLAYER_SPRITE,
+            (0, 0),
+            false,
+            vec![
+                ("idle", 0, vec![image(&["a"])]),
+                ("jump", 0, vec![image(&["b"])]),
+            ],
+        )]);
+        let ctx = RenderContext::new(&jump_only, &texts, game.level());
+        assert_eq!(ctx.player_anim(PlayerAnim::Swim).unwrap().name, "jump");
+        // With `swim` (2 frames of 4 ticks): its frame counts from the last
+        // stroke (`swim_frames`), not from the game frame.
+        let swim = testutil::atlas(&[testutil::sprite(
+            PLAYER_SPRITE,
+            (0, 0),
+            false,
+            vec![
+                ("idle", 0, vec![image(&["c"])]),
+                ("swim", 4, vec![image(&["a"]), image(&["b"])]),
+            ],
+        )]);
+        let ctx = RenderContext::new(&swim, &texts, game.level());
+        assert_eq!(ctx.player_anim(PlayerAnim::Swim).unwrap().name, "swim");
+        let cam = Camera { x: 0, y: 0 };
+        let feet = (p.feet().0.to_px(), p.feet().1.to_px());
+        let shown = |swim_frames: u16, tick: u32| {
+            let mut fb = Framebuffer::new();
+            let q = Player { swim_frames, ..p };
+            draw_resi(&ctx, &mut fb, cam, &q, &t, false, tick);
+            fb.get(feet.0, feet.1)
+        };
+        assert_eq!(shown(0, 7), Some(A));
+        assert_eq!(shown(4, 0), Some(B));
+        assert_eq!(shown(8, 4), Some(A), "loops; the game frame doesn't matter");
+    }
+
+    #[test]
+    fn a_diver_blows_a_bubble_every_40_frames_up_to_the_water_line() {
+        // Swim water rows 1-4 (surface y 16), bed row 5; Resi on the bed at
+        // column 2 (hitbox x 34..46, top 58: mouth at x 43, y 64).
+        let text = "[meta]\nid = \"b\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"~\" = \"see_wasser\"\n\"S\" = { entity = \"player_start\", tile = \"see_wasser\" }\n\
+             [map]\ngrid = '''\n.....\n~~~~~\n~~~~~\n~~~~~\n~~S~~\n#####\n'''\n";
+        let level = Level::parse(text).unwrap();
+        let atlas = testutil::atlas(&[testutil::sprite(
+            BUBBLE_SPRITE,
+            (0, 0),
+            false,
+            vec![("rise", 0, vec![image(&["a"])])],
+        )]);
+        let texts = Texts::default();
+        let ctx = RenderContext::new(&atlas, &texts, &level);
+        let mut game = Game::new(&level, &tuning(), 1);
+        for _ in 0..10 {
+            game.step(InputFrame::NONE);
+        }
+        assert!(game.player().swimming && game.player().on_ground);
+        let mut fb = Framebuffer::new();
+        draw_bubble(&game, &ctx, &mut fb, game.camera());
+        assert_eq!(fb.get(43, 64 - 5), Some(A), "frame 10: 5 px up");
+        for _ in 0..30 {
+            game.step(InputFrame::NONE);
+        }
+        let mut fb = Framebuffer::new();
+        draw_bubble(&game, &ctx, &mut fb, game.camera());
+        assert_eq!(fb.get(43, 64), Some(A), "frame 40: a new one at the mouth");
+        // Floating at the surface (the start in the surface row): none.
+        let level =
+            Level::parse(&text.replace("~~S~~", "~~~~~").replacen("~~~~~", "~~S~~", 1)).unwrap();
+        let mut floating = Game::new(&level, &tuning(), 1);
+        for _ in 0..10 {
+            floating.step(InputFrame::NONE);
+        }
+        assert!(floating.player().swimming && !floating.player().on_ground);
+        let mut fb = Framebuffer::new();
+        draw_bubble(&floating, &ctx, &mut fb, floating.camera());
         assert!(!fb.pixels.contains(&A));
     }
 

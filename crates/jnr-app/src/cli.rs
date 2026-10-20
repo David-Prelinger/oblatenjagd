@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn bad_input_is_reported() {
         assert!(error(&["--level", "atlantis"]).contains(
-            "embedded levels: climb_test, enemies, hackl, items, m2_enemies, m3_enemies, m4_bus, m4_enemies, route_a, route_b, schafbergbahn, testbed, salzburg, st_gilgen, brunnwinkl, falkenstein, st_wolfgang"
+            "embedded levels: climb_test, enemies, hackl, items, m2_enemies, m3_enemies, m4_bus, m4_enemies, m5_swim, route_a, route_b, schafbergbahn, testbed, salzburg, st_gilgen, brunnwinkl, falkenstein, st_wolfgang"
         ));
         assert!(error(&["--seed"]).contains("needs a value"));
         assert!(error(&["--seed", "-1"]).contains("not a valid"));

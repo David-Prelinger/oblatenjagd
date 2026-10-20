@@ -224,3 +224,15 @@ hitbox = [12, 12]         # px [w, h] while crawling through the Durchkriechstei
 speed = 256               # 1.0 px/frame to the right; len 4 → 4 × 16 + 12 = 76 frames
 mouth_px = 4              # DOWN starts the crawl when her right edge is at most this far left of the mouth
 cap_points = 1000         # Normal at the lives cap: points instead of the +1 life
+
+[swim]
+# Swimming in swim water (`TileKind::Swim`: see_wasser, see_wasser_tief, steg_pfahl; D-076).
+# The same numbers in every form; lethal water (D-050) is unchanged.
+chest_px = 8              # px: her chest point is the hitbox centre x, this far below the hitbox top; in a swim tile = swimming
+surface_band = 8          # px: chest less than this below a swim surface = at the surface (floats; JUMP = jump-out)
+gravity = 16              # 0.0625 px/frame² while sinking (DOWN held at the surface, or anywhere below the band) ...
+max_sink = 256            # ... up to 1.0 px/frame
+stroke_speed = 448        # a JUMP press below the band: 1.75 px/frame up, rises ~24 px over 28 frames (jump-out: player.jump_speed_walk)
+accel = 16                # 0.0625 px/frame² towards ±speed with LEFT/RIGHT ...
+decel = 8                 # ... 0.03125 px/frame² towards 0 without ...
+speed = 320               # ... 1.25 px/frame, RUN makes no difference (faster than the auto-scroll's 0.75)

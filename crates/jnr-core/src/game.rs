@@ -89,13 +89,16 @@ pub enum Event {
     AxeHit,
     /// The player started crawling through a Durchkriechstein (D-057).
     CrawlStarted,
+    /// The player swam a stroke (a JUMP press under water, D-076); a
+    /// jump-out from the surface is a `Jumped` instead.
+    Stroke,
 }
 
 impl Event {
     /// Every event, in declaration order. Keep in sync with the enum: a new
     /// variant fails the build in [`Event::name`] (exhaustive `match`), which
     /// is the reminder to list it here too.
-    pub const ALL: [Event; 17] = [
+    pub const ALL: [Event; 18] = [
         Event::Jumped,
         Event::Landed,
         Event::Died,
@@ -113,6 +116,7 @@ impl Event {
         Event::HacklThrown,
         Event::AxeHit,
         Event::CrawlStarted,
+        Event::Stroke,
     ];
 
     /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
@@ -135,6 +139,7 @@ impl Event {
             Event::HacklThrown => "HacklThrown",
             Event::AxeHit => "AxeHit",
             Event::CrawlStarted => "CrawlStarted",
+            Event::Stroke => "Stroke",
         }
     }
 
@@ -456,6 +461,7 @@ impl Game {
                 input,
                 &self.map,
                 &self.tuning.player,
+                &self.tuning.swim,
                 min_x,
                 &mut self.events,
             );
@@ -955,6 +961,13 @@ impl Game {
                     &mut self.events,
                 );
             }
+            // Walking enemies are lost in swim water (D-076).
+            if let EntityKind::Enemy(kind) = e.kind
+                && kind.sinks_in_swim_water()
+                && ctx.map.touches(&e.hitbox(), TileKind::Swim)
+            {
+                e.removed = true;
+            }
             // Moving platforms never despawn (D-027): a player who fell
             // off must be able to wait for the car.
             if !e.kind.is_platform() && (e.right() < despawn_x || e.y >= bottom) {
@@ -1037,8 +1050,12 @@ impl Game {
                     spawned.extend(self.pick_up_hackl(fx, e.y));
                 }
                 EntityKind::Enemy(_) if !e.harmful() => {}
-                // A swarm hurts on any contact, also from above.
-                EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
+                // A swarm hurts on any contact, also from above; so does
+                // every enemy while she swims (no stomps, no roof bounces,
+                // D-076).
+                EntityKind::Enemy(kind) if kind.hurts_from_above() || self.player.swimming => {
+                    hurt = true
+                }
                 EntityKind::Enemy(kind) => {
                     // Stomp: falling, and the feet were above the enemy's
                     // middle on the previous frame (both positions from

@@ -1,0 +1,40 @@
+# The whole swim lesson to the goal: the bathing notch (3 Oblaten) and
+# the jump-out onto the quay, floating 300 frames in the open water, a
+# jump-out up through the deck; then down through the deck (DOWN + JUMP),
+# a dive along the lake bed collecting the line of 8 Oblaten, strokes over
+# the step up to the shallows and a held jump-out onto the far quay, on to
+# the Maibaum.
+level  = m5_swim
+seed   = 1
+source = handwritten
+expect = complete frames=1446..1446 deaths=0 oblaten>=11 no_event=Hurt event=Stroke
+---
+R 100
+RJ 8
+R 20
+- 20
+D 40
+L 30
+- 1
+R 50
+J 1
+- 24
+J 1
+- 24
+RJ 30
+R 50
+- 300
+R 80
+- 60
+J 40
+- 30
+DJ 1
+RD 60
+R 140
+RJ 1
+R 30
+RJ 1
+R 30
+R 50
+RJ 30
+R 260

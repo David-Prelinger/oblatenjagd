@@ -1,0 +1,17 @@
+# Written by `cargo xtask solve m5_swim --write`; re-create it instead of editing.
+level  = m5_swim
+seed   = 1
+source = solver
+expect = complete frames=456..456 deaths=0
+---
+RB 64
+RBJ 6
+RB 56
+RBJ 36
+RB 40
+RBJ 36
+RB 34
+RBJ 20
+RB 24
+RBJ 33
+RB 107

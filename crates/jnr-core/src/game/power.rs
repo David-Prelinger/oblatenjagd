@@ -6,7 +6,8 @@
 //!   (`score.power_up`); as Hackl the points only.
 //! - **Throw**: a new press of RUN while Hackl, in play (not frozen, not
 //!   crawling; the goal sequence and dying are other modes) throws an axe
-//!   if fewer than `hackl.max_alive` are alive, and shows the throw pose
+//!   if fewer than `hackl.max_alive` are alive (never while swimming,
+//!   D-076), and shows the throw pose
 //!   for `hackl.throw_pose_frames`. Holding RUN keeps running.
 //! - **Axe hits** ([`Game::axe_hits`], after every entity moved): each
 //!   flying axe hits the first entity in list order that it overlaps and
@@ -58,7 +59,7 @@ impl Game {
     pub(super) fn throw_hackl(&mut self, input: crate::InputFrame) {
         let p = &self.player;
         let pressed = input.run() && !p.run_held;
-        if !pressed || p.power != Power::Hackl || p.crawling() {
+        if !pressed || p.power != Power::Hackl || p.crawling() || p.swimming {
             return;
         }
         let alive = self

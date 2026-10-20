@@ -15,6 +15,7 @@ mod modes;
 mod reisebus;
 mod route;
 mod schafbergbahn;
+mod swim;
 mod testbed;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
@@ -72,4 +73,55 @@ fn until(g: &mut Game, token: &str, max: u32, pred: impl Fn(&Game) -> bool) -> V
         }
     }
     panic!("condition not reached in {max} frames; events: {events:?}");
+}
+
+/// Legend of [`pool`] (`.` air).
+const POOL_LEGEND: &str = r##"
+"#" = "solid"
+"-" = "oneway"
+"~" = "see_wasser"
+"w" = "wolfgangsee_water"
+"B" = "brick"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"P" = { entity = "player_start" }
+"S" = { entity = "player_start", tile = "see_wasser" }
+"o" = { entity = "oblate", tile = "see_wasser" }
+"t" = { entity = "taube", tile = "see_wasser" }
+"u" = { entity = "taube" }
+"f" = { entity = "fiaker", tile = "see_wasser" }
+"T" = { entity = "selfie_tourist", still = true }
+"W" = { entity = "selfie_tourist" }
+"G" = { entity = "goal" }
+"##;
+
+/// A 14-row swimming pool (D-076) `width` columns wide: solid quay in rows
+/// 8–13 (top y 128), except in the columns `water`, which hold swim water
+/// (`see_wasser`) in rows 8–12 (surface y 128, flush with the quay) over a
+/// solid lake bed in row 13 (top y 208). The player starts on the quay at
+/// column 2 (feet 128) unless `marks` places a `P` or `S` (start in the
+/// water); `marks` are (row, col, char) in [`POOL_LEGEND`].
+fn pool(width: usize, water: std::ops::Range<usize>, marks: &[(usize, usize, char)]) -> Level {
+    let mut rows: Vec<Vec<char>> = (0..14)
+        .map(|r| {
+            (0..width)
+                .map(|c| match r {
+                    0..=7 => '.',
+                    8..=12 if water.contains(&c) => '~',
+                    _ => '#',
+                })
+                .collect()
+        })
+        .collect();
+    if !marks.iter().any(|m| m.2 == 'P' || m.2 == 'S') {
+        rows[7][2] = 'P';
+    }
+    for &(r, c, ch) in marks {
+        rows[r][c] = ch;
+    }
+    let grid: Vec<String> = rows.into_iter().map(|r| r.into_iter().collect()).collect();
+    let text = format!(
+        "[meta]\nid = \"pool\"\ntime_limit = 300\n[legend]\n{POOL_LEGEND}\n[map]\ngrid = '''\n{}\n'''\n",
+        grid.join("\n")
+    );
+    Level::parse(&text).unwrap()
 }

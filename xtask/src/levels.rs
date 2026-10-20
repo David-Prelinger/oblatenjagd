@@ -14,6 +14,11 @@
 //! tiles to the upper end (`jnr_core::platform::recovery_problems`, D-027,
 //! D-044; its doc comment lists what it does not check).
 //!
+//! Swimming (M5, D-076, `jnr_core::swim::problems`): every column of swim
+//! water ends on a solid tile inside the level (a lake bed); inside an
+//! auto-scroll zone no solid tile sits on a swim surface (wired up with
+//! E26's zone).
+//!
 //! Climbing (M3, [`crate::climblint`]): no 7–9 tile drops in climb levels
 //! (D-054), rock spawner niches 4–6 tiles above their ground (D-058), the
 //! Durchkriechstein's tunnel, mouth and exit (D-057), and a warning (not a
@@ -36,7 +41,8 @@ Commands:
               3 free tiles above every Festungsbahn and Gondel track (the
               Schafbergbahn: its swept body and 3 tiles above its roof free
               of solid and one-way tiles), and a way back up (steps <= 3
-              tiles) from the pit under it to its upper end; climbing: no 7-9 tile drops in climb levels, rock
+              tiles) from the pit under it to its upper end; swim water
+              ends on a solid lake bed in every column; climbing: no 7-9 tile drops in climb levels, rock
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
               columns (warnings never fail)
@@ -156,6 +162,9 @@ pub fn lint(
             .into_iter()
             .chain(jnr_core::platform::recovery_problems(level, tuning))
             .chain(jnr_core::enemies::reisebus_lane_problems(level, tuning))
+            // TODO(E26): pass the auto-scroll zone's columns once
+            // `[meta] autoscroll` exists (no solid on a swim surface there).
+            .chain(jnr_core::swim::problems(level, None))
         {
             problems.push(format!("{shown}: {p}"));
         }
@@ -282,6 +291,29 @@ mod tests {
         assert_eq!(
             lint(&levels[..1], &texts, &tuning(), Some("zz")),
             vec!["no level with id `zz` in content/levels"]
+        );
+    }
+
+    #[test]
+    fn swim_water_needs_a_solid_bed() {
+        let swim = |bed: &str| {
+            let text = format!(
+                "[meta]\nid = \"s\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"~\" = \"see_wasser\"\n\
+                 \"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n\
+                 P...G\n#~~~#\n#~~~#\n{bed}\n'''\n"
+            );
+            vec![(
+                PathBuf::from("s.level"),
+                Level::parse(&text).map_err(|e| e.to_string()),
+            )]
+        };
+        assert!(lint(&swim("#####"), &texts(), &tuning(), None).is_empty());
+        let problems = lint(&swim("##.##"), &texts(), &tuning(), None);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert!(
+            problems[0].starts_with("s.level: swim water at column 3, rows 2–3")
+                && problems[0].contains("lake bed"),
+            "{problems:?}"
         );
     }
 

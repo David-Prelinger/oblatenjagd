@@ -22,7 +22,7 @@ use jnr_core::{Camera, Game, TileKind};
 
 use crate::Framebuffer;
 use crate::blit::blit_frame;
-use crate::palette::{DIRNDL_RED, LEATHER_DARK, STONE_GREY};
+use crate::palette::{DIRNDL_RED, LEATHER_DARK, SKY_BLUE, STONE_GREY};
 
 /// Name of the autotile animation.
 pub const AUTO_ANIM: &str = "auto";
@@ -252,6 +252,9 @@ pub(crate) fn draw_tiles(
                     TileKind::Hazard | TileKind::Water => {
                         fb.fill_rect(x, y, TILE_PX, TILE_PX, DIRNDL_RED)
                     }
+                    // Swim water (D-076) until its art lands: clear blue,
+                    // never the lethal red.
+                    TileKind::Swim => fb.fill_rect(x, y, TILE_PX, TILE_PX, SKY_BLUE),
                 },
             }
         }
@@ -511,6 +514,22 @@ mod tests {
         assert_eq!(fb.get(4, 20), before, "no sprite, no grey box");
         assert_eq!(fb.get(0, 16), before);
         assert_eq!(fb.get(20, 20), Some(STONE_GREY), "the solid next to it");
+    }
+
+    #[test]
+    fn swim_water_grey_box_is_blue_not_the_lethal_red() {
+        let l = level(
+            "\"~\" = \"see_wasser\"\n\"t\" = \"see_wasser_tief\"\n\"|\" = \"steg_pfahl\"\n\"w\" = \"wolfgangsee_water\"\n\"#\" = \"solid\"\n",
+            "P...\n~|w.\nt|w.\n####\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let mut fb = testutil::fb();
+        draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, 0);
+        for (x, y) in [(4, 20), (4, 36), (20, 20), (20, 36)] {
+            assert_eq!(fb.get(x, y), Some(SKY_BLUE), "swim at {x},{y}");
+        }
+        assert_eq!(fb.get(36, 20), Some(DIRNDL_RED), "lethal water");
     }
 
     #[test]

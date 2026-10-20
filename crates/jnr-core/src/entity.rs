@@ -118,6 +118,30 @@ impl EnemyKind {
         matches!(self, EnemyKind::Bienenschwarm)
     }
 
+    /// True for the kinds that walk, stand or roll on the ground and are
+    /// lost in swim water like in water (D-076): in lethal water they sink
+    /// out of the level, swim water has a lake bed, so they are removed as
+    /// soon as they touch it. Fliers and the kinds that ignore tiles (the
+    /// Fiaker's and the Reisebus' charges) are not.
+    pub const fn sinks_in_swim_water(self) -> bool {
+        match self {
+            EnemyKind::SelfieTourist
+            | EnemyKind::MozartkugelVerkaeufer
+            | EnemyKind::NordicWalker
+            | EnemyKind::Blasmusiker
+            | EnemyKind::EBiker
+            | EnemyKind::Pilger
+            | EnemyKind::Gams
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schneekugel => true,
+            EnemyKind::Taube
+            | EnemyKind::TaubeSitting
+            | EnemyKind::Fiaker
+            | EnemyKind::Bienenschwarm
+            | EnemyKind::Reisebus => false,
+        }
+    }
+
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
     /// Blasmusiker, E-Biker, Gams, Operettensänger; D-046, D-058, D-068),
@@ -739,7 +763,7 @@ impl Entity {
     }
 
     /// Rise out of the box (no collision), then roll: gravity, turn at
-    /// walls, fall off ledges. Lost in hazards (water).
+    /// walls, fall off ledges. Lost in hazards (water, swim water).
     fn update_power_up(&mut self, map: &TileMap, t: &Tuning, speed: Fx) {
         if self.timer <= t.items.rise_frames {
             self.y -= t.items.rise_speed;
@@ -758,7 +782,7 @@ impl Entity {
         }
         self.x = b.x;
         self.y = b.y;
-        if map.touches_lethal(&b) {
+        if map.swallows(&b) {
             self.removed = true;
         }
     }

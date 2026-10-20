@@ -552,7 +552,7 @@ fn update_e_biker(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
         let (cx, _) = e.feet();
         return Some(popup(Popup::Hoppala, cx, e.y - TILE.div_int(2)));
     }
-    if ctx.map.touches_lethal(&b) || e.right() <= ctx.screen_left {
+    if ctx.map.swallows(&b) || e.right() <= ctx.screen_left {
         e.removed = true;
     }
     None
@@ -1439,7 +1439,7 @@ fn update_globe(e: &mut Entity, ctx: &UpdateCtx) {
     if wall {
         e.state = state::SHATTERED;
         e.removed = true;
-    } else if ctx.map.touches_lethal(&b) || e.right() <= ctx.screen_left {
+    } else if ctx.map.swallows(&b) || e.right() <= ctx.screen_left {
         e.removed = true;
     }
 }

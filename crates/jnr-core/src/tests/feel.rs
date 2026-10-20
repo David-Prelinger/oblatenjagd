@@ -508,3 +508,232 @@ fn print_measured_feel() {
         px(stomp_rise("J"))
     );
 }
+
+// ------------------------------------------------------- swimming (D-076)
+
+/// Swim-water surface of [`pool`], whole px.
+const SURFACE_PX: i32 = 128;
+
+/// A game in a pool level with the player as `power` (no freeze).
+fn pool_game(level: &Level, power: crate::Power) -> Game {
+    let mut g = Game::new(level, &tuning(), 1);
+    g.player.set_power(power, &tuning().player);
+    g.player.transform = 0;
+    g
+}
+
+/// The chest point's y (`swim.chest_px` below the hitbox top).
+fn chest_y(g: &Game) -> Fx {
+    g.player().y + Fx::from_px(tuning().swim.chest_px)
+}
+
+/// Lets a player who starts in or above the water settle: floating at the
+/// surface (vy 0, chest in the band) for 5 frames in a row.
+fn settle_floating(g: &mut Game) {
+    let band = Fx::from_px(SURFACE_PX + tuning().swim.surface_band);
+    let mut calm = 0;
+    for _ in 0..200 {
+        g.step(InputFrame::NONE);
+        let p = g.player();
+        if p.swimming && p.vy == Fx::ZERO && !p.on_ground && chest_y(g) < band {
+            calm += 1;
+            if calm == 5 {
+                return;
+            }
+        } else {
+            calm = 0;
+        }
+    }
+    panic!("never floated");
+}
+
+/// Floats her with the chest exactly on the water line: dives just below
+/// the surface band and strokes up into the rise cap.
+fn float_on_the_line(g: &mut Game) {
+    settle_floating(g);
+    let below = Fx::from_px(SURFACE_PX + tuning().swim.surface_band);
+    until(g, "D", 100, |g| chest_y(g) >= below);
+    assert!(g.step(input("J")).contains(&Event::Stroke));
+    until(g, "-", 100, |g| g.player().vy == Fx::ZERO);
+    assert_eq!(chest_y(g), Fx::from_px(SURFACE_PX), "capped on the line");
+}
+
+#[test]
+fn swim_stroke_rises_24_px() {
+    // Standing on the lake bed (feet 208), one tap of JUMP: a stroke.
+    for power in crate::Power::ALL {
+        let mut g = pool_game(&pool(20, 4..16, &[(12, 8, 'S')]), power);
+        hold(&mut g, "-", 20);
+        let p = g.player();
+        assert!(p.on_ground && p.swimming, "{power:?} on the bed");
+        let y0 = p.y;
+        let events = g.step(input("J")).to_vec();
+        assert!(events.contains(&Event::Stroke) && !events.contains(&Event::Jumped));
+        let mut min_y = g.player().y;
+        for _ in 0..60 {
+            g.step(InputFrame::NONE);
+            min_y = min_y.min(g.player().y);
+        }
+        assert_near("stroke rise", y0 - min_y, Fx::from_px(24), Fx::from_px(4));
+        assert!(g.player().on_ground, "{power:?} sank back to the bed");
+    }
+}
+
+#[test]
+fn swim_max_sink_is_1_px_per_frame() {
+    let mut g = pool_game(&pool(20, 4..16, &[(8, 8, 'S')]), crate::Power::Normal);
+    settle_floating(&mut g);
+    let y0 = g.player().y;
+    let mut max_vy = Fx::ZERO;
+    let mut frames_to_12 = None;
+    for f in 1..=40 {
+        g.step(input("D"));
+        max_vy = max_vy.max(g.player().vy);
+        if frames_to_12.is_none() && g.player().y - y0 >= Fx::from_px(12) {
+            frames_to_12 = Some(f);
+        }
+    }
+    assert_eq!(max_vy, Fx(256), "max sink 1.0 px/frame");
+    let y = g.player().y;
+    g.step(input("D"));
+    assert_eq!(g.player().y - y, Fx(256), "sinks at max speed");
+    // From rest: 12 px in about 20 frames (game-design.md "Sinking").
+    let f = frames_to_12.unwrap();
+    assert!((18..=22).contains(&f), "{f} frames to 12 px");
+}
+
+#[test]
+fn swim_speed_is_1_25_px_per_frame_and_run_is_no_faster() {
+    for token in ["R", "RB"] {
+        let mut g = pool_game(&pool(80, 4..76, &[(8, 6, 'S')]), crate::Power::Normal);
+        settle_floating(&mut g);
+        let y = g.player().y;
+        hold(&mut g, token, 60);
+        let x0 = g.player().x;
+        hold(&mut g, token, 10);
+        let p = g.player();
+        assert!(p.swimming, "{token}");
+        assert_eq!(p.vx, Fx(320), "{token}: 1.25 px/frame");
+        assert_eq!((p.x - x0).div_int(10), Fx(320), "{token}: every frame");
+        assert_eq!(p.y, y, "{token}: still floating");
+    }
+}
+
+#[test]
+fn swim_floats_at_the_surface_without_input() {
+    // Walking off the quay into the water: she floats, no input needed.
+    for power in crate::Power::ALL {
+        let mut g = pool_game(&pool(30, 6..24, &[]), power);
+        until(&mut g, "R", 120, |g| g.player().swimming);
+        settle_floating(&mut g);
+        let y = g.player().y;
+        assert!(
+            chest_y(&g) >= Fx::from_px(SURFACE_PX),
+            "{power:?}: chest in the water"
+        );
+        for _ in 0..300 {
+            let events = g.step(InputFrame::NONE).to_vec();
+            assert!(!events.contains(&Event::Died));
+            assert_eq!(g.player().y, y, "{power:?}: floats");
+        }
+        assert!(g.player().swimming && !g.player().on_ground);
+    }
+}
+
+/// Floats a player of `power` on the water line at the `S` of `marks`,
+/// presses `jump` once and then holds `then` for 120 frames. Returns the
+/// feet's y (whole px) if she ended standing on solid ground or a deck,
+/// `None` if she ended in the water.
+fn jump_out(
+    power: crate::Power,
+    marks: &[(usize, usize, char)],
+    jump: &str,
+    then: &str,
+) -> Option<i32> {
+    let mut g = pool_game(&pool(30, 4..26, marks), power);
+    float_on_the_line(&mut g);
+    let events = g.step(input(jump)).to_vec();
+    assert!(events.contains(&Event::Jumped), "{power:?}: a jump-out");
+    assert!(!events.contains(&Event::Stroke));
+    hold(&mut g, then, 120);
+    let p = g.player();
+    if p.swimming {
+        return None;
+    }
+    assert!(p.on_ground, "{power:?}: neither in the water nor standing");
+    Some(p.feet().1.to_px())
+}
+
+#[test]
+fn held_jump_out_lands_on_a_one_tile_deck_in_every_form_and_a_tap_does_not() {
+    // A one-way deck 1 tile above the water (row 7, top y 112) over the
+    // swimmer: she jumps up through it.
+    let deck: Vec<(usize, usize, char)> =
+        (8..12).map(|c| (7, c, '-')).chain([(8, 10, 'S')]).collect();
+    // A solid quay 1 tile above the water right of her (columns 15+).
+    let mut quay: Vec<(usize, usize, char)> = (15..30)
+        .flat_map(|c| (7..13).map(move |r| (r, c, '#')))
+        .collect();
+    quay.push((8, 14, 'S'));
+    for power in crate::Power::ALL {
+        assert_eq!(
+            jump_out(power, &deck, "J", "J"),
+            Some(112),
+            "{power:?} held, deck"
+        );
+        assert_eq!(
+            jump_out(power, &deck, "J", "-"),
+            None,
+            "{power:?} tap, deck"
+        );
+        assert_eq!(
+            jump_out(power, &quay, "RJ", "RJ"),
+            Some(112),
+            "{power:?} held, quay"
+        );
+        assert_eq!(
+            jump_out(power, &quay, "RJ", "R"),
+            None,
+            "{power:?} tap, quay"
+        );
+    }
+}
+
+/// Feet above the water line at the top of a jump-out from the line
+/// (`held`: JUMP held), whole px.
+fn jump_out_height(power: crate::Power, held: bool) -> Fx {
+    let mut g = pool_game(&pool(20, 4..16, &[(8, 8, 'S')]), power);
+    float_on_the_line(&mut g);
+    assert!(g.step(input("J")).contains(&Event::Jumped));
+    let mut min_feet = g.player().feet().1;
+    for _ in 0..60 {
+        g.step(input(if held { "J" } else { "-" }));
+        min_feet = min_feet.min(g.player().feet().1);
+    }
+    Fx::from_px(SURFACE_PX) - min_feet
+}
+
+#[test]
+fn jump_out_heights_match_the_design() {
+    // Held, Normal Resi's feet rise ~53 px above the water (big ~45): a
+    // deck 1 tile up is in reach; a tap only ~11 (big ~3).
+    for (power, held, tap) in [
+        (crate::Power::Normal, 53, 11),
+        (crate::Power::Big, 45, 3),
+        (crate::Power::Hackl, 45, 3),
+    ] {
+        let name = format!("{power:?}");
+        assert_near(
+            &name,
+            jump_out_height(power, true),
+            Fx::from_px(held),
+            Fx::from_px(4),
+        );
+        assert_near(
+            &name,
+            jump_out_height(power, false),
+            Fx::from_px(tap),
+            Fx::from_px(4),
+        );
+    }
+}

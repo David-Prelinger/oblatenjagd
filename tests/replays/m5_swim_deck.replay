@@ -1,0 +1,29 @@
+# Floating and a jump-out through a deck: after the bathing notch Resi
+# walks off the quay into the open water and idles 300 frames (she floats
+# with no input and nothing kills her), swims under the one-way deck
+# (columns 28-31, 1 tile above the water) and jumps out straight up
+# through it with JUMP held, landing on it.
+level  = m5_swim
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=470 event=Landed
+---
+R 100
+RJ 8
+R 20
+- 20
+D 40
+L 30
+- 1
+R 50
+J 1
+- 24
+J 1
+- 24
+RJ 30
+R 50
+- 300
+R 80
+- 60
+J 40
+- 30

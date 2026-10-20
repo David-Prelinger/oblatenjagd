@@ -34,6 +34,11 @@ pub enum TileKind {
     /// below the tile's top (Salzach, Wolfgangsee; D-050); otherwise a
     /// hazard (items and E-Bikers are lost in it).
     Water,
+    /// Swim water (Wolfgangsee lake, D-076): never kills; the player swims
+    /// while her chest point is in it (`crate::swim`). Not a floor for
+    /// anything; items, axes and walking enemies are lost in it as in
+    /// water.
+    Swim,
 }
 
 impl TileKind {
@@ -50,7 +55,9 @@ impl TileKind {
     /// its awning `standl_dach` and the bus shelter roof `wartehaus_dach`
     /// one-way, the bypass tunnel's inside `tunnel_bg` (and `tunnel_bg_lamp`,
     /// the same with a lamp) and the fallback
-    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067).
+    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067). M5:
+    /// the swim water `see_wasser` (surface), `see_wasser_tief` (deep) and
+    /// `steg_pfahl` (water with a pier post) are swim water (D-076).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
@@ -69,6 +76,7 @@ impl TileKind {
             | "salzach_water_deep"
             | "wolfgangsee_water"
             | "wolfgangsee_water_deep" => Some(TileKind::Water),
+            "see_wasser" | "see_wasser_tief" | "steg_pfahl" => Some(TileKind::Swim),
             _ => None,
         }
     }
@@ -81,13 +89,19 @@ impl TileKind {
             TileKind::OneWay => 2,
             TileKind::Hazard => 3,
             TileKind::Water => 4,
+            TileKind::Swim => 5,
         }
     }
 
-    /// True for the kinds that kill (spikes, water) and that items and
-    /// E-Bikers are lost in.
+    /// True for the kinds that kill (spikes, water). Swim water does not.
     pub const fn is_lethal(self) -> bool {
         matches!(self, TileKind::Hazard | TileKind::Water)
+    }
+
+    /// True for the kinds that items, thrown axes and vehicles (E-Biker,
+    /// snow globe) are lost in: spikes, water and swim water (D-076).
+    pub const fn swallows_items(self) -> bool {
+        matches!(self, TileKind::Hazard | TileKind::Water | TileKind::Swim)
     }
 }
 
@@ -981,12 +995,13 @@ fn parse_tile(
 }
 
 /// The tile under an entity (`tile = "..."` on an entity entry): it must
-/// not collide, so the entity behaves exactly as on empty air.
+/// not collide, so the entity behaves exactly as on empty air, or be swim
+/// water (D-076: Oblaten, swans and regatta boats in the lake).
 fn entity_tile(key: &str, name: &str, tile_names: &mut Vec<String>) -> Result<Tile, ParseError> {
     match parse_tile(key, name, None, tile_names)? {
-        LegendEntry::Tile(t) if t.kind == TileKind::Empty => Ok(t),
+        LegendEntry::Tile(t) if matches!(t.kind, TileKind::Empty | TileKind::Swim) => Ok(t),
         _ => Err(ParseError::new(format!(
-            "legend \"{key}\": the tile under an entity must not collide (\"{name}\" does; use a decorative tile such as wall_village_bg or railing_bg)"
+            "legend \"{key}\": the tile under an entity must not collide (\"{name}\" does; use a decorative tile such as wall_village_bg or railing_bg, or swim water such as see_wasser)"
         ))),
     }
 }
@@ -2080,6 +2095,49 @@ P.sSC.tfG
                 "{name}"
             );
         }
+    }
+
+    #[test]
+    fn m5_swim_tiles_are_swim_water() {
+        for name in ["see_wasser", "see_wasser_tief", "steg_pfahl"] {
+            assert_eq!(
+                TileKind::from_tile_name(name),
+                Some(TileKind::Swim),
+                "{name}"
+            );
+        }
+        // Swim water never kills, but swallows items like water (D-076);
+        // the lethal water tiles are unchanged (D-050).
+        assert!(!TileKind::Swim.is_lethal() && TileKind::Swim.swallows_items());
+        assert!(TileKind::Water.swallows_items() && TileKind::Hazard.swallows_items());
+        assert!(!TileKind::Solid.swallows_items() && !TileKind::Empty.swallows_items());
+        assert!(!TileKind::OneWay.swallows_items());
+        assert_eq!(
+            TileKind::from_tile_name("wolfgangsee_water"),
+            Some(TileKind::Water)
+        );
+        assert_ne!(TileKind::Swim.id(), TileKind::Water.id());
+    }
+
+    #[test]
+    fn an_entity_may_stand_on_a_swim_tile() {
+        let with = |tile: &str| {
+            SMALL.replace(
+                "{ entity = \"goal\" }",
+                &format!("{{ entity = \"goal\", tile = \"{tile}\" }}"),
+            )
+        };
+        let l = Level::parse(&with("see_wasser")).unwrap();
+        let goal = l
+            .entities
+            .iter()
+            .find(|e| e.kind == SpawnKind::Goal)
+            .unwrap();
+        let t = l.tile(goal.col, goal.row).unwrap();
+        assert_eq!(t.kind, TileKind::Swim);
+        assert_eq!(l.tile_names[t.name as usize], "see_wasser");
+        assert!(Level::parse(&with("steg_pfahl")).is_ok());
+        assert!(err(&with("wolfgangsee_water")).contains("must not collide"));
     }
 
     #[test]
