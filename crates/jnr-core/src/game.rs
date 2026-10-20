@@ -26,7 +26,7 @@ use crate::camera::{Autoscroll, Camera, ClimbFocus, Rest, SCREEN_H, SCREEN_W, Sc
 use crate::enemies::Contact;
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
-use crate::hash::Fnv;
+use crate::hash::{Fnv, WordHash};
 use crate::input::InputFrame;
 use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
@@ -1665,6 +1665,9 @@ impl Game {
         if self.autoscroll_zone().is_some() {
             self.scroll.hash(&mut h);
         }
+        // The entities (most of the work) a word at a time (E35): the same
+        // fields as before, packed into words, through `WordHash`.
+        let mut w = WordHash::new();
         for e in &self.entities {
             if matches!(
                 e.kind,
@@ -1677,11 +1680,12 @@ impl Game {
             ) {
                 continue;
             }
-            h.u16(e.spawn.unwrap_or(u16::MAX));
-            h.i32(e.x.raw() >> 10);
-            h.i32(e.y.raw() >> 10);
-            h.i32(e.vx.signum());
-            h.bool(e.rising(&self.tuning));
+            let spawn = u64::from(e.spawn.unwrap_or(u16::MAX));
+            let dir_x = (e.vx.signum() + 1) as u64; // 0, 1 or 2
+            let rising = u64::from(e.rising(&self.tuning));
+            w.word(spawn | dir_x << 16 | rising << 18);
+            let cell = |v: i32| u64::from((v >> 10) as u32);
+            w.word(cell(e.x.raw()) | cell(e.y.raw()) << 32);
             if matches!(
                 e.kind,
                 EntityKind::Enemy(_)
@@ -1700,12 +1704,15 @@ impl Game {
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {
-                h.bool(e.active);
-                h.u8(e.state);
-                h.u8(e.dir as u8);
-                h.u16(e.count);
+                w.word(
+                    u64::from(e.active)
+                        | u64::from(e.state) << 8
+                        | u64::from(e.dir as u8) << 16
+                        | u64::from(e.count) << 32,
+                );
             }
         }
+        h.u64(w.finish());
         h.finish()
     }
 
