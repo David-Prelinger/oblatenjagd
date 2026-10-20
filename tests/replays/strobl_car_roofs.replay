@@ -1,0 +1,51 @@
+# Stage 7 Autos (D-093): bouncing across the car roofs. As
+# strobl_ampel_shelter onto shelter C while Ampel #2's counter runs; as the
+# green's three cars come (80 px apart) she hops off the shelter onto the
+# first roof and bounces from roof to roof across all three (three roof
+# bounces at 2244, 2264, 2285: no damage, no points), then lands in the
+# lane behind them (2309).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 110
+- 14
+L 22
+- 10
+J 20
+- 109
+R 16
+RJ 10
+R 120
+- 30

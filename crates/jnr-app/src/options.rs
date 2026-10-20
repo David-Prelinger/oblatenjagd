@@ -127,6 +127,10 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/06_wolfgangsee.level"),
     ),
     (
+        "strobl",
+        include_str!("../../../content/levels/07_strobl.level"),
+    ),
+    (
         "bad_ischl",
         include_str!("../../../content/levels/08_bad_ischl.level"),
     ),

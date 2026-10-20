@@ -1,0 +1,41 @@
+# Stage 7 Ampel #2 (D-093) crossed in red: strobl_ampel_watch's inputs past
+# Ampel #1, then a walk along Ampel #2's lane. Its counter starts at its
+# phase 250 (red) once its cell is fully on screen (2001, her centre at col
+# 176), and she walks past the spawner (2113, counter 360 of 400) before
+# its next red and amber: no car is sent while she is in the lane.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=3040 state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 280

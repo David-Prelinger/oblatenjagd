@@ -1,0 +1,39 @@
+# Stage 7 (D-094, D-097): the Dorfplatz shutters as a refuge from the
+# Postbus. As strobl_postbus_shelter to shelter B (the bus triggers at
+# 779), back down to the street under the Gasthof while the bus stands at
+# its halt, a jump up through Fensterladen #5 (phase 120, opens at clock
+# 1080) onto its top (1103): the Postbus drives on beneath her (1103-1190;
+# cars and buses pass through shutters). She drops off as it has gone and
+# walks on to the checkpoint.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=CheckpointReached state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 190
+L 40
+- 66
+J 20
+- 120
+RB 200

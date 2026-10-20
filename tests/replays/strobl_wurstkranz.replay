@@ -1,0 +1,76 @@
+# Stage 7 goal, Wurstkranz zone (D-038, D-029): strobl_ebikers' first 3340
+# frames onto the Lokalbahn halt's roof (row 10, 6 tiles above the meadow),
+# back towards its left end and a held running jump off its right edge
+# (3395): she grabs the Maibaum high enough for the Wurstkranz, 5000 points
+# (score 10200 -> 15200; walking off the same roof scores 100,
+# strobl_ebikers). From 20 frames back, run-ups of 16 to 38 frames all
+# reach it.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = complete frames=3434..3434 score=15200 deaths=0 state=stage_clear
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 280
+R 56
+RJ 20
+R 20
+R 50
+RJ 20
+R 24
+- 100
+RJ 16
+- 60
+R 20
+RJ 20
+R 20
+- 4
+R 42
+RJ 16
+R 90
+- 150
+R 40
+RJ 20
+R 60
+- 150
+R 22
+RJ 20
+R 50
+RJ 20
+R 10
+RJ 16
+R 25
+L 20
+- 10
+RB 24
+RBJ 36
+RB 4

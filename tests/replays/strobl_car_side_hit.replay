@@ -1,0 +1,43 @@
+# Stage 7 Auto (D-093): a side hit as Zuckerschock. As
+# strobl_postbus_shelter to the checkpoint, a bump of the M-box at 139
+# (1321): the Mozartkugel rolls off the bricks and into her (PowerUp
+# 1403). She walks on along the road under the terrace into Ampel #1's
+# lane; its first car hits her from the side (Hurt 1604): Zuckerschock ->
+# Normal, no death, and the second car passes through her while she is
+# invulnerable.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt power=normal state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 54
+- 4
+J 12
+- 30
+R 16
+- 70
+R 200
+- 200

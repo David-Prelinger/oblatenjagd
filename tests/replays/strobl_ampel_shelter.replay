@@ -1,0 +1,49 @@
+# Stage 7 Ampel #2 (D-093) waited out on shelter C: strobl_ampel_watch's
+# inputs past Ampel #1, a walk into Ampel #2's lane until its counter
+# starts (2001, phase 250), back up onto shelter C (172-175, row 12; inside
+# the Ampel's range 15, so its counter keeps running there). Red, red and
+# amber (2150), the three cars of the green (2181, 2221, 2261) drive
+# beneath her; after the blinks and the amber (red from ~2355) she walks
+# down into the lane and past the spawner in red.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=2990 state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 110
+- 14
+L 22
+- 10
+J 20
+- 300
+R 150
