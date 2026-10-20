@@ -1,0 +1,86 @@
+# QA M5 regression (D-090 top clamp; was
+# qa_m5_bug_perch_bounce_lake_off_screen): after a stomp bounce from the
+# Zaunerstollen perch the lake stays on screen. The bug: as Zuckerschock
+# (qa_m5_wolfgangsee_relaxed's inputs) Resi stomps Gelse #3 from the perch
+# (row 8); the bounce took her top to y 35 and the dead zone pulled the
+# camera to y 0 (3710-3792, below 24 until ~3815), so the swim water
+# (surface y 192) left the screen while she stepped off into the lake, and
+# swan #3 (hitbox y 184-196) only became fully on screen, and telegraphed,
+# when the camera came down again (3801). Now the auto-scroll camera never
+# goes above y 24 (D-090): the water line stays at screen y <= 168 and
+# every swan and regatta keel that is horizontally on screen is fully on
+# screen. In this run the camera holds at 24 from 3696 to the end
+# (frames 3696-3800, except 2 px during the second hop) and swan #3
+# telegraphs on the frame after its hitbox is first horizontally inside
+# the screen (3795), as with the camera at rest. Inputs as before, except on the perch she walks 2 frames
+# more and waits 2 less (R 16, - 19; was R 14, - 21) to stand clear of the
+# row-5 Z-box (D-090), which a standing jump would bump otherwise; the
+# second hop (3756) now passes beside the perch bollard instead of landing
+# on it. The replay format can't check the camera:
+# `tests::lake::the_perch_bounce_keeps_the_lake_on_screen` replays this
+# file and checks camera y >= 24 on every frame and the swan; the regatta
+# trigger frames on a masthead bounce are checked on the solver route
+# (`tests::lake::masthead_bounces_never_delay_a_regatta_start`). The shots
+# become goldens after art-director review.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped power=big
+shots  = 3725:stomp_bounce_top 3760:perch_hop 3790:drop_into_lake
+---
+# --- the first 3800 frames of qa_m5_wolfgangsee_relaxed ---
+- 40
+R 76
+J 20
+- 140
+RJ 20
+R 20
+D 60
+DL 40
+- 20
+J 1
+- 14
+J 1
+- 24
+R 10
+RJ 20
+R 4
+- 60
+R 1099
+RB 124
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+- 10
+R 16
+- 19
+J 24
+- 40
+RJ 20
+R 10
+DR 19

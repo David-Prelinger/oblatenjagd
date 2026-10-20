@@ -281,6 +281,10 @@ impl Game {
             } else {
                 let (_, cy) = self.player.center_px();
                 self.camera.follow_y(cy, level_h, t);
+                if self.autoscroll_zone().is_some() {
+                    // D-090: the top clamp holds in the goal sequence too.
+                    self.camera.clamp_autoscroll_top(level_h, t);
+                }
             }
         }
         if let Some(phase) = next {

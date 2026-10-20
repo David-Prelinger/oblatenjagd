@@ -55,9 +55,11 @@ R 1060
 # --- from 2078: qa_m5_wolfgangsee_relaxed's inputs from its frame 1669 ---
 RB 124
 RBJ 33
-RB 5
-RBJ 36
-RB 1031
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
 - 100
 R 40
 - 45
@@ -65,9 +67,11 @@ J 20
 - 100
 RJ 10
 R 8
-- 41
+- 20
+- 21
 J 24
-- 50
+- 20
+- 30
 R 8
 RJ 12
 R 10
@@ -79,8 +83,8 @@ R 10
 RJ 16
 R 16
 - 10
-R 14
-- 21
+R 16
+- 19
 J 24
 - 40
 RJ 20

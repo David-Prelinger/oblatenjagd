@@ -2,14 +2,15 @@
 # as wolfgangsee_goal_walk_off up onto the Schiffsstation's roof (row 10),
 # then back to its left end and a held running jump off its right edge:
 # she grabs the Maibaum high enough for the Wurstkranz, 5000 points (score
-# 3000 -> 8000) after a 40-frame run-up from the roof's left end (the
+# 2600 -> 7600 on the E34 solver route, which skips the swan #3 stomp;
+# was 3000 -> 8000) after a 40-frame run-up from the roof's left end (the
 # re-cut for D-087 kept the run-up; shorter ones grab lower). If the
 # solver route changes,
 # re-copy the prefix and re-check the frames.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = complete frames=4521..4521 score=8000 deaths=0 state=stage_clear
+expect = complete frames=4521..4521 score=7600 deaths=0 state=stage_clear
 ---
 # --- the first 4272 frames of wolfgangsee_solver.replay ---
 RB 64
@@ -19,16 +20,20 @@ R 8
 LB 8
 - 4
 L 4
-- 388
-RB 758
+- 392
+RB 742
+RBJ 33
+RB 15
 RBJ 20
-RB 10
-RBJ 36
-RB 1950
-RBJ 6
 RB 2
-RBJ 36
-RB 278
+LB 8
+RB 1942
+RBJ 20
+RB 315
+RBJ 20
+RB 5
+RBJ 31
+RB 67
 RBJ 20
 RB 2
 RBJ 36
@@ -38,19 +43,14 @@ RB 5
 RBJ 31
 RB 29
 LB 14
-- 40
-RBJ 20
-RB 2
-RBJ 35
-RB 17
-LB 14
-RB 3
-- 24
-RBJ 20
-RB 24
-LB 14
-- 64
+- 48
 RBJ 33
+RB 5
+LB 8
+- 32
+L 4
+- 32
+RBJ 20
 RB 56
 # --- handwritten ---
 RB 20

@@ -8,16 +8,22 @@
 # standing full jump (press 2794) stomps it. Hop onto Traundl B as it docks
 # (press 2876), ride B to its far end, hop onto C (press 3010), ride C to
 # its far-end berth (~3142), jump up onto the Zaunerstollen perch (press
-# 3142, landing under the Z-box at 173). Gelse #3 (col 171, row 6, hunting
-# 3102-3582) comes up to her on the perch; a standing full jump (press
-# 3214) bumps the Z-box and stomps the Gelse on the way down; the
+# 3142, landing under the Z-box at 173, the camera settling to the perch
+# rest y 44, D-090). Gelse #3 (col 171, row 6, hunting 3102-3582) comes up
+# to her on the perch. The Z-box is on row 5 (D-090): a standing jump under
+# it bumps it after 2 frames and is too short to stomp, so she walks right
+# clear of the box (x ~2788, to 3188), stomps the Gelse with a standing
+# full jump (press 3219, stomp 3255), walks back under the box (3283-3290)
+# and bumps it with a standing jump (press 3301, bump 3304). The
 # Zaunerstollen lands on the perch short of the bollard (177), turns at its
-# side and comes back to her: 1-up.
+# side and comes back to her: 1-up (3396).
 # Hand-measured press windows (only that press shifted, the rest
 # unchanged; counted = she ends dry on the target / the Gelse is stomped):
 # jump-out onto A 53 frames, A -> raft 45, Gelse #2 stomp >= 39 (every
 # shift tried from landing on), raft -> B 48, B -> C 31, C -> perch 41,
-# Gelse #3 stomp + box bump 8 (3211-3218).
+# Gelse #3 stomp 29 (3203-3231; 21 of them, 3203-3223, also keep the box
+# bump and the 1-up unchanged), box bump >= 40 (3292-3331, every press
+# tried; later presses run past the replay's end before the 1-up).
 # Gelse #3 never touches her during the C ride: standing on C at its far
 # end she would first be reached at 3175 (wolfgangsee_gelse_c_berth), as
 # C leaves the berth.
@@ -34,11 +40,13 @@ R 8
 LB 8
 - 4
 L 4
-- 388
-RB 758
+- 392
+RB 742
+RBJ 33
+RB 15
 RBJ 20
-RB 10
-RBJ 36
+RB 2
+LB 8
 RB 1027
 # --- handwritten ---
 - 100
@@ -63,6 +71,11 @@ R 10
 - 110
 RJ 16
 R 16
-- 41
+R 16
+- 30
 J 24
+- 40
+L 8
+- 10
+J 10
 - 120

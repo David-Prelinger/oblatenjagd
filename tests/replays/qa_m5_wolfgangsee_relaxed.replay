@@ -50,9 +50,11 @@ R 1099
 # --- wolfgangsee_solver frames 1200-2428 (shifted by 469: Seebad, swan #2, Gelse #1, under the lantern pontoon) ---
 RB 124
 RBJ 33
-RB 5
-RBJ 36
-RB 1031
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
 # --- wolfgangsee_traundl frames 2429-3172 (Traundl A, raft, Gelse #2 stomp, B, C, perch, Gelse #3 stomp + Z-box) ---
 - 100
 R 40
@@ -61,9 +63,11 @@ J 20
 - 100
 RJ 10
 R 8
-- 41
+- 20
+- 21
 J 24
-- 50
+- 20
+- 30
 R 8
 RJ 12
 R 10
@@ -76,8 +80,8 @@ RJ 16
 R 16
 # --- relaxed: the perch bollard, the lake bed under swan #3 and the regatta, the Strobl shallows, the quay, the roof, walk off to the Maibaum ---
 - 10
-R 14
-- 21
+R 16
+- 19
 J 24
 - 40
 RJ 20
