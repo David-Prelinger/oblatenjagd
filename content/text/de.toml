@@ -33,6 +33,8 @@ hackl = "Wirf, Resi, wirf!"
 ballast = "Ballast weg!"
 # M4: an Operettensänger is defeated (stomp or axe).
 bravo = "Bravo!"
+# M5: a Schwan is defeated (stomp or axe) and sulks.
+beleidigt = "Beleidigt!"
 
 # Route map between stages (docs/game-design.md "Route map").
 [map]
@@ -139,3 +141,21 @@ sign_zahlkellner = "Zahlkellner\ngesucht"
 sign_glueck = "Glück steht\nvor der Tür"
 sign_schiff = "Schifffahrt\nseit 1873"
 sign_ortsende = "St. Wolfgang"
+
+[stage.wolfgangsee]
+title = "Etappe 6: Wolfgangsee"
+tagline = "Schiff voll? Dann kraul!"
+next = "Landgang in Strobl."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\nwasserscheu"
+sign_baden = "Baden heute\nerlaubt"
+sign_dampfer = "Raddampfer\nohne Dampf"
+sign_baujahr = "Baujahr 1873\nläuft noch"
+sign_schwan = "Seit 1950\nHausherr"
+sign_gelsen = "Blutspende\nohne Termin"
+sign_checkpoint = "Bus 150\nim Stau. Ha!"
+sign_venedig = "Wie Venedig\nnur kälter"
+sign_grenze = "Landesgrenze\nwandert"
+sign_regatta = "Regatta\nVorrang: wir"
+sign_strobl = "Strobl:\nbitte halten"
+sign_ortsende = "Wolfgangsee"

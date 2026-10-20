@@ -81,7 +81,7 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes both stages' filmstrips, the route map and all new German text.
 
-## M3 – Stage 4 Falkenstein: vertical climbing, Hackl, Durchkriechstein
+## M3 – Stage 4 Falkenstein: vertical climbing, Hackl, Durchkriechstein — ✅ accepted 2026-10-19 (docs/reports/M3.md)
 
 Scope as in `game-design.md` → "Stage 4: Falkenstein" (incl. "Climb camera" and "Climbing rules") and "Power states"; decisions D-053 … D-058; sprites in `sprite-catalog.md` → "M3 additions". One stage only. Branch `m3-falkenstein`.
 
@@ -123,7 +123,7 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Falkenstein filmstrip, the climb-camera framing at the foot, in the shaft and at the summit, the Hackl and crawl replays, and all new German text.
 
-## M4 – Stage 5 St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse
+## M4 – Stage 5 St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse — ✅ accepted 2026-10-19 (docs/reports/M4.md)
 
 Scope as in `game-design.md` → "Stage 5: St. Wolfgang" (incl. "Difficulty and reach rules (stage 5)") and "Route map"; decisions D-066 … D-072; sprites in `sprite-catalog.md` → "M4 additions". One stage only; extras are in the backlog (D-066). Branch `m4-st-wolfgang`.
 
@@ -166,6 +166,48 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the St. Wolfgang filmstrip, the train ride, a bus photo stop, a high C over the street, the Hackl replays, the route-map label screens and all new German text.
 
+## M5 – Stage 6 Wolfgangsee: auto-scroll, swimming, Traundl and Dampfer, Schwäne, Gelsen, Regatta
+
+Scope as in `game-design.md` → "Stage 6: Wolfgangsee" (incl. "Difficulty and reach rules (stage 6)", "Auto-scroll camera" and "Swimming") and "Power states"; decisions D-074 … D-081; sprites in `sprite-catalog.md` → "M5 additions". One stage only; extras are in the backlog (D-074). Branch `m5-wolfgangsee`.
+
+Design
+- [x] Stage 6 spec: shape (a lake crossing with an auto-scroll zone, no lethal pits), vertical layout, difficulty and reach rules, auto-scroll and swimming rules with numbers, sections with columns, section details, entities and behaviour, axe classification, new-mechanics table, sources (game-designer)
+- [x] Decisions D-074 … D-081 (scope, auto-scroll camera, swimming, boats, Schwan, Gelse, Regattaboot, Hackl in Stage 6; route-map labels need no decision, D-074)
+- [x] German text for Stage 6 (title, tagline, next, 12 signs) and the popup `popup.beleidigt` in `content/text/de.toml`
+- [x] Sprite catalog "M5 additions"
+
+Engine (parallel worktrees, D-009; E25–E29 can run in parallel, E30 integrates after them; reserve distinct hash tags per task, the distinct-tag test catches clashes)
+- [ ] (E25) verify speed-up: solver per level cached by content hash / parallelised, replay-render tests split
+- [ ] (E26) Auto-scroll camera: `[meta] camera = "autoscroll"` + `autoscroll = [from, to]` (parse validation: required with this camera only, `0 ≤ from < to ≤ width − 20`); lead-in (side camera) → scroll at exactly `from × 16`, 192 subpx/frame with a subpixel scroll position and a whole-px camera, paused while frozen/paused/dying/in the goal → lead-out at `to × 16`; push with tile collision and the squeeze death (`DeathCause::Squeezed`, normal hit death); right clamp `camera x + 320 − 64` for movement and carry; D-051 off inside the zone only; start/respawn framing + 60-frame hold inside the zone; the "fully on screen" helper for enemy triggers; tuning `camera.autoscroll_speed`/`_hold`/`_right_margin` validated in `Tuning::parse`; `levels lint`: goal ≥ `to + 20`, squeeze faces (top ≤ 3 tiles above the surface in front), checkpoint on a deck; solver frame budget covers the scroll, `world_hash` covers the scroll state; grey box `00_m5_autoscroll` with `m5_autoscroll_*` replays (pushed into water, squeezed against a test wall, platform carry past the edge, checkpoint hold). `side`/`climb` levels bit-identical. Fallback (D-075): the stage ships as `camera = "side"`
+- [ ] (E27) Swimming: `TileKind::Swim` and the tiles `see_wasser`, `see_wasser_tief`, `steg_pfahl`; the chest-point rule, surface band and rise cap, floating + DOWN dive, sinking, stroke (`Event::Stroke`), jump-out (`Event::Jumped`, `jump_speed_walk`), horizontal accel/decel/max, entry clamp + cleared buffer/coyote, the bed as ground; same numbers in every form; no stomps or roof bounces while swimming, no throw, axes and items removed/lost in swim water, walking enemies treat Swim like Water; entity-on-tile (D-049) extended to Swim tiles; tuning `[swim]` validated (`autoscroll_speed < swim.speed` once E26 lands); the solver's window metric skips strokes; swim lint (a solid bed under every swim column; no solid on a swim surface in a scroll zone); renderer: the `swim` anim per form (fallback: the `jump` anim), optional `blase`; feel tests (stroke rise, max sink, swim speed, float, held/tap jump-out onto a 1-tile deck in every form); grey box `00_m5_swim` with `m5_swim_*` replays. D-050's water tests pass unchanged. Fallback (D-076): surface-only swimming
+- [ ] (E28) Boats: `traundl` (`to = [dx, 0]`, 2 ≤ |dx| ≤ 8, `phase`; the Gondel's free-running machine with `traundl_size` 48×16, `traundl_wait`, `traundl_frames_per_tile`) and `dampfer` (`to = [dx, 0]`, 8 ≤ dx ≤ 64; the Festungsbahn's waiting machine one way: travel `dampfer_frames_per_tile` 20, then moored for good; `dampfer_size` 160×16; the paddle-wheel hurt zone 32×20 at the hull's middle while it travels, hurting the player, never stomped, axe-proof); both `Pass` for the axe; shared landing/carry/crush/never-despawn and the clearance lint; the recovery lint skipped over swim water (stub it on `Water | Swim` until E27 lands); tiles `steg` (one-way), `seegrund`, `kai`, `poller` (solid); `PROP_SPRITES` for the "Props (group `props`, M5)" table and the catalog test reading it; renderer: `traundl` (`idle`/`ride`), `dampfer` (`idle`/`ride`), `gischt` spray while the wheel turns, grey boxes until the art lands; tuning validated (the Dampfer at least as fast as the scroll); grey box `00_m5_boats` with `m5_boats_*` replays. Fallbacks (D-077): decorative wheel; a returning Dampfer; Traundl = `gondel` with the Traundl sprite
+- [ ] (E29) Enemies: Schwan (float height, trigger in range + fully on screen + rested, telegraph 32, charge 1.5 × 64, return 0.5, rest 60, stomp 200 / chain start 200, „Beleidigt!" stacked like „Bravo!"), Gelse (wait 60 frames fully on screen, homing accel 1/32 and speed 0.75 per axis towards her top + 4, never enters water or swim tiles, hunt 480 → leaves harmless, stomp 100), Regattaboot (the Reisebus machine in the surface row, 24×56 hitbox from the masthead to the keel, trigger < 161 px + fully on screen, telegraph 60, left at 1.5 ignoring tiles, bounce without damage or points from above, lane lint); axe classification (Schwan/Gelse Defeat, Regattaboot Bounce) in the exhaustive `axe_hit` match; `popup.beleidigt` in `screens::TEXT_KEYS`; `world_hash` covers the new states; grey box `00_m5_enemies` with `m5_enemies_*` replays (uses `wolfgangsee_water` as the float/avoid surface until E27's Swim kind lands, then switches). Fallbacks: D-078 pacing swan, D-079 Taube-sine Gelse, D-080 Fiaker machine
+- [ ] (E30, after E26–E29) Integration: a grey box `00_m5_lake` with every M5 kind inside an auto-scroll zone over swim water (solver finishes it, narrowest window ≥ 5, its solver replay); the solver handles swimming in the zone (route-limited fallback per D-075 recorded if taken); interaction tests across tasks (a swan or Gelse vs a diver, the wheel vs a swimmer, the edge pushing a swimmer and a Traundl rider, a respawn in the zone)
+- [ ] Unit tests for every behaviour in the Stage 6 "New mechanics" table
+
+Art (pixel-artist, art-director APPROVED)
+- [ ] Player package: `swim` for `player`, `player_big`, `player_hackl`; `blase` (optional)
+- [ ] Enemies package: `schwan`, `gelse`, `regattaboot`
+- [ ] Boats package: `traundl`, `dampfer`, `gischt`
+- [ ] Wolfgangsee package: tiles `see_wasser`, `see_wasser_tief`, `steg_pfahl`, `seegrund`, `steg`, `kai`, `poller`; props `adventlaterne`, `dalben`, `schilf`, `startboje`; layer `bg_suedufer`. Swim water must read as different from the lethal `wolfgangsee_water` at 1× (contact sheet side by side)
+
+Levels (level-designer)
+- [ ] `06_wolfgangsee.level` (260 × 17, `camera = "autoscroll"`, `autoscroll = [8, 208]`) with the 7 sections as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; narrowest window and the named hazard timings recorded for the game-designer (D-074/D-073 style)
+- [ ] `levels lint` clean (squeeze faces, swim beds, regatta lanes, boat clearance, goal ≥ `to + 20`); every enemy on screen ≥ 60 frames before it can touch Resi (checked with a replay hugging the right clamp); the respawn on the pontoon checked with a replay; the steamer's `to` puts its moored front within reach soon after arrival
+- [ ] `time_limit` set from the measured relaxed run (D-045); Oblaten 70 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
+
+Replays and goldens
+- [ ] Mechanic replays from the Stage 6 "New mechanics" table: the bathing notch (dive, collect, jump out); idle on the quay → pushed into the water; the steamer ride to Gschwendt; missing the steamer → swim and board at the bow; a swimmer hurt by the paddle wheel; swan #1 under the deck; dive under swan #2, jump-out stomp, hurt as Zuckerschock; Gelse dive-away, stomp from a Traundl, hurt as Normal → death; the Traundl chain and a missed hop → swim; regatta dive, sail jump from Traundl D, masthead bounce, side hit as Zuckerschock; Zaunerstollen on the perch; checkpoint respawn on the pontoon (hold, scroll, level reset); Hackl: axe on a swan from the deck, RUN while swimming throws nothing, axe bounces off a regatta boat
+- [ ] Flow replays: St. Wolfgang clear → map (Wait) → Wolfgangsee intro with carry-over incl. the Hackl; Wolfgangsee clear → teaser to Strobl → title; game over in Wolfgangsee → continue restarts Wolfgangsee
+- [ ] Tour `wolfgangsee_tour` (`start = title`, solver inputs, shots per section incl. the bathing notch, the steamer with its wheel, a swan's hiss, a Gelse over a diver, the lantern with the checkpoint bus joke, a Traundl, a regatta start, the Strobl quay) — art-director APPROVED; add it to the xtask tour coupling test
+- [ ] M4 replays and goldens whose ending changes because the Wolfgangsee is now playable re-cut with an art-director verdict (`st_wolfgang_tour` ends on the route map in Wait instead of the teaser; the M4 flow replays that end in the St. Wolfgang teaser now end on the Wolfgangsee intro); orphaned teaser goldens deleted
+- [ ] Route-map goldens: St. Wolfgang → Wolfgangsee Wait and the Wolfgangsee → Strobl teaser, Normal and Hackl form (St. Wolfgang's raised label, D-072)
+
+Platform
+- [ ] wasm build plays the route through the Wolfgangsee; `wasm-smoke` still green; verify runtime within budget after E25 (record it)
+
+**Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Wolfgangsee filmstrip, the scroll start on the steamer, a dive under a swan, a Gelse waiting over a diver, a regatta start, the respawn on the pontoon, the Hackl replays and all new German text.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.
@@ -178,8 +220,8 @@ Platform
 ## Later milestones (order can change)
 
 - **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (accepted, docs/reports/M3.md)
-- **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (in progress, section above)
-- **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming
+- **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (accepted, docs/reports/M4.md)
+- **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (in progress, section above)
 - **M6** Strobl + Bad Ischl
 - **M7** Café Zauner finale + ending
 - **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
