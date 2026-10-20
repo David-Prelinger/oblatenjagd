@@ -133,6 +133,11 @@ pub const DAMPFER_FUNNEL: (i32, [i32; 2]) = (70, [8, 20]);
 /// right of the paddle wheel's centre.
 pub const GISCHT_SPREAD_PX: i32 = 8;
 
+/// The Kurgast in his deck chair (D-095): 24×16, origin at the bottom
+/// centre of the 16×16 chair; anims `idle` (lying) and `wake`. Without it
+/// the `kurgast` sprite's `liegen`/`wake` anims are used.
+pub const LIEGESTUHL_SPRITE: &str = "liegestuhl";
+
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
 pub struct EntityLooks<'a> {
@@ -160,6 +165,8 @@ pub struct EntityLooks<'a> {
     schwan: Option<&'a AtlasSprite>,
     gelse: Option<&'a AtlasSprite>,
     regattaboot: Option<&'a AtlasSprite>,
+    kurgast: Option<&'a AtlasSprite>,
+    liegestuhl: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -211,6 +218,8 @@ impl<'a> EntityLooks<'a> {
             schwan: s(EnemyKind::Schwan.sprite()),
             gelse: s(EnemyKind::Gelse.sprite()),
             regattaboot: s(EnemyKind::Regattaboot.sprite()),
+            kurgast: s(EnemyKind::Kurgast.sprite()),
+            liegestuhl: s(LIEGESTUHL_SPRITE),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -258,6 +267,7 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Schwan => self.schwan,
                 EnemyKind::Gelse => self.gelse,
                 EnemyKind::Regattaboot => self.regattaboot,
+                EnemyKind::Kurgast => self.kurgast,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -306,6 +316,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Schwan => WHITE,
             EnemyKind::Gelse => OUTLINE,
             EnemyKind::Regattaboot => CREAM,
+            EnemyKind::Kurgast => STONE_GREY,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -917,6 +928,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
         Pose::Wait => ("wait", None),
         Pose::Leave => ("leave", None),
+        Pose::Liegen => ("liegen", None),
+        Pose::Wake => ("wake", None),
     }
 }
 
@@ -998,13 +1011,23 @@ fn draw_enemy(
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
     let lead = is_lead_pilger(game, e);
-    let sprite = match looks.pilger_lead {
-        Some(s) if lead => Some(s),
-        _ => looks.sprite(e.kind),
+    // A Kurgast in his deck chair is the `liegestuhl` sprite (its lying
+    // anim is `idle`), else his own sprite's `liegen`/`wake`.
+    let chair = matches!(pose, Pose::Liegen | Pose::Wake);
+    let (sprite, (name, frame)) = match (looks.pilger_lead, looks.liegestuhl) {
+        (Some(s), _) if lead => (Some(s), pose_anim(pose)),
+        (_, Some(s)) if chair => {
+            let anim = if pose == Pose::Liegen {
+                ("idle", None)
+            } else {
+                pose_anim(pose)
+            };
+            (Some(s), anim)
+        }
+        _ => (looks.sprite(e.kind), pose_anim(pose)),
     };
     match sprite {
         Some(s) => {
-            let (name, frame) = pose_anim(pose);
             let anim = s.anim(name).unwrap_or(&s.anims[0]);
             let tick = match frame {
                 Some(i) => i as u32 * anim.ticks,
@@ -1049,6 +1072,15 @@ fn draw_enemy(
             }
             if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
                 draw_boat_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if chair {
+                // The deck chair: a wine canvas stripe across the box; in
+                // the wake telegraph two white arms stretch above it.
+                fb.fill_rect(bx + 1, by + h / 2 - 1, w - 2, 2, WINE_DARK);
+                if pose == Pose::Wake {
+                    fb.fill_rect(bx + 3, by - 5, 2, 5, WHITE);
+                    fb.fill_rect(bx + w - 5, by - 5, 2, 5, WHITE);
+                }
             }
             if e.kind == EntityKind::Enemy(EnemyKind::Schwan) && pose == Pose::Telegraph {
                 // The hiss: raised wings as two white posts over the box.
@@ -1688,6 +1720,8 @@ mod tests {
             Pose::Roll,
             Pose::Wait,
             Pose::Leave,
+            Pose::Liegen,
+            Pose::Wake,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -1888,6 +1922,7 @@ mod tests {
             Popup::Checkpoint,
             Popup::Wurstkranz,
             Popup::Hoppala,
+            Popup::Kurruhe,
         ] {
             let key = p.text_key().unwrap();
             assert!(texts.contains(key), "{key}");
@@ -1921,6 +1956,7 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Enemy(EnemyKind::Kurgast),
             EntityKind::Fensterladen,
         ];
         for (i, a) in kinds.iter().enumerate() {
@@ -2415,6 +2451,92 @@ mod tests {
         assert_ne!(fb.get(x, bottom), Some(A));
         assert_eq!(fb.get(x, bottom - 64), Some(A), "64 px tall");
         assert_ne!(fb.get(x, bottom - 65), Some(A));
+    }
+
+    // ------------------------------------------------------ Kurgast (D-095)
+
+    /// A grey-box level with a Kurgast at (10, 8) on the ground (feet y
+    /// 144), stepped once; returns the game and the Kurgast in `st`
+    /// (`LIE`/`WAKE`: resized to the 16×16 chair at his feet).
+    fn kurgast_in(st: u8) -> (Game, Entity) {
+        let g = layered_game(
+            "....................\n....................\n....................\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n..P.......k.........\n\
+             ####################\n",
+            "\"k\" = { entity = \"kurgast\" }",
+        );
+        let mut k = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Kurgast))
+            .unwrap();
+        k.state = st;
+        if st != jnr_core::enemies::state::WALK {
+            let (cx, feet) = k.feet();
+            k.w = Fx::from_px(16);
+            k.h = Fx::from_px(16);
+            k.x = cx - Fx::from_px(8);
+            k.y = feet - k.h;
+        }
+        (g, k)
+    }
+
+    fn drawn(g: &Game, atlas: &Atlas, k: &Entity) -> Framebuffer {
+        let looks = EntityLooks::new(atlas);
+        let mut fb = crate::testutil::fb();
+        draw_enemy(g, &looks, atlas, &mut fb, g.camera(), k);
+        fb
+    }
+
+    #[test]
+    fn the_grey_box_kurgast_shows_his_chair_and_the_wake_arms() {
+        use jnr_core::enemies::state;
+        let atlas = crate::testutil::atlas(&[]);
+        let (g, walking) = kurgast_in(state::WALK);
+        let fb = drawn(&g, &atlas, &walking);
+        let (x, y) = (walking.x.to_px() + 6, walking.y.to_px() + 11);
+        assert_eq!(fb.get(x, y), Some(STONE_GREY), "walking: a grey box");
+        let (g, lying) = kurgast_in(state::LIE);
+        let fb = drawn(&g, &atlas, &lying);
+        let (bx, by) = (lying.x.to_px(), lying.y.to_px());
+        assert_eq!(fb.get(bx + 8, by + 3), Some(STONE_GREY), "the chair");
+        assert_eq!(fb.get(bx + 8, by + 7), Some(WINE_DARK), "its canvas stripe");
+        assert_eq!(fb.get(bx + 3, by - 3), Some(crate::testutil::BG), "no arms");
+        let (g, waking) = kurgast_in(state::WAKE);
+        let fb = drawn(&g, &atlas, &waking);
+        assert_eq!(
+            fb.get(bx + 3, by - 3),
+            Some(WHITE),
+            "arms up: the telegraph"
+        );
+        assert_eq!(fb.get(bx + 12, by - 3), Some(WHITE));
+    }
+
+    #[test]
+    fn a_lying_kurgast_uses_the_liegestuhl_sprite() {
+        use crate::testutil::{A, B, C, image, sprite};
+        use jnr_core::enemies::state;
+        let one = |c: &str| vec![image(&[c; 4])];
+        let atlas = crate::testutil::atlas(&[
+            sprite("kurgast", (2, 4), true, vec![("walk", 0, one("cccc"))]),
+            sprite(
+                LIEGESTUHL_SPRITE,
+                (2, 4),
+                false,
+                vec![("idle", 0, one("aaaa")), ("wake", 0, one("bbbb"))],
+            ),
+        ]);
+        for (st, colour) in [(state::WALK, C), (state::LIE, A), (state::WAKE, B)] {
+            let (g, k) = kurgast_in(st);
+            let fb = drawn(&g, &atlas, &k);
+            let (fx, fy) = k.feet();
+            assert_eq!(
+                fb.get(fx.to_px(), fy.to_px() - 1),
+                Some(colour),
+                "state {st}"
+            );
+        }
     }
 
     // ------------------------------------------------ draw layers (D-086)

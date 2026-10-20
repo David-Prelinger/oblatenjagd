@@ -38,3 +38,11 @@ opt-level = 2
 
 [profile.dev.package.xtask]
 opt-level = 2
+
+# Keep debug builds small: the dev container's disk is shared by many parallel
+# agent target dirs (one per worktree). Line tables keep usable backtraces.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false

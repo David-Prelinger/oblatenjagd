@@ -530,8 +530,9 @@ mod tests {
             assert_eq!(check(name), Vec::<String>::new(), "{name}");
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
-        // the M2 "Items and props", the M3 "Props", the M4 "Props" and the
-        // M5 "Props" tables that are props (not the checkpoint, Maibaum, signs or the
+        // the M2 "Items and props", the M3 "Props", the M4 "Props", the M5
+        // "Props" and the M6 "Props" tables that are props (not the
+        // checkpoint, Maibaum, signs or the
         // car, which have entities of their own; the M4 train and its steam
         // are in the "Platforms" table, not read here).
         let catalog = include_str!("../../docs/sprite-catalog.md");
@@ -552,6 +553,7 @@ mod tests {
             section("### Props (group `props`)", "\n### "),
             section("### Props (group `props`, M4)", "\n### "),
             section("### Props (group `props`, M5)", "\n### "),
+            section("### Props (group `props`, M6)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)

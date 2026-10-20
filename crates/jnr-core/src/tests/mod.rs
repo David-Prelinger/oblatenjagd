@@ -10,6 +10,7 @@ mod flow;
 mod goal;
 mod hackl;
 mod items;
+mod kurgast;
 mod lake;
 mod lake_enemies;
 mod m2;

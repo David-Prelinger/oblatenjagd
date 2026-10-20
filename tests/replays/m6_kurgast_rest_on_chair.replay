@@ -1,0 +1,20 @@
+# Waiting on the chair through a full rest (D-095): after the stomp Resi
+# stands on Kurgast #1's chair for 420 frames, longer than his rest (300)
+# and wake (40) together: both counters pause under her, so he never stands
+# up (no hurt), and the same short jump from the chair still reaches the
+# ledge.
+level  = m6_kurgast
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped oblaten>=3 score=700
+---
+R 40
+RJ 20
+R 21
+- 10
+J 4
+- 68
+- 400
+J 16
+- 12
+R 30

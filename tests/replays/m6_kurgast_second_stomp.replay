@@ -1,0 +1,25 @@
+# A second stomp scores nothing (D-095): Resi stomps Kurgast #1 (100),
+# steps off his chair and waits by the wall at 9 until he has rested, woken
+# and stood up; he shuffles towards her and she stomps him again: he lies
+# down with a bounce, no points (the score stays 100 before the Oblaten),
+# and his chair carries her up to the ledge again.
+level  = m6_kurgast
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt oblaten>=3 score=700
+---
+R 40
+RJ 20
+R 21
+- 10
+J 4
+- 68
+L 16
+- 300
+L 30
+RJ 6
+R 4
+- 50
+J 16
+- 12
+R 40

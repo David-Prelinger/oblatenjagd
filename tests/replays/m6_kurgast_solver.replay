@@ -1,0 +1,17 @@
+# Written by `cargo xtask solve m6_kurgast --write`; re-create it instead of editing.
+level  = m6_kurgast
+seed   = 1
+source = solver
+expect = complete frames=347..347 deaths=0
+---
+RB 40
+RBJ 20
+RB 21
+RBJ 36
+RB 40
+RBJ 20
+RB 2
+RBJ 36
+RB 40
+RBJ 36
+RB 56

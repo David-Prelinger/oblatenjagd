@@ -179,10 +179,11 @@ pub fn shutter_look(e: &Entity, level: &Level, t: &Tuning) -> Option<ShutterLook
     Some(shutter_look_at(e.count, spawn.period, spawn.open, t))
 }
 
-/// True if the platform `e`'s top holds the player now: every active
-/// platform, a Fensterladen only while open (D-094).
+/// True if `e`'s top holds the player now: every active platform (a
+/// Fensterladen only while open, D-094) and a Kurgast in his deck chair
+/// (`enemies::is_platform_now`, D-095).
 pub fn carries(e: &Entity) -> bool {
-    e.kind.is_platform()
+    (e.kind.is_platform() || crate::enemies::is_platform_now(e))
         && e.active
         && !e.removed
         && (e.kind != EntityKind::Fensterladen || e.state == shutter::OPEN)
@@ -502,7 +503,7 @@ pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
 
 /// A grounded player with hitbox `p` stands on the car with hitbox `c`:
 /// feet exactly on its top, overlapping it horizontally.
-fn stands_on(p: &Aabb, c: &Aabb) -> bool {
+pub(crate) fn stands_on(p: &Aabb, c: &Aabb) -> bool {
     p.bottom() == c.y && overlaps_x(p, c)
 }
 
@@ -529,6 +530,14 @@ fn stand(p: &mut Player, top: Fx, was_on_ground: bool, t: &PlayerTuning, events:
 /// `prev_bottom` is the feet height before the player's movement,
 /// `was_on_ground` the grounded flag before it. The first car in entity
 /// order wins.
+///
+/// "Car" is anything with a one-way top: the moving platforms
+/// ([`EntityKind::is_platform`]) and, through the **enemy-as-platform
+/// hook** [`crate::enemies::is_platform_now`], an enemy that is a platform
+/// right now (a Kurgast in his deck chair, D-095). Standing on a still
+/// platform is this landing every frame (gravity pulls her 1 step down,
+/// the top catches her), so an enemy platform, which never moves, needs
+/// no [`carry`].
 pub(crate) fn land(
     p: &mut Player,
     entities: &[Entity],
