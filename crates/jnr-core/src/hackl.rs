@@ -74,8 +74,14 @@ impl EnemyKind {
             | EnemyKind::Schneekugel
             | EnemyKind::Schwan
             | EnemyKind::Gelse
+            // Walking; lying in his deck chair he is harmless, so the axe
+            // passes (`Entity::axe_hit`, D-095).
+            | EnemyKind::Kurgast
             | EnemyKind::Offizier => AxeHit::Defeat,
-            EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot => AxeHit::Bounce,
+            EnemyKind::Fiaker
+            | EnemyKind::Reisebus
+            | EnemyKind::Regattaboot
+            | EnemyKind::Auto => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }
@@ -109,11 +115,13 @@ impl Entity {
             | EntityKind::Schafbergbahn
             | EntityKind::Traundl
             | EntityKind::Dampfer
+            | EntityKind::Fensterladen
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
             | EntityKind::SteinDebris
             | EntityKind::Souvenirstand
-            | EntityKind::SchneekugelScherben => AxeHit::Pass,
+            | EntityKind::SchneekugelScherben
+            | EntityKind::Ampel => AxeHit::Pass,
             EntityKind::Stein => AxeHit::Shatter,
         }
     }
@@ -224,6 +232,7 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Fensterladen,
         ] {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }

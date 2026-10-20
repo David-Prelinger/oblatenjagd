@@ -10,6 +10,7 @@ mod flow;
 mod goal;
 mod hackl;
 mod items;
+mod kurgast;
 mod lake;
 mod lake_enemies;
 mod m2;
@@ -20,8 +21,10 @@ mod offiziere;
 mod reisebus;
 mod route;
 mod schafbergbahn;
+mod shutters;
 mod swim;
 mod testbed;
+mod traffic;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
 

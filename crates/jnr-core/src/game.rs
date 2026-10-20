@@ -26,7 +26,7 @@ use crate::camera::{Autoscroll, Camera, ClimbFocus, Rest, SCREEN_H, SCREEN_W, Sc
 use crate::enemies::Contact;
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
-use crate::hash::Fnv;
+use crate::hash::{Fnv, WordHash};
 use crate::input::InputFrame;
 use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
@@ -260,10 +260,10 @@ pub struct Game {
     pub(crate) time: u16,
     /// Frames into the current second.
     time_frames: u8,
-    // E37: replace with E37's stage clock. A minimal stub with the same
-    // semantics: frames of play since the stage started or the last
-    // respawn (frozen, paused and dying frames don't count).
-    stage_clock: u32,
+    /// The stage clock (D-094): frames of play since the stage started or
+    /// since the last respawn, i.e. the frames the ZEIT timer counts
+    /// (frozen, paused, dying and goal-sequence frames don't count).
+    pub(crate) stage_clock: u32,
     /// Index into `Level::entities` of the furthest checkpoint passed.
     checkpoint: Option<u16>,
     death_cause: Option<DeathCause>,
@@ -683,11 +683,11 @@ impl Game {
         }
     }
 
-    /// One frame of the countdown; at 0 the player dies.
+    /// One frame of the countdown and of the stage clock (every
+    /// Fensterladen follows it at once, D-094); at 0 the player dies.
     fn tick_timer(&mut self) {
-        // E37: the stub stage clock ticks only here (the frames the timer
-        // counts).
         self.stage_clock = self.stage_clock.saturating_add(1);
+        self.place_shutters();
         self.time_frames += 1;
         if u32::from(self.time_frames) < crate::TICKS_PER_SECOND {
             return;
@@ -713,7 +713,25 @@ impl Game {
         self.events.push(Event::Died);
     }
 
-    /// Back to the level's start state: tiles, entities, timer.
+    /// Every Fensterladen (active or not: it is drawn before activation)
+    /// in its state at the current stage clock (D-094).
+    fn place_shutters(&mut self) {
+        let clock = self.stage_clock;
+        for e in &mut self.entities {
+            if e.kind != EntityKind::Fensterladen {
+                continue;
+            }
+            if let Some(spawn) = e
+                .spawn
+                .and_then(|i| self.level.entities.get(usize::from(i)))
+            {
+                crate::platform::place_shutter(e, spawn, clock);
+            }
+        }
+    }
+
+    /// Back to the level's start state: tiles, entities, timer, and the
+    /// stage clock at 0 (the entities spawn in their state at clock 0).
     fn reset_level(&mut self) {
         self.map = Arc::clone(&self.start_map);
         self.changed_cells.clear();
@@ -727,7 +745,6 @@ impl Game {
             .collect();
         self.time = self.level.meta.time_limit.min(u32::from(u16::MAX)) as u16;
         self.time_frames = 0;
-        // E37: the stub stage clock restarts with the level.
         self.stage_clock = 0;
     }
 
@@ -913,13 +930,16 @@ impl Game {
     }
 
     /// A block was hit from below (bumped or broken): enemies standing on
-    /// it are knocked off for `score.bump_enemy` each, items on it hop.
+    /// it are knocked off for `score.bump_enemy` each (nothing for a
+    /// Kurgast who has scored, D-095), items on it hop.
     fn knock_enemies_on(&mut self, col: i32, row: i32) {
         let knocked = crate::enemies::knock_off_block(&mut self.entities, col, row, &self.tuning);
-        for (kind, x, y) in knocked {
-            let points = self.tuning.score.bump_enemy;
-            self.add_score(points);
-            self.entities.push(popup(Popup::Score(points), x, y));
+        for (kind, x, y, scores) in knocked {
+            if scores {
+                let points = self.tuning.score.bump_enemy;
+                self.add_score(points);
+                self.entities.push(popup(Popup::Score(points), x, y));
+            }
             self.entities
                 .extend(crate::enemies::defeat_popup(kind, x, y));
         }
@@ -1046,17 +1066,26 @@ impl Game {
             .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Schneekugel) && !e.removed)
             .map(|e| (e.base_x, e.base_y))
             .collect();
+        // Every Ampel counts its own cars by their spawn point (D-093).
+        let cars: Vec<(Fx, Fx)> = self
+            .entities
+            .iter()
+            .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Auto) && !e.removed)
+            .map(|e| (e.base_x, e.base_y))
+            .collect();
         let ctx = UpdateCtx {
             map: &self.map,
             tuning: &self.tuning,
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
             player_top: self.player.y,
+            player_box: self.player.hitbox(),
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
             globes: &globes,
             stage_clock: self.stage_clock(),
+            cars: &cars,
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -1230,6 +1259,22 @@ impl Game {
                     let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
                     let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
                     match crate::enemies::contact(kind, from_above, swimming) {
+                        // A stomped Kurgast lies down in his deck chair
+                        // instead (D-095): 100 in the chain on his first
+                        // stomp only; a later one only bounces her (no
+                        // points, the chain neither advances nor resets).
+                        // „Kurruhe!" stacks above the score popup.
+                        Contact::Stomp if kind == EnemyKind::Kurgast => {
+                            bounced = true;
+                            let scores = crate::enemies::scores_on_defeat(&e);
+                            crate::enemies::lie_down(&mut self.entities[i], &self.tuning);
+                            let mut top = e.y;
+                            if scores {
+                                spawned.extend(self.stomp_reward(kind, fx, e.y));
+                                top -= Fx::from_px(crate::entity::POPUP_STACK_PX);
+                            }
+                            spawned.push(popup(Popup::Kurruhe, fx, top));
+                        }
                         Contact::Stomp => {
                             bounced = true;
                             crate::enemies::defeat(
@@ -1267,6 +1312,7 @@ impl Game {
                 EntityKind::PoppedOblate
                 | EntityKind::Steinschlag
                 | EntityKind::Souvenirstand
+                | EntityKind::Ampel
                 | EntityKind::SchneekugelScherben
                 | EntityKind::SteinDebris
                 | EntityKind::Defeated(_)
@@ -1280,6 +1326,7 @@ impl Game {
                 | EntityKind::Schafbergbahn
                 | EntityKind::Traundl
                 | EntityKind::Dampfer
+                | EntityKind::Fensterladen
                 | EntityKind::ThrownHackl
                 | EntityKind::Durchkriechstein => {}
             }
@@ -1372,9 +1419,12 @@ impl Game {
             self.entities
                 .extend(crate::enemies::globe_shards(&e, &self.tuning));
         }
-        self.add_score(points);
         let (fx, _) = e.feet();
-        self.entities.push(popup(Popup::Score(points), fx, e.y));
+        // A Kurgast who has scored is knocked off for nothing (D-095).
+        if points > 0 {
+            self.add_score(points);
+            self.entities.push(popup(Popup::Score(points), fx, e.y));
+        }
         if let EntityKind::Defeated(kind) = e.kind {
             self.entities
                 .extend(crate::enemies::defeat_popup(kind, fx, e.y));
@@ -1590,7 +1640,6 @@ impl Game {
         h.u8(self.lives);
         h.u16(self.time);
         h.u8(self.time_frames);
-        // E37: the stub stage clock (E37 hashes its own).
         h.u32(self.stage_clock);
         h.u8(match self.death_cause {
             None => 0,
@@ -1624,6 +1673,9 @@ impl Game {
         if self.autoscroll_zone().is_some() {
             self.scroll.hash(&mut h);
         }
+        // The entities (most of the work) a word at a time (E35): the same
+        // fields as before, packed into words, through `WordHash`.
+        let mut w = WordHash::new();
         for e in &self.entities {
             if matches!(
                 e.kind,
@@ -1636,11 +1688,12 @@ impl Game {
             ) {
                 continue;
             }
-            h.u16(e.spawn.unwrap_or(u16::MAX));
-            h.i32(e.x.raw() >> 10);
-            h.i32(e.y.raw() >> 10);
-            h.i32(e.vx.signum());
-            h.bool(e.rising(&self.tuning));
+            let spawn = u64::from(e.spawn.unwrap_or(u16::MAX));
+            let dir_x = (e.vx.signum() + 1) as u64; // 0, 1 or 2
+            let rising = u64::from(e.rising(&self.tuning));
+            w.word(spawn | dir_x << 16 | rising << 18);
+            let cell = |v: i32| u64::from((v >> 10) as u32);
+            w.word(cell(e.x.raw()) | cell(e.y.raw()) << 32);
             if matches!(
                 e.kind,
                 EntityKind::Enemy(_)
@@ -1648,21 +1701,26 @@ impl Game {
                     | EntityKind::Note
                     | EntityKind::Steinschlag
                     | EntityKind::Souvenirstand
+                    | EntityKind::Ampel
                     | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
                     | EntityKind::Schafbergbahn
                     | EntityKind::Traundl
                     | EntityKind::Dampfer
+                    | EntityKind::Fensterladen
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {
-                h.bool(e.active);
-                h.u8(e.state);
-                h.u8(e.dir as u8);
-                h.u16(e.count);
+                w.word(
+                    u64::from(e.active)
+                        | u64::from(e.state) << 8
+                        | u64::from(e.dir as u8) << 16
+                        | u64::from(e.count) << 32,
+                );
             }
         }
+        h.u64(w.finish());
         h.finish()
     }
 
@@ -1745,15 +1803,14 @@ impl Game {
     pub fn lives(&self) -> u8 {
         self.lives
     }
-    /// E37: stub of E37's stage clock (replace on merge). Frames of play
-    /// since the stage started or the last respawn: the frames the ZEIT
-    /// timer counts (frozen, paused, dying and goal-sequence frames don't).
-    /// Read by entities through `UpdateCtx::stage_clock` at the start of a
-    /// frame, so the first frame of play sees 0. An Offizier's drill runs
-    /// on it (D-096).
+    /// The stage clock (D-094, shared with the Offiziere's drill, D-096):
+    /// frames of play since the stage started or since the last respawn,
+    /// exactly the frames the ZEIT timer counts (frozen, paused, dying and
+    /// goal-sequence frames don't count). Fensterläden run on it.
     pub fn stage_clock(&self) -> u32 {
         self.stage_clock
     }
+
     /// Seconds left on the timer.
     pub fn time_left(&self) -> u16 {
         self.time

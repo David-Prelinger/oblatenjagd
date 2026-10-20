@@ -1,4 +1,5 @@
-//! FNV-1a (64 bit), used by `Game::state_hash`.
+//! FNV-1a (64 bit), used by `Game::state_hash`, and a word-at-a-time
+//! hasher for `Game::world_hash`.
 
 /// An FNV-1a 64-bit hasher. Values are fed explicitly, little-endian.
 #[derive(Clone, Copy, Debug)]
@@ -63,9 +64,62 @@ impl Default for Fnv {
     }
 }
 
+/// A word-at-a-time 64-bit hasher: one multiply and one xor-shift per
+/// 64-bit word (each step is a bijection of the state, so two inputs that
+/// differ in one word always give different states after it). Several
+/// times faster than byte-wise FNV-1a for long runs of small values, for
+/// hashes that are only compared within one run (`Game::world_hash`, the
+/// solver's de-duplication key, E35); `state_hash` keeps FNV-1a.
+#[derive(Clone, Copy, Debug)]
+pub struct WordHash(u64);
+
+impl WordHash {
+    const SEED: u64 = 0x243f_6a88_85a3_08d3;
+    const K: u64 = 0x9e37_79b9_7f4a_7c15;
+
+    /// A fresh hasher.
+    pub const fn new() -> WordHash {
+        WordHash(WordHash::SEED)
+    }
+
+    /// Feeds one word.
+    pub fn word(&mut self, v: u64) {
+        let x = (self.0 ^ v).wrapping_mul(WordHash::K);
+        self.0 = x ^ (x >> 31);
+    }
+
+    /// The hash so far.
+    pub const fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
+impl Default for WordHash {
+    fn default() -> WordHash {
+        WordHash::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn word_hash_tells_words_and_their_order_apart() {
+        let of = |words: &[u64]| {
+            let mut h = WordHash::new();
+            for &w in words {
+                h.word(w);
+            }
+            h.finish()
+        };
+        assert_eq!(of(&[1, 2, 3]), of(&[1, 2, 3]));
+        assert_ne!(of(&[1, 2, 3]), of(&[1, 3, 2]));
+        assert_ne!(of(&[1, 2]), of(&[1, 2, 0]));
+        assert_ne!(of(&[0]), of(&[]));
+        // A change in a high bit reaches the low bits of the result.
+        assert_ne!(of(&[1 << 63, 7]) & 0xffff, of(&[0, 7]) & 0xffff);
+    }
 
     #[test]
     fn known_vectors() {

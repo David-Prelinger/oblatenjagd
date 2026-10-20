@@ -59,7 +59,8 @@ const FINISH_FRAME: u32 = 731;
 /// M5 E26: `camera.autoscroll_*`; M5 E27: the `[swim]` keys and the hashed
 /// `swimming`/`leaving_water`/`swim_frames`; M5 E32:
 /// `camera.autoscroll_settle_speed`/`autoscroll_catch_up_speed`; M5 E34:
-/// `camera.autoscroll_ground_y`/`autoscroll_top`; M6 E39: the
-/// `enemies.offizier_*` keys and the hashed stage clock (E39's `// E37:`
-/// stub); route and frame unchanged).
-const FINISH_HASH: u64 = 0x8eff_ea02_8db6_1a8b;
+/// `camera.autoscroll_ground_y`/`autoscroll_top`; M6 E38: the
+/// `enemies.kurgast_*` keys; M6 E37: `platforms.fensterladen_*` and the
+/// hashed stage clock; M6 E36: the `enemies.ampel_*` and `auto_*` keys;
+/// M6 E39: the `enemies.offizier_*` keys; route and frame unchanged).
+const FINISH_HASH: u64 = 0x3fe6_a50c_1d43_3f3f;

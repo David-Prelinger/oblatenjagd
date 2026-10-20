@@ -1,0 +1,23 @@
+# E37 (D-094): a shutter closing under her. Jump onto Fensterladen #1
+# (the intro over the garden, open at clock 0-149) and stand still: it
+# closes under her at 150 and she drops 3 tiles into the garden, unhurt
+# (nothing pushes her, nobody is crushed). Wait for it to open again
+# (240), jump up through it from below onto its top, then on to the
+# balcony and its two Oblaten.
+level  = m6_shutters
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing oblaten>=2 player_x>=272
+---
+R 110
+RJ 20    # onto #1
+- 32     # standing on it while it rattles; it closes at 150: the drop
+- 40     # in the garden, unhurt
+L 14     # back under it
+- 26     # it opens again at 240
+J 20     # up through it from below, onto its top
+- 16
+R 6
+RJ 8     # a short hop on to the balcony
+R 24     # the Oblaten
+- 20

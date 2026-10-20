@@ -464,11 +464,18 @@ fn gelse_update(e: &mut Entity, level: &Level, target: (i32, i32), screen: (i32,
         level,
         player_cx: Fx::from_px(target.0),
         player_top: Fx::from_px(target.1),
+        player_box: crate::physics::Aabb {
+            x: Fx::from_px(target.0),
+            y: Fx::from_px(target.1),
+            w: Fx::ZERO,
+            h: Fx::ZERO,
+        },
         player_standing: None,
         screen_left: Fx::from_px(screen.0),
         screen_top: Fx::from_px(screen.1),
         globes: &[],
         stage_clock: 0,
+        cars: &[],
     };
     e.update(&ctx);
 }

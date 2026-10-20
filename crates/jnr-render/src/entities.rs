@@ -19,17 +19,20 @@
 //!    its turning paddle wheel; then enemies and projectiles (animation by
 //!    `Entity::pose`, facing by `Entity::dir`, the swarm's shake by
 //!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`, a `lead`
-//!    Offizier as `offizier_lead`), falling rocks, the Operettensänger's
-//!    high-C column (`hohes_c` rings), the Offizier's grey-box sabre (drawn
-//!    from `enemies::sabre_zone`) and snow globes, so a hazard never hides
-//!    behind a hull or car
+//!    Offizier as `offizier_lead`, a car's look by its spawn index, a
+//!    `look = "postbus"` Reisebus as `postbus`), falling rocks, the
+//!    Operettensänger's high-C column (`hohes_c` rings), the Offizier's
+//!    grey-box sabre (drawn from `enemies::sabre_zone`) and snow globes,
+//!    so a hazard never hides behind a hull or car; the Ampel's light
+//!    (from its counter) is a middle-layer prop, so its cars drive in
+//!    front of it
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
 //!    popups on top (the last world pass, under the HUD)
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
-use jnr_core::{Block, Camera, Game, Pose, Tile};
+use jnr_core::{AmpelLight, Block, BusLook, Camera, Game, Pose, Tile};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
@@ -90,6 +93,16 @@ pub const SKY_HAZE: u32 = 0xdff1f0ff;
 /// `S` sky_blue: the Souvenirstand vendor (apron).
 pub const SKY_BLUE: u32 = 0x64aee6ff;
 
+/// A car's looks (D-093): anims `drive_0` … `drive_2` (a red hatchback, a
+/// white estate, a camper van), picked by its spawn index in its green
+/// (`Entity::count`) modulo this.
+pub const AUTO_LOOKS: u16 = 3;
+/// The cars' grey-box colours by look (fallback without the `auto` sprite): `r`
+/// red, `w` white, `h` pale.
+pub const AUTO_GREY_BOX: [u32; AUTO_LOOKS as usize] = [DIRNDL_RED, WHITE, SKY_HAZE];
+/// The `ampel` sprite is this tall (origin on its cell's bottom centre).
+pub const AMPEL_H: i32 = 48;
+
 /// Pebbles in a Steinschlag's telegraph trickle (renderer only) ...
 pub const KIESEL_COUNT: i32 = 3;
 /// ... falling this many px per frame down the rock's column.
@@ -135,6 +148,11 @@ pub const DAMPFER_FUNNEL: (i32, [i32; 2]) = (70, [8, 20]);
 /// right of the paddle wheel's centre.
 pub const GISCHT_SPREAD_PX: i32 = 8;
 
+/// The Kurgast in his deck chair (D-095): 24×16, origin at the bottom
+/// centre of the 16×16 chair; anims `idle` (lying) and `wake`. Without it
+/// the `kurgast` sprite's `liegen`/`wake` anims are used.
+pub const LIEGESTUHL_SPRITE: &str = "liegestuhl";
+
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
 pub struct EntityLooks<'a> {
@@ -159,9 +177,14 @@ pub struct EntityLooks<'a> {
     pilger_lead: Option<&'a AtlasSprite>,
     gams: Option<&'a AtlasSprite>,
     reisebus: Option<&'a AtlasSprite>,
+    postbus: Option<&'a AtlasSprite>,
+    auto: Option<&'a AtlasSprite>,
+    ampel: Option<&'a AtlasSprite>,
     schwan: Option<&'a AtlasSprite>,
     gelse: Option<&'a AtlasSprite>,
     regattaboot: Option<&'a AtlasSprite>,
+    kurgast: Option<&'a AtlasSprite>,
+    liegestuhl: Option<&'a AtlasSprite>,
     offizier: Option<&'a AtlasSprite>,
     offizier_lead: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
@@ -179,6 +202,7 @@ pub struct EntityLooks<'a> {
     traundl: Option<&'a AtlasSprite>,
     dampfer: Option<&'a AtlasSprite>,
     gischt: Option<&'a AtlasSprite>,
+    fensterladen: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -211,9 +235,14 @@ impl<'a> EntityLooks<'a> {
             pilger_lead: s("pilger_lead"),
             gams: s(EnemyKind::Gams.sprite()),
             reisebus: s(EnemyKind::Reisebus.sprite()),
+            postbus: s("postbus"),
+            auto: s(EnemyKind::Auto.sprite()),
+            ampel: s("ampel"),
             schwan: s(EnemyKind::Schwan.sprite()),
             gelse: s(EnemyKind::Gelse.sprite()),
             regattaboot: s(EnemyKind::Regattaboot.sprite()),
+            kurgast: s(EnemyKind::Kurgast.sprite()),
+            liegestuhl: s(LIEGESTUHL_SPRITE),
             offizier: s(EnemyKind::Offizier.sprite()),
             offizier_lead: s("offizier_lead"),
             stein: s("stein"),
@@ -231,6 +260,7 @@ impl<'a> EntityLooks<'a> {
             traundl: s("traundl"),
             dampfer: s("dampfer"),
             gischt: s("gischt"),
+            fensterladen: s("fensterladen"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -262,6 +292,8 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Schwan => self.schwan,
                 EnemyKind::Gelse => self.gelse,
                 EnemyKind::Regattaboot => self.regattaboot,
+                EnemyKind::Auto => self.auto,
+                EnemyKind::Kurgast => self.kurgast,
                 EnemyKind::Offizier => self.offizier,
             },
             EntityKind::Thrown => self.thrown,
@@ -276,6 +308,8 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Schafbergbahn => self.schafbergbahn,
             EntityKind::Traundl => self.traundl,
             EntityKind::Dampfer => self.dampfer,
+            EntityKind::Ampel => self.ampel,
+            EntityKind::Fensterladen => self.fensterladen,
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -310,6 +344,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Schwan => WHITE,
             EnemyKind::Gelse => OUTLINE,
             EnemyKind::Regattaboot => CREAM,
+            EnemyKind::Auto => DIRNDL_RED,
+            EnemyKind::Kurgast => STONE_GREY,
             EnemyKind::Offizier => STONE_GREY,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
@@ -325,6 +361,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Schafbergbahn => OUTLINE,
         EntityKind::Traundl => LEATHER_DARK,
         EntityKind::Dampfer => WHITE,
+        EntityKind::Ampel => STONE_GREY,
+        EntityKind::Fensterladen => DIRNDL_RED,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
@@ -434,6 +472,7 @@ fn draw_entity(
             draw_enemy(game, looks, atlas, fb, cam, e);
         }
         EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
+        EntityKind::Ampel => draw_ampel(game, looks, atlas, fb, cam, e),
         EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
         EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
         EntityKind::Enemy(_)
@@ -448,6 +487,7 @@ fn draw_entity(
         EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
         EntityKind::Traundl => draw_traundl(game, looks, atlas, fb, cam, e),
         EntityKind::Dampfer => draw_dampfer(game, looks, atlas, fb, cam, e),
+        EntityKind::Fensterladen => draw_fensterladen(game, looks, atlas, fb, cam, e),
         _ if e.rising(game.tuning()) => {}
         _ => draw_body(game, looks, atlas, fb, cam, e),
     }
@@ -470,6 +510,80 @@ fn draw_festungsbahn(
             draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
         }
         None => draw_body(game, looks, atlas, fb, cam, e),
+    }
+}
+
+/// A Fensterladen's sprite origin lies this many px below its body's top
+/// (sprite-catalog: 32×24, origin 16,24, the body's top on sprite row 0).
+pub const FENSTERLADEN_SPRITE_H: i32 = 24;
+/// Ticks per step of the grey box's rattle (1 px down every other step).
+pub const FENSTERLADEN_RATTLE_TICKS: u32 = 4;
+/// The grey box's folded-up leaves: this wide, this tall, from the body's
+/// top down at both of its ends.
+pub const FENSTERLADEN_LEAF: [i32; 2] = [4, 20];
+
+/// A Fensterladen (D-094) in its look from the stage clock
+/// (`platform::shutter_look`): sprite `fensterladen` with the anim of that
+/// name (`open`, `rattle`, `closed`, `warn`; the rattle's shake is in its
+/// frames) at the body's top + [`FENSTERLADEN_SPRITE_H`], never mirrored.
+/// Else the grey box: open, the body; rattling, the body shaken 1 px down
+/// every other [`FENSTERLADEN_RATTLE_TICKS`] ticks (drawn only, the body
+/// never moves); closed, two leaves folded up at its ends and no ledge;
+/// warning, the leaves and the landlady's face (a `SKIN_LIGHT` square)
+/// between them.
+fn draw_fensterladen(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    use jnr_core::platform::{ShutterLook, shutter_look};
+    let Some(look) = shutter_look(e, game.level(), game.tuning()) else {
+        return;
+    };
+    let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+    let (w, h) = (e.w.to_px(), e.h.to_px());
+    if let Some(s) = looks.fensterladen {
+        let name = match look {
+            ShutterLook::Open => "open",
+            ShutterLook::Rattle => "rattle",
+            ShutterLook::Closed => "closed",
+            ShutterLook::Warn => "warn",
+        };
+        let anim = s.anim(name).unwrap_or(&s.anims[0]);
+        let x = left + w / 2;
+        draw_sprite(
+            fb,
+            atlas,
+            s,
+            anim,
+            game.frame(),
+            x,
+            top + FENSTERLADEN_SPRITE_H,
+            false,
+        );
+        return;
+    }
+    match look {
+        ShutterLook::Open | ShutterLook::Rattle => {
+            let shake =
+                look == ShutterLook::Rattle && (game.frame() / FENSTERLADEN_RATTLE_TICKS) % 2 == 1;
+            let y = top + i32::from(shake);
+            fb.fill_rect(left, y, w, h, DIRNDL_RED);
+            fb.outline_rect(left, y, w, h, OUTLINE);
+        }
+        ShutterLook::Closed | ShutterLook::Warn => {
+            let [lw, lh] = FENSTERLADEN_LEAF;
+            for x in [left, left + w - lw] {
+                fb.fill_rect(x, top, lw, lh, DIRNDL_RED);
+                fb.outline_rect(x, top, lw, lh, OUTLINE);
+            }
+            if look == ShutterLook::Warn {
+                fb.fill_rect(left + w / 2 - 3, top + 4, 6, 6, SKIN_LIGHT);
+            }
+        }
     }
 }
 
@@ -846,6 +960,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
         Pose::Wait => ("wait", None),
         Pose::Leave => ("leave", None),
+        Pose::Liegen => ("liegen", None),
+        Pose::Wake => ("wake", None),
         Pose::March => ("march", None),
         Pose::Habtacht => ("habtacht", None),
         Pose::Praesentiert => ("praesentiert", None),
@@ -931,6 +1047,7 @@ fn draw_enemy(
     };
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
+    // A `lead` Pilger or Offizier: `pilger_lead` / `offizier_lead`.
     let lead = is_lead(game, e);
     let lead_sprite = match e.kind {
         EntityKind::Enemy(EnemyKind::Offizier) | EntityKind::Defeated(EnemyKind::Offizier) => {
@@ -938,14 +1055,38 @@ fn draw_enemy(
         }
         _ => looks.pilger_lead,
     };
-    let sprite = match lead_sprite {
-        Some(s) if lead => Some(s),
-        _ => looks.sprite(e.kind),
+    let postbus = is_postbus(game, e);
+    // A Kurgast in his deck chair is the `liegestuhl` sprite (its lying
+    // anim is `idle`), else his own sprite's `liegen`/`wake`.
+    let chair = matches!(pose, Pose::Liegen | Pose::Wake);
+    let (sprite, (name, frame)) = match (lead_sprite, looks.liegestuhl) {
+        (Some(s), _) if lead => (Some(s), pose_anim(pose)),
+        // Postbus 150 (D-097): its own sprite (without it the yellow grey
+        // box); at its stop `halt`, doors shut, faces at the windows.
+        _ if postbus => match pose {
+            Pose::Fotostopp { .. } => (looks.postbus, ("halt", None)),
+            _ => (looks.postbus, pose_anim(pose)),
+        },
+        (_, Some(s)) if chair => {
+            let anim = if pose == Pose::Liegen {
+                ("idle", None)
+            } else {
+                pose_anim(pose)
+            };
+            (Some(s), anim)
+        }
+        _ => (looks.sprite(e.kind), pose_anim(pose)),
     };
+    let car = e.kind == EntityKind::Enemy(EnemyKind::Auto);
     match sprite {
         Some(s) => {
-            let (name, frame) = pose_anim(pose);
-            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            // A car's look by its index in its green (`drive_0` …), else
+            // `drive`.
+            let anim = match AUTO_DRIVE.get(usize::from(e.count % AUTO_LOOKS)) {
+                Some(look) if car => s.anim(look).or_else(|| s.anim(name)),
+                _ => s.anim(name),
+            }
+            .unwrap_or(&s.anims[0]);
             let tick = match frame {
                 Some(i) => i as u32 * anim.ticks,
                 None => game.frame(),
@@ -959,6 +1100,7 @@ fn draw_enemy(
                         | EnemyKind::Schneekugel
                         | EnemyKind::Reisebus
                         | EnemyKind::Regattaboot
+                        | EnemyKind::Auto
                 ) | EntityKind::Defeated(
                     EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
                 )
@@ -982,13 +1124,34 @@ fn draw_enemy(
             };
             let bx = e.x.to_px() - cam.x + sx;
             let by = e.y.to_px() - cam.y + full - h + sy;
-            fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
+            let colour = if postbus {
+                MOZART_YELLOW
+            } else if car {
+                AUTO_GREY_BOX[usize::from(e.count % AUTO_LOOKS)]
+            } else {
+                grey_box_colour(e.kind)
+            };
+            fb.fill_rect(bx, by, w, h, colour);
             fb.outline_rect(bx, by, w, h, OUTLINE);
-            if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
+            if postbus {
+                draw_postbus_marks(fb, bx, by, w, h, pose, game.frame());
+            } else if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
                 draw_bus_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if car {
+                draw_car_marks(fb, bx, by, w, h);
             }
             if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
                 draw_boat_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if chair {
+                // The deck chair: a wine canvas stripe across the box; in
+                // the wake telegraph two white arms stretch above it.
+                fb.fill_rect(bx + 1, by + h / 2 - 1, w - 2, 2, WINE_DARK);
+                if pose == Pose::Wake {
+                    fb.fill_rect(bx + 3, by - 5, 2, 5, WHITE);
+                    fb.fill_rect(bx + w - 5, by - 5, 2, 5, WHITE);
+                }
             }
             if e.kind == EntityKind::Enemy(EnemyKind::Schwan) && pose == Pose::Telegraph {
                 // The hiss: raised wings as two white posts over the box.
@@ -1098,6 +1261,105 @@ fn draw_high_c(
             fb.fill_rect(x, y, w, h, WHITE);
             fb.outline_rect(x, y, w, h, SILVER_LIGHT);
         }
+    }
+}
+
+/// The anims of a car's looks (D-093), by its spawn index modulo
+/// [`AUTO_LOOKS`]; a missing one falls back to `drive`.
+pub const AUTO_DRIVE: [&str; AUTO_LOOKS as usize] = ["drive_0", "drive_1", "drive_2"];
+
+/// True for a Reisebus placed with `look = "postbus"` (D-097).
+fn is_postbus(game: &Game, e: &Entity) -> bool {
+    e.kind == EntityKind::Enemy(EnemyKind::Reisebus)
+        && e.spawn
+            .and_then(|i| game.level().entities.get(usize::from(i)))
+            .is_some_and(|s| s.look == BusLook::Postbus)
+}
+
+/// The `ampel` anim (and fixed frame) for a light: `rot`, `rotgelb`,
+/// `gruen`, `gruen_blink` (frame 0 lit, 1 dark, from the counter so the
+/// four blinks stay in step with the cars) and `gelb`.
+pub fn ampel_anim(light: AmpelLight) -> (&'static str, Option<usize>) {
+    match light {
+        AmpelLight::Red => ("rot", None),
+        AmpelLight::RedAmber => ("rotgelb", None),
+        AmpelLight::Green => ("gruen", None),
+        AmpelLight::GreenBlink { on } => ("gruen_blink", Some(usize::from(!on))),
+        AmpelLight::Amber => ("gelb", None),
+    }
+}
+
+/// An Ampel (D-093): the `ampel` light (16×48, its origin on the spawner
+/// cell's bottom centre, the kerb) in the anim of its light
+/// ([`jnr_core::enemies::ampel_light`]), never mirrored. Without the
+/// sprite a grey box: a 2 px `m` pole and a `k` housing with three lamps
+/// (red, amber, green; unlit `d`). In the red-and-amber telegraph two
+/// headlights (`Y`) flash in the mouth (every [`BUS_HAZARD_TICKS`]).
+fn draw_ampel(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let Some(light) = jnr_core::enemies::ampel_light(e, game.level(), game.tuning()) else {
+        return;
+    };
+    let (x, y) = feet_on_screen(e, cam);
+    match looks.ampel {
+        Some(s) => {
+            let (name, frame) = ampel_anim(light);
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            let tick = frame.map_or(game.frame(), |i| i as u32 * anim.ticks);
+            draw_sprite(fb, atlas, s, anim, tick, x, y, false);
+        }
+        None => {
+            let top = y - AMPEL_H;
+            fb.fill_rect(x - 1, top + 18, 2, AMPEL_H - 18, STONE_GREY);
+            fb.fill_rect(x - 4, top, 8, 18, OUTLINE);
+            let lit = match light {
+                AmpelLight::Red => [true, false, false],
+                AmpelLight::RedAmber => [true, true, false],
+                AmpelLight::Green | AmpelLight::GreenBlink { on: true } => [false, false, true],
+                AmpelLight::GreenBlink { on: false } => [false, false, false],
+                AmpelLight::Amber => [false, true, false],
+            };
+            for (i, (on, colour)) in lit
+                .into_iter()
+                .zip([DIRNDL_RED, MOZART_YELLOW, MEADOW])
+                .enumerate()
+            {
+                let c = if on { colour } else { SLATE_DARK };
+                fb.fill_rect(x - 2, top + 1 + 6 * i as i32, 4, 4, c);
+            }
+        }
+    }
+    if light == AmpelLight::RedAmber && (game.frame() / BUS_HAZARD_TICKS).is_multiple_of(2) {
+        fb.fill_rect(x - 6, y - 7, 2, 2, MOZART_YELLOW);
+        fb.fill_rect(x + 4, y - 7, 2, 2, MOZART_YELLOW);
+    }
+}
+
+/// A car grey box's marks (fallback without the `auto` sprite): a `d` window band
+/// over the upper half (the cabin) and a `Y` headlight at the front (left).
+fn draw_car_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32) {
+    fb.fill_rect(x + 4, y + 2, w - 8, h / 2 - 2, SLATE_DARK);
+    fb.fill_rect(x + 1, y + h - 5, 2, 2, MOZART_YELLOW);
+}
+
+/// The Postbus grey box's marks (fallback without the `postbus` sprite, D-097):
+/// the Reisebus's window band and blinking hazard lights, and at its halt
+/// faces (`e`) pressed to the windows instead of photo flashes.
+fn draw_postbus_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Pose, tick: u32) {
+    match pose {
+        Pose::Fotostopp { .. } => {
+            draw_bus_marks(fb, x, y, w, h, Pose::Idle, tick);
+            for i in 1..=5 {
+                fb.fill_rect(x + i * w / 6 - 1, y + 5, 3, 3, SKIN_LIGHT);
+            }
+        }
+        _ => draw_bus_marks(fb, x, y, w, h, pose, tick),
     }
 }
 
@@ -1680,6 +1942,8 @@ mod tests {
             Pose::Roll,
             Pose::Wait,
             Pose::Leave,
+            Pose::Liegen,
+            Pose::Wake,
             Pose::March,
             Pose::Habtacht,
             Pose::Praesentiert,
@@ -1883,6 +2147,7 @@ mod tests {
             Popup::Checkpoint,
             Popup::Wurstkranz,
             Popup::Hoppala,
+            Popup::Kurruhe,
             Popup::Abtreten,
         ] {
             let key = p.text_key().unwrap();
@@ -2002,7 +2267,11 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Traundl,
             EntityKind::Dampfer,
-            EntityKind::Enemy(EnemyKind::Offizier),
+            EntityKind::Enemy(EnemyKind::Kurgast),
+            EntityKind::Fensterladen,
+            // The Offizier shares the Kurgast's STONE_GREY (the palette has no
+            // colour left; both draw their sprites, the grey box is a fallback).
+            // His box differs by its hilt, flag and sabre marks.
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
@@ -2241,6 +2510,122 @@ mod tests {
         assert_eq!(shown(&g), (Some(A), Some(A)), "moored");
     }
 
+    /// A 20×10 grey-box level, ground in row 9, the player at (2, 8) and a
+    /// Fensterladen `{ entity = "fensterladen", period = 120, open = 60 }`
+    /// in cell (8, 5): body x 128..160, y 80..88. Its cycle on the stage
+    /// clock: open 0..30, rattle 30..60, closed 60..100, warn 100..120.
+    fn shutter_game() -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 20])
+            .collect();
+        rows[8][2] = 'P';
+        rows[5][8] = 'f';
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"f\" = {{ entity = \"fensterladen\", period = 120, open = 60 }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    fn the_shutter(g: &Game) -> Entity {
+        *g.entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Fensterladen)
+            .unwrap()
+    }
+
+    /// Grey box (D-094): open, the red body; rattling, the body shaken 1 px
+    /// down every other 4 ticks while the core body stays put; closed, only
+    /// the two folded-up leaves (no ledge); warning, the leaves and the
+    /// landlady's face. The look follows the stage clock.
+    #[test]
+    fn the_grey_box_fensterladen_shows_open_rattle_closed_and_warn() {
+        use jnr_core::platform::{ShutterLook, shutter_look};
+        let mut g = shutter_game();
+        let e = the_shutter(&g);
+        let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+        assert_eq!((e.w.to_px(), e.h.to_px()), (32, 8));
+        // (the ledge 2 px below the top, the row just under the ledge is
+        // its shaken outline, a folded-up leaf, the landlady's face)
+        let probe = |g: &Game| {
+            let fb = rendered(g);
+            (
+                fb.get(left + 16, top + 2) == Some(DIRNDL_RED),
+                fb.get(left + 16, top + 8) == Some(OUTLINE),
+                fb.get(left + 1, top + 12) == Some(DIRNDL_RED),
+                fb.get(left + 16, top + 6) == Some(SKIN_LIGHT),
+            )
+        };
+        let mut seen = Vec::new();
+        for clock in 0..120 {
+            assert_eq!(g.stage_clock(), clock);
+            let look = shutter_look(&the_shutter(&g), g.level(), g.tuning()).unwrap();
+            seen.push((look, probe(&g), g.frame()));
+            g.step(InputFrame::NONE);
+        }
+        for (clock, &(look, probe, frame)) in seen.iter().enumerate() {
+            let shaken = (frame / FENSTERLADEN_RATTLE_TICKS) % 2 == 1;
+            let want = match clock {
+                0..30 => (ShutterLook::Open, (true, false, false, false)),
+                30..60 => (ShutterLook::Rattle, (true, shaken, false, false)),
+                60..100 => (ShutterLook::Closed, (false, false, true, false)),
+                _ => (ShutterLook::Warn, (false, false, true, true)),
+            };
+            assert_eq!((look, probe), want, "clock {clock}");
+        }
+        assert!(seen[30..60].iter().any(|s| s.1.1), "it shakes");
+        // The body itself never moves.
+        let now = the_shutter(&g);
+        assert_eq!((now.x, now.y), (e.x, e.y));
+    }
+
+    /// With its sprite: the anim named after the look, drawn with its
+    /// origin 24 px below the body's top (the sprite spans the body's top
+    /// row down to 23 px below it), never mirrored.
+    #[test]
+    fn the_fensterladen_picks_its_anim_from_the_stage_clock() {
+        use crate::testutil::{A, B, C, atlas, image, sprite};
+        let frame = |c: &str| image(&vec![c.repeat(32).as_str(); 24]);
+        let shutter = sprite(
+            "fensterladen",
+            (16, 24),
+            false,
+            vec![
+                ("open", 0, vec![frame("a")]),
+                ("rattle", 0, vec![frame("b")]),
+                ("closed", 0, vec![frame("c")]),
+                ("warn", 0, vec![frame("b")]),
+            ],
+        );
+        let atlas = atlas(&[shutter]);
+        let texts = Texts::default();
+        let mut g = shutter_game();
+        let e = the_shutter(&g);
+        let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let inside = (fb.get(left, top), fb.get(left + 31, top + 23));
+            let outside = [fb.get(left + 16, top - 1), fb.get(left + 16, top + 24)];
+            assert!(!outside.contains(&inside.0), "{outside:?} vs {inside:?}");
+            inside
+        };
+        let mut seen = Vec::new();
+        for _ in 0..120 {
+            seen.push(shown(&g));
+            g.step(InputFrame::NONE);
+        }
+        assert!(seen[..30].iter().all(|&c| c == (Some(A), Some(A))));
+        assert!(seen[30..60].iter().all(|&c| c == (Some(B), Some(B))));
+        assert!(seen[60..100].iter().all(|&c| c == (Some(C), Some(C))));
+        assert!(seen[100..].iter().all(|&c| c == (Some(B), Some(B))));
+    }
     /// The Traundl: grey box with the rower stub at the stern; with its
     /// sprite `idle` while it waits at an end and `ride` while it moves.
     #[test]
@@ -2382,6 +2767,92 @@ mod tests {
         assert_ne!(fb.get(x, bottom - 65), Some(A));
     }
 
+    // ------------------------------------------------------ Kurgast (D-095)
+
+    /// A grey-box level with a Kurgast at (10, 8) on the ground (feet y
+    /// 144), stepped once; returns the game and the Kurgast in `st`
+    /// (`LIE`/`WAKE`: resized to the 16×16 chair at his feet).
+    fn kurgast_in(st: u8) -> (Game, Entity) {
+        let g = layered_game(
+            "....................\n....................\n....................\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n..P.......k.........\n\
+             ####################\n",
+            "\"k\" = { entity = \"kurgast\" }",
+        );
+        let mut k = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Kurgast))
+            .unwrap();
+        k.state = st;
+        if st != jnr_core::enemies::state::WALK {
+            let (cx, feet) = k.feet();
+            k.w = Fx::from_px(16);
+            k.h = Fx::from_px(16);
+            k.x = cx - Fx::from_px(8);
+            k.y = feet - k.h;
+        }
+        (g, k)
+    }
+
+    fn drawn(g: &Game, atlas: &Atlas, k: &Entity) -> Framebuffer {
+        let looks = EntityLooks::new(atlas);
+        let mut fb = crate::testutil::fb();
+        draw_enemy(g, &looks, atlas, &mut fb, g.camera(), k);
+        fb
+    }
+
+    #[test]
+    fn the_grey_box_kurgast_shows_his_chair_and_the_wake_arms() {
+        use jnr_core::enemies::state;
+        let atlas = crate::testutil::atlas(&[]);
+        let (g, walking) = kurgast_in(state::WALK);
+        let fb = drawn(&g, &atlas, &walking);
+        let (x, y) = (walking.x.to_px() + 6, walking.y.to_px() + 11);
+        assert_eq!(fb.get(x, y), Some(STONE_GREY), "walking: a grey box");
+        let (g, lying) = kurgast_in(state::LIE);
+        let fb = drawn(&g, &atlas, &lying);
+        let (bx, by) = (lying.x.to_px(), lying.y.to_px());
+        assert_eq!(fb.get(bx + 8, by + 3), Some(STONE_GREY), "the chair");
+        assert_eq!(fb.get(bx + 8, by + 7), Some(WINE_DARK), "its canvas stripe");
+        assert_eq!(fb.get(bx + 3, by - 3), Some(crate::testutil::BG), "no arms");
+        let (g, waking) = kurgast_in(state::WAKE);
+        let fb = drawn(&g, &atlas, &waking);
+        assert_eq!(
+            fb.get(bx + 3, by - 3),
+            Some(WHITE),
+            "arms up: the telegraph"
+        );
+        assert_eq!(fb.get(bx + 12, by - 3), Some(WHITE));
+    }
+
+    #[test]
+    fn a_lying_kurgast_uses_the_liegestuhl_sprite() {
+        use crate::testutil::{A, B, C, image, sprite};
+        use jnr_core::enemies::state;
+        let one = |c: &str| vec![image(&[c; 4])];
+        let atlas = crate::testutil::atlas(&[
+            sprite("kurgast", (2, 4), true, vec![("walk", 0, one("cccc"))]),
+            sprite(
+                LIEGESTUHL_SPRITE,
+                (2, 4),
+                false,
+                vec![("idle", 0, one("aaaa")), ("wake", 0, one("bbbb"))],
+            ),
+        ]);
+        for (st, colour) in [(state::WALK, C), (state::LIE, A), (state::WAKE, B)] {
+            let (g, k) = kurgast_in(st);
+            let fb = drawn(&g, &atlas, &k);
+            let (fx, fy) = k.feet();
+            assert_eq!(
+                fb.get(fx.to_px(), fy.to_px() - 1),
+                Some(colour),
+                "state {st}"
+            );
+        }
+    }
+
     // ------------------------------------------------ draw layers (D-086)
 
     /// A 20×10 grey-box level from `grid` (10 rows) with `legend` entries
@@ -2517,5 +2988,312 @@ mod tests {
             Some(PINE_DARK),
             "the rower is drawn"
         );
+    }
+
+    // ------------------------------------------------- traffic (M6, E36)
+
+    /// A 24x10 traffic grey box (ground in row 9): Resi on a one-way
+    /// shelter (row 6, columns 1–4) at column 2, above the lane; plus
+    /// `marks` (an Ampel in cell (12, 8) has its lamps at x 198–201 from
+    /// y 97).
+    fn traffic_game(marks: &[(usize, usize, char)]) -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 24])
+            .collect();
+        rows[6][1..=4].fill('-');
+        rows[5][2] = 'P';
+        for &(r, c, ch) in marks {
+            rows[r][c] = ch;
+        }
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
+             \"a\" = {{ entity = \"ampel\" }}\n\
+             \"y\" = {{ entity = \"reisebus\", stop = 2, look = \"postbus\" }}\n\
+             \"r\" = {{ entity = \"reisebus\", stop = 2 }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    /// The grey-box Ampel's three lamps (top red, middle amber, bottom
+    /// green) at the counter frames of D-093's cycle, the headlights in
+    /// the mouth during red and amber, and its cars in front of it in their
+    /// looks' colours.
+    #[test]
+    fn the_grey_box_ampel_shows_its_cycle_and_the_cars_their_looks() {
+        let mut g = traffic_game(&[(8, 12, 'a')]);
+        let lamps = |fb: &Framebuffer| [98, 104, 110].map(|y| fb.get(200, y).unwrap());
+        let dark = SLATE_DARK;
+        g.step(InputFrame::NONE);
+        let fb = rendered(&g);
+        assert_eq!(
+            lamps(&fb),
+            [DIRNDL_RED, MOZART_YELLOW, dark],
+            "red and amber"
+        );
+        assert_eq!(fb.get(194, 137), Some(MOZART_YELLOW), "headlights");
+        assert_eq!(fb.get(204, 137), Some(MOZART_YELLOW));
+        assert_eq!(fb.get(200, 120), Some(STONE_GREY), "the pole");
+        for _ in 1..41 {
+            g.step(InputFrame::NONE);
+        }
+        let fb = rendered(&g);
+        assert_eq!(lamps(&fb), [dark, dark, MEADOW], "green");
+        assert_ne!(fb.get(194, 137), Some(MOZART_YELLOW), "no headlights");
+        for _ in 41..112 {
+            g.step(InputFrame::NONE);
+        }
+        // Cars spawned at 30, 70, 110 (2 px/frame left from x 194).
+        let fb = rendered(&g);
+        for (x, colour) in [(32, DIRNDL_RED), (112, WHITE), (192, SKY_HAZE)] {
+            assert_eq!(fb.get(x + 16, 141), Some(colour), "car at {x}");
+            assert_eq!(fb.get(x + 10, 134), Some(SLATE_DARK), "its windows");
+        }
+        assert_eq!(fb.get(200, 141), Some(SKY_HAZE), "in front of the pole");
+        for _ in 112..159 {
+            g.step(InputFrame::NONE);
+        }
+        let a = g.entities().iter().find(|e| e.kind == EntityKind::Ampel);
+        assert_eq!(
+            jnr_core::enemies::ampel_light(a.unwrap(), g.level(), g.tuning()),
+            Some(AmpelLight::GreenBlink { on: false })
+        );
+        assert_eq!(lamps(&rendered(&g)), [dark, dark, dark], "a blink off");
+    }
+
+    #[test]
+    fn ampel_anims_follow_the_light() {
+        assert_eq!(ampel_anim(AmpelLight::Red), ("rot", None));
+        assert_eq!(ampel_anim(AmpelLight::RedAmber), ("rotgelb", None));
+        assert_eq!(ampel_anim(AmpelLight::Green), ("gruen", None));
+        assert_eq!(
+            ampel_anim(AmpelLight::GreenBlink { on: true }),
+            ("gruen_blink", Some(0))
+        );
+        assert_eq!(
+            ampel_anim(AmpelLight::GreenBlink { on: false }),
+            ("gruen_blink", Some(1))
+        );
+        assert_eq!(ampel_anim(AmpelLight::Amber), ("gelb", None));
+        let catalog = include_str!("../../../docs/sprite-catalog.md");
+        let names = [
+            "rot",
+            "rotgelb",
+            "gruen",
+            "gruen_blink",
+            "gelb",
+            "halt",
+            "postbus",
+            "ampel",
+        ];
+        for n in names.into_iter().chain(AUTO_DRIVE) {
+            assert!(
+                catalog.contains(&format!("`{n}`")),
+                "`{n}` not in the catalog"
+            );
+        }
+    }
+
+    /// With the sprites: the Ampel in its light's anim at the cell's
+    /// bottom centre; a car's look by its spawn index (`drive_2` missing:
+    /// `drive`); the Postbus's `drive` and its `halt` at its stop.
+    #[test]
+    fn traffic_sprites_pick_their_anims() {
+        use crate::testutil::{A, B, C};
+        let s = |name: &str, anims: Vec<(&str, u32, Vec<jnr_artkit::Image>)>| {
+            crate::testutil::sprite(name, (8, 24), true, anims)
+        };
+        let atlas = crate::testutil::atlas(&[
+            s(
+                "ampel",
+                vec![
+                    ("rot", 1, vec![solid('c')]),
+                    ("rotgelb", 1, vec![solid('a')]),
+                    ("gruen", 1, vec![solid('b')]),
+                ],
+            ),
+            s(
+                "auto",
+                vec![
+                    ("drive", 4, vec![solid('c')]),
+                    ("drive_0", 4, vec![solid('a')]),
+                    ("drive_1", 4, vec![solid('b')]),
+                ],
+            ),
+            s(
+                "postbus",
+                vec![
+                    ("drive", 4, vec![solid('b')]),
+                    ("halt", 16, vec![solid('a')]),
+                ],
+            ),
+        ]);
+        let texts = Texts::default();
+        let shown = |g: &Game, x: i32, y: i32| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            fb.get(x, y)
+        };
+        let mut g = traffic_game(&[(8, 12, 'a')]);
+        g.step(InputFrame::NONE);
+        assert_eq!(shown(&g, 200, 130), Some(A), "rotgelb");
+        for _ in 1..112 {
+            g.step(InputFrame::NONE);
+        }
+        assert_eq!(shown(&g, 194, 125), Some(B), "gruen (left of the car)");
+        // Car feet at x + 14 (the 16 px frames centred there).
+        assert_eq!(shown(&g, 46, 140), Some(A), "drive_0");
+        assert_eq!(shown(&g, 126, 140), Some(B), "drive_1");
+        assert_eq!(shown(&g, 206, 140), Some(C), "drive_2 falls back to drive");
+        // The Postbus (stop 2) at column 10 triggers at once (152 px) and
+        // halts after 60 + 22 frames at column 8.
+        let mut g = traffic_game(&[(8, 10, 'y')]);
+        for _ in 0..70 {
+            g.step(InputFrame::NONE);
+        }
+        let bus = |g: &Game| {
+            let b = g
+                .entities()
+                .iter()
+                .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Reisebus));
+            (b.unwrap().feet().0.to_px(), b.unwrap().pose(g.tuning()))
+        };
+        let (x, pose) = bus(&g);
+        assert_eq!(pose, Some(Pose::Drive));
+        assert_eq!(shown(&g, x, 140), Some(B), "drives");
+        for _ in 70..100 {
+            g.step(InputFrame::NONE);
+        }
+        let (x, pose) = bus(&g);
+        assert!(matches!(pose, Some(Pose::Fotostopp { .. })));
+        assert_eq!(shown(&g, x, 140), Some(A), "halt");
+    }
+
+    /// The approved traffic art is embedded and has every anim the renderer
+    /// asks for, so the grey boxes are only fallbacks.
+    #[test]
+    fn the_real_atlas_has_the_traffic_art() {
+        let looks = EntityLooks::new(jnr_assets::atlas());
+        let ampel = looks.ampel.expect("art/sprites/props/ampel.sprite");
+        for light in [
+            AmpelLight::Red,
+            AmpelLight::RedAmber,
+            AmpelLight::Green,
+            AmpelLight::GreenBlink { on: true },
+            AmpelLight::Amber,
+        ] {
+            let (name, frame) = ampel_anim(light);
+            let anim = ampel.anim(name).unwrap_or_else(|| panic!("ampel `{name}`"));
+            assert!(frame.unwrap_or(0) < anim.frames.len(), "ampel `{name}`");
+        }
+        let auto = looks.auto.expect("art/sprites/enemies/auto.sprite");
+        for look in AUTO_DRIVE {
+            assert!(auto.anim(look).is_some(), "auto `{look}`");
+        }
+        let postbus = looks.postbus.expect("art/sprites/enemies/postbus.sprite");
+        for name in ["idle", "telegraph", "drive", "halt"] {
+            assert!(postbus.anim(name).is_some(), "postbus `{name}`");
+        }
+    }
+
+    /// The approved Offizier art is embedded with every pose anim, and drawn
+    /// (not the grey box): in „Präsentiert!" everything above his hitbox
+    /// top is the blade, inside the sabre zone (cols 8–11, its tip at
+    /// sprite row 0); the flag bearer's flag above row 10 stays in cols
+    /// 0–2 (mirrored when he faces left), clear of the zone, in every pose.
+    #[test]
+    fn the_real_offizier_art_draws_the_sabre_inside_the_zone() {
+        let atlas = jnr_assets::atlas();
+        let looks = EntityLooks::new(atlas);
+        for (name, s) in [
+            ("offizier", looks.offizier),
+            ("offizier_lead", looks.offizier_lead),
+        ] {
+            let s = s.unwrap_or_else(|| panic!("art/sprites/enemies/{name}.sprite"));
+            for pose in [
+                Pose::March,
+                Pose::Habtacht,
+                Pose::Praesentiert,
+                Pose::Squished,
+            ] {
+                let (anim, _) = pose_anim(pose);
+                assert!(s.anim(anim).is_some(), "{name} `{anim}`");
+            }
+        }
+        let t = tuning();
+        for frames in [10, 170, 200] {
+            let g = officer_game(frames);
+            for e in officers(&g) {
+                let fb = drawn(&g, atlas, &e);
+                let cam = g.camera();
+                let top = e.y.to_px() - cam.y;
+                let left = (e.x + e.w.div_int(2)).to_px() - cam.x - 8;
+                // Sprite-local column (as authored, facing right).
+                let col = |x: i32| {
+                    if e.facing_left() {
+                        15 - (x - left)
+                    } else {
+                        x - left
+                    }
+                };
+                let above: Vec<(i32, i32)> = (top - 10..top)
+                    .flat_map(|y| (left..left + 16).map(move |x| (x, y)))
+                    .filter(|&(x, y)| fb.get(x, y) != Some(crate::testutil::BG))
+                    .collect();
+                let zone = jnr_core::enemies::sabre_zone(&e, &t);
+                let lead = is_lead(&g, &e);
+                if let Some(z) = zone {
+                    let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
+                    assert!(above.iter().any(|&(_, y)| y == top - 10), "tip at row 0");
+                    for &(x, y) in &above {
+                        let in_zone = (zx..zx + 8).contains(&x) && (zy..zy + 16).contains(&y);
+                        assert!(
+                            in_zone || (lead && col(x) <= 2),
+                            "frame {frames}: ({x}, {y}) col {} outside the zone",
+                            col(x)
+                        );
+                        if in_zone {
+                            assert!((8..=11).contains(&col(x)), "blade col {}", col(x));
+                        }
+                    }
+                } else {
+                    for &(x, _) in &above {
+                        assert!(lead && col(x) <= 2, "frame {frames}: col {}", col(x));
+                    }
+                }
+                // Up in the march and „Präsentiert!", dipped below row 10 in
+                // „Habt Acht!".
+                if lead && e.pose(&t) != Some(Pose::Habtacht) {
+                    assert!(above.iter().any(|&(x, _)| col(x) <= 2), "the flag");
+                }
+            }
+        }
+    }
+
+    /// Without the `postbus` art its grey box is yellow, and at its halt
+    /// faces fill the windows instead of photo flashes.
+    #[test]
+    fn the_grey_box_postbus_is_yellow_with_faces_at_its_halt() {
+        let body = |g: &Game| rendered(g).get(150, 140);
+        let face = |g: &Game| rendered(g).get(140, 122);
+        let mut post = traffic_game(&[(8, 10, 'y')]);
+        let mut plain = traffic_game(&[(8, 10, 'r')]);
+        for _ in 0..100 {
+            post.step(InputFrame::NONE);
+            plain.step(InputFrame::NONE);
+        }
+        assert_eq!(body(&post), Some(MOZART_YELLOW));
+        assert_eq!(face(&post), Some(SKIN_LIGHT), "faces at the halt");
+        assert_eq!(body(&plain), Some(WHITE), "a plain bus stays white");
+        assert_ne!(face(&plain), Some(SKIN_LIGHT));
+        for _ in 100..215 {
+            post.step(InputFrame::NONE);
+        }
+        assert_ne!(face(&post), Some(SKIN_LIGHT), "driving on: no faces");
     }
 }

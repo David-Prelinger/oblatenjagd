@@ -1,0 +1,12 @@
+# A car's side hit as Zuckerschock: Resi takes the Mozartkugel from the
+# start box, walks along the street into Ampel #1's lane and meets its
+# first car head-on: Hurt, back to Normal, no points beyond the power-up's.
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped power=normal score=1000 player_x>=360
+---
+R 30
+J 14
+- 60
+R 230

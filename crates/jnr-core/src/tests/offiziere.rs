@@ -184,6 +184,35 @@ fn he_marches_at_half_a_pixel_and_halts_towards_the_player() {
 }
 
 #[test]
+fn a_halted_officer_neither_turns_at_a_ledge_nor_floats() {
+    // A hole at columns 17-18; he halts with his leading foot at its edge.
+    let mut g = officer_world(&[(12, 17, '.'), (13, 17, '.'), (12, 18, '.'), (13, 18, '.')]);
+    until_state(&mut g, state::ATTENTION);
+    let edge = Fx::from_px(19 * 16);
+    let i = g.entities.iter().position(|e| e.kind == OFFIZIER).unwrap();
+    g.entities[i].x = edge;
+    g.entities[i].dir = -1;
+    let before = g.entities[i];
+    for _ in 0..10 {
+        safe(&mut g, "-");
+    }
+    let o = first(&g, OFFIZIER);
+    assert_eq!(o.state, state::ATTENTION);
+    assert_eq!(
+        (o.x, o.y, o.dir),
+        (before.x, before.y, -1),
+        "no ledge turn while halted"
+    );
+    // Halted over the hole he falls.
+    g.entities[i].x = Fx::from_px(17 * 16 + 2);
+    let y = g.entities[i].y;
+    safe(&mut g, "-");
+    let o = first(&g, OFFIZIER);
+    assert_eq!(o.state, state::ATTENTION);
+    assert!(o.y > y, "falls while halted");
+}
+
+#[test]
 fn he_turns_at_walls_ledges_and_enemies_on_foot() {
     // A wall at column 16, 4 tiles left of him.
     let mut g = officer_world(&[(11, 16, '#')]);

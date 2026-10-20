@@ -6,8 +6,10 @@
 //! spawner and its snow globes ([`EntityKind::Souvenirstand`],
 //! [`EnemyKind::Schneekugel`]), the Operettensänger's high-C column
 //! ([`high_c_column`]), the lake enemies of Stage 6 (Schwan, Gelse,
-//! Regattaboot), the Offizier's drill and sabre zone ([`sabre_zone`]) and
-//! defeated enemies ([`EntityKind::Defeated`]),
+//! Regattaboot), the Ampel spawner and its cars of Stage 7
+//! ([`EntityKind::Ampel`], [`EnemyKind::Auto`]), the Offizier's drill and
+//! sabre zone ([`sabre_zone`]) and defeated enemies
+//! ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -136,6 +138,16 @@ pub mod state {
     /// Offizier: halted for „Präsentiert!": the sabre zone is up
     /// ([`super::sabre_zone`]).
     pub const PRESENT: u8 = 2;
+    // Kurgast (D-095): `WALK` (0) until his first stomp, which scores.
+    /// Kurgast: lying in his deck chair (a one-way top platform, harmless;
+    /// `count` = frames of the rest, paused while the player stands on it).
+    pub const LIE: u8 = 1;
+    /// Kurgast: the wake telegraph, still in the chair (`count` = frames of
+    /// it, paused like the rest).
+    pub const WAKE: u8 = 2;
+    /// Kurgast: walking again after a rest; a stomp lays him down again but
+    /// scores nothing.
+    pub const RESTED: u8 = 3;
 
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
@@ -221,6 +233,11 @@ pub enum Pose {
     Habtacht,
     /// Offizier `praesentiert` (halted, sabre raised: the zone hurts).
     Praesentiert,
+    /// Kurgast lying in his deck chair (`liegestuhl` `idle`, or the
+    /// `kurgast` sprite's `liegen`).
+    Liegen,
+    /// Kurgast's wake telegraph in the chair (`wake`).
+    Wake,
 }
 
 impl Entity {
@@ -288,6 +305,8 @@ impl Entity {
                 state::HOP => Pose::Hop,
                 _ => Pose::Idle,
             },
+            // A car always drives (D-093).
+            EntityKind::Enemy(EnemyKind::Auto) => Pose::Drive,
             EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => match self.state {
                 state::TELEGRAPH | state::RESTART => Pose::Telegraph,
                 state::DRIVE => Pose::Drive,
@@ -305,6 +324,11 @@ impl Entity {
                 state::HUNT => Pose::Fly,
                 state::LEAVE => Pose::Leave,
                 _ => Pose::Wait,
+            },
+            EntityKind::Enemy(EnemyKind::Kurgast) => match self.state {
+                state::LIE => Pose::Liegen,
+                state::WAKE => Pose::Wake,
+                _ => Pose::Walk,
             },
             EntityKind::Enemy(EnemyKind::Offizier) => match self.state {
                 state::ATTENTION => Pose::Habtacht,
@@ -348,14 +372,37 @@ impl Entity {
     }
 
     /// False for an enemy that can't touch the player right now (a
-    /// crashed E-Biker, a leaving Gelse); true for every other enemy.
+    /// crashed E-Biker, a leaving Gelse, a Kurgast in his deck chair);
+    /// true for every other enemy.
     pub fn harmful(&self) -> bool {
         match self.kind {
             EntityKind::Enemy(EnemyKind::EBiker) => self.state != state::CRASH,
             EntityKind::Enemy(EnemyKind::Gelse) => self.state != state::LEAVE,
+            EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(self),
             _ => true,
         }
     }
+}
+
+/// True for a Kurgast in his deck chair (resting or waking, D-095).
+fn in_chair(e: &Entity) -> bool {
+    e.kind == EntityKind::Enemy(EnemyKind::Kurgast) && matches!(e.state, state::LIE | state::WAKE)
+}
+
+/// **The enemy-as-platform hook** (D-095): true for an enemy whose hitbox
+/// is a one-way top platform right now, a Kurgast in his deck chair. Such
+/// a platform never moves, so it needs only the shared landing code
+/// ([`crate::platform::land`]), no carry; it despawns like any enemy.
+pub(crate) fn is_platform_now(e: &Entity) -> bool {
+    in_chair(e)
+}
+
+/// True if defeating `e` now scores its points: false for a Kurgast whose
+/// first stomp has scored (lying, waking or walking again), so his points
+/// total 100 at most (D-095: a bump or an axe after the stomp gives
+/// nothing); true for every other enemy.
+pub(crate) fn scores_on_defeat(e: &Entity) -> bool {
+    e.kind != EntityKind::Enemy(EnemyKind::Kurgast) || e.state == state::WALK
 }
 
 /// The initial state of an enemy kind (at spawn and on level reset).
@@ -438,6 +485,14 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_gelse(e, ctx);
             None
         }
+        EnemyKind::Auto => {
+            update_auto(e, ctx);
+            None
+        }
+        EnemyKind::Kurgast => {
+            update_kurgast(e, ctx);
+            None
+        }
         EnemyKind::Offizier => {
             update_offizier(e, ctx);
             None
@@ -473,20 +528,22 @@ fn floor_at(map: &TileMap, x: Fx, feet: Fx) -> bool {
 /// other way in the same frame). It only falls when the floor under it
 /// disappears.
 fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
+    e.state = state::STRIDE;
+    walk_turning_at_ledges(e, ctx, ctx.tuning.enemies.walker_speed);
+}
+
+/// The Nordic-Walker's walk at `speed` (see [`update_walker`]); also the
+/// Kurgast's (D-095) and the Offizier's (D-096). At activation it faces
+/// the player; then it turns at a ledge ahead (while on a floor), walks
+/// with gravity and turns at a wall. A `speed` of 0 only falls (a halted
+/// Offizier: no ledge turn). Leaves `state` alone.
+fn walk_turning_at_ledges(e: &mut Entity, ctx: &UpdateCtx, speed: Fx) {
+    let (map, t) = (ctx.map, ctx.tuning);
     // At activation it starts towards the player (game-design.md).
     let cx = e.x + e.w.div_int(2);
     if e.timer == 1 && ctx.player_cx != cx {
         e.dir = (ctx.player_cx - cx).signum() as i8;
     }
-    e.state = state::STRIDE;
-    stride(e, ctx, ctx.tuning.enemies.walker_speed);
-}
-
-/// One frame of the Nordic-Walker's movement at `speed`: turn at a ledge
-/// ahead (while on a floor), walk with gravity, turn at a wall. A `speed`
-/// of 0 only falls (a halted Offizier).
-fn stride(e: &mut Entity, ctx: &UpdateCtx, speed: Fx) {
-    let (map, t) = (ctx.map, ctx.tuning);
     let feet = e.y + e.h;
     let last = e.right() - Fx(1);
     let standing = floor_at(map, e.x, feet) || floor_at(map, last, feet);
@@ -930,25 +987,31 @@ fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
 /// must be free (D-070, D-080).
 pub const REISEBUS_LANE_TILES: i32 = 24;
 
-/// `levels lint` (D-070, D-080): every Reisebus's and Regattaboot's lane,
-/// the rows of its hitbox from its own cells to [`REISEBUS_LANE_TILES`]
-/// tiles left of its parked hitbox (or the level's left edge), holds no
-/// solid or one-way tile, so it is never seen driving through a wall (one
-/// problem per vehicle, naming the first blocked cell from the left); and a
-/// bus's photo stop (`stop`) must not lie left of the level's left edge.
-/// Water tiles in a boat's lane are fine.
+/// `levels lint` (D-070, D-080, D-093): every Reisebus's and Regattaboot's
+/// lane, the rows of its hitbox from its own cells to
+/// [`REISEBUS_LANE_TILES`] tiles left of its parked hitbox (or the level's
+/// left edge), holds no solid or one-way tile, so it is never seen driving
+/// through a wall (one problem per vehicle, naming the first blocked cell
+/// from the left); and a bus's photo stop (`stop`) must not lie left of the
+/// level's left edge. Water tiles in a boat's lane are fine. An Ampel's
+/// lane is its cars' (the hitbox of a car at its spawn point, through the
+/// cell it pokes into, to 24 tiles left of the spawner).
 pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
         let decision = match s.kind {
             SpawnKind::Reisebus => "D-070",
             SpawnKind::Regattaboot => "D-080",
+            SpawnKind::Ampel => "D-093",
             _ => continue,
         };
         let name = s.kind.name();
-        let Some(bus) = Entity::from_spawn(s, i, t) else {
+        let Some(mut bus) = Entity::from_spawn(s, i, t) else {
             continue;
         };
+        if s.kind == SpawnKind::Ampel {
+            bus = new_car(&bus, 0, t);
+        }
         let (rows, last) = (tile_of(bus.y)..=s.row, tile_of(bus.right() - Fx(1)));
         let first = tile_of(bus.x - TILE.mul_int(REISEBUS_LANE_TILES)).max(0);
         let blocked = (first..=last).find_map(|c| {
@@ -1044,6 +1107,8 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::Blasmusiker)
         | EntityKind::Enemy(EnemyKind::Pilger)
         | EntityKind::Enemy(EnemyKind::Operettensaenger)
+        // Walking, or lying in his deck chair: walkers turn at it (D-095).
+        | EntityKind::Enemy(EnemyKind::Kurgast)
         | EntityKind::Enemy(EnemyKind::Offizier) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
@@ -1054,22 +1119,23 @@ fn on_foot(e: &Entity) -> bool {
     }
 }
 
-/// Selfie-Tourists, Nordic-Walkers, Pilger and Offiziere that overlap another enemy on foot
-/// turn away from it (after everything moved; the direction is set, not
-/// flipped, so two that overlap for several frames don't flip back and
-/// forth).
+/// Selfie-Tourists, Nordic-Walkers, Pilger, Offiziere and walking
+/// Kurgäste that overlap another enemy on foot turn away from it (after
+/// everything moved; the direction is set, not flipped, so two that
+/// overlap for several frames don't flip back and forth).
 pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
     for i in 0..entities.len() {
         let a = entities[i];
-        let walks = matches!(
-            a.kind,
+        let walks = match a.kind {
             EntityKind::Enemy(
                 EnemyKind::SelfieTourist
-                    | EnemyKind::NordicWalker
-                    | EnemyKind::Pilger
-                    | EnemyKind::Offizier
-            )
-        );
+                | EnemyKind::NordicWalker
+                | EnemyKind::Pilger
+                | EnemyKind::Offizier,
+            ) => true,
+            EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(&a),
+            _ => false,
+        };
         // `dir == 0`: a `still` tourist (test levels) never turns.
         if !a.active || a.removed || a.dir == 0 || !walks {
             continue;
@@ -1088,14 +1154,16 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
 
 /// A block at (`col`, `row`) was bumped from below: every stompable enemy
 /// standing on it (feet exactly on its top, overlapping the cell) is
-/// knocked off (defeated, tumbling). Rolling items standing on it hop.
-/// Returns the knocked enemies' kind and feet (for points and popups).
+/// knocked off (defeated, tumbling), a Kurgast also from his deck chair.
+/// Rolling items standing on it hop. Returns the knocked enemies' kind,
+/// feet (for points and popups) and whether they score
+/// ([`scores_on_defeat`]).
 pub(crate) fn knock_off_block(
     entities: &mut [Entity],
     col: i32,
     row: i32,
     t: &Tuning,
-) -> Vec<(EnemyKind, Fx, Fx)> {
+) -> Vec<(EnemyKind, Fx, Fx, bool)> {
     let (left, top) = (TILE.mul_int(col), TILE.mul_int(row));
     let mut knocked = Vec::new();
     for e in entities.iter_mut() {
@@ -1105,8 +1173,9 @@ pub(crate) fn knock_off_block(
         }
         match e.kind {
             EntityKind::Enemy(kind) if kind.stompable() && on_foot(e) => {
+                let scores = scores_on_defeat(e);
                 defeat(e, kind, true, t);
-                knocked.push((kind, e.x + e.w.div_int(2), e.y));
+                knocked.push((kind, e.x + e.w.div_int(2), e.y, scores));
             }
             EntityKind::Mozartkugel | EntityKind::Zaunerstollen if !e.rising(t) => {
                 e.vy = -t.enemies.knock_speed;
@@ -1778,13 +1847,84 @@ fn move_clear_of_water(e: &mut Entity, map: &TileMap) {
     e.y = b.y;
 }
 
+// ---------------------------------------------------------- M6 (D-095)
+
+/// The Kurgast (D-095). Walking (`WALK`, `RESTED`) he is a Nordic-Walker
+/// at `kurgast_speed`: towards the player at activation, turning at walls,
+/// enemies on foot and ledges. Stomped he lies down ([`lie_down`], `LIE`):
+/// his hitbox is the deck chair, a one-way top platform
+/// ([`is_platform_now`]), harmless and still. He rests `kurgast_rest`
+/// frames, then shows the wake telegraph (`WAKE`) for `kurgast_wake`;
+/// **both counters pause while the player stands on the chair**, so he
+/// never stands up under her. Then he stands up ([`stand_up`]: feet and
+/// centre kept), faces the player and walks on (`RESTED`), harmful again;
+/// he takes no step in the frame he stands up.
+fn update_kurgast(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let (limit, next) = match e.state {
+        state::LIE => (et.kurgast_rest, state::WAKE),
+        state::WAKE => (et.kurgast_wake, state::RESTED),
+        _ => return walk_turning_at_ledges(e, ctx, et.kurgast_speed),
+    };
+    let rider = ctx
+        .player_standing
+        .is_some_and(|p| crate::platform::stands_on(&p, &e.hitbox()));
+    if !rider {
+        e.count += 1;
+    }
+    if e.count < limit {
+        return;
+    }
+    e.state = next;
+    e.count = 0;
+    if next == state::RESTED {
+        stand_up(e, ctx.tuning);
+        let cx = e.x + e.w.div_int(2);
+        if ctx.player_cx != cx {
+            e.dir = (ctx.player_cx - cx).signum() as i8;
+        }
+    }
+}
+
+/// Re-sizes `e` to `[w, h]` px around the same centre x, with the same
+/// feet.
+fn resize_at_feet(e: &mut Entity, [w, h]: [i32; 2]) {
+    let (cx, feet) = e.feet();
+    e.w = Fx::from_px(w);
+    e.h = Fx::from_px(h);
+    e.x = cx - e.w.div_int(2);
+    e.y = feet - e.h;
+}
+
+/// A stomped Kurgast lies down in his deck chair where he stood (D-095):
+/// the hitbox becomes `kurgast_chair`, centred on him with its bottom on
+/// his feet; the rest starts. Also after a later stomp (no points then,
+/// `Game::interact`). The chair never moves (no gravity): he only walks
+/// where there is floor (ledge rule) and a bump knocks him off, so in play
+/// it always stands on the ground.
+pub(crate) fn lie_down(e: &mut Entity, t: &Tuning) {
+    resize_at_feet(e, t.enemies.kurgast_chair);
+    e.state = state::LIE;
+    e.count = 0;
+    e.vx = Fx::ZERO;
+    e.vy = Fx::ZERO;
+}
+
+/// The Kurgast gets up from his chair: `kurgast_hitbox` again, feet and
+/// centre kept.
+fn stand_up(e: &mut Entity, t: &Tuning) {
+    resize_at_feet(e, t.enemies.kurgast_hitbox);
+    e.vx = Fx::ZERO;
+    e.vy = Fx::ZERO;
+}
+
 // ------------------------------------------------------------ M6 (D-096)
 
 /// The Offizier's drill (D-096) on the stage clock: frame f = (stage
 /// clock plus his level `phase`) mod `offizier_cycle`, kept in `count`, so every
 /// officer with the same `phase` is at the same frame whenever he was
 /// activated (a file stays in step). f < `offizier_march`: he marches at
-/// `offizier_speed` with the Nordic-Walker turns ([`stride`]: walls,
+/// `offizier_speed` with the Nordic-Walker turns ([`walk_turning_at_ledges`]: walls,
 /// ledges; enemies on foot in [`turn_at_enemies`]); the next
 /// `offizier_attention` frames he halts for „Habt Acht!" (the telegraph);
 /// the rest of the cycle he halts for „Präsentiert!" with the sabre zone
@@ -1799,10 +1939,6 @@ fn update_offizier(e: &mut Entity, ctx: &UpdateCtx) {
     let cycle = u32::from(et.offizier_cycle.max(1));
     let f = ((ctx.stage_clock % cycle + phase % cycle) % cycle) as u16;
     e.count = f;
-    let cx = e.x + e.w.div_int(2);
-    if e.timer == 1 && ctx.player_cx != cx {
-        e.dir = (ctx.player_cx - cx).signum() as i8;
-    }
     let (march, attention) = (et.offizier_march, et.offizier_attention);
     e.state = if f < march {
         state::WALK
@@ -1816,7 +1952,7 @@ fn update_offizier(e: &mut Entity, ctx: &UpdateCtx) {
     } else {
         Fx::ZERO
     };
-    stride(e, ctx, speed);
+    walk_turning_at_ledges(e, ctx, speed);
 }
 
 /// The sabre zone of a presenting Offizier (`None` for every other entity
@@ -1842,18 +1978,24 @@ pub fn sabre_zone(e: &Entity, t: &Tuning) -> Option<Aabb> {
 /// D-060): what a projectile does to entity `e`, by its
 /// [`Entity::axe_hit`] class. Every `Defeat` enemy is knocked off (tumbling
 /// off the screen) for its base points (`score.stomp_chain[chain_start]`:
-/// 100 / 200, outside the stomp chain); a falling rock (`Shatter`) breaks
+/// 100 / 200, outside the stomp chain; 0 for a Kurgast who has scored,
+/// [`scores_on_defeat`]); a falling rock (`Shatter`) breaks
 /// for `enemies.stein_points` (50). Returns the points, or `None` for no
 /// effect (`Bounce`, `Pass`). `Game::defeat_by_projectile` adds the score,
-/// the popup and the rock's debris.
+/// the popup (none for 0 points) and the rock's debris.
 pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
     if !e.active || e.removed {
         return None;
     }
     match (e.axe_hit(), e.kind) {
         (crate::hackl::AxeHit::Defeat, EntityKind::Enemy(kind)) => {
+            let points = if scores_on_defeat(e) {
+                t.score.stomp_chain[kind.chain_start()]
+            } else {
+                0
+            };
             defeat(e, kind, true, t);
-            Some(t.score.stomp_chain[kind.chain_start()])
+            Some(points)
         }
         (crate::hackl::AxeHit::Shatter, EntityKind::Stein) => {
             e.state = state::SHATTERED;
@@ -1863,6 +2005,149 @@ pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
         _ => None,
     }
 }
+// ------------------------------------------------------------ M6 (D-093)
+
+/// What an Ampel shows (D-093; the renderer's `ampel` anims).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AmpelLight {
+    /// `rot`: red (also before the player first qualified).
+    Red,
+    /// `rotgelb`: red and amber together, the telegraph.
+    RedAmber,
+    /// `gruen`: green, the cars pull out.
+    Green,
+    /// `gruen_blink`: the four green blinks; `on` is frame 0 (lit).
+    GreenBlink {
+        /// The green lamp is lit (frame 0 of `gruen_blink`).
+        on: bool,
+    },
+    /// `gelb`: amber.
+    Amber,
+}
+
+/// The light of Ampel `e` at its counter frame f (`count`): red and amber
+/// for f < `ampel_telegraph`, green to the last car's spawn plus a gap
+/// (`ampel_telegraph + cars × ampel_gap`), then `ampel_blink` frames of
+/// blinks (each an eighth of it on, then an eighth off), `ampel_amber` of
+/// amber, and red for the rest of the period. Red while it never counted.
+/// `None` for every other entity.
+pub fn ampel_light(e: &Entity, level: &Level, t: &Tuning) -> Option<AmpelLight> {
+    if e.kind != EntityKind::Ampel {
+        return None;
+    }
+    if e.state == state::WAITING {
+        return Some(AmpelLight::Red);
+    }
+    let et = &t.enemies;
+    let cars = e
+        .spawn
+        .and_then(|i| level.entities.get(usize::from(i)))
+        .map_or(0, |s| s.cars);
+    let f = e.count;
+    let green_end = et.ampel_telegraph + u16::from(cars) * et.ampel_gap;
+    let blink_end = green_end + et.ampel_blink;
+    Some(if f < et.ampel_telegraph {
+        AmpelLight::RedAmber
+    } else if f < green_end {
+        AmpelLight::Green
+    } else if f < blink_end {
+        let half = (et.ampel_blink / 8).max(1);
+        AmpelLight::GreenBlink {
+            on: ((f - green_end) / half).is_multiple_of(2),
+        }
+    } else if f < blink_end + et.ampel_amber {
+        AmpelLight::Amber
+    } else {
+        AmpelLight::Red
+    })
+}
+
+/// Where Ampel `e`'s cars start (hitbox top left): `auto_spawn_dx` px into
+/// the spawner cell, the `auto_hitbox` bottom on the cell's bottom (the
+/// road). A car keeps it as `base_x`/`base_y`, which tells its Ampel.
+fn car_spawn_point(e: &Entity, t: &Tuning) -> (Fx, Fx) {
+    let et = &t.enemies;
+    (
+        e.x + Fx::from_px(et.auto_spawn_dx),
+        e.y + e.h - Fx::from_px(et.auto_hitbox[1]),
+    )
+}
+
+/// Car `k` (0-based) of a green from Ampel `e`, driving left. Its `count`
+/// is `k`: the renderer's look (`drive_0` … `drive_2`, D-093).
+fn new_car(e: &Entity, k: u16, t: &Tuning) -> Entity {
+    let [w, h] = t.enemies.auto_hitbox;
+    let (x, y) = car_spawn_point(e, t);
+    let mut car = Entity::new(
+        EntityKind::Enemy(EnemyKind::Auto),
+        x,
+        y,
+        Fx::from_px(w),
+        Fx::from_px(h),
+    );
+    car.dir = -1;
+    car.vx = -t.enemies.auto_speed;
+    car.count = k;
+    car
+}
+
+/// The car (0-based, of `cars`) an Ampel sends at its counter frame `f`:
+/// at f = `ampel_telegraph` + k × `ampel_gap` for k < `cars`.
+fn car_at(f: u16, cars: u8, t: &Tuning) -> Option<u16> {
+    let et = &t.enemies;
+    let d = f.checked_sub(et.ampel_telegraph)?;
+    let gap = et.ampel_gap.max(1);
+    (d % gap == 0 && d / gap < u16::from(cars)).then_some(d / gap)
+}
+
+/// The Ampel spawner (D-093). Its counter (`count`, the frame f of its
+/// `period`) runs only while the player's centre is left of the spawner
+/// cell's centre, within `range` tiles (horizontally, centre to centre),
+/// and the cell is fully on screen ([`UpdateCtx::fully_on_screen`], the
+/// Souvenirstand rule of D-069); otherwise it pauses with its light kept
+/// ([`ampel_light`]). On the first such frame it starts at `phase`. At
+/// f = `ampel_telegraph` + k × `ampel_gap` (k < `cars`) it returns car k
+/// to spawn, unless `ampel_max_alive` of its cars are alive
+/// (`UpdateCtx::cars`, by their spawn point) or the car's hitbox would
+/// overlap the player's: then that car is skipped.
+pub(crate) fn update_ampel(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let t = ctx.tuning;
+    let s = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))?;
+    let left_of = ctx.player_cx < e.x + e.w.div_int(2);
+    let in_range = player_distance_px(e, ctx) <= i32::from(s.range) * TILE_PX;
+    if !(left_of && in_range && ctx.fully_on_screen(&e.hitbox())) {
+        return None;
+    }
+    let period = s.period.max(1);
+    e.count = if e.state == state::WAITING {
+        s.phase % period
+    } else {
+        (e.count + 1) % period
+    };
+    e.state = state::COUNTING;
+    let k = car_at(e.count, s.cars, t)?;
+    let origin = car_spawn_point(e, t);
+    let alive = ctx.cars.iter().filter(|&&c| c == origin).count();
+    if alive >= usize::from(t.enemies.ampel_max_alive) {
+        return None;
+    }
+    let car = new_car(e, k, t);
+    (!car.hitbox().overlaps(&ctx.player_box)).then_some(car)
+}
+
+/// A car (D-093) drives left at `auto_speed`, ignoring tiles, enemies and
+/// platforms; it never stops or turns, and is removed once its right edge
+/// is left of the screen.
+fn update_auto(e: &mut Entity, ctx: &UpdateCtx) {
+    e.vx = -ctx.tuning.enemies.auto_speed;
+    e.x += e.vx;
+    if e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,0 +1,42 @@
+# Grey-box test level for the Kurgast (M6 task E38, D-095; not part of the
+# journey; side camera). The Stage 1-5 rows: street on row 12 (feet y 192).
+# Sections (columns): start 0-8 with an `M`-box at 4 (row 8); pen A between
+# 2-high walls at 9 and 21 (the D-095 chair spot: flat ground, penned) with
+# Kurgast #1 at 15 and a one-way ledge 4 tiles up (row 8, 12-16) carrying
+# 3 Oblaten (row 7) over his chair spot: from his deck chair (1 tile up) a
+# short jump reaches it (JUMP held 16 frames rises 54 px), from the floor a
+# running held jump (81 px) or a fully held walking jump (65 px, 1 px to
+# spare). Pen B between 2-high walls at 30 and 42 with Kurgast #2 at 36
+# (flat, nothing above). Goal at 55.
+# Replays: tests/replays/m6_kurgast_*.replay.
+
+[meta]
+id = "m6_kurgast"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"o" = { entity = "oblate" }
+"k" = { entity = "kurgast" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+.............ooo............................................
+....M.......-----...........................................
+............................................................
+.........#...........#........#...........#.................
+..P......#.....k.....#........#.....k.....#............G....
+############################################################
+############################################################
+'''

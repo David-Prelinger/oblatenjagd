@@ -305,11 +305,13 @@ impl Game {
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
             player_top: self.player.y,
+            player_box: self.player.hitbox(),
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
             globes: &[],
             stage_clock: self.stage_clock(),
+            cars: &[],
         };
         for e in &mut self.entities {
             let cosmetic = matches!(
