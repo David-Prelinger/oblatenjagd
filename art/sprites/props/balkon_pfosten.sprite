@@ -1,0 +1,64 @@
+# Balcony corner post (Pension Seeblick, Strobl), front layer drawn exactly
+# over the 3-high `stone` stopper (col 55, rows 8-10; D-100): fully opaque
+# 16x48, so the stone cells never show and the drawn shape is the solid
+# shape (D-038), flat top on row 0, nothing above or wider. k outline. A
+# terracotta pot E/n/R with geraniums (p/r blooms with R undersides, g/G
+# leaves, trimmed flat on top, two G tendrils trailing over the pot), a
+# k seam, then the carved wooden post o/O/l lit from the top left: a
+# moulded capital, a turned shaft (beads full width, necks set back
+# into l shadow), a cut-out heart in l, and a square foot that sits on the
+# balcony's handrail (row 11).
+sprite = balkon_pfosten
+size   = 16x48
+origin = 8,48
+anim   = idle frames=1
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kgpprggggpprgggk
+kpprrRgggprrRgGk
+kgrRRGgpprRRGgGk
+kgGGGgprrRGGgGGk
+kgggGgGRRGGgGGGk
+kEEEEEEEEEEEEEnk
+knnnnnnnnnnnnnRk
+kEEnGnnnnnnGnnRk
+kEEnGnnnnnnGnnRk
+kEnnnGnnnnnnGnRk
+knRRRRRRRRRRRRRk
+kkkkkkkkkkkkkkkk
+koooooooooooooOk
+kOOOOOOOOOOOOOlk
+kllllllllllllllk
+kloooOOOOOOOOllk
+klloOOOOOOOOlllk
+kllloOOOOOOllllk
+kllloOOOOOOllllk
+kooOOOOOOOOOOOlk
+kllllllllllllllk
+kllloOOOOOOllllk
+kllloOOOOOOllllk
+klloOOOOOOOOlllk
+klooOOOOOOOOOllk
+kooOOllOOllOOOlk
+kooOlllllllOOOlk
+kooOlllllllOOOlk
+kooOOlllllOOOOlk
+kooOOOlllOOOOOlk
+kooOOOOlOOOOOOlk
+klooOOOOOOOOOllk
+klloOOOOOOOOlllk
+kllloOOOOOOllllk
+kllloOOOOOOllllk
+kllllllllllllllk
+kooOOOOOOOOOOOlk
+kllllllllllllllk
+kllloOOOOOOllllk
+kllloOOOOOOllllk
+klloOOOOOOOOlllk
+kllllllllllllllk
+koooooooooooooOk
+kooOOOOOOOOOOOlk
+kooOOOOOOOOOOOlk
+kOOllllllllllllk
+kkkkkkkkkkkkkkkk
