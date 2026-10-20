@@ -1,0 +1,19 @@
+# QA M5 (D-077 paddle wheel, on the real stage): a surface swimmer who
+# swims under the travelling Dampfer meets the paddle wheel. Resi hops
+# onto the Dampfer (lands 126, it leaves), walks off its stern into the
+# water and swims right at the surface, faster than the ship (1.25 vs
+# 0.8): she passes under the stern and the after deck and touches the
+# wheel's hurt zone (32x20 at the hull's middle, x 574-606 at frame 403):
+# as Normal that is a death (Hit) at 403. She respawns at the start (no
+# checkpoint), the camera back in the lead-in and the Dampfer back at its
+# waiting spawn.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = dies_at frames=403..403 deaths=1 lives=2 event=Respawned no_event=Hurt state=playing
+---
+RB 64
+RBJ 36
+RB 26
+L 60
+R 300

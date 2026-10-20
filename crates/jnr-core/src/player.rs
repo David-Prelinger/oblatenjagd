@@ -6,7 +6,8 @@ use crate::hash::Fnv;
 use crate::input::InputFrame;
 use crate::level::{TILE_PX, TileKind};
 use crate::physics::{Aabb, TileMap, YHit, tile_of};
-use crate::tuning::PlayerTuning;
+use crate::swim;
+use crate::tuning::{PlayerTuning, SwimTuning};
 
 /// Which way the player looks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -72,6 +73,32 @@ impl Power {
     }
 }
 
+/// The horizontal limits of the player's own movement in one tick.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Bounds {
+    /// The hitbox never goes left of this (the camera's left edge).
+    pub min_x: Fx,
+    /// Moving right, the hitbox's right edge stops here like at a wall,
+    /// never pulled back left by it (the auto-scroll's right clamp, D-075;
+    /// `Fx::MAX` elsewhere).
+    pub max_x: Fx,
+    /// Stopped at `max_x`, the horizontal speed drops to at most this (the
+    /// clamp moves with the screen at the scroll speed).
+    pub max_x_speed: Fx,
+}
+
+impl Bounds {
+    /// Only the left edge (side and climb cameras, the lead-in and
+    /// lead-out of an auto-scroll).
+    pub fn left(min_x: Fx) -> Bounds {
+        Bounds {
+            min_x,
+            max_x: Fx::MAX,
+            max_x_speed: Fx::ZERO,
+        }
+    }
+}
+
 /// The player's simulation state. The renderer places the sprite with its
 /// feet at the bottom centre of the hitbox.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -124,6 +151,16 @@ pub struct Player {
     /// While crawling through a Durchkriechstein (D-057): the hitbox x at
     /// which the crawl ends; `None` otherwise.
     pub crawl_to: Option<Fx>,
+    /// Swam in the last step (D-076): her chest point was in swim water
+    /// when the step began (see [`crate::swim`]).
+    pub swimming: bool,
+    /// Rising out of the water after a jump-out: not swimming (normal
+    /// airborne rules, even while the chest is still in the water) until
+    /// she stops rising.
+    pub leaving_water: bool,
+    /// Frames since she started swimming or swam her last stroke
+    /// (saturating; renderer: the `swim` anim restarts on every stroke).
+    pub swim_frames: u16,
 }
 
 impl Player {
@@ -157,6 +194,9 @@ impl Player {
             run_held: false,
             throw_pose: 0,
             crawl_to: None,
+            swimming: false,
+            leaving_water: false,
+            swim_frames: 0,
         }
     }
 
@@ -257,30 +297,55 @@ impl Player {
     }
 
     /// Advances the player by one tick: horizontal speed, jump, gravity,
-    /// then movement with tile collision (X, then Y). The hitbox never goes
-    /// left of `min_x` (the camera's left edge). Returns the grid row of the
-    /// solid tile the head bumped into, if any.
+    /// then movement with tile collision (X, then Y). The hitbox stays
+    /// inside `bounds` horizontally (see [`Bounds`]). Returns the grid row
+    /// of the solid tile the head bumped into, if any.
+    ///
+    /// While her chest point is in swim water (checked before she moves,
+    /// D-076) the swim rules replace the walk, jump and gravity rules
+    /// ([`Player::update_swim`]).
     pub fn update(
         &mut self,
         input: InputFrame,
         map: &TileMap,
         t: &PlayerTuning,
-        min_x: Fx,
+        st: &SwimTuning,
+        bounds: Bounds,
         events: &mut Vec<Event>,
     ) -> Option<i32> {
-        self.update_horizontal_speed(input, t);
-        let drop_through = self.update_jump(input, map, t, events);
-
-        // Gravity: lighter while rising with JUMP held (variable jump height).
-        if !input.jump() || self.vy >= Fx::ZERO {
-            self.jump_rising = false;
+        let Bounds {
+            min_x,
+            max_x,
+            max_x_speed,
+        } = bounds;
+        if self.leaving_water && self.vy >= Fx::ZERO {
+            self.leaving_water = false;
         }
-        let g = if self.jump_rising {
-            t.gravity_hold
-        } else {
-            t.gravity
-        };
-        self.vy = (self.vy + g).min(t.max_fall_speed);
+        let surface = swim::swim_surface(self, map, st).filter(|_| !self.leaving_water);
+        let entering = surface.is_some() && !self.swimming;
+        self.swimming = surface.is_some();
+        let mut drop_through = false;
+        // The chest may not rise above this surface this step (none after
+        // a jump-out or out of the water).
+        let mut cap = None;
+        match surface {
+            Some(surface) => {
+                self.swim_frames = if entering {
+                    0
+                } else {
+                    self.swim_frames.saturating_add(1)
+                };
+                if !self.update_swim(input, surface, entering, t, st, events) {
+                    cap = Some(surface);
+                }
+            }
+            None => {
+                self.swim_frames = 0;
+                self.update_horizontal_speed(input, t);
+                drop_through = self.update_jump(input, map, t, events);
+                self.apply_gravity(input, t);
+            }
+        }
 
         // Move X, then Y.
         let mut b = self.hitbox();
@@ -291,6 +356,12 @@ impl Player {
             b.x = min_x;
             self.vx = self.vx.max(Fx::ZERO);
         }
+        if b.right() > max_x && b.x > self.x {
+            b.x = (max_x - b.w).max(self.x);
+            // Like a wall, but one that moves with the screen: the speed
+            // drops to the edge's own, so holding right she keeps pace.
+            self.vx = self.vx.min(max_x_speed);
+        }
         let was_on_ground = self.on_ground;
         let mut head_row = None;
         match map.move_y(&mut b, self.vy, drop_through) {
@@ -298,7 +369,7 @@ impl Player {
                 self.vy = Fx::ZERO;
                 self.on_ground = true;
                 self.jump_rising = false;
-                self.coyote = t.coyote_frames;
+                self.coyote = if self.swimming { 0 } else { t.coyote_frames };
                 self.stomp_chain = 0;
                 if !was_on_ground {
                     events.push(Event::Landed);
@@ -312,9 +383,95 @@ impl Player {
             }
             YHit::None => self.on_ground = false,
         }
+        // Strokes never lift the chest above the surface: she stops with
+        // it exactly on the water line.
+        let chest = Fx::from_px(st.chest_px);
+        if let Some(surface) = cap
+            && b.y + chest < surface
+        {
+            b.y = surface - chest;
+            self.vy = Fx::ZERO;
+        }
         self.x = b.x;
         self.y = b.y;
         head_row
+    }
+
+    /// Gravity in the air: lighter while rising with JUMP held (variable
+    /// jump height).
+    fn apply_gravity(&mut self, input: InputFrame, t: &PlayerTuning) {
+        if !input.jump() || self.vy >= Fx::ZERO {
+            self.jump_rising = false;
+        }
+        let g = if self.jump_rising {
+            t.gravity_hold
+        } else {
+            t.gravity
+        };
+        self.vy = (self.vy + g).min(t.max_fall_speed);
+    }
+
+    /// One step of the swim rules (D-076), with the chest under `surface`:
+    /// on entering, vy is clamped to [−stroke, max sink] and the jump
+    /// buffer and coyote frames are cleared; LEFT/RIGHT accelerate towards
+    /// ±`swim.speed` (RUN no faster), no input decelerates; a new JUMP press
+    /// at the surface jumps out (`jump_speed_walk`, `Jumped`, then the
+    /// normal airborne rules), below it strokes (`Stroke`); at the surface
+    /// without DOWN and not rising she floats (vy 0), otherwise she sinks.
+    /// Returns true on a jump-out.
+    fn update_swim(
+        &mut self,
+        input: InputFrame,
+        surface: Fx,
+        entering: bool,
+        t: &PlayerTuning,
+        st: &SwimTuning,
+        events: &mut Vec<Event>,
+    ) -> bool {
+        if entering {
+            self.vy = self.vy.max(-st.stroke_speed).min(st.max_sink);
+            self.jump_rising = false;
+        }
+        self.jump_buffer = 0;
+        self.coyote = 0;
+        self.skidding = false;
+
+        let dir = input.right() as i32 - input.left() as i32;
+        self.vx = if dir == 0 {
+            self.vx.approach(Fx::ZERO, st.decel)
+        } else {
+            self.vx.approach(st.speed.mul_int(dir), st.accel)
+        };
+        if dir > 0 {
+            self.facing = Facing::Right;
+        } else if dir < 0 {
+            self.facing = Facing::Left;
+        }
+
+        let pressed = input.jump() && !self.jump_held;
+        self.jump_held = input.jump();
+        let at_surface = swim::at_surface(self.y + Fx::from_px(st.chest_px), surface, st);
+        if pressed && at_surface {
+            self.vy = -t.jump_speed_walk;
+            self.on_ground = false;
+            self.jump_rising = true;
+            self.leaving_water = true;
+            events.push(Event::Jumped);
+            self.apply_gravity(input, t);
+            return true;
+        }
+        if pressed {
+            self.vy = -st.stroke_speed;
+            self.on_ground = false;
+            self.swim_frames = 0;
+            events.push(Event::Stroke);
+        }
+        if at_surface && !input.down() && self.vy >= Fx::ZERO {
+            self.vy = Fx::ZERO;
+        } else {
+            self.vy = (self.vy + st.gravity).min(st.max_sink);
+        }
+        false
     }
 
     fn update_horizontal_speed(&mut self, input: InputFrame, t: &PlayerTuning) {
@@ -423,5 +580,8 @@ impl Player {
         h.bool(self.run_held);
         h.u8(self.throw_pose);
         h.i32(self.crawl_to.map_or(i32::MIN, Fx::raw));
+        h.bool(self.swimming);
+        h.bool(self.leaving_water);
+        h.u16(self.swim_frames);
     }
 }

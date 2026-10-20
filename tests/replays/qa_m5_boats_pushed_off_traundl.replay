@@ -1,0 +1,38 @@
+# QA M5 (re-cut for D-087; D-075 "D-051 is off in the scroll: she is pushed across its
+# deck"; D-077 Traundl): the left edge pushes a rider off a Traundl that
+# carries her back. As wolfgangsee_traundl onto Traundl A (jump-out 2615,
+# riding to A's far end), but she doesn't hop to the border raft: she
+# stands still on A. A waits at its far end and rows back left at 1 px/
+# frame from ~2765 (faster than the scroll); the camera does not follow
+# her left, so from ~2844 the edge holds her at its x while A's deck
+# slides away under her, and at ~2854 she drops off A's stern into the
+# water (no squeeze: there is nothing solid), where she floats at the
+# surface pushed by the edge (x = camera x).
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt swimming=true player_x>=2321 player_y>=184 player_y<=184
+---
+# --- the first 2734 frames of wolfgangsee_traundl.replay ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+# --- handwritten ---
+- 167

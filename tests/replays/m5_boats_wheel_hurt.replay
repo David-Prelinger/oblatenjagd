@@ -1,0 +1,16 @@
+# E28 (D-077), re-cut in E30 for swim water: the paddle wheel hurts a
+# swimmer while the Dampfer travels. Resi boards (that calls it), walks
+# over the deck and off its bow into the swim water ahead of it (two
+# Oblaten on the way) and floats there, waiting. The hull is one-way
+# (only from above), so it passes over her, and the wheel's 32x20 zone at
+# the hull's middle hurts her: as Normal Resi she dies (DeathCause::Hit),
+# swimming. (Before E30 the water under the first part of the way was a
+# dry dock, she walked back off the stern, followed the ship on foot and
+# died at frame 285.)
+level  = m5_boats
+seed   = 1
+source = handwritten
+expect = dies_at frames=367..367 deaths=1 state=dying swimming=true
+---
+R 230     # onto the deck (it leaves), over it and off the bow into the water
+- 150     # float: the hull passes over her, the wheel hurts

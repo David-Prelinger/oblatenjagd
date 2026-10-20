@@ -1,0 +1,63 @@
+# QA M5 regression (D-087 Z-box at col 173; was
+# qa_m5_bug_zaunerstollen_rolls_off_bollard): standing under the box she
+# gets the 1-up. As wolfgangsee_traundl up the perch (landing at ~3169,
+# x 2765, under the Z-box at col 173, row 5 since D-090). A standing jump
+# under the row-5 box is too short to stomp Gelse #3, so she walks right
+# clear of the box, stomps the Gelse (press 3219), walks back under the box
+# (x 2780) and bumps it with a standing jump (press 3301). The Zaunerstollen
+# rises out of the box, rolls right along its top, drops onto the perch
+# short of the bollard (177), turns at its side and rolls back to her:
+# ExtraLife (3396), lives 4. From the old box position (175) it landed on
+# the bollard's top and was lost.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4
+---
+# --- the first 3311 frames of wolfgangsee_traundl.replay ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+R 16
+- 30
+J 24
+- 40
+L 8
+- 10
+J 10
+# --- handwritten ---
+- 120

@@ -47,6 +47,26 @@ pub const LEVELS: &[(&str, &str)] = &[
         include_str!("../../../content/levels/00_m4_enemies.level"),
     ),
     (
+        "m5_autoscroll",
+        include_str!("../../../content/levels/00_m5_autoscroll.level"),
+    ),
+    (
+        "m5_boats",
+        include_str!("../../../content/levels/00_m5_boats.level"),
+    ),
+    (
+        "m5_enemies",
+        include_str!("../../../content/levels/00_m5_enemies.level"),
+    ),
+    (
+        "m5_lake",
+        include_str!("../../../content/levels/00_m5_lake.level"),
+    ),
+    (
+        "m5_swim",
+        include_str!("../../../content/levels/00_m5_swim.level"),
+    ),
+    (
         "route_a",
         include_str!("../../../content/levels/00_route_a.level"),
     ),
@@ -81,6 +101,10 @@ pub const LEVELS: &[(&str, &str)] = &[
     (
         "st_wolfgang",
         include_str!("../../../content/levels/05_st_wolfgang.level"),
+    ),
+    (
+        "wolfgangsee",
+        include_str!("../../../content/levels/06_wolfgangsee.level"),
     ),
 ];
 

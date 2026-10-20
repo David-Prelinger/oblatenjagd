@@ -229,8 +229,12 @@ pub fn run_replays(root: &Path, paths: &[PathBuf], shots: bool) -> (bool, String
     }
     let mut ok = true;
     let mut text = String::new();
-    for path in paths {
-        let line = match play_and_shoot(root, path, shots) {
+    // Each replay is independent: play them on all cores (results in file order).
+    let results = crate::par::map_ordered(paths, crate::par::threads(), |path| {
+        play_and_shoot(root, path, shots)
+    });
+    for (path, result) in paths.iter().zip(results) {
+        let line = match result {
             Ok((played, written)) => {
                 ok &= played.failures.is_empty();
                 let mut s = format!("{}\n", played.summary());
@@ -559,6 +563,7 @@ mod tests {
             "brunnwinkl",
             "falkenstein",
             "st_wolfgang",
+            "wolfgangsee",
         ] {
             let route = frames(&format!("{stage}_solver.replay"));
             let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();

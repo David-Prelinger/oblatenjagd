@@ -1,0 +1,29 @@
+# E28 (D-077): the whole grey box the slow way. Ride the Dampfer to the
+# Gschwendt pier and walk to its end; wait for Traundl A to come back to
+# the pier (it never waits for a rider: the Gondel's free-running
+# machine) and hop on; ride it to its far end, hop to the raft; wait for
+# Traundl B (half a period out of step) and hop on; ride it, hop onto the
+# Strobl quay, over the bollard and on to the goal. Every hop is a short
+# walking jump between decks flush on row 11.
+level  = m5_boats
+seed   = 1
+source = handwritten
+expect = complete frames=1209..1209 deaths=0 no_event=Hurt
+---
+R 162     # onto the Dampfer, to its middle
+- 300     # the ride to the pier
+R 100     # along the pier to its end
+- 60      # Traundl A comes back
+RJ 20     # hop on (frame 623)
+R 14
+- 98      # ride A to its far end
+RJ 20     # hop to the raft (frame 755)
+R 8
+- 60      # Traundl B comes back
+RJ 16     # hop on (frame 843)
+R 6
+- 140     # ride B to its far end
+RJ 20     # hop onto the Strobl quay (frame 1005)
+R 50
+RJ 16     # over the bollard
+R 300     # to the goal

@@ -1,0 +1,19 @@
+# Written by `cargo xtask solve m5_lake --write`; re-create it instead of editing.
+level  = m5_lake
+seed   = 1
+source = solver
+expect = complete frames=2460..2460 deaths=0
+---
+RB 816
+RBJ 33
+RB 5
+RBJ 36
+RB 1390
+RBJ 20
+RB 16
+LB 16
+RB 8
+RBJ 33
+RB 5
+RBJ 31
+RB 51

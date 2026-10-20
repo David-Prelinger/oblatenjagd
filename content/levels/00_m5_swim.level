@@ -1,0 +1,51 @@
+# Grey-box test level for swimming (M5 task E27, D-076; not part of the
+# journey; side camera, 17 rows like Stage 6: decks and quays on row 11,
+# the swim-water surface on row 12, the lake bed on row 16). Sections
+# (columns): the quay 0-12 with an `M`-box at 6 (row 7, bricks at 5 and
+# 7) and a 1-high bollard at 12 (row 10) that turns the Mozartkugel back;
+# the bathing notch 13-15 (swim water rows 12-15, 3 Oblaten on row 14);
+# the quay 16-19, 1 tile above the water; open water 20-45 with a one-way
+# deck 28-31 on row 11 (`steg_pfahl` under its ends) and 8 Oblaten along
+# the bed (row 15, 34-41); shallows 46-52 (bed on row 14); the quay 53-79
+# (1 tile up: a held jump-out reaches it) with the goal at 72.
+# Swim water: `see_wasser` (surface row), `see_wasser_tief` below,
+# `steg_pfahl` = water with a pier post; all `TileKind::Swim` (`levels
+# lint`: a solid bed under every swim column).
+# Replays: tests/replays/m5_swim_*.replay.
+
+[meta]
+id = "m5_swim"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"~" = "see_wasser"
+"=" = "see_wasser_tief"
+"|" = "steg_pfahl"
+"B" = "brick"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"o" = { entity = "oblate", tile = "see_wasser_tief" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+................................................................................
+.....BMB........................................................................
+................................................................................
+................................................................................
+..P.........#...........................................................G.......
+#############...####........----.....................###########################
+#############~~~####~~~~~~~~|~~|~~~~~~~~~~~~~~~~~~~~~###########################
+#############===####========|==|=====================###########################
+#############ooo####========|==|==============##################################
+#############===####========|==|==oooooooo====##################################
+################################################################################
+'''

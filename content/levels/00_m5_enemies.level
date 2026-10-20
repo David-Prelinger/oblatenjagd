@@ -1,0 +1,63 @@
+# Grey-box test level for the M5 lake enemies (M5 task E29, D-078 … D-081;
+# not part of the journey; side camera). The Stage 6 rows: decks on row 11
+# (feet y 176), the water line at the top of row 12 (y 192), water in rows
+# 12-15 and the lake bed on row 16. The lake is swim water (`see_wasser`,
+# D-076; E30 switched it from the lethal stand-in), so Resi swims and
+# dives here.
+# Sections (columns): start quay 0-7 with an `M`-box at 3 and an `H`-box at
+# 6 (row 8, 3 tiles up: a standing jump bumps it, a walking jump lands on
+# it); a one-way deck 8-27 with swan #1 (col 17) under
+# it: it charges beneath Resi (the safe introduction, D-078); a 4-tile gap
+# 28-31 with swan #2 at 29 (jump it, or stomp it from the deck edge); deck
+# 32-43; a beach 44-49 (solid, its top on the water line) where swan #3
+# (col 53, under the deck 50-79) charges into Resi's side; the Gelse
+# (row 6, col 72) over the deck 50-79: it hovers until it has been fully on
+# screen for 60 frames, hunts for 480 and leaves; stairs 80-95 up to a
+# one-way walkway on row 8 (96-112) over the regatta water (swim water
+# 96-127, rows 12-15); the Regattaboot at 120-121 in the surface row: it
+# triggers when Resi is within 160 px of its centre and it is fully on
+# screen, telegraphs 60 frames and races left under the walkway over a
+# surface swimmer or a diver. From the walkway it never triggers: the
+# camera framing her up there cuts off its keel (not fully on screen), so
+# she drops through the walkway (DOWN + JUMP) into the water first. Its
+# lane (rows 9-12, 24 tiles to the left) is clear (`levels lint`, D-080).
+# The Strobl quay from 128 (1 tile above the water: a held jump-out), goal
+# at 135.
+# Replays: tests/replays/m5_enemies_*.replay.
+
+[meta]
+id = "m5_enemies"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"~" = "see_wasser"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"s" = { entity = "schwan", tile = "see_wasser" }
+"g" = { entity = "gelse" }
+"b" = { entity = "regattaboot", tile = "see_wasser" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+............................................................................................................................................
+............................................................................................................................................
+............................................................................................................................................
+............................................................................................................................................
+............................................................................................................................................
+............................................................................................................................................
+........................................................................g...................................................................
+............................................................................................................................................
+...M..H.............................................................................############-----------------...........................
+..................................................................................##############............................................
+..P.............................................................................################.......................................G....
+########--------------------....------------......------------------------------################................................############
+########~~~~~~~~~s~~~~~~~~~~~s~~~~~~~~~~~~~~######~~~s~~~~~~~~~~~~~~~~~~~~~~~~~~################~~~~~~~~~~~~~~~~~~~~~~~~b~~~~~~~############
+########~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~######~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~############
+########~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~######~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~############
+########~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~######~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~############
+############################################################################################################################################
+'''

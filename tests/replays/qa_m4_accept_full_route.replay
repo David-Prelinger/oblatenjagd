@@ -18,9 +18,10 @@
 # axe on stand #3's globe, awning (the 100th Oblate, extra life, now falls before it), step,
 # landing hall, walk off to the Maibaum (100). St. Wolfgang LevelComplete at
 # ~19146, the tally, then the route map St. Wolfgang -> Wolfgangsee (from
-# ~19608): no level yet, so the teaser, still with Hackl Resi and the run (it
-# turns to the title at ~19852, covered by qa_m4_flow_st_wolfgang_teaser_title).
-# The replay ends in the teaser. Re-cut for the pen-wall fix (D-066
+# ~19608): in Wait since M5 (the Wolfgangsee is playable, D-074), still
+# with Hackl Resi and the run; without START the map starts the Wolfgangsee
+# intro after its wait (covered by qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee).
+# The replay ends on the map in Wait (was: the teaser). Re-cut for the pen-wall fix (D-066
 # addendum): a hop out of the Ried dip onto the station step, a longer walk
 # on the Alm terrace (a tile lower) to trigger bus #1, a fuller hop over the
 # 2-high bench, and the Markt from the M-box to the church terrace (+43
@@ -459,4 +460,4 @@ RJ 16
 R 16
 RJ 16
 R 200
-- 511     # goal sequence, tally, route map -> Wolfgangsee teaser (19565..)
+- 511     # goal sequence, tally, route map St. Wolfgang -> Wolfgangsee, Wait (19565..)

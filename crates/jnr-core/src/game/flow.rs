@@ -281,6 +281,10 @@ impl Game {
             } else {
                 let (_, cy) = self.player.center_px();
                 self.camera.follow_y(cy, level_h, t);
+                if self.autoscroll_zone().is_some() {
+                    // D-090: the top clamp holds in the goal sequence too.
+                    self.camera.clamp_autoscroll_top(level_h, t);
+                }
             }
         }
         if let Some(phase) = next {
@@ -300,6 +304,7 @@ impl Game {
             tuning: &self.tuning,
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
+            player_top: self.player.y,
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
@@ -440,5 +445,6 @@ impl Game {
         }
         self.reset_run();
         self.mode = Mode::Title { frames: 0 };
+        self.frame_title();
     }
 }

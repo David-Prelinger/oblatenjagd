@@ -1,0 +1,20 @@
+# Hackl from the quay (D-081): Resi bumps the H-box, takes the Hackl
+# from its top and throws from the quay edge: the axe meets swan #1
+# before the water: 200 points outside the chain and „Beleidigt!“.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=HacklThrown event=AxeHit score=1200 no_event=Stomped
+---
+R 42
+J 14
+- 10
+R 10
+- 20
+L 6
+LJ 20
+- 40
+R 30
+- 10
+B 1
+- 70

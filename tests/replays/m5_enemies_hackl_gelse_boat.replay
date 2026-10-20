@@ -1,0 +1,40 @@
+# Hackl against the Gelse and the regatta boat (D-081): an axe from the
+# deck defeats the hunting Gelse (100); from the end of the walkway an axe
+# bounces off the parked boat (no effect). Then she steps off into the
+# swim water holding DOWN and dives to the bed (that triggers the boat),
+# and it races over the diver. (Re-cut in E30: before, she threw from the
+# dry regatta floor and stepped into a trench; a swimmer throws nothing.)
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=AxeHit score=1100 no_event=Hurt no_event=Stomped swimming=true
+---
+R 42
+J 14
+- 10
+R 10
+- 20
+L 6
+LJ 20
+- 50
+RB 153
+RBJ 20
+RB 76
+RBJ 36
+RB 30
+- 10
+R 80
+- 120
+B 1
+- 80
+RB 105
+RBJ 36
+RB 124
+RB 37
+R 45
+- 30
+B 1
+- 40
+R 12
+D 70
+- 150

@@ -22,16 +22,18 @@ pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
-use crate::camera::{Camera, ClimbFocus, SCREEN_H, SCREEN_W};
+use crate::camera::{Autoscroll, Camera, ClimbFocus, Rest, SCREEN_H, SCREEN_W, ScrollPhase};
+use crate::enemies::Contact;
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::input::InputFrame;
 use crate::level::{Block, CameraMode, Contents, Level, SpawnKind, TILE_PX, Tile, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
-use crate::player::{Player, Power};
+use crate::player::{Bounds, Player, Power};
 use crate::rng::Rng;
 use crate::route::{Route, RouteMap};
+use crate::swim;
 use crate::tuning::Tuning;
 
 /// How many columns left and right [`Game::teleport_player`] searches for a floor.
@@ -89,13 +91,16 @@ pub enum Event {
     AxeHit,
     /// The player started crawling through a Durchkriechstein (D-057).
     CrawlStarted,
+    /// The player swam a stroke (a JUMP press under water, D-076); a
+    /// jump-out from the surface is a `Jumped` instead.
+    Stroke,
 }
 
 impl Event {
     /// Every event, in declaration order. Keep in sync with the enum: a new
     /// variant fails the build in [`Event::name`] (exhaustive `match`), which
     /// is the reminder to list it here too.
-    pub const ALL: [Event; 17] = [
+    pub const ALL: [Event; 18] = [
         Event::Jumped,
         Event::Landed,
         Event::Died,
@@ -113,6 +118,7 @@ impl Event {
         Event::HacklThrown,
         Event::AxeHit,
         Event::CrawlStarted,
+        Event::Stroke,
     ];
 
     /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
@@ -135,6 +141,7 @@ impl Event {
             Event::HacklThrown => "HacklThrown",
             Event::AxeHit => "AxeHit",
             Event::CrawlStarted => "CrawlStarted",
+            Event::Stroke => "Stroke",
         }
     }
 
@@ -196,6 +203,9 @@ pub enum DeathCause {
     Hit,
     /// The timer reached 0.
     TimeUp,
+    /// Pushed by the auto-scroll camera's left edge against a solid tile
+    /// (D-075); drawn as the normal hit death.
+    Squeezed,
 }
 
 /// Progress of an `oblaten_10` brick that has been hit.
@@ -235,6 +245,9 @@ pub struct Game {
     settle_feet: i32,
     /// Climb camera (D-065): [`ClimbFocus::slack_x`]; 0 in side levels.
     slack_x: i32,
+    /// Auto-scroll camera (D-075): phase, subpixel position and hold; the
+    /// default (unused) in other levels.
+    pub(crate) scroll: Autoscroll,
     rng: Rng,
     deaths: u32,
     tuning: Tuning,
@@ -332,6 +345,7 @@ impl Game {
             ground_feet: 0,
             settle_feet: 0,
             slack_x: 0,
+            scroll: Autoscroll::default(),
             rng: Rng::new(seed),
             deaths: 0,
             tuning: *tuning,
@@ -358,6 +372,7 @@ impl Game {
         game.place_camera();
         if start == Start::Title {
             game.mode = Mode::Title { frames: 0 };
+            game.frame_title();
         }
         game
     }
@@ -451,12 +466,13 @@ impl Game {
             self.step_crawl();
         } else {
             let was_on_ground = self.player.on_ground;
-            let min_x = Fx::from_px(self.camera.x);
+            let bounds = self.player_bounds();
             let head_row = self.player.update(
                 input,
                 &self.map,
                 &self.tuning.player,
-                min_x,
+                &self.tuning.swim,
+                bounds,
                 &mut self.events,
             );
             crate::platform::land(
@@ -508,7 +524,18 @@ impl Game {
         if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
             self.touch_goal(goal);
         }
+        // Also on the frame the scroll hands over to the lead-out.
+        let was_scrolling = self.scrolling();
         self.follow_camera();
+        // The auto-scroll camera's left edge pushes (D-075); against a
+        // solid tile she is squeezed.
+        if self.mode == Mode::Playing
+            && (was_scrolling || self.scrolling())
+            && self.push_from_left_edge()
+        {
+            self.die(DeathCause::Squeezed);
+            return;
+        }
         // The climb camera's death line (D-054): the hitbox top below the
         // screen is a fall out of the level.
         if self.mode == Mode::Playing
@@ -528,10 +555,71 @@ impl Game {
         self.level.meta.camera == CameraMode::Climb
     }
 
-    /// One frame of the level's camera (side: dead zone; climb: D-054).
+    /// The auto-scroll zone `[from, to)` in level pixels (D-075), if the
+    /// level has one.
+    fn autoscroll_zone(&self) -> Option<(i32, i32)> {
+        let (from, to) = self.level.meta.autoscroll_zone()?;
+        Some((from * TILE_PX, to * TILE_PX))
+    }
+
+    /// True while the auto-scroll camera scrolls (also during its hold):
+    /// the left edge pushes, the right clamp holds and D-051 is off.
+    fn scrolling(&self) -> bool {
+        self.scroll.phase == ScrollPhase::Scroll && self.autoscroll_zone().is_some()
+    }
+
+    /// The scroll's right clamp (D-075): the player's hitbox right edge
+    /// stays at most `autoscroll_right_margin` px left of the screen's
+    /// right edge, for her own movement and any carry. No limit outside
+    /// the scroll.
+    fn right_clamp(&self) -> Fx {
+        if !self.scrolling() {
+            return Fx::MAX;
+        }
+        let margin = self.tuning.camera.autoscroll_right_margin;
+        Fx::from_px(self.camera.x + SCREEN_W - margin)
+    }
+
+    /// The limits of the player's own movement this frame: the screen's
+    /// left edge, and in the scroll the right clamp, which moves at the
+    /// scroll speed (not during the hold).
+    fn player_bounds(&self) -> Bounds {
+        let mut bounds = Bounds::left(Fx::from_px(self.camera.x));
+        if self.scrolling() {
+            bounds.max_x = self.right_clamp();
+            if self.scroll.hold == 0 {
+                bounds.max_x_speed = self.tuning.camera.autoscroll_speed;
+            }
+        }
+        bounds
+    }
+
+    /// The scroll's left edge (D-075, SMB3): a hitbox left of the camera's
+    /// x is moved right by the difference with tile collision. Returns true
+    /// if a solid tile stopped that move (she is squeezed).
+    fn push_from_left_edge(&mut self) -> bool {
+        let edge = Fx::from_px(self.camera.x);
+        if self.player.x >= edge {
+            return false;
+        }
+        let mut b = self.player.hitbox();
+        self.map.move_x(&mut b, edge - self.player.x);
+        self.player.x = b.x;
+        b.x < edge
+    }
+
+    /// One frame of the level's camera (side: dead zone; climb: D-054;
+    /// autoscroll: D-075).
     fn follow_camera(&mut self) {
         let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
         let t = &self.tuning.camera;
+        if let Some(zone) = self.autoscroll_zone() {
+            let focus = self.player.center_px();
+            let rest = self.camera_rest();
+            self.camera
+                .follow_autoscroll(&mut self.scroll, zone, focus, rest, w, h, t);
+            return;
+        }
         if !self.climb() {
             self.camera.follow(self.player.center_px(), w, h, t);
             return;
@@ -552,11 +640,38 @@ impl Game {
         self.slack_x = focus.slack_x;
     }
 
+    /// The auto-scroll camera settles towards a rest (D-086, D-090) while
+    /// she stands (a tile, a deck, a boat or the lake bed: framed by the
+    /// top of that ground, her feet) or swims at the surface; not in the
+    /// air and not diving.
+    pub(crate) fn camera_rest(&self) -> Rest {
+        let p = &self.player;
+        if p.on_ground {
+            return Rest::Ground((p.y + p.h).to_px());
+        }
+        let st = &self.tuning.swim;
+        let floating = p.swimming
+            && !p.leaving_water
+            && swim::swim_surface(p, &self.map, st)
+                .is_some_and(|surface| swim::at_surface(swim::chest(p, st).1, surface, st));
+        if floating { Rest::Surface } else { Rest::None }
+    }
+
+    /// True if the auto-scroll camera settles this frame ([`Game::camera_rest`]).
+    #[cfg(test)]
+    pub(crate) fn camera_rests(&self) -> bool {
+        self.camera_rest() != Rest::None
+    }
+
     /// D-051: the player's own movement stops at the screen's left edge,
     /// so only a moving platform's carry can take her past it; the camera
     /// then scrolls left by the same amount (the one exception to "never
-    /// scrolls left"), and she stays on the cabin.
+    /// scrolls left"), and she stays on the cabin. Off in the auto-scroll
+    /// (D-075): there the left edge pushes her across the deck instead.
     fn follow_carried_left(&mut self) {
+        if self.scrolling() {
+            return;
+        }
         let left = self.player.x.to_px();
         if left < self.camera.x {
             self.camera.x = left.max(0);
@@ -625,6 +740,18 @@ impl Game {
         };
     }
 
+    /// The title screen's view of the stage: an auto-scroll stage keeps the
+    /// side camera's framing there (D-086), so the title's subtitle stays in
+    /// the sky (D-035); START re-places the camera at its rest behind the
+    /// navy intro card, so play still starts at the rest. Other levels:
+    /// unchanged (`place_camera` already framed them so).
+    pub(super) fn frame_title(&mut self) {
+        if self.autoscroll_zone().is_some() {
+            let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+            self.camera = Camera::new(self.player.center_px(), w, h, &self.tuning.camera);
+        }
+    }
+
     /// A Normal player at the checkpoint (or the start), the camera on it.
     /// Keeps `jump_held`, so a held JUMP is not a new press.
     fn place_player(&mut self) {
@@ -670,7 +797,8 @@ impl Game {
     }
 
     /// The camera on the player at the start, on respawn and on a stage
-    /// change (climb: at the settle target at once, D-054).
+    /// change (climb: at the settle target at once, D-054; auto-scroll: at
+    /// its rest, D-086).
     fn place_camera(&mut self) {
         let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
         let t = &self.tuning.camera;
@@ -681,11 +809,22 @@ impl Game {
             self.settle_feet = feet;
             self.slack_x = self.player.center_px().0;
         } else {
-            self.camera = Camera::new(self.player.center_px(), w, h, t);
+            self.camera = if self.autoscroll_zone().is_some() {
+                // D-086: at its rest, the level's bottom clamp.
+                Camera::new_autoscroll(self.player.center_px(), w, h, t)
+            } else {
+                Camera::new(self.player.center_px(), w, h, t)
+            };
             self.ground_feet = 0;
             self.settle_feet = 0;
             self.slack_x = 0;
         }
+        // Auto-scroll (D-075): framed as in side levels; inside the zone
+        // the scroll waits `autoscroll_hold` frames.
+        self.scroll = match self.autoscroll_zone() {
+            Some(zone) => Autoscroll::placed(self.camera.x, zone, t),
+            None => Autoscroll::default(),
+        };
     }
 
     // ------------------------------------------------------------ blocks
@@ -771,7 +910,8 @@ impl Game {
             let points = self.tuning.score.bump_enemy;
             self.add_score(points);
             self.entities.push(popup(Popup::Score(points), x, y));
-            self.entities.extend(crate::enemies::bravo(kind, x, y));
+            self.entities
+                .extend(crate::enemies::defeat_popup(kind, x, y));
         }
     }
 
@@ -888,6 +1028,7 @@ impl Game {
         let level = &self.level;
         let despawn_x = Fx::from_px(self.camera.x - g.despawn_margin);
         let bottom = self.map.height_fx();
+        let max_x = self.right_clamp();
         // Every Souvenirstand counts its own globes by their spawn point.
         let globes: Vec<(Fx, Fx)> = self
             .entities
@@ -900,6 +1041,7 @@ impl Game {
             tuning: &self.tuning,
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
+            player_top: self.player.y,
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
@@ -951,9 +1093,17 @@ impl Game {
                     old,
                     e,
                     ctx.map,
+                    max_x,
                     &ctx.tuning.player,
                     &mut self.events,
                 );
+            }
+            // Walking enemies are lost in swim water (D-076).
+            if let EntityKind::Enemy(kind) = e.kind
+                && kind.sinks_in_swim_water()
+                && ctx.map.touches(&e.hitbox(), TileKind::Swim)
+            {
+                e.removed = true;
             }
             // Moving platforms never despawn (D-027): a player who fell
             // off must be able to wait for the car.
@@ -993,6 +1143,7 @@ impl Game {
         let mut spawned = Vec::new();
         let mut grew = false;
         let hitbox = self.player.hitbox();
+        let swimming = self.player_swimming();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
             if !e.active || e.removed {
@@ -1002,6 +1153,13 @@ impl Game {
             // (falling onto a singing Operettensänger hurts, D-068).
             if crate::enemies::high_c_column(&e, &self.map, &self.tuning)
                 .is_some_and(|c| c.overlaps(&hitbox))
+            {
+                hurt = true;
+                continue;
+            }
+            // A turning paddle wheel hurts like an enemy that can't be
+            // stomped (D-077); a rider on the deck never reaches it.
+            if crate::platform::paddle_wheel(&e, &self.tuning).is_some_and(|z| z.overlaps(&hitbox))
             {
                 hurt = true;
                 continue;
@@ -1018,7 +1176,7 @@ impl Game {
                 EntityKind::Mozartkugel => {
                     self.entities[i].removed = true;
                     if self.player.power == Power::Normal {
-                        self.player.set_power(Power::Big, &self.tuning.player);
+                        self.set_player_power(Power::Big);
                         grew = true;
                         self.events.push(Event::PowerUp);
                     }
@@ -1037,18 +1195,25 @@ impl Game {
                     spawned.extend(self.pick_up_hackl(fx, e.y));
                 }
                 EntityKind::Enemy(_) if !e.harmful() => {}
-                // A swarm hurts on any contact, also from above.
-                EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
                 EntityKind::Enemy(kind) => {
-                    // Stomp: falling, and the feet were above the enemy's
-                    // middle on the previous frame (both positions from
-                    // before this frame's movement).
-                    let middle = e.prev_y + e.h.div_int(2);
-                    if self.player.vy > Fx::ZERO && prev_bottom <= middle {
-                        bounced = true;
-                        if !kind.stompable() {
-                            rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
-                        } else {
+                    // The part she touches: a Regattaboot bounces only off
+                    // its masthead part, its body below hurts (D-080
+                    // refinement); every other enemy is its hitbox.
+                    let (part, bounces) = match crate::enemies::regatta_parts(&e, &self.tuning) {
+                        Some((mast, _)) if mast.overlaps(&hitbox) => (mast, true),
+                        Some((_, body)) if body.overlaps(&hitbox) => (body, false),
+                        // The strips beside the mast are air.
+                        Some(_) => continue,
+                        None => (e.hitbox(), true),
+                    };
+                    // From above: falling, and the feet were above the
+                    // part's middle on the previous frame (both positions
+                    // from before this frame's movement).
+                    let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
+                    let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
+                    match crate::enemies::contact(kind, from_above, swimming) {
+                        Contact::Stomp => {
+                            bounced = true;
                             crate::enemies::defeat(
                                 &mut self.entities[i],
                                 kind,
@@ -1056,13 +1221,27 @@ impl Game {
                                 &self.tuning,
                             );
                             spawned.extend(self.stomp_reward(kind, fx, e.y));
-                            spawned.extend(crate::enemies::bravo(kind, fx, e.y));
+                            spawned.extend(crate::enemies::defeat_popup(kind, fx, e.y));
                             if kind == EnemyKind::Schneekugel {
                                 spawned.extend(crate::enemies::globe_shards(&e, &self.tuning));
                             }
                         }
-                    } else if kind.stompable() || self.player.bounce_grace == 0 {
-                        hurt = true;
+                        Contact::Bounce => {
+                            bounced = true;
+                            rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
+                        }
+                        // A swarm (and anything while she swims) hurts
+                        // even in the grace after a bounce; a non-stompable
+                        // enemy's side doesn't (D-027 fallback).
+                        Contact::Hurt => {
+                            if kind.stompable()
+                                || kind.hurts_from_above()
+                                || swimming
+                                || self.player.bounce_grace == 0
+                            {
+                                hurt = true;
+                            }
+                        }
                     }
                 }
                 // A falling rock hurts on any contact, also from above.
@@ -1081,6 +1260,8 @@ impl Game {
                 | EntityKind::Festungsbahn
                 | EntityKind::Gondel
                 | EntityKind::Schafbergbahn
+                | EntityKind::Traundl
+                | EntityKind::Dampfer
                 | EntityKind::ThrownHackl
                 | EntityKind::Durchkriechstein => {}
             }
@@ -1099,6 +1280,15 @@ impl Game {
             self.events.push(Event::Stomped);
         }
         self.entities.extend(spawned);
+    }
+
+    /// True while the player swims (D-076, [`Player::swimming`]: her chest
+    /// point was in swim water when this step began): no stomps and no
+    /// roof bounces then, every enemy contact hurts
+    /// ([`crate::enemies::contact`]). A jump-out is airborne from its next
+    /// step, so it can end in a stomp.
+    pub(crate) fn player_swimming(&self) -> bool {
+        self.player.swimming
     }
 
     /// Puts the player's feet on `top` (a bounce off a non-stompable
@@ -1168,9 +1358,30 @@ impl Game {
         let (fx, _) = e.feet();
         self.entities.push(popup(Popup::Score(points), fx, e.y));
         if let EntityKind::Defeated(kind) = e.kind {
-            self.entities.extend(crate::enemies::bravo(kind, fx, e.y));
+            self.entities
+                .extend(crate::enemies::defeat_popup(kind, fx, e.y));
         }
         true
+    }
+
+    /// A power change during play. On land (and standing on the lake bed)
+    /// the feet stay in place ([`Player::set_power`]). Floating or diving
+    /// (swimming, not on the ground) the top stays, and with it the chest
+    /// point (D-076: `chest_px` below the top in every form), so a floater
+    /// stays in the surface band after a shrink or a grow (D-086). If the
+    /// grown hitbox would reach into a solid tile (just above the lake
+    /// bed), the feet stay instead.
+    pub(crate) fn set_player_power(&mut self, power: Power) {
+        let floating = self.player.swimming && !self.player.on_ground;
+        let top = self.player.y;
+        self.player.set_power(power, &self.tuning.player);
+        if floating {
+            let mut b = self.player.hitbox();
+            b.y = top;
+            if !self.map.touches(&b, TileKind::Solid) {
+                self.player.y = top;
+            }
+        }
     }
 
     /// A hit steps down one power state (Hackl → Zuckerschock →
@@ -1182,7 +1393,7 @@ impl Game {
         }
         match self.player.power.after_hit() {
             Some(power) => {
-                self.player.set_power(power, &self.tuning.player);
+                self.set_player_power(power);
                 self.player.invulnerable = self.tuning.player.invulnerable_frames;
                 self.events.push(Event::Hurt);
             }
@@ -1344,6 +1555,10 @@ impl Game {
         h.i32(self.ground_feet);
         h.i32(self.settle_feet);
         h.i32(self.slack_x);
+        // Only auto-scroll levels have it (other hashes stay as they were).
+        if self.autoscroll_zone().is_some() {
+            self.scroll.hash(&mut h);
+        }
         h.u64(self.rng.state());
         h.u32(self.deaths);
         self.hash_tiles(&mut h);
@@ -1363,6 +1578,7 @@ impl Game {
             Some(DeathCause::Pit) => 2,
             Some(DeathCause::Hit) => 3,
             Some(DeathCause::TimeUp) => 4,
+            Some(DeathCause::Squeezed) => 5,
         });
         h.bool(self.start_held);
         h.finish()
@@ -1382,6 +1598,12 @@ impl Game {
         self.hash_tiles(&mut h);
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
         h.u8(self.player.power.id());
+        // The scroll (phase, position, hold): with the same player state a
+        // later scroll start is a different state (D-075). Only auto-scroll
+        // levels, so the other levels' search is unchanged.
+        if self.autoscroll_zone().is_some() {
+            self.scroll.hash(&mut h);
+        }
         for e in &self.entities {
             if matches!(
                 e.kind,
@@ -1410,6 +1632,8 @@ impl Game {
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
                     | EntityKind::Schafbergbahn
+                    | EntityKind::Traundl
+                    | EntityKind::Dampfer
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {
@@ -1458,6 +1682,11 @@ impl Game {
     /// The camera.
     pub fn camera(&self) -> Camera {
         self.camera
+    }
+    /// The auto-scroll camera's state (D-075; the default in levels
+    /// without a zone).
+    pub fn autoscroll(&self) -> Autoscroll {
+        self.scroll
     }
     /// The current tile grid (collision and looks; bricks break, boxes empty).
     pub fn map(&self) -> &TileMap {

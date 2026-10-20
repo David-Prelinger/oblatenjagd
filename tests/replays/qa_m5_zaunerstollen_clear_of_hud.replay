@@ -1,0 +1,70 @@
+# QA M5 regression (D-090; was qa_m5_bug_zaunerstollen_under_hud): the
+# Zaunerstollen box and its 1-up stay clear of the HUD band (y 0-21,
+# D-029). The bug: with the box at (173, row 4) (D-087) the dead zone held
+# the camera at y 53 on the perch (row 8), so the box was drawn at screen y
+# 11-27 and the 1-up rose to ~1-11, behind „LEBEN". Now the camera rests
+# at ground top - 84 = 44 on the perch (D-090 high-ground rest) and the box
+# is on row 5 (world y 80-96, screen 36-52 at rest): bumped at 3304, the
+# item rises from screen y 41, rolls along the box top at hitbox screen y
+# 26 (sprite top 24, its hitbox is 2 px below the sprite's top), drops
+# onto the perch at ~3362, turns at the bollard's side and comes back to
+# her (ExtraLife 3396, lives 4). The replay format can't check screen y:
+# `tests::lake::the_zaunerstollen_stays_clear_of_the_hud` replays this file
+# and checks the item's drawn top >= 22 on every frame.
+# Inputs: qa_m5_zaunerstollen_returns (as wolfgangsee_traundl up the perch;
+# Gelse #3 stomped clear of the box at 3255, a standing jump under the box
+# at 3301 bumps it). Shots: the item rising out of the box, rolling along
+# its top, at its right edge. They become goldens after art-director
+# review.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4
+shots  = 3327:box_bumped 3343:item_rolling 3350:item_on_box_edge
+---
+# --- the inputs of qa_m5_zaunerstollen_returns ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+R 16
+- 30
+J 24
+- 40
+L 8
+- 10
+J 10
+- 120

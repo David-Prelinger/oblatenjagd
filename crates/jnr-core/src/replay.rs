@@ -217,6 +217,9 @@ pub enum Expect {
     LivesAtLeast(u32),
     /// `power=<normal|big|hackl>`: the player's power state at the end.
     Power(Power),
+    /// `swimming=<true|false>`: whether the player swims at the end
+    /// (`Player::swimming`, D-076).
+    Swimming(bool),
 }
 
 /// What the expectation grammar supports (shown in "not supported yet" errors).
@@ -224,7 +227,7 @@ const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at fr
                          player_x>=PX, player_y>=PX, player_y<=PX, \
                          state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>, \
                          stage=<station id>, event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
-                         lives>=N, power=<normal|big|hackl>";
+                         lives>=N, power=<normal|big|hackl>, swimming=<true|false>";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -283,6 +286,12 @@ impl Expect {
                 Expect::Power(Power::from_name(p).ok_or_else(|| {
                     format!("unknown power `{p}` (expected normal, big or hackl)")
                 })?)
+            } else if let Some(b) = w.strip_prefix("swimming=") {
+                Expect::Swimming(match b {
+                    "true" => true,
+                    "false" => false,
+                    _ => return Err(format!("swimming must be true or false, not `{b}`")),
+                })
             } else if let Some(name) = w.strip_prefix("no_event=") {
                 Expect::NoEvent(parse_event(name)?)
             } else if let Some(name) = w.strip_prefix("event=") {
@@ -323,6 +332,7 @@ impl Expect {
             Expect::Lives(n) => o.lives == n,
             Expect::LivesAtLeast(n) => o.lives >= n,
             Expect::Power(p) => o.power == p,
+            Expect::Swimming(b) => o.swimming == b,
         };
         if ok {
             return Ok(());
@@ -369,6 +379,9 @@ impl Expect {
             Expect::Power(_) => {
                 format!("expected {self} at the end, got power={}", o.power.name())
             }
+            Expect::Swimming(_) => {
+                format!("expected {self} at the end, got swimming={}", o.swimming)
+            }
         })
     }
 }
@@ -395,6 +408,7 @@ impl fmt::Display for Expect {
             Expect::Lives(n) => write!(f, "lives={n}"),
             Expect::LivesAtLeast(n) => write!(f, "lives>={n}"),
             Expect::Power(p) => write!(f, "power={}", p.name()),
+            Expect::Swimming(b) => write!(f, "swimming={b}"),
         }
     }
 }
@@ -723,6 +737,8 @@ pub struct Outcome {
     pub stage: Option<u8>,
     /// The player's power state at the end.
     pub power: Power,
+    /// Whether the player swims at the end.
+    pub swimming: bool,
 }
 
 impl Outcome {
@@ -742,6 +758,7 @@ impl Outcome {
             lives: u32::from(game.lives()),
             stage: game.station().map(|i| i as u8),
             power: game.player().power,
+            swimming: game.player().swimming,
         }
     }
 
@@ -770,6 +787,7 @@ impl Outcome {
         self.lives = u32::from(game.lives());
         self.stage = game.station().map(|i| i as u8);
         self.power = game.player().power;
+        self.swimming = game.player().swimming;
     }
 
     /// "deaths at frames 10, 20" or "no deaths".
@@ -1037,6 +1055,7 @@ RBJ 2
             lives: 2,
             stage: Some(1),
             power: Power::Big,
+            swimming: false,
         }
     }
 
@@ -1149,6 +1168,16 @@ RBJ 2
             Expect::parse_clauses("power=fire")
                 .unwrap_err()
                 .contains("unknown power `fire`")
+        );
+        assert_eq!(check("swimming=false", &o), Ok(()));
+        assert_eq!(
+            f("swimming=true", &o),
+            "expected swimming=true at the end, got swimming=false"
+        );
+        assert!(
+            Expect::parse_clauses("swimming=yes")
+                .unwrap_err()
+                .contains("true or false")
         );
         assert_eq!(
             f("state=game_over", &o),

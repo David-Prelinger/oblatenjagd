@@ -13,7 +13,8 @@
 //! that frame. The search ends at the first bucket at or after the earliest
 //! completion found, so the route is the earliest completion the beam sees.
 //! It fails when no node survives, after the frame budget (3× the level
-//! width in pixels; climb levels: 3× width + height) or after the
+//! width in pixels; climb levels: 3× width + height; auto-scroll levels:
+//! plus the frames the scroll takes, [`scroll_frames`], D-075) or after the
 //! wall-clock limit (default 60 s).
 //!
 //! **Climb levels** (`[meta] camera = "climb"`, D-054): "furthest right"
@@ -40,19 +41,23 @@
 //! generous: the testbed takes about 0.6 s.
 //!
 //! **Difficulty** (D-033: jump windows measure recoverability). For every
-//! jump of the route (a JUMP press followed by a `Jumped`), the whole
+//! jump of the route (a JUMP press followed by a `Jumped`, incl. a jump-out
+//! of swim water; a press that swims a `Stroke` is skipped, D-076), the whole
 //! held-JUMP segment is shifted by d ∈ [-12, +12] frames with the rest of
 //! the inputs unchanged (padded with the last input past the end of the
 //! route). Its checkpoint is the first landing after that `Jumped` + 2 s,
-//! capped at the route's end; the progress there is the original x minus
-//! one tile. A shift succeeds if the player survives the shifted jump and
+//! capped at the route's end (if the route is off the ground there and
+//! swims before it stands again: that next frame on the ground, D-084); the
+//! progress there is the original x minus one tile. A shift succeeds if the player survives the shifted jump and
 //! then reaches that progress (or completes the level) without dying:
 //! either the unchanged later inputs do it by the checkpoint, standing on
 //! the ground (fast path), or a short re-planning beam search ([`recovers`], beam
 //! [`REPLAN_BEAM`]) from the state right after the shifted jump's landing
 //! (or, if the press made no jump, after its buffer ran out) reaches it
-//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames. So
-//! a later press that a 1-frame shift makes miss its buffer no longer
+//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames
+//! (a shifted jump that ends in swim water re-plans from its first swimming
+//! step; a surface swimmer never counts as standing, the lake bed is ground).
+//! So a later press that a 1-frame shift makes miss its buffer no longer
 //! collapses the window: a player would simply press it a frame later. The
 //! jump window is the contiguous successful range around d = 0. Each side
 //! records why it stopped ([`Bound`]): a failed shift, the route (the
@@ -69,8 +74,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use jnr_core::replay::{Expect, FrameRange, Shot, Source};
@@ -158,6 +163,11 @@ pub const DEFAULT_TIME_LIMIT: Duration = Duration::from_secs(60);
 const BUDGET_PER_PX: u32 = 3;
 /// Most threads used to expand a bucket.
 const MAX_THREADS: usize = 8;
+/// Search threads per level when `verify` searches several levels at once
+/// (D-082): few levels at once with many threads each keeps every search
+/// far below the wall-clock limit (measured on 14 cores: 2 × 7 threads,
+/// slowest search 13.5 s idle, 16.5–18.2 s under load; 4 × 3: 22–25 s), at about the same total time.
+const LEVEL_THREADS: usize = 7;
 /// Buckets smaller than this are expanded on the calling thread.
 const PARALLEL_MIN_NODES: usize = 16;
 
@@ -197,16 +207,18 @@ pub struct SolveOptions {
 
 impl SolveOptions {
     /// The defaults for `level`: beam 64, budget 3× its width in pixels
-    /// (climb levels: width + height), 60 s, up to 8 threads.
-    pub fn for_level(level: &Level) -> SolveOptions {
+    /// (climb levels: width + height; auto-scroll levels: plus the frames
+    /// the scroll takes, D-075), 60 s, up to 8 threads.
+    pub fn for_level(level: &Level, tuning: &Tuning) -> SolveOptions {
         let threads = std::thread::available_parallelism().map_or(1, |n| n.get().min(MAX_THREADS));
         let tiles = match level.meta.camera {
-            CameraMode::Side => level.width.max(1),
+            CameraMode::Side | CameraMode::Autoscroll => level.width.max(1),
             CameraMode::Climb => level.width.max(1) + level.height.max(0),
         };
         SolveOptions {
             beam_width: DEFAULT_BEAM,
-            frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32,
+            frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32
+                + scroll_frames(level, tuning),
             time_limit: DEFAULT_TIME_LIMIT,
             threads,
         }
@@ -256,13 +268,25 @@ impl Node {
     }
 }
 
+/// Frames the auto-scroll takes to cross its zone (D-075): the zone's
+/// length in subpixels over `camera.autoscroll_speed`, rounded up; 0
+/// without a zone.
+pub fn scroll_frames(level: &Level, tuning: &Tuning) -> u32 {
+    let Some((from, to)) = level.meta.autoscroll_zone() else {
+        return 0;
+    };
+    let len = jnr_core::Fx::from_px((to - from) * jnr_core::level::TILE_PX).raw();
+    let speed = tuning.camera.autoscroll_speed.raw().max(1);
+    (len + speed - 1).div_euclid(speed).max(0) as u32
+}
+
 /// How far a state has come, in subpixels: the player's x; in climb levels
 /// (D-054) plus the height her feet gained above the player start's feet
 /// (negative below it). The search ranks by it.
 pub fn search_progress(game: &Game) -> i32 {
     let p = game.player();
     match game.level().meta.camera {
-        CameraMode::Side => p.x.raw(),
+        CameraMode::Side | CameraMode::Autoscroll => p.x.raw(),
         CameraMode::Climb => {
             let start = game.level().player_start();
             let start_feet = jnr_core::Fx::from_px((start.row + 1) * jnr_core::level::TILE_PX);
@@ -588,10 +612,34 @@ struct Trace {
     x: Vec<i32>,
     feet: Vec<i32>,
     ground: Vec<bool>,
+    /// Whether she swims after each frame (D-076).
+    swimming: Vec<bool>,
     events: Vec<(u32, Event)>,
 }
 
 impl Trace {
+    /// The checkpoint of a jump whose first `Landed` is at `landing`:
+    /// `landing` + 2 s, capped at the route's end (D-033). If the route
+    /// doesn't stand on the ground there and swims before it stands again
+    /// (D-084), it moves on to that next frame on the ground: the progress
+    /// of a swimmer (or of a jump into the water) is no point a recovery
+    /// could stand on, and the swim to the next deck is part of the route.
+    /// Routes that never swim keep the D-033 checkpoint.
+    fn checkpoint(&self, landing: u32, total: u32) -> u32 {
+        let check = landing.saturating_add(CHECKPOINT_AFTER_LANDING).min(total);
+        if self.ground[check as usize] {
+            return check;
+        }
+        let next = (check..total)
+            .find(|&f| self.ground[f as usize])
+            .unwrap_or(total);
+        if (check..=next).any(|f| self.swimming[f as usize]) {
+            next
+        } else {
+            check
+        }
+    }
+
     /// The climb height goal's feet at frame `f` (D-059 addendum, E17):
     /// her feet if she stands on the ground then, else the lower (larger
     /// y) of the last ground before `f` and the next ground after it. A
@@ -619,6 +667,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
         x: vec![g.player().x.to_px()],
         feet: vec![g.player().feet().1.to_px()],
         ground: vec![g.player().on_ground],
+        swimming: vec![g.player().swimming],
         events: Vec::new(),
     };
     for &i in inputs {
@@ -627,6 +676,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
         t.x.push(g.player().x.to_px());
         t.feet.push(g.player().feet().1.to_px());
         t.ground.push(g.player().on_ground);
+        t.swimming.push(g.player().swimming);
     }
     t
 }
@@ -671,7 +721,8 @@ fn progress(start: &Game, inputs: &[InputFrame], check: u32) -> Option<Progress>
 
 /// Where a shifted jump leaves the player for re-planning, running
 /// `inputs` from `start` (a state of the same route before the press):
-/// after the step that lands it (the first `Landed` after its `Jumped`),
+/// after the step that lands it (the first `Landed` after its `Jumped`, or
+/// the first step in swim water),
 /// or, if the press made no jump, after the jump buffer ran out.
 /// `Err(true)`: the level was completed on the way (success), `Err(false)`:
 /// died or never landed before `deadline` (failure).
@@ -703,7 +754,9 @@ fn after_shifted_jump(
             if !jumped && f >= press + buffer {
                 return Ok(g);
             }
-        } else if jumped && g.events().contains(&Event::Landed) {
+        } else if jumped && (g.events().contains(&Event::Landed) || g.player().swimming) {
+            // A jump that ends in swim water ends there too (D-076): the
+            // re-planning swims on from it.
             return Ok(g);
         }
     }
@@ -878,6 +931,11 @@ pub fn jump_windows(
         .into_iter()
         .filter_map(|(s, e)| {
             let press = s as u32 + 1;
+            // A swim stroke is no jump (D-076): its press makes a `Stroke`,
+            // and a jump-out pressed within its buffer frames is its own hold.
+            if first(Event::Stroke, press, press).is_some() {
+                return None;
+            }
             let jumped = first(Event::Jumped, press, press + buffer)?;
             let landing = first(Event::Landed, jumped + 1, total).unwrap_or(total);
             let from = s.saturating_sub(MAX_SHIFT as usize) as u32;
@@ -893,7 +951,7 @@ pub fn jump_windows(
             }
             Some(JumpAt {
                 hold: (s, e),
-                check: landing.saturating_add(CHECKPOINT_AFTER_LANDING).min(total),
+                check: orig.checkpoint(landing, total),
                 start: run.clone(),
             })
         })
@@ -1200,11 +1258,17 @@ struct Files {
 /// Searches and, if complete, cleans up the route and measures the jump
 /// windows.
 pub fn solve(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Solution {
-    let search = search(level, tuning, opts);
+    measure(level, tuning, search(level, tuning, opts), opts.threads)
+}
+
+/// The part of [`solve`] after the search: if it is complete, cleans up
+/// the route and measures the jump windows on `threads` threads. No clock
+/// runs here.
+pub fn measure(level: &Level, tuning: &Tuning, search: Search, threads: usize) -> Solution {
     let mut inputs = search.best.inputs();
     let windows = if search.complete() {
         inputs = clean_route(level, tuning, &inputs);
-        jump_windows(level, tuning, &inputs, opts.threads)
+        jump_windows(level, tuning, &inputs, threads)
     } else {
         Vec::new()
     };
@@ -1273,6 +1337,9 @@ struct Args {
     shots: bool,
     beam: Option<usize>,
     time_limit: Option<Duration>,
+    /// Threads for one level's search and jump windows (default: up to
+    /// `MAX_THREADS`); the result does not depend on it.
+    threads: Option<usize>,
 }
 
 /// `cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S]`.
@@ -1283,6 +1350,7 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
         shots: false,
         beam: None,
         time_limit: None,
+        threads: None,
     };
     let mut it = args.iter();
     while let Some(arg) = it.next() {
@@ -1388,14 +1456,35 @@ fn solve_and_report(
     out: &OutDirs,
 ) -> Result<(Solution, String), String> {
     let tuning = content::tuning(root)?;
-    let mut opts = SolveOptions::for_level(level);
+    let sol = solve(level, &tuning, &options(level, &tuning, a));
+    report(root, level, &tuning, sol, a, out)
+}
+
+/// [`SolveOptions::for_level`] with the overrides from `a`.
+fn options(level: &Level, tuning: &Tuning, a: &Args) -> SolveOptions {
+    let mut opts = SolveOptions::for_level(level, tuning);
     if let Some(b) = a.beam {
         opts.beam_width = b;
     }
     if let Some(t) = a.time_limit {
         opts.time_limit = t;
     }
-    let sol = solve(level, &tuning, &opts);
+    if let Some(n) = a.threads {
+        opts.threads = n;
+    }
+    opts
+}
+
+/// Writes the image, report and (with `--write`) the replay of a solved
+/// (or stuck) `level` into `out`; returns (solution, printable text).
+fn report(
+    root: &Path,
+    level: &Level,
+    tuning: &Tuning,
+    sol: Solution,
+    a: &Args,
+    out: &OutDirs,
+) -> Result<(Solution, String), String> {
     let id = &sol.level;
     let mut files = Files::default();
 
@@ -1405,7 +1494,7 @@ fn solve_and_report(
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     if sol.search.complete() {
         if let Some(w) = narrowest(&sol.windows) {
-            let mut g = Game::new(level, &tuning, 1);
+            let mut g = Game::new(level, tuning, 1);
             for &i in &sol.inputs[..w.index] {
                 g.step(i);
             }
@@ -1485,27 +1574,71 @@ pub fn window_problem(level: &Level, sol: &Solution) -> Option<String> {
 /// jump window at least `min_jump_window` (if set, [`window_problem`]).
 /// Returns (ok, output, note with the narrowest jump window per level).
 pub fn verify(root: &Path) -> (bool, String, String) {
-    verify_into(root, &OutDirs::of(root))
+    match all_levels(root) {
+        Ok(l) if l.is_empty() => (false, "no levels in content/levels".into(), String::new()),
+        Ok(levels) => verify_into(root, &OutDirs::of(root), &levels, crate::par::threads()),
+        Err(e) => (false, e, String::new()),
+    }
 }
 
-fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
-    let levels = match all_levels(root) {
-        Ok(l) if l.is_empty() => {
-            return (false, "no levels in content/levels".into(), String::new());
-        }
-        Ok(l) => l,
+/// [`verify`] for `levels`, writing into `dirs`, with `threads` threads in
+/// all. First every level's search (the only part with a clock) runs, in
+/// parallel and largest level first, with the threads split between the
+/// levels running at once and each search ([`split_threads`]), so no more
+/// threads are busy than there are cores. Only then do the route clean-ups
+/// and jump windows (no clock) run, every level at once with up to
+/// `threads` threads each. Neither changes a route
+/// (see the module doc), and the output is in `levels` order (D-082).
+fn verify_into(
+    root: &Path,
+    dirs: &OutDirs,
+    levels: &[Level],
+    threads: usize,
+) -> (bool, String, String) {
+    let tuning = match content::tuning(root) {
+        Ok(t) => t,
         Err(e) => return (false, e, String::new()),
     };
+    let (outer, inner) = split_threads(threads, levels.len());
     let a = Args {
         target: None,
         write: false,
         shots: false,
         beam: None,
         time_limit: None,
+        threads: Some(inner),
     };
+    // Pass 1: every level's timed search, `outer` levels at a time with
+    // `inner` threads each (about one thread per core), largest first.
+    let order = largest_first(levels);
+    let found = crate::par::map_ordered(&order, outer, |&i| {
+        Mutex::new(Some(search(
+            &levels[i],
+            &tuning,
+            &options(&levels[i], &tuning, &a),
+        )))
+    });
+    // Pass 2 (no clock): route clean-up and jump windows, every level at
+    // once with up to `threads` threads each (largest first again).
+    let threads = threads.max(1);
+    let jobs: Vec<(usize, Mutex<Option<Search>>)> = order.into_iter().zip(found).collect();
+    let measured = crate::par::map_ordered(&jobs, threads, |(i, s)| {
+        let s = s
+            .lock()
+            .expect("one job per level")
+            .take()
+            .expect("searched once");
+        (*i, measure(&levels[*i], &tuning, s, threads))
+    });
+    let mut solutions: Vec<Option<Solution>> = levels.iter().map(|_| None).collect();
+    for (i, sol) in measured {
+        solutions[i] = Some(sol);
+    }
+    // The reports and checks, in level order.
     let (mut ok, mut out, mut notes) = (true, String::new(), Vec::new());
-    for level in &levels {
-        match solve_and_report(root, level, &a, dirs) {
+    for (level, sol) in levels.iter().zip(solutions) {
+        let sol = sol.expect("every level is measured once");
+        match report(root, level, &tuning, sol, &a, dirs) {
             Ok((sol, text)) => {
                 ok &= sol.search.complete();
                 out.push_str(&text);
@@ -1532,6 +1665,24 @@ fn verify_into(root: &Path, dirs: &OutDirs) -> (bool, String, String) {
         }
     }
     (ok, out, notes.join("; "))
+}
+
+/// Splits `threads` into (levels solved at once, threads per level): about
+/// `LEVEL_THREADS` per level, as many levels at once as that allows (at
+/// most `levels`), the rest spread over them (at most `MAX_THREADS` each).
+fn split_threads(threads: usize, levels: usize) -> (usize, usize) {
+    let threads = threads.max(1);
+    let outer = (threads / LEVEL_THREADS).clamp(1, levels.max(1));
+    let inner = (threads / outer).clamp(1, MAX_THREADS);
+    (outer, inner)
+}
+
+/// Indices of `levels`, the largest (width × height in tiles) first; ties
+/// keep their order.
+fn largest_first(levels: &[Level]) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..levels.len()).collect();
+    order.sort_by_key(|&i| std::cmp::Reverse(levels[i].width.max(0) * levels[i].height.max(0)));
+    order
 }
 
 fn usage_err(msg: &str) -> ExitCode {
@@ -1582,7 +1733,7 @@ mod tests {
     fn opts(level: &Level, threads: usize) -> SolveOptions {
         SolveOptions {
             threads,
-            ..SolveOptions::for_level(level)
+            ..SolveOptions::for_level(level, &tuning())
         }
     }
 
@@ -1614,12 +1765,25 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
     }
 
-    /// Fresh output directories under `$CARGO_TARGET_DIR/tmp/xtask-solver-test/<name>`,
-    /// so tests never touch the real preview/reports/replays folders.
+    /// Fresh output directories under
+    /// `$CARGO_TARGET_DIR/tmp/xtask-solver-test/<pid>/<name>`, so tests never
+    /// touch the real preview/reports/replays folders, and two test runs at
+    /// the same time (`check` and `verify`) never delete each other's files.
     fn tmp_dirs(name: &str) -> OutDirs {
-        let base = crate::target_dir(&root())
-            .join("tmp/xtask-solver-test")
-            .join(name);
+        let all = crate::target_dir(&root()).join("tmp/xtask-solver-test");
+        // Left over from finished test runs (no /proc/<pid> any more) or from
+        // before the per-process folders (any non-numeric name). Without
+        // /proc (not Linux) this removes nothing.
+        if Path::new("/proc/self").exists() {
+            for entry in fs::read_dir(&all).into_iter().flatten().flatten() {
+                let name = entry.file_name();
+                let is_pid = name.to_str().is_some_and(|p| p.parse::<u32>().is_ok());
+                if !is_pid || !Path::new("/proc").join(&name).exists() {
+                    let _ = fs::remove_dir_all(entry.path());
+                }
+            }
+        }
+        let base = all.join(std::process::id().to_string()).join(name);
         if base.exists() {
             fs::remove_dir_all(&base).unwrap();
         }
@@ -1639,6 +1803,7 @@ mod tests {
             shots: false,
             beam: None,
             time_limit: None,
+            threads: None,
         }
     }
 
@@ -1957,6 +2122,89 @@ mod tests {
         level([&air, &air, &air, &top], &ground)
     }
 
+    /// A pool of swim water (rows 2–4, bed in row 5) with dry ground right
+    /// of it (rows 1–5, 1 tile above the water) and the start `S` in the
+    /// water at row `start_row`.
+    fn swim_level(start_row: usize) -> Level {
+        let mut rows: Vec<String> = vec![
+            format!("{}{}", ".".repeat(12), "........G."),
+            format!("{}{}", ".".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            format!("{}{}", "~".repeat(12), "##########"),
+            "#".repeat(22),
+        ];
+        rows[start_row].replace_range(4..5, "S");
+        let text = format!(
+            "[meta]\nid = \"swim\"\ntime_limit = 100\n[legend]\n\"#\" = \"solid\"\n\
+             \"~\" = \"see_wasser\"\n\
+             \"S\" = {{ entity = \"player_start\", tile = \"see_wasser\" }}\n\
+             \"G\" = {{ entity = \"goal\" }}\n[map]\ngrid = '''\n{}\n'''\n",
+            rows.join("\n")
+        );
+        Level::parse(&text).unwrap()
+    }
+
+    #[test]
+    fn a_checkpoint_off_the_ground_before_a_swim_moves_to_the_next_ground() {
+        // 300 frames: on the ground until 150, in the air 150-159, then
+        // (case `swim`) swimming 160-199, on the ground again from 200.
+        let trace = |swim: bool| {
+            let ground: Vec<bool> = (0..=300).map(|f| !(150..200).contains(&f)).collect();
+            let swimming: Vec<bool> = (0..=300).map(|f| swim && (160..200).contains(&f)).collect();
+            Trace {
+                x: vec![0; 301],
+                feet: vec![0; 301],
+                ground,
+                swimming,
+                events: Vec::new(),
+            }
+        };
+        let after = CHECKPOINT_AFTER_LANDING;
+        // Standing at landing + 2 s: unchanged (D-033).
+        assert_eq!(trace(true).checkpoint(10, 300), 10 + after);
+        // In the air there, landing without a swim: unchanged.
+        assert_eq!(trace(false).checkpoint(155 - after, 300), 155);
+        // In the air there and swimming before the next ground: moved there.
+        assert_eq!(trace(true).checkpoint(155 - after, 300), 200);
+        assert_eq!(
+            trace(true).checkpoint(170 - after, 300),
+            200,
+            "swimming at it"
+        );
+        // Capped at the route's end.
+        assert_eq!(trace(true).checkpoint(170 - after, 190), 190);
+    }
+
+    #[test]
+    fn jump_windows_skip_strokes_and_count_jump_outs() {
+        let t = tuning();
+        // On the lake bed: three strokes, no jump.
+        let level = swim_level(4);
+        let mut inputs = vec![NONE; 5];
+        for _ in 0..3 {
+            inputs.push(InputFrame::JUMP);
+            // Long enough to sink back to the bed before the next stroke.
+            inputs.extend([NONE; 90]);
+        }
+        let orig = trace(&level, &t, &inputs);
+        let strokes = orig.events.iter().filter(|e| e.1 == Event::Stroke).count();
+        assert_eq!(strokes, 3);
+        assert!(jump_windows(&level, &t, &inputs, 1).is_empty());
+        // Floating at the surface: a held jump-out to the right onto the
+        // bank is a jump with a window.
+        let level = swim_level(2);
+        let mut inputs = vec![NONE; 30];
+        inputs.extend([RJ; 30]);
+        inputs.extend([R; 200]);
+        let orig = trace(&level, &t, &inputs);
+        assert!(orig.events.iter().any(|e| e.1 == Event::Jumped));
+        assert!(!orig.events.iter().any(|e| e.1 == Event::Stroke));
+        let windows = jump_windows(&level, &t, &inputs, 1);
+        assert_eq!(windows.len(), 1, "{windows:?}");
+        assert_eq!(windows[0].index, 30);
+    }
+
     #[test]
     fn jump_windows_do_not_depend_on_the_thread_count() {
         let level = three_pit_level();
@@ -1997,6 +2245,21 @@ mod tests {
         assert_eq!(progress(&later, &inputs, 100), Some(landed));
         // Past the end of the inputs: where the route ends.
         assert_eq!(progress(&start, &inputs, 10_000), Some(landed));
+    }
+
+    #[test]
+    fn after_shifted_jump_stops_in_swim_water() {
+        // A jump-out that falls back into the water (a tap, no RIGHT) never
+        // lands: the re-planning takes over on its first swimming step.
+        let level = swim_level(2);
+        let t = tuning();
+        let start = Game::new(&level, &t, 1);
+        let mut inputs = vec![NONE; 30];
+        inputs.push(InputFrame::JUMP);
+        inputs.extend([NONE; 200]);
+        let g = after_shifted_jump(&start, &t, &inputs, 31, 230).unwrap();
+        assert!(g.player().swimming && !g.player().leaving_water);
+        assert!(g.frame() > 31 + 5, "back in the water at {}", g.frame());
     }
 
     #[test]
@@ -2102,12 +2365,29 @@ mod tests {
         assert_eq!(g.player().feet().1.to_px(), 21 * 16);
         assert_eq!(search_progress(&g), g.player().x.raw() + 48 * 256);
         // The budget covers the climb too.
-        let budget = SolveOptions::for_level(&level).frame_budget;
+        let budget = SolveOptions::for_level(&level, &t).frame_budget;
         assert_eq!(budget, 3 * (64 + 40) * 16);
         assert_eq!(
-            SolveOptions::for_level(&gap_level(3)).frame_budget,
+            SolveOptions::for_level(&gap_level(3), &t).frame_budget,
             3 * gap_level(3).width as u32 * 16
         );
+    }
+
+    #[test]
+    fn the_budget_covers_the_auto_scroll() {
+        let t = tuning();
+        let level = content::find_level(&root(), "m5_autoscroll").unwrap();
+        // Zone [8, 80]: 1152 px at 192 subpx per frame.
+        assert_eq!(scroll_frames(&level, &t), 1536);
+        assert_eq!(
+            SolveOptions::for_level(&level, &t).frame_budget,
+            3 * 112 * 16 + 1536
+        );
+        assert_eq!(scroll_frames(&gap_level(3), &t), 0);
+        // Rounded up: 1 px more is 2 frames more (1 px = 256 subpx).
+        let mut slow = t;
+        slow.camera.autoscroll_speed = jnr_core::Fx(100);
+        assert_eq!(scroll_frames(&level, &slow), (1152 * 256_u32).div_ceil(100));
     }
 
     #[test]
@@ -2208,6 +2488,7 @@ mod tests {
             x: vec![0; feet.len()],
             feet: feet.to_vec(),
             ground: ground.to_vec(),
+            swimming: vec![false; feet.len()],
             events: Vec::new(),
         };
         let (y, n) = (true, false);
@@ -2266,35 +2547,150 @@ mod tests {
         assert_eq!(jumped(&clean), 1);
     }
 
+    /// Synthetic levels for the `verify_into` tests: quick to solve, no
+    /// `min_jump_window`, of different sizes (so `largest_first` reorders).
+    fn verify_levels() -> Vec<Level> {
+        [(2, "syn_small"), (5, "syn_large"), (3, "syn_mid")]
+            .into_iter()
+            .map(|(gap, id)| {
+                let mut l = gap_level(gap);
+                l.meta.id = id.into();
+                l
+            })
+            .collect()
+    }
+
+    /// The `SOLVED`/`STUCK`/`FAIL` lines of a verify output, without the
+    /// runtimes (a summary's last item `, <digits>.<digit>s`).
+    fn result_lines(out: &str) -> Vec<String> {
+        out.lines()
+            .filter(|l| {
+                ["SOLVED ", "STUCK ", "FAIL "]
+                    .iter()
+                    .any(|p| l.starts_with(p))
+            })
+            .map(|l| match l.rsplit_once(", ") {
+                Some((head, tail)) if is_runtime(tail) => head.to_owned(),
+                _ => l.to_owned(),
+            })
+            .collect()
+    }
+
+    /// `\d+\.\ds` (the summary's `{:.1}s`).
+    fn is_runtime(s: &str) -> bool {
+        let Some((int, frac)) = s.strip_suffix('s').and_then(|n| n.split_once('.')) else {
+            return false;
+        };
+        let digits = |t: &str| !t.is_empty() && t.bytes().all(|b| b.is_ascii_digit());
+        digits(int) && frac.len() == 1 && digits(frac)
+    }
+
+    #[test]
+    fn result_lines_strip_only_the_runtime() {
+        let out = "SOLVED a: complete at frame 9, 1 jumps, narrowest 5, 0 search deaths, 12.3s\n  \
+                   report x\nSTUCK b: dead end – furthest x=3 px at frame 1, 2 search deaths, 0.0s\n\
+                   FAIL c: missing solver replay x, y\nFAIL d: ends in 1.5s";
+        assert_eq!(
+            result_lines(out),
+            [
+                "SOLVED a: complete at frame 9, 1 jumps, narrowest 5, 0 search deaths",
+                "STUCK b: dead end – furthest x=3 px at frame 1, 2 search deaths",
+                "FAIL c: missing solver replay x, y",
+                "FAIL d: ends in 1.5s",
+            ]
+        );
+    }
+
+    /// The `solver` step itself runs over every real level in `verify`;
+    /// this checks its bookkeeping on synthetic levels (it used to solve
+    /// every real level twice inside `cargo test`, D-082).
     #[test]
     fn verify_fails_without_the_committed_solver_replay() {
         let dirs = tmp_dirs("verify_missing_replay");
-        // Every level in content/levels, whatever they are.
-        let ids: Vec<String> = all_levels(&root())
-            .unwrap()
-            .into_iter()
-            .map(|l| l.meta.id)
-            .collect();
-        assert!(ids.contains(&"testbed".to_owned()), "{ids:?}");
-        let (ok, out, note) = verify_into(&root(), &dirs);
+        let levels = verify_levels();
+        let (ok, out, note) = verify_into(&root(), &dirs, &levels, 4);
         assert!(!ok, "{out}");
-        assert!(out.contains("missing solver replay"), "{out}");
-        for id in &ids {
+        for l in &levels {
+            let id = &l.meta.id;
+            let replay = dirs.replays.join(format!("{id}_solver.replay"));
             assert!(
-                out.contains(&format!("`cargo xtask solve {id} --write`")),
+                out.contains(&format!(
+                    "FAIL {id}: missing solver replay {} (create it with `cargo xtask solve {id} --write`",
+                    replay.display()
+                )),
                 "{id}: {out}"
             );
             assert!(note.contains(&format!("{id}: ")), "{note}");
         }
         // With the replays present (any content: the `replays` step checks them).
-        for id in &ids {
+        for l in &levels {
+            let id = &l.meta.id;
             fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
         }
-        // Other failures (a level's `min_jump_window`) are not this test's
-        // business: whatever fails is reported as a FAIL line.
-        let (ok, out, _) = verify_into(&root(), &dirs);
-        assert!(!out.contains("missing solver replay"), "{out}");
-        assert_eq!(ok, !out.contains("FAIL "), "{out}");
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(ok, "{out}");
+        assert!(!out.contains("FAIL "), "{out}");
+    }
+
+    #[test]
+    fn verify_output_is_in_level_order_for_any_thread_count() {
+        let dirs = tmp_dirs("verify_threads");
+        let levels = verify_levels();
+        let (ok1, out1, note1) = verify_into(&root(), &dirs, &levels, 1);
+        let first = result_lines(&out1);
+        let solved: Vec<&str> = first
+            .iter()
+            .filter_map(|l| l.strip_prefix("SOLVED "))
+            .map(|l| l.split(':').next().unwrap())
+            .collect();
+        assert_eq!(solved, ["syn_small", "syn_large", "syn_mid"], "{out1}");
+        for threads in [2, 3, 9, 14] {
+            let (ok, out, note) = verify_into(&root(), &dirs, &levels, threads);
+            assert_eq!(ok, ok1, "{threads} threads");
+            assert_eq!(result_lines(&out), first, "{threads} threads");
+            assert_eq!(note, note1, "{threads} threads");
+        }
+    }
+
+    #[test]
+    fn verify_reports_a_stuck_level_among_solved_ones() {
+        let dirs = tmp_dirs("verify_stuck");
+        let mut levels = verify_levels();
+        let mut broken = gap_level(14);
+        broken.meta.id = "syn_broken".into();
+        levels.insert(1, broken);
+        for l in &levels {
+            let id = &l.meta.id;
+            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
+        }
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 8);
+        assert!(!ok, "{out}");
+        let lines = result_lines(&out);
+        assert_eq!(lines.len(), 4, "{out}");
+        assert!(lines[0].starts_with("SOLVED syn_small:"), "{out}");
+        assert!(lines[1].starts_with("STUCK syn_broken:"), "{out}");
+        assert!(lines[2].starts_with("SOLVED syn_large:"), "{out}");
+        assert!(lines[3].starts_with("SOLVED syn_mid:"), "{out}");
+    }
+
+    #[test]
+    fn threads_are_split_between_levels_and_searches() {
+        // (threads, levels) -> (levels at once, threads per level)
+        assert_eq!(split_threads(14, 17), (2, 7));
+        assert_eq!(split_threads(14, 1), (1, MAX_THREADS));
+        assert_eq!(split_threads(8, 17), (1, MAX_THREADS));
+        assert_eq!(split_threads(32, 17), (4, MAX_THREADS));
+        assert_eq!(split_threads(64, 1), (1, MAX_THREADS));
+        assert_eq!(split_threads(2, 17), (1, 2));
+        assert_eq!(split_threads(1, 5), (1, 1));
+        assert_eq!(split_threads(0, 0), (1, 1));
+    }
+
+    #[test]
+    fn largest_levels_are_solved_first() {
+        assert_eq!(largest_first(&verify_levels()), vec![1, 2, 0]);
+        let same = [gap_level(2), gap_level(2)];
+        assert_eq!(largest_first(&same), vec![0, 1], "ties keep their order");
     }
 
     #[test]

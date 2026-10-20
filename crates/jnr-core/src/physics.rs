@@ -142,9 +142,18 @@ impl TileMap {
     }
 
     /// True if `b` overlaps a tile that kills ([`TileKind::is_lethal`]:
-    /// spikes or water) – the test for items and E-Bikers.
+    /// spikes or water; not swim water).
     pub fn touches_lethal(&self, b: &Aabb) -> bool {
         self.touches(b, TileKind::Hazard) || self.touches(b, TileKind::Water)
+    }
+
+    /// True if `b` overlaps a tile that items, thrown axes and vehicles are
+    /// lost in ([`TileKind::swallows_items`]: spikes, water or swim water,
+    /// D-076).
+    pub fn swallows(&self, b: &Aabb) -> bool {
+        let (c0, c1) = (tile_of(b.x), tile_of(b.right() - Fx(1)));
+        let (r0, r1) = (tile_of(b.y), tile_of(b.bottom() - Fx(1)));
+        (r0..=r1).any(|r| (c0..=c1).any(|c| self.kind_at(c, r).swallows_items()))
     }
 
     /// True if the bottom edge of `b` has sunk at least `sink_px` whole
@@ -172,7 +181,7 @@ impl TileMap {
             match k {
                 TileKind::Solid => return false,
                 TileKind::OneWay => one_way = true,
-                TileKind::Empty | TileKind::Hazard | TileKind::Water => {}
+                TileKind::Empty | TileKind::Hazard | TileKind::Water | TileKind::Swim => {}
             }
         }
         one_way
@@ -221,7 +230,7 @@ impl TileMap {
                 let floor = (c0..=c1).any(|c| match self.kind_at(c, r) {
                     TileKind::Solid => true,
                     TileKind::OneWay => !drop_through,
-                    TileKind::Empty | TileKind::Hazard | TileKind::Water => false,
+                    TileKind::Empty | TileKind::Hazard | TileKind::Water | TileKind::Swim => false,
                 });
                 if floor {
                     b.y = TILE.mul_int(r) - b.h;

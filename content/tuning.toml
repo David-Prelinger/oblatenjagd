@@ -44,6 +44,14 @@ climb_catch_up_speed = 6  # px: grounded with the top above climb_top, the camer
 climb_fall_follow = 80    # px: and follows a fall at most this far below the last ground's settle framing
 climb_goal_feet_y = 164   # px: the goal sequence settles the feet here (frames the meadow like Stages 1-3)
 climb_activate_y = 64     # px: an entity activates only while its spawn cell is this close to the screen vertically
+# Auto-scroll camera, levels with `[meta] camera = "autoscroll"` (D-075); other levels ignore these.
+autoscroll_speed = 192    # subpx/frame: 0.75 px/frame, half the walk speed (must be > 0, < player.walk_speed and < swim.speed)
+autoscroll_hold = 60      # frames of play the scroll waits after a start or respawn framed inside the zone
+autoscroll_right_margin = 64  # px: in the scroll the hitbox's right edge stays <= camera x + 320 - this
+autoscroll_settle_speed = 2   # px/frame: grounded or swimming at the surface, the camera settles back to its rest, the level's bottom clamp (D-086)
+autoscroll_catch_up_speed = 4 # px/frame: in the lead-out the camera catches up with her at most this fast, no snap at the hand-over (> run_speed; D-086)
+autoscroll_ground_y = 84      # screen y: standing, the camera settles with her ground's top here (decks on row 11 -> the bottom clamp; D-090)
+autoscroll_top = 24           # level y: the camera's top clamp in every phase; at 24 the row-12 water line is at screen y 168 and swans/regatta keels stay fully on screen (D-090)
 
 [game]
 death_frames = 60         # 1 s from death to respawn
@@ -177,6 +185,28 @@ reisebus_speed = 384          # ... then drives left at 1.5 px/frame until its r
 reisebus_stop_frames = 120    # `stop = N`: N tiles left of where it was parked it halts for a 120-frame photo stop ...
 reisebus_restart = 30         # ... then 30 frames of hazard lights, then on again
 reisebus_flash_frames = 16    # renderer: the photo-stop camera flashes switch every 16 frames (off first; harmless)
+# M5 lake enemies (D-078 … D-080). Until E27's swim water lands they use `wolfgangsee_water` as their surface.
+schwan_hitbox = [16, 12]      # sprite 24x24; floats in a surface-row water cell ...
+schwan_float_px = 4           # ... its hitbox bottom 4 px below the water line (top 8 px below the decks)
+schwan_range = 96             # px (< 97, 6 tiles): a rested swan at home, fully on screen, triggers ...
+schwan_telegraph = 32         # ... hisses for 32 frames ...
+schwan_charge_speed = 384     # ... charges towards the player's side at 1.5 px/frame ...
+schwan_charge_frames = 64     # ... for 64 frames (96 px), ignoring tiles ...
+schwan_return_speed = 128     # ... paddles home at 0.5 px/frame ...
+schwan_rest = 60              # ... and rests 60 frames (cycle 32 + 64 + 192 + 60 = 348 frames)
+gelse_hitbox = [8, 8]         # sprite 16x16, the hitbox centred in its cell
+gelse_wait = 60               # it hovers until it has been fully on screen for 60 frames (the telegraph) ...
+gelse_hunt = 480              # ... then hunts for 480 frames ...
+gelse_accel = 8               # ... each axis 1/32 px/frame² towards its target ...
+gelse_speed = 192             # ... at most 0.75 px/frame per axis ...
+gelse_target_dy = 4           # ... the target: her hitbox centre x, her hitbox top + 4 px; it never enters water
+gelse_leave_speed = 256       # then it leaves (harmless) straight up at 1 px/frame, removed above the screen
+regattaboot_hitbox = [24, 56] # sprite 32x64 over 2 cells of the surface row, from the masthead ...
+regattaboot_keel_px = 12      # ... to the keel 12 px below the water line (a diver 13 px down passes)
+regattaboot_mast = [8, 20]    # the masthead part (centred, from the top) is all that bounces a falling Resi; below it the 24 px body hurts
+regattaboot_trigger = 160     # px (< 161, 10 tiles) to its centre, and fully on screen: it telegraphs ...
+regattaboot_telegraph = 60    # ... for 60 frames (start flag, horn) ...
+regattaboot_speed = 384       # ... then races left at 1.5 px/frame through everything until it leaves the screen
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player
@@ -188,6 +218,13 @@ gondel_frames_per_tile = 16     # 1 px/frame along the major axis: travel = max(
 schafbergbahn_size = [64, 32]   # px [w, h], whole tiles: the train body; its roof is flush with the station platforms (D-067)
 schafbergbahn_frames_per_tile = 24  # travel = max(|dx|, |dy|) × 24 frames: 0.67 px/frame across a 1:4 track
 schafbergbahn_wait = 90         # frames standing at the upper end (at the lower end it waits for its rider)
+traundl_size = [48, 16]         # px [w, h]: the Traundl's flat hull; its top is the deck, flush with every row-11 deck (D-077)
+traundl_wait = 30               # frames at each end; it never waits for a rider (the Gondel's machine, D-044)
+traundl_frames_per_tile = 16    # 1 px/frame: travel = |dx| × 16 frames (to = [6, 0]: a 252-frame period)
+dampfer_size = [160, 16]        # px [w, h], whole tiles: the paddle steamer's hull; its top is the deck, flush with the quays (D-077)
+dampfer_frames_per_tile = 20    # travel = dx × 20 frames (0.8 px/frame, >= the auto-scroll's 0.75); it waits for its rider, then stays moored
+dampfer_wheel_zone = [32, 20]   # px [w, h]: the paddle wheel's hurt zone while it travels, centred on the hull's centre x
+dampfer_wheel_rise = 4          # px the wheel zone's top is above the hull's bottom (the water line); the rest is under it
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)
@@ -224,3 +261,15 @@ hitbox = [12, 12]         # px [w, h] while crawling through the Durchkriechstei
 speed = 256               # 1.0 px/frame to the right; len 4 → 4 × 16 + 12 = 76 frames
 mouth_px = 4              # DOWN starts the crawl when her right edge is at most this far left of the mouth
 cap_points = 1000         # Normal at the lives cap: points instead of the +1 life
+
+[swim]
+# Swimming in swim water (`TileKind::Swim`: see_wasser, see_wasser_tief, steg_pfahl; D-076).
+# The same numbers in every form; lethal water (D-050) is unchanged.
+chest_px = 8              # px: her chest point is the hitbox centre x, this far below the hitbox top; in a swim tile = swimming
+surface_band = 8          # px: chest less than this below a swim surface = at the surface (floats; JUMP = jump-out)
+gravity = 16              # 0.0625 px/frame² while sinking (DOWN held at the surface, or anywhere below the band) ...
+max_sink = 256            # ... up to 1.0 px/frame
+stroke_speed = 448        # a JUMP press below the band: 1.75 px/frame up, rises ~24 px over 28 frames (jump-out: player.jump_speed_walk)
+accel = 16                # 0.0625 px/frame² towards ±speed with LEFT/RIGHT ...
+decel = 8                 # ... 0.03125 px/frame² towards 0 without ...
+speed = 320               # ... 1.25 px/frame, RUN makes no difference (faster than the auto-scroll's 0.75)

@@ -54,5 +54,10 @@ const FINISH_FRAME: u32 = 731;
 /// Hackl/crawl player fields; M3 E20: `camera.climb_up_slack`/`climb_up_reach`/`climb_top_min`/`climb_catch_up_speed` and the hashed
 /// `settle_feet`/`slack_x`; M4 E21: `platforms.schafbergbahn_*`; M4 E22:
 /// the Operettensänger and Souvenirstand `[enemies]` keys; M4 E23: the
-/// `enemies.reisebus_*` keys).
-const FINISH_HASH: u64 = 0x625a_614f_0c12_3dd7;
+/// `enemies.reisebus_*` keys; M5 E28: `platforms.traundl_*`/`dampfer_*`;
+/// M5 E29: the `enemies.schwan_*`, `gelse_*` and `regattaboot_*` keys;
+/// M5 E26: `camera.autoscroll_*`; M5 E27: the `[swim]` keys and the hashed
+/// `swimming`/`leaving_water`/`swim_frames`; M5 E32:
+/// `camera.autoscroll_settle_speed`/`autoscroll_catch_up_speed`; M5 E34:
+/// `camera.autoscroll_ground_y`/`autoscroll_top`; route and frame unchanged).
+const FINISH_HASH: u64 = 0x1381_f68a_5014_83e7;

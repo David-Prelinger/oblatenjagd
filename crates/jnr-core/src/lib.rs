@@ -17,6 +17,7 @@
 //! - [`platform`]: the Festungsbahn car and the Gondel (moving one-way platforms)
 //! - [`hackl`]: the thrown Hackl and the axe-hit hook per entity kind (D-056)
 //! - [`crawl`]: the Durchkriechstein's start rule and level geometry (D-057)
+//! - [`swim`]: swim water (chest point, surface, lint; D-076)
 //! - [`camera`]: SMB-style camera
 //! - [`game`]: the state machine, `Game::step`, `Game::state_hash`
 //! - [`text`]: the keyed text table (`content/text/de.toml`)
@@ -42,13 +43,14 @@ pub mod player;
 pub mod replay;
 pub mod rng;
 pub mod route;
+pub mod swim;
 pub mod text;
 pub mod tuning;
 
 #[cfg(test)]
 mod tests;
 
-pub use camera::{Camera, SCREEN_H, SCREEN_W};
+pub use camera::{Autoscroll, Camera, SCREEN_H, SCREEN_W, ScrollPhase};
 pub use enemies::Pose;
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;

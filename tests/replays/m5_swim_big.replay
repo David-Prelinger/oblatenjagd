@@ -1,0 +1,20 @@
+# probe
+level  = m5_swim
+seed   = 1
+source = handwritten
+expect = deaths=0
+---
+R 38
+- 20
+J 20
+- 160
+R 60
+RJ 8
+R 20
+- 60
+R 20
+RJ 30
+R 40
+- 20
+RJ 30
+R 40

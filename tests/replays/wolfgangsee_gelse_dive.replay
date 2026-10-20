@@ -1,0 +1,52 @@
+# Stage 6 Gelse dive (D-079, D-085): as wolfgangsee_traundl onto the border
+# raft (frame 2772), where Gelse #2 (col 154, row 6, hunting 2740-3220)
+# comes down on her. Instead of stomping it she walks off the raft's right
+# end and dives (DOWN) to the lake bed under Traundl B's berth while
+# swimming right; the Gelse stops at the water line (from ~2864) and
+# follows her there ~90 px behind, slower than she swims at the right
+# clamp. Three strokes up and a held jump-out under Traundl C as it docks
+# (press 3026) put her on C's deck (3064), with the Gelse still ~90 px
+# behind at the water line. No hurt, no death.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt state=playing player_x>=2690 player_y>=154 player_y<=154
+shots  = 2869:gelse_over_diver
+---
+# --- the first 2429 frames of wolfgangsee_solver.replay ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+# --- handwritten ---
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+R 24
+RD 60
+R 60
+R 70
+RJ 1
+R 12
+RJ 1
+R 12
+RJ 1
+R 12
+RJ 20
+R 30

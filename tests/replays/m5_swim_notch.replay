@@ -1,0 +1,23 @@
+# The bathing notch (game-design.md "Stage 6", sec. 1): Resi hops the
+# bollard, falls into the notch holding DOWN and dives to the bed,
+# collecting the 3 Oblaten on row 14, swims back, strokes up twice and
+# jumps out onto the quay at column 16 (1 tile up, JUMP held).
+level  = m5_swim
+seed   = 1
+source = handwritten
+expect = deaths=0 oblaten>=3 event=Stroke event=Jumped no_event=Hurt state=playing player_x>=260
+---
+R 100
+RJ 8
+R 20
+- 20
+D 40
+L 30
+- 1
+R 50
+J 1
+- 24
+J 1
+- 24
+RJ 30
+R 40

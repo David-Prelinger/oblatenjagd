@@ -1,0 +1,103 @@
+# QA M5 acceptance: a fresh relaxed run of the Wolfgangsee for the D-045
+# time limit (3 x the relaxed run). A first-time player who looks around:
+# 1.5 s at the start reading the boards, the quay Oblate, the M-box and its
+# Mozartkugel (Zuckerschock at 249), the arc over the bathing notch, then
+# into the notch for its 3 bed Oblaten, strokes up and a held jump-out back
+# LEFT onto the start quay (562), a walk back towards the Schiffsstation
+# and a pause, a jump for the quay piece 16-17 that hits the bollard's side
+# and drops her into the notch again (725), a second jump-out onto 16-17
+# (827), 1.5 s by the „Raddampfer" board, a step onto the Dampfer (it
+# leaves) and 80 frames standing on its deck; then RIGHT held: along the
+# deck, the scroll starts as her centre passes col 25 (1024, 409 frames
+# after qa_m5_wolfgangsee_relaxed's 615), the ride at the right clamp, the
+# Gschwendt pier, swimming on at the clamp. At the clamp her state
+# converges with qa_m5_wolfgangsee_relaxed's frame for frame (2078 here =
+# 1669 there: same x, camera, score, Oblaten), so from 2078 the replay
+# carries that run's inputs (the solver's Seebad/pontoon inputs, the
+# Traundl chain, the perch, the lake bed under the regatta, the Strobl
+# landing and the walk to the Maibaum). LevelComplete at 5401 = 90.0 s
+# (3 x 90.0 = 270 s by D-045; time_limit is 260, 171 s left on the clock),
+# no hurt, no death, still Zuckerschock, 44 Oblaten.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = complete frames=5401..5401 deaths=0 no_event=Hurt no_event=Died event=Stomped event=CheckpointReached event=Stroke power=big oblaten=44 state=stage_clear
+---
+# --- fresh relaxed lead-in ---
+- 90
+R 76
+J 20
+- 140
+RJ 20
+R 20
+D 60
+DR 20
+DL 30
+- 16
+J 1
+- 14
+J 1
+- 24
+LJ 20
+L 60
+- 60
+R 50
+RJ 20
+R 20
+- 30
+RJ 20
+R 6
+- 90
+R 30
+- 80
+# --- RIGHT held: the deck, the scroll start (1024), the clamp ride, the pier, swim on at the clamp ---
+R 1060
+# --- from 2078: qa_m5_wolfgangsee_relaxed's inputs from its frame 1669 ---
+RB 124
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+- 10
+R 16
+- 19
+J 24
+- 40
+RJ 20
+R 10
+DR 660
+J 1
+- 12
+J 1
+- 12
+J 1
+- 20
+R 180
+RJ 20
+R 140
+RJ 16
+R 148

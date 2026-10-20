@@ -48,6 +48,8 @@ pub enum Popup {
     Ballast,
     /// `popup.bravo` („Bravo!"), a defeated Operettensänger (D-068).
     Bravo,
+    /// `popup.beleidigt` („Beleidigt!"), a defeated Schwan (D-078).
+    Beleidigt,
 }
 
 impl Popup {
@@ -62,11 +64,12 @@ impl Popup {
             Popup::Hackl => Some("popup.hackl"),
             Popup::Ballast => Some("popup.ballast"),
             Popup::Bravo => Some("popup.bravo"),
+            Popup::Beleidigt => Some("popup.beleidigt"),
         }
     }
 }
 
-/// The enemy types of Stages 1–5.
+/// The enemy types of Stages 1–6.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -100,6 +103,15 @@ pub enum EnemyKind {
     /// `reisebus`: parked, then drives left (optional photo stop); not
     /// stompable, its roof only bounces (D-070).
     Reisebus,
+    /// `schwan`: floats on the surface, charges a close player from its
+    /// home point and returns (D-078).
+    Schwan,
+    /// `gelse`: hovers until it has been on screen a while, then homes in
+    /// on the player for a limited time; never enters water (D-079).
+    Gelse,
+    /// `regattaboot`: the Reisebus's machine on the water: parked, then
+    /// races left; not stompable, its masthead only bounces (D-080).
+    Regattaboot,
 }
 
 impl EnemyKind {
@@ -108,7 +120,10 @@ impl EnemyKind {
     pub const fn stompable(self) -> bool {
         !matches!(
             self,
-            EnemyKind::Fiaker | EnemyKind::Bienenschwarm | EnemyKind::Reisebus
+            EnemyKind::Fiaker
+                | EnemyKind::Bienenschwarm
+                | EnemyKind::Reisebus
+                | EnemyKind::Regattaboot
         )
     }
 
@@ -118,9 +133,41 @@ impl EnemyKind {
         matches!(self, EnemyKind::Bienenschwarm)
     }
 
+    /// True for the kinds that walk, stand or roll on the ground and are
+    /// lost in swim water like in water (D-076): in lethal water they sink
+    /// out of the level, swim water has a lake bed, so they are removed as
+    /// soon as they touch it. Fliers, the kinds that ignore tiles (the
+    /// Fiaker's and the Reisebus' charges) and the lake's kinds (Schwan,
+    /// Gelse, Regattaboot) are not.
+    pub const fn sinks_in_swim_water(self) -> bool {
+        match self {
+            EnemyKind::SelfieTourist
+            | EnemyKind::MozartkugelVerkaeufer
+            | EnemyKind::NordicWalker
+            | EnemyKind::Blasmusiker
+            | EnemyKind::EBiker
+            | EnemyKind::Pilger
+            | EnemyKind::Gams
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schneekugel => true,
+            EnemyKind::Taube
+            | EnemyKind::TaubeSitting
+            | EnemyKind::Fiaker
+            | EnemyKind::Bienenschwarm
+            | EnemyKind::Reisebus
+            // The lake's own kinds (game-design "Stage 6"): the Schwan
+            // floats on the water, the Gelse flies over it (never entering
+            // it), the Regattaboot sails in the surface row ignoring tiles.
+            | EnemyKind::Schwan
+            | EnemyKind::Gelse
+            | EnemyKind::Regattaboot => false,
+        }
+    }
+
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker, Gams, Operettensänger; D-046, D-058, D-068),
+    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan; D-046, D-058,
+    /// D-068, D-078),
     /// else 0. Also the index of
     /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
@@ -129,7 +176,8 @@ impl EnemyKind {
             | EnemyKind::Blasmusiker
             | EnemyKind::EBiker
             | EnemyKind::Gams
-            | EnemyKind::Operettensaenger => 1,
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schwan => 1,
             _ => 0,
         }
     }
@@ -150,6 +198,9 @@ impl EnemyKind {
             EnemyKind::Operettensaenger => "operettensaenger",
             EnemyKind::Schneekugel => "schneekugel",
             EnemyKind::Reisebus => "reisebus",
+            EnemyKind::Schwan => "schwan",
+            EnemyKind::Gelse => "gelse",
+            EnemyKind::Regattaboot => "regattaboot",
         }
     }
 
@@ -169,6 +220,9 @@ impl EnemyKind {
             EnemyKind::Operettensaenger => 11,
             EnemyKind::Schneekugel => 12,
             EnemyKind::Reisebus => 13,
+            EnemyKind::Schwan => 14,
+            EnemyKind::Gelse => 15,
+            EnemyKind::Regattaboot => 16,
         }
     }
 }
@@ -238,6 +292,13 @@ pub enum EntityKind {
     /// The Schafbergbahn steam train: the Festungsbahn's waiting state
     /// machine with its own body and timing ([`crate::platform`], D-067).
     Schafbergbahn,
+    /// A Traundl: the Gondel's free-running ping-pong on the lake with its
+    /// own hull and timing ([`crate::platform`], D-077).
+    Traundl,
+    /// The Dampfer paddle steamer: the Festungsbahn's waiting machine, one
+    /// way (moored for good at the far end), with a paddle-wheel hurt zone
+    /// while it travels ([`crate::platform::paddle_wheel`], D-077).
+    Dampfer,
 }
 
 impl EntityKind {
@@ -262,6 +323,8 @@ impl EntityKind {
             EntityKind::Souvenirstand => Some("souvenirstand"),
             EntityKind::SchneekugelScherben => Some("schneekugel_scherben"),
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
+            EntityKind::Traundl => Some("traundl"),
+            EntityKind::Dampfer => Some("dampfer"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -269,12 +332,17 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn):
-    /// one-way tops that carry the player and never despawn (D-027).
+    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn,
+    /// Traundl, Dampfer): one-way tops that carry the player and never
+    /// despawn (D-027).
     pub const fn is_platform(self) -> bool {
         matches!(
             self,
-            EntityKind::Festungsbahn | EntityKind::Gondel | EntityKind::Schafbergbahn
+            EntityKind::Festungsbahn
+                | EntityKind::Gondel
+                | EntityKind::Schafbergbahn
+                | EntityKind::Traundl
+                | EntityKind::Dampfer
         )
     }
 
@@ -307,6 +375,8 @@ impl EntityKind {
             EntityKind::Souvenirstand => 21,
             EntityKind::SchneekugelScherben => 22,
             EntityKind::Schafbergbahn => 23,
+            EntityKind::Traundl => 24,
+            EntityKind::Dampfer => 25,
         }
     }
 
@@ -325,6 +395,7 @@ impl EntityKind {
                 Popup::Hackl => h.u8(5),
                 Popup::Ballast => h.u8(6),
                 Popup::Bravo => h.u8(7),
+                Popup::Beleidigt => h.u8(8),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -495,6 +566,37 @@ impl Entity {
                 train.state = crate::platform::initial_state(s);
                 train
             }
+            SpawnKind::Dampfer => {
+                // Left-aligned in its cell like the Festungsbahn (10 tiles
+                // wide), bottom on the cell's bottom (the water line),
+                // waiting for its rider.
+                let mut ship = Entity::at_feet(
+                    EntityKind::Dampfer,
+                    feet_x,
+                    feet_y,
+                    t.platforms.dampfer_size,
+                );
+                ship.x = cell_x;
+                ship.base_x = cell_x;
+                ship.state = crate::platform::initial_state(s);
+                ship
+            }
+            SpawnKind::Traundl => {
+                // Left-aligned in its cell like the Gondel, bottom on the
+                // cell's bottom (the water line), at `phase` frames into
+                // its cycle.
+                let mut boat = Entity::at_feet(
+                    EntityKind::Traundl,
+                    feet_x,
+                    feet_y,
+                    t.platforms.traundl_size,
+                );
+                boat.x = cell_x;
+                boat.base_x = cell_x;
+                boat.count = s.phase % crate::platform::free_period(EntityKind::Traundl, s, t);
+                crate::platform::place_free(&mut boat, s, t);
+                boat
+            }
             SpawnKind::Gondel => {
                 // Left-aligned in its cell like the Festungsbahn, then at
                 // `phase` frames into its cycle.
@@ -502,8 +604,8 @@ impl Entity {
                     Entity::at_feet(EntityKind::Gondel, feet_x, feet_y, t.platforms.gondel_size);
                 cab.x = cell_x;
                 cab.base_x = cell_x;
-                cab.count = s.phase % crate::platform::gondel_period(s, t);
-                crate::platform::place_gondel(&mut cab, s, t);
+                cab.count = s.phase % crate::platform::free_period(EntityKind::Gondel, s, t);
+                crate::platform::place_free(&mut cab, s, t);
                 cab
             }
             SpawnKind::NordicWalker => Entity::at_feet(
@@ -569,6 +671,36 @@ impl Entity {
                 cell_x + tile.mul_int(2),
                 feet_y,
                 e.reisebus_hitbox,
+            ),
+            // Floats on the surface (D-078): spawned in a surface-row water
+            // cell, its hitbox bottom `schwan_float_px` below the water
+            // line (the cell's top). `base_x` is its home point.
+            SpawnKind::Schwan => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Schwan),
+                feet_x,
+                tile.mul_int(s.row) + Fx::from_px(e.schwan_float_px),
+                e.schwan_hitbox,
+            ),
+            // Hitbox centred in its cell (D-079).
+            SpawnKind::Gelse => {
+                let [_, h] = e.gelse_hitbox;
+                let centre_y = tile.mul_int(s.row) + tile.div_int(2);
+                Entity::at_feet(
+                    EntityKind::Enemy(EnemyKind::Gelse),
+                    feet_x,
+                    centre_y + Fx::from_px(h).div_int(2),
+                    e.gelse_hitbox,
+                )
+            }
+            // The 2-tile (32 px) boat starts in its cell and covers the one
+            // to its right, in the surface row (D-080): the hitbox centred
+            // under the sprite, its bottom (the keel) `regattaboot_keel_px`
+            // below the water line (the cell's top).
+            SpawnKind::Regattaboot => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Regattaboot),
+                cell_x + tile,
+                tile.mul_int(s.row) + Fx::from_px(e.regattaboot_keel_px),
+                e.regattaboot_hitbox,
             ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
@@ -679,12 +811,12 @@ impl Entity {
                 crate::enemies::update_thrown(self, map, t);
                 None
             }
-            EntityKind::Festungsbahn | EntityKind::Schafbergbahn => {
+            EntityKind::Festungsbahn | EntityKind::Schafbergbahn | EntityKind::Dampfer => {
                 crate::platform::update_car(self, ctx);
                 None
             }
-            EntityKind::Gondel => {
-                crate::platform::update_gondel(self, ctx);
+            EntityKind::Gondel | EntityKind::Traundl => {
+                crate::platform::update_free(self, ctx);
                 None
             }
             EntityKind::Note => {
@@ -739,7 +871,7 @@ impl Entity {
     }
 
     /// Rise out of the box (no collision), then roll: gravity, turn at
-    /// walls, fall off ledges. Lost in hazards (water).
+    /// walls, fall off ledges. Lost in hazards (water, swim water).
     fn update_power_up(&mut self, map: &TileMap, t: &Tuning, speed: Fx) {
         if self.timer <= t.items.rise_frames {
             self.y -= t.items.rise_speed;
@@ -758,7 +890,7 @@ impl Entity {
         }
         self.x = b.x;
         self.y = b.y;
-        if map.touches_lethal(&b) {
+        if map.swallows(&b) {
             self.removed = true;
         }
     }
@@ -791,6 +923,8 @@ pub(crate) struct UpdateCtx<'a> {
     pub level: &'a crate::Level,
     /// The player's hitbox centre x.
     pub player_cx: Fx,
+    /// The player's hitbox top (a Gelse aims just below it, D-079).
+    pub player_top: Fx,
     /// The player's hitbox while standing on the ground (a tile or a car),
     /// `None` in the air (a Festungsbahn waits for its rider).
     pub player_standing: Option<crate::physics::Aabb>,
@@ -802,6 +936,19 @@ pub(crate) struct UpdateCtx<'a> {
     /// (`base_x`, `base_y`): a Souvenirstand counts its own by its spawn
     /// point (D-069: at most `souvenirstand_max_alive`).
     pub globes: &'a [(Fx, Fx)],
+}
+
+impl UpdateCtx<'_> {
+    /// True if `b` lies completely inside the screen
+    /// ([`crate::Camera::fully_on_screen`]): enemy triggers in an
+    /// auto-scroll zone need it, so no threat starts off screen (D-075).
+    pub(crate) fn fully_on_screen(&self, b: &Aabb) -> bool {
+        let camera = crate::Camera {
+            x: self.screen_left.to_px(),
+            y: self.screen_top.to_px(),
+        };
+        camera.fully_on_screen(b)
+    }
 }
 
 /// A popup centred on `x` with its top at `y`.
@@ -869,6 +1016,8 @@ mod tests {
                 EntityKind::Schafbergbahn => 21,
                 EntityKind::Souvenirstand => 22,
                 EntityKind::SchneekugelScherben => 23,
+                EntityKind::Traundl => 24,
+                EntityKind::Dampfer => 25,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -897,6 +1046,8 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Souvenirstand,
             EntityKind::SchneekugelScherben,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -925,6 +1076,9 @@ mod tests {
                 EnemyKind::Operettensaenger => 11,
                 EnemyKind::Schneekugel => 12,
                 EnemyKind::Reisebus => 13,
+                EnemyKind::Schwan => 14,
+                EnemyKind::Gelse => 15,
+                EnemyKind::Regattaboot => 16,
             }
         }
         let enemies = [
@@ -942,6 +1096,9 @@ mod tests {
             EnemyKind::Operettensaenger,
             EnemyKind::Schneekugel,
             EnemyKind::Reisebus,
+            EnemyKind::Schwan,
+            EnemyKind::Gelse,
+            EnemyKind::Regattaboot,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1000,6 +1157,7 @@ mod tests {
             tuning: &t,
             level: &level,
             player_cx: Fx::ZERO,
+            player_top: Fx::ZERO,
             player_standing: None,
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
@@ -1061,6 +1219,10 @@ mod tests {
                     SpawnKind::Bienenschwarm => 1,
                     // The resting rock sits 2 px above the niche floor.
                     SpawnKind::Steinschlag => 2,
+                    // A swan floats 4 px under its cell's top (the water
+                    // line), a boat's keel 12 px; a Gelse is centred.
+                    SpawnKind::Schwan => 12,
+                    SpawnKind::Regattaboot | SpawnKind::Gelse => 4,
                     _ => 0,
                 };
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");
@@ -1090,6 +1252,7 @@ mod tests {
         assert_eq!(Popup::Hoppala.text_key(), Some("popup.hoppala"));
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
         assert!(EntityKind::Schafbergbahn.is_platform());
+        assert!(EntityKind::Traundl.is_platform() && EntityKind::Dampfer.is_platform());
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);
