@@ -5,7 +5,8 @@
 //! ([`EntityKind::Steinschlag`], [`EntityKind::Stein`]), the Souvenirstand
 //! spawner and its snow globes ([`EntityKind::Souvenirstand`],
 //! [`EnemyKind::Schneekugel`]), the Operettensänger's high-C column
-//! ([`high_c_column`]) and defeated enemies ([`EntityKind::Defeated`]),
+//! ([`high_c_column`]), the lake enemies of Stage 6 (Schwan, Gelse,
+//! Regattaboot) and defeated enemies ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -111,6 +112,22 @@ pub mod state {
     pub const PHOTO_STOP: u8 = 3;
     /// Reisebus: telegraphing after the photo stop (`count` = frame).
     pub const RESTART: u8 = 4;
+    // The Regattaboot uses the Reisebus's `PARKED`, `TELEGRAPH`, `DRIVE`.
+
+    /// Schwan: at home, facing the player (telegraph is `TELEGRAPH`, the
+    /// charge `CHARGE`, `count` = frame of the state).
+    pub const HOME: u8 = 0;
+    /// Schwan: paddling back to its home point after a charge.
+    pub const PADDLE_BACK: u8 = 3;
+    /// Schwan: resting at home after a return (`count` = frame of the rest).
+    pub const REST: u8 = 4;
+
+    /// Gelse: hovering in place (`count` = frames fully on screen so far).
+    pub const HOVER: u8 = 0;
+    /// Gelse: homing in on the player (`count` = frame of the hunt).
+    pub const HUNT: u8 = 1;
+    /// Gelse: leaving straight up, harmless (`satt`).
+    pub const LEAVE: u8 = 2;
 
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
@@ -186,6 +203,10 @@ pub enum Pose {
         /// Frame 1 of `fotostopp`.
         flash: bool,
     },
+    /// Gelse `wait` (hovering, the telegraph; hunting is `Fly`).
+    Wait,
+    /// Gelse `leave` (full, flying away).
+    Leave,
 }
 
 impl Entity {
@@ -253,13 +274,23 @@ impl Entity {
                 state::HOP => Pose::Hop,
                 _ => Pose::Idle,
             },
-            EntityKind::Enemy(EnemyKind::Reisebus) => match self.state {
+            EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => match self.state {
                 state::TELEGRAPH | state::RESTART => Pose::Telegraph,
                 state::DRIVE => Pose::Drive,
                 state::PHOTO_STOP => Pose::Fotostopp {
                     flash: (self.count.saturating_sub(1) / e.reisebus_flash_frames.max(1)) % 2 == 1,
                 },
                 _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Schwan) => match self.state {
+                state::TELEGRAPH => Pose::Telegraph,
+                state::CHARGE => Pose::Charge,
+                _ => Pose::Idle,
+            },
+            EntityKind::Enemy(EnemyKind::Gelse) => match self.state {
+                state::HUNT => Pose::Fly,
+                state::LEAVE => Pose::Leave,
+                _ => Pose::Wait,
             },
             // The niche is empty from the drop until the refill.
             EntityKind::Steinschlag => steinschlag_pose(self, t)?,
@@ -298,9 +329,13 @@ impl Entity {
     }
 
     /// False for an enemy that can't touch the player right now (a
-    /// crashed E-Biker); true for every other enemy.
+    /// crashed E-Biker, a leaving Gelse); true for every other enemy.
     pub fn harmful(&self) -> bool {
-        !(self.kind == EntityKind::Enemy(EnemyKind::EBiker) && self.state == state::CRASH)
+        match self.kind {
+            EntityKind::Enemy(EnemyKind::EBiker) => self.state != state::CRASH,
+            EntityKind::Enemy(EnemyKind::Gelse) => self.state != state::LEAVE,
+            _ => true,
+        }
     }
 }
 
@@ -372,8 +407,16 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_globe(e, ctx);
             None
         }
-        EnemyKind::Reisebus => {
+        EnemyKind::Reisebus | EnemyKind::Regattaboot => {
             update_reisebus(e, ctx);
+            None
+        }
+        EnemyKind::Schwan => {
+            update_schwan(e, ctx);
+            None
+        }
+        EnemyKind::Gelse => {
+            update_gelse(e, ctx);
             None
         }
         EnemyKind::Bienenschwarm => {
@@ -777,18 +820,37 @@ fn update_fiaker(e: &mut Entity, ctx: &UpdateCtx) {
 /// `reisebus_stop_frames` frames of photo stop (the arrival frame is the
 /// first), `reisebus_restart` frames of telegraph, then it drives on.
 /// Removed once its right edge is left of the screen.
+///
+/// The Regattaboot runs the same machine (D-080) with its own
+/// `regattaboot_trigger`, `_telegraph` and `_speed`; its trigger also needs
+/// it [`fully_on_screen`], and it has no `stop` (the level syntax has no
+/// such field), so it never halts.
 fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
     let et = &ctx.tuning.enemies;
+    let boat = e.kind == EntityKind::Enemy(EnemyKind::Regattaboot);
+    let (trigger, telegraph, speed) = if boat {
+        (
+            et.regattaboot_trigger,
+            et.regattaboot_telegraph,
+            et.regattaboot_speed,
+        )
+    } else {
+        (
+            et.reisebus_trigger,
+            et.reisebus_telegraph,
+            et.reisebus_speed,
+        )
+    };
     match e.state {
         state::PARKED => {
-            if player_distance_px(e, ctx) <= et.reisebus_trigger {
+            if player_distance_px(e, ctx) <= trigger && (!boat || fully_on_screen(e, ctx)) {
                 e.state = state::TELEGRAPH;
                 e.count = 1;
             }
         }
         state::TELEGRAPH => {
             e.count += 1;
-            if e.count > et.reisebus_telegraph {
+            if e.count > telegraph {
                 e.state = state::DRIVE;
                 e.count = 0;
             }
@@ -813,7 +875,7 @@ fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
         e.vx = Fx::ZERO;
         return;
     }
-    e.vx = -et.reisebus_speed;
+    e.vx = -speed;
     let stop = e
         .spawn
         .and_then(|i| ctx.level.entities.get(usize::from(i)))
@@ -834,21 +896,26 @@ fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
-/// How many tiles left of a parked Reisebus its lane must be free (D-070).
+/// How many tiles left of a parked Reisebus (or Regattaboot) its lane
+/// must be free (D-070, D-080).
 pub const REISEBUS_LANE_TILES: i32 = 24;
 
-/// `levels lint` (D-070): every Reisebus's lane, the rows of its hitbox
-/// from its own cells to [`REISEBUS_LANE_TILES`] tiles left of its parked
-/// hitbox (or the level's left edge), holds no solid or one-way tile, so it
-/// is never seen driving through a wall (one problem per bus, naming the
-/// first blocked cell from the left); and a bus's photo stop (`stop`)
-/// must not lie left of the level's left edge.
+/// `levels lint` (D-070, D-080): every Reisebus's and Regattaboot's lane,
+/// the rows of its hitbox from its own cells to [`REISEBUS_LANE_TILES`]
+/// tiles left of its parked hitbox (or the level's left edge), holds no
+/// solid or one-way tile, so it is never seen driving through a wall (one
+/// problem per vehicle, naming the first blocked cell from the left); and a
+/// bus's photo stop (`stop`) must not lie left of the level's left edge.
+/// Water tiles in a boat's lane are fine.
 pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
-        if s.kind != SpawnKind::Reisebus {
-            continue;
-        }
+        let decision = match s.kind {
+            SpawnKind::Reisebus => "D-070",
+            SpawnKind::Regattaboot => "D-080",
+            _ => continue,
+        };
+        let name = s.kind.name();
         let Some(bus) = Entity::from_spawn(s, i, t) else {
             continue;
         };
@@ -865,7 +932,7 @@ pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
         let stop_x = bus.x - TILE.mul_int(i32::from(s.stop));
         if stop_x < Fx::ZERO {
             problems.push(format!(
-                "reisebus at row {}, column {}: its photo stop (stop = {}) would be {} px left of the level's left edge",
+                "{name} at row {}, column {}: its photo stop (stop = {}) would be {} px left of the level's left edge",
                 s.row + 1,
                 s.col + 1,
                 s.stop,
@@ -874,7 +941,7 @@ pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
         }
         if let Some((c, r)) = blocked {
             problems.push(format!(
-                "reisebus at row {}, column {}: its lane (rows {}-{}, columns {}-{}) has a solid or one-way tile at row {}, column {} (D-070: keep it clear for {REISEBUS_LANE_TILES} tiles to the left, or to the level's left edge)",
+                "{name} at row {}, column {}: its lane (rows {}-{}, columns {}-{}) has a solid or one-way tile at row {}, column {} ({decision}: keep it clear for {REISEBUS_LANE_TILES} tiles to the left, or to the level's left edge)",
                 s.row + 1,
                 s.col + 1,
                 rows.start() + 1,
@@ -949,7 +1016,7 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::Operettensaenger) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
-        EntityKind::Enemy(EnemyKind::Reisebus) => e.state != state::DRIVE,
+        EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => e.state != state::DRIVE,
         EntityKind::Enemy(EnemyKind::EBiker) => matches!(e.state, state::PARK | state::RING),
         EntityKind::Enemy(EnemyKind::TaubeSitting) => e.state == state::SIT,
         _ => false,
@@ -1444,17 +1511,242 @@ fn update_globe(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
-/// The „Bravo!" popup for a defeated Operettensänger (D-068), stacked
-/// above the score popup whose top is `top` (centred on `x`); `None` for
-/// every other kind.
-pub(crate) fn bravo(kind: EnemyKind, x: Fx, top: Fx) -> Option<Entity> {
-    (kind == EnemyKind::Operettensaenger).then(|| {
-        popup(
-            Popup::Bravo,
-            x,
-            top - Fx::from_px(crate::entity::POPUP_STACK_PX),
-        )
-    })
+/// The text popup of a defeated enemy, stacked above the score popup
+/// whose top is `top` (centred on `x`): „Bravo!" for an Operettensänger
+/// (D-068), „Beleidigt!" for a Schwan (D-078, the same mechanism); `None`
+/// for every other kind. Every defeat shows it (stomp, axe, bumped block).
+pub(crate) fn defeat_popup(kind: EnemyKind, x: Fx, top: Fx) -> Option<Entity> {
+    let p = match kind {
+        EnemyKind::Operettensaenger => Popup::Bravo,
+        EnemyKind::Schwan => Popup::Beleidigt,
+        _ => return None,
+    };
+    Some(popup(
+        p,
+        x,
+        top - Fx::from_px(crate::entity::POPUP_STACK_PX),
+    ))
+}
+
+/// A Regattaboot's two contact parts (D-080 refinement, E29): the
+/// masthead part (`regattaboot_mast`, centred on the hitbox, from its top
+/// down), the only part that bounces a falling player, and the body below
+/// it over the whole hitbox width, which hurts on any contact. So a player
+/// falling beside the narrow masthead passes it and meets the sail.
+/// `None` for every other entity (their hitbox is one part).
+pub fn regatta_parts(e: &Entity, t: &Tuning) -> Option<(Aabb, Aabb)> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Regattaboot) {
+        return None;
+    }
+    let [w, h] = t.enemies.regattaboot_mast;
+    let (w, h) = (Fx::from_px(w), Fx::from_px(h));
+    let mast = Aabb {
+        x: e.x + (e.w - w).div_int(2),
+        y: e.y,
+        w,
+        h,
+    };
+    let body = Aabb {
+        x: e.x,
+        y: e.y + h,
+        w: e.w,
+        h: e.h - h,
+    };
+    Some((mast, body))
+}
+
+/// What touching an enemy does to the player (`Game::interact`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Contact {
+    /// Defeated, the player bounces (points in the stomp chain).
+    Stomp,
+    /// The player bounces off without harm or points (the Fiaker's,
+    /// Reisebus's and Regattaboot's roof, D-027).
+    Bounce,
+    /// The player is hurt.
+    Hurt,
+}
+
+/// The contact rule for an enemy the player touches. `from_above`: she is
+/// falling and her feet were above the enemy's middle on the previous
+/// frame. From above a stompable enemy is stomped and any other bounces
+/// her, except a swarm, which hurts on any contact; every other contact
+/// hurts. While she swims every contact hurts: no stomps and no roof
+/// bounces (D-076, D-078, D-080; a jump-out is airborne from its next
+/// frame, so it can still end in a stomp).
+pub fn contact(kind: EnemyKind, from_above: bool, swimming: bool) -> Contact {
+    if !from_above || swimming || kind.hurts_from_above() {
+        Contact::Hurt
+    } else if kind.stompable() {
+        Contact::Stomp
+    } else {
+        Contact::Bounce
+    }
+}
+
+// ------------------------------------------------- M5 (D-078, D-079)
+
+/// True if `e`'s hitbox lies fully inside the camera view (the D-075
+/// visibility rule for triggers: nothing in the scroll zone starts off
+/// screen).
+// E26: replace with camera helper
+fn fully_on_screen(e: &Entity, ctx: &UpdateCtx) -> bool {
+    let screen_w = Fx::from_px(crate::camera::SCREEN_W);
+    let screen_h = Fx::from_px(crate::camera::SCREEN_H);
+    e.x >= ctx.screen_left
+        && e.right() <= ctx.screen_left + screen_w
+        && e.y >= ctx.screen_top
+        && e.y + e.h <= ctx.screen_top + screen_h
+}
+
+/// The Schwan (D-078). At home (`base_x`) it faces the player; when the
+/// player is within `schwan_range` (centre to centre) and it is
+/// [`fully_on_screen`] it telegraphs (the hiss) for `schwan_telegraph`
+/// frames (`count` = frame, the trigger frame is the first), then charges
+/// towards the side the player was on at the telegraph's start at
+/// `schwan_charge_speed` for `schwan_charge_frames` frames, paddles home at
+/// `schwan_return_speed` (the last step clamped, so it arrives exactly) and
+/// rests `schwan_rest` frames (the arrival frame not counted) before it
+/// can trigger again. It ignores tiles: it stays at its float height.
+fn update_schwan(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let cx = e.x + e.w.div_int(2);
+    if matches!(e.state, state::HOME | state::REST) && ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    match e.state {
+        state::HOME => {
+            if player_distance_px(e, ctx) <= et.schwan_range && fully_on_screen(e, ctx) {
+                e.state = state::TELEGRAPH;
+                e.count = 1;
+            }
+        }
+        state::TELEGRAPH => {
+            e.count += 1;
+            if e.count > et.schwan_telegraph {
+                e.state = state::CHARGE;
+                e.count = 0;
+            }
+        }
+        state::REST => {
+            e.count += 1;
+            if e.count >= et.schwan_rest {
+                e.state = state::HOME;
+                e.count = 0;
+            }
+        }
+        _ => {}
+    }
+    e.vx = Fx::ZERO;
+    match e.state {
+        state::CHARGE => {
+            e.vx = et.schwan_charge_speed.mul_int(i32::from(e.dir));
+            e.x += e.vx;
+            e.count += 1;
+            if e.count >= et.schwan_charge_frames {
+                e.state = state::PADDLE_BACK;
+                e.count = 0;
+            }
+        }
+        state::PADDLE_BACK => {
+            let to_home = e.base_x - e.x;
+            if to_home != Fx::ZERO {
+                e.dir = to_home.signum() as i8;
+            }
+            let speed = et.schwan_return_speed;
+            e.vx = to_home.max(-speed).min(speed);
+            e.x += e.vx;
+            if e.x == e.base_x {
+                e.state = state::REST;
+                e.count = 0;
+            }
+        }
+        _ => {}
+    }
+}
+
+/// The Gelse (D-079). It hovers in place (`count` = frames it has been
+/// [`fully_on_screen`] so far) until that reaches `gelse_wait`, then hunts
+/// for `gelse_hunt` frames: each frame its velocity changes by
+/// `gelse_accel` per axis towards the player's hitbox centre x and her
+/// hitbox top + `gelse_target_dy` (seen from its hitbox centre), clamped to
+/// ±`gelse_speed`, and it moves clear of water ([`move_clear_of_water`]);
+/// then it leaves: harmless, straight up at `gelse_leave_speed`, removed
+/// once its bottom is above the screen.
+fn update_gelse(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let cx = e.x + e.w.div_int(2);
+    match e.state {
+        state::HOVER => {
+            if ctx.player_cx != cx {
+                e.dir = (ctx.player_cx - cx).signum() as i8;
+            }
+            if fully_on_screen(e, ctx) {
+                e.count += 1;
+                if e.count >= et.gelse_wait {
+                    e.state = state::HUNT;
+                    e.count = 0;
+                }
+            }
+        }
+        state::HUNT => {
+            let cy = e.y + e.h.div_int(2);
+            let ty = ctx.player_top + Fx::from_px(et.gelse_target_dy);
+            let (speed, accel) = (et.gelse_speed, et.gelse_accel);
+            let towards = |v: Fx, d: Fx| (v + accel.mul_int(d.signum())).max(-speed).min(speed);
+            e.vx = towards(e.vx, ctx.player_cx - cx);
+            e.vy = towards(e.vy, ty - cy);
+            move_clear_of_water(e, ctx.map);
+            if e.vx != Fx::ZERO {
+                e.dir = e.vx.signum() as i8;
+            }
+            e.count += 1;
+            if e.count >= et.gelse_hunt {
+                e.state = state::LEAVE;
+                e.count = 0;
+            }
+        }
+        _ => {
+            e.vx = Fx::ZERO;
+            e.vy = -et.gelse_leave_speed;
+            e.y += e.vy;
+            if e.y + e.h <= ctx.screen_top {
+                e.removed = true;
+            }
+        }
+    }
+}
+
+/// Moves a Gelse by its velocity through every tile except water (D-079):
+/// a move (per axis, x first) that would put any of its hitbox into a
+/// water tile is cut at that tile's edge (a move down at the tile's top)
+/// and that velocity set to 0. So it waits at the water line above a
+/// diver. Its moves are shorter than a tile, so only the cells it newly
+/// enters can be water.
+fn move_clear_of_water(e: &mut Entity, map: &TileMap) {
+    // E27: | Swim
+    let wet = |b: &Aabb| map.touches(b, TileKind::Water);
+    let mut b = e.hitbox();
+    b.x += e.vx;
+    if e.vx != Fx::ZERO && wet(&b) {
+        b.x = if e.vx > Fx::ZERO {
+            TILE.mul_int(tile_of(b.right() - Fx(1))) - b.w
+        } else {
+            TILE.mul_int(tile_of(b.x) + 1)
+        };
+        e.vx = Fx::ZERO;
+    }
+    b.y += e.vy;
+    if e.vy != Fx::ZERO && wet(&b) {
+        b.y = if e.vy > Fx::ZERO {
+            TILE.mul_int(tile_of(b.bottom() - Fx(1))) - b.h
+        } else {
+            TILE.mul_int(tile_of(b.y) + 1)
+        };
+        e.vy = Fx::ZERO;
+    }
+    e.x = b.x;
+    e.y = b.y;
 }
 
 /// **Defeat by projectile** (the one path for the thrown Hackl, D-056,

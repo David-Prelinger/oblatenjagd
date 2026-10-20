@@ -23,6 +23,7 @@ pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 use std::sync::Arc;
 
 use crate::camera::{Camera, ClimbFocus, SCREEN_H, SCREEN_W};
+use crate::enemies::Contact;
 use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
@@ -771,7 +772,8 @@ impl Game {
             let points = self.tuning.score.bump_enemy;
             self.add_score(points);
             self.entities.push(popup(Popup::Score(points), x, y));
-            self.entities.extend(crate::enemies::bravo(kind, x, y));
+            self.entities
+                .extend(crate::enemies::defeat_popup(kind, x, y));
         }
     }
 
@@ -900,6 +902,7 @@ impl Game {
             tuning: &self.tuning,
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
+            player_top: self.player.y,
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
@@ -993,6 +996,7 @@ impl Game {
         let mut spawned = Vec::new();
         let mut grew = false;
         let hitbox = self.player.hitbox();
+        let swimming = self.player_swimming();
         for i in 0..self.entities.len() {
             let e = self.entities[i];
             if !e.active || e.removed {
@@ -1044,18 +1048,25 @@ impl Game {
                     spawned.extend(self.pick_up_hackl(fx, e.y));
                 }
                 EntityKind::Enemy(_) if !e.harmful() => {}
-                // A swarm hurts on any contact, also from above.
-                EntityKind::Enemy(kind) if kind.hurts_from_above() => hurt = true,
                 EntityKind::Enemy(kind) => {
-                    // Stomp: falling, and the feet were above the enemy's
-                    // middle on the previous frame (both positions from
-                    // before this frame's movement).
-                    let middle = e.prev_y + e.h.div_int(2);
-                    if self.player.vy > Fx::ZERO && prev_bottom <= middle {
-                        bounced = true;
-                        if !kind.stompable() {
-                            rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
-                        } else {
+                    // The part she touches: a Regattaboot bounces only off
+                    // its masthead part, its body below hurts (D-080
+                    // refinement); every other enemy is its hitbox.
+                    let (part, bounces) = match crate::enemies::regatta_parts(&e, &self.tuning) {
+                        Some((mast, _)) if mast.overlaps(&hitbox) => (mast, true),
+                        Some((_, body)) if body.overlaps(&hitbox) => (body, false),
+                        // The strips beside the mast are air.
+                        Some(_) => continue,
+                        None => (e.hitbox(), true),
+                    };
+                    // From above: falling, and the feet were above the
+                    // part's middle on the previous frame (both positions
+                    // from before this frame's movement).
+                    let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
+                    let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
+                    match crate::enemies::contact(kind, from_above, swimming) {
+                        Contact::Stomp => {
+                            bounced = true;
                             crate::enemies::defeat(
                                 &mut self.entities[i],
                                 kind,
@@ -1063,13 +1074,27 @@ impl Game {
                                 &self.tuning,
                             );
                             spawned.extend(self.stomp_reward(kind, fx, e.y));
-                            spawned.extend(crate::enemies::bravo(kind, fx, e.y));
+                            spawned.extend(crate::enemies::defeat_popup(kind, fx, e.y));
                             if kind == EnemyKind::Schneekugel {
                                 spawned.extend(crate::enemies::globe_shards(&e, &self.tuning));
                             }
                         }
-                    } else if kind.stompable() || self.player.bounce_grace == 0 {
-                        hurt = true;
+                        Contact::Bounce => {
+                            bounced = true;
+                            rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
+                        }
+                        // A swarm (and anything while she swims) hurts
+                        // even in the grace after a bounce; a non-stompable
+                        // enemy's side doesn't (D-027 fallback).
+                        Contact::Hurt => {
+                            if kind.stompable()
+                                || kind.hurts_from_above()
+                                || swimming
+                                || self.player.bounce_grace == 0
+                            {
+                                hurt = true;
+                            }
+                        }
                     }
                 }
                 // A falling rock hurts on any contact, also from above.
@@ -1108,6 +1133,15 @@ impl Game {
             self.events.push(Event::Stomped);
         }
         self.entities.extend(spawned);
+    }
+
+    /// True while the player swims (D-076): no stomps and no roof bounces
+    /// then, every enemy contact hurts ([`crate::enemies::contact`]).
+    /// A stub until E27's swimming lands: today every water tile kills
+    /// before her chest is under, so she never swims.
+    // E30: switch to E27's swim query (the chest-point rule).
+    pub(crate) fn player_swimming(&self) -> bool {
+        false
     }
 
     /// Puts the player's feet on `top` (a bounce off a non-stompable
@@ -1177,7 +1211,8 @@ impl Game {
         let (fx, _) = e.feet();
         self.entities.push(popup(Popup::Score(points), fx, e.y));
         if let EntityKind::Defeated(kind) = e.kind {
-            self.entities.extend(crate::enemies::bravo(kind, fx, e.y));
+            self.entities
+                .extend(crate::enemies::defeat_popup(kind, fx, e.y));
         }
         true
     }

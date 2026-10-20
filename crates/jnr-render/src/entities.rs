@@ -154,6 +154,9 @@ pub struct EntityLooks<'a> {
     pilger_lead: Option<&'a AtlasSprite>,
     gams: Option<&'a AtlasSprite>,
     reisebus: Option<&'a AtlasSprite>,
+    schwan: Option<&'a AtlasSprite>,
+    gelse: Option<&'a AtlasSprite>,
+    regattaboot: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -201,6 +204,9 @@ impl<'a> EntityLooks<'a> {
             pilger_lead: s("pilger_lead"),
             gams: s(EnemyKind::Gams.sprite()),
             reisebus: s(EnemyKind::Reisebus.sprite()),
+            schwan: s(EnemyKind::Schwan.sprite()),
+            gelse: s(EnemyKind::Gelse.sprite()),
+            regattaboot: s(EnemyKind::Regattaboot.sprite()),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -244,6 +250,9 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Operettensaenger => self.operettensaenger,
                 EnemyKind::Schneekugel => self.schneekugel,
                 EnemyKind::Reisebus => self.reisebus,
+                EnemyKind::Schwan => self.schwan,
+                EnemyKind::Gelse => self.gelse,
+                EnemyKind::Regattaboot => self.regattaboot,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -288,6 +297,9 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Operettensaenger => SLATE_DARK,
             EnemyKind::Schneekugel => SKY_HAZE,
             EnemyKind::Reisebus => WHITE,
+            EnemyKind::Schwan => WHITE,
+            EnemyKind::Gelse => OUTLINE,
+            EnemyKind::Regattaboot => CREAM,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -774,6 +786,8 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Roll => ("roll", None),
         Pose::Drive => ("drive", None),
         Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
+        Pose::Wait => ("wait", None),
+        Pose::Leave => ("leave", None),
     }
 }
 
@@ -846,6 +860,12 @@ fn draw_enemy(
 ) {
     let pose = e.pose(game.tuning()).unwrap_or(Pose::Idle);
     let (sx, sy) = e.shake_px(game.tuning());
+    // A hovering Gelse bobs (renderer only, D-079).
+    let sy = if pose == Pose::Wait {
+        sy + gelse_bob_px(game.frame())
+    } else {
+        sy
+    };
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
     let lead = is_lead_pilger(game, e);
@@ -869,11 +889,19 @@ fn draw_enemy(
                         | EnemyKind::EBiker
                         | EnemyKind::Schneekugel
                         | EnemyKind::Reisebus
+                        | EnemyKind::Regattaboot
                 ) | EntityKind::Defeated(
                     EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
                 )
             );
             let left = e.facing_left() && !fixed;
+            // The Regattaboot's origin is its sprite's bottom (its cell's
+            // bottom), below the keel (the hitbox bottom).
+            let y = if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
+                y + jnr_core::level::TILE_PX - game.tuning().enemies.regattaboot_keel_px
+            } else {
+                y
+            };
             draw_sprite(fb, atlas, s, anim, tick, x, y, left);
         }
         None => {
@@ -889,6 +917,14 @@ fn draw_enemy(
             fb.outline_rect(bx, by, w, h, OUTLINE);
             if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
                 draw_bus_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
+                draw_boat_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if e.kind == EntityKind::Enemy(EnemyKind::Schwan) && pose == Pose::Telegraph {
+                // The hiss: raised wings as two white posts over the box.
+                fb.fill_rect(bx + 1, by - 4, 3, 4, WHITE);
+                fb.fill_rect(bx + w - 4, by - 4, 3, 4, WHITE);
             }
             if lead && pose != Pose::Squished {
                 // The leader's pennant: a 1 px stick above the box with a
@@ -996,6 +1032,28 @@ fn draw_bus_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Po
         }
         _ => {}
     }
+}
+
+/// The Regattaboot grey box's marks (until its art arrives, D-080): a
+/// dark mast line up the middle of the sail and, while it telegraphs, the
+/// start flag (`r`) at the stern blinking every [`BUS_HAZARD_TICKS`]
+/// frames; a `Y` bow wave on the left while it races.
+fn draw_boat_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Pose, tick: u32) {
+    fb.fill_rect(x + w / 2, y + 1, 1, h - 2, SLATE_DARK);
+    match pose {
+        Pose::Telegraph if (tick / BUS_HAZARD_TICKS).is_multiple_of(2) => {
+            fb.fill_rect(x + w - 5, y + h - 20, 4, 3, DIRNDL_RED);
+        }
+        Pose::Drive => fb.fill_rect(x - 2, y + h - 14, 2, 3, MOZART_YELLOW),
+        _ => {}
+    }
+}
+
+/// A hovering Gelse's bob (renderer only, D-079): −2..=2 px, one step
+/// every 4 frames.
+pub fn gelse_bob_px(frame: u32) -> i32 {
+    const BOB: [i32; 8] = [0, 1, 2, 1, 0, -1, -2, -1];
+    BOB[(frame / 4 % 8) as usize]
 }
 
 /// Frames per blink of the grey-box bus's hazard lights (the catalog's
@@ -1499,6 +1557,8 @@ mod tests {
             Pose::Fall,
             Pose::Sing,
             Pose::Roll,
+            Pose::Wait,
+            Pose::Leave,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -2035,5 +2095,79 @@ mod tests {
             g.step(InputFrame::NONE);
         }
         assert_eq!(shown(&g), Some(A), "waiting at the lower end");
+    }
+
+    #[test]
+    fn the_grey_box_boat_shows_its_start_flag_and_bow_wave() {
+        use jnr_core::Pose;
+        // A 24×56 box at (100, 100): the mast up the middle, the flag at
+        // the stern while it telegraphs (blinking), the bow wave racing.
+        let marks = |pose: Pose, tick: u32| {
+            let mut fb = Framebuffer::new();
+            draw_boat_marks(&mut fb, 100, 100, 24, 56, pose, tick);
+            (fb.get(112, 120), fb.get(120, 137), fb.get(98, 143))
+        };
+        let (mast, flag, wave) = marks(Pose::Idle, 0);
+        assert_eq!(mast, Some(SLATE_DARK));
+        assert_ne!(flag, Some(DIRNDL_RED));
+        assert_ne!(wave, Some(MOZART_YELLOW));
+        let (_, flag, _) = marks(Pose::Telegraph, 0);
+        assert_eq!(flag, Some(DIRNDL_RED));
+        let (_, flag, _) = marks(Pose::Telegraph, BUS_HAZARD_TICKS);
+        assert_ne!(flag, Some(DIRNDL_RED), "blinks");
+        let (_, _, wave) = marks(Pose::Drive, 0);
+        assert_eq!(wave, Some(MOZART_YELLOW));
+        assert_eq!(
+            grey_box_colour(EntityKind::Enemy(EnemyKind::Regattaboot)),
+            CREAM
+        );
+    }
+
+    #[test]
+    fn a_hovering_gelse_bobs_2_px() {
+        let bob: Vec<i32> = (0..32).step_by(4).map(gelse_bob_px).collect();
+        assert_eq!(bob, vec![0, 1, 2, 1, 0, -1, -2, -1]);
+        assert_eq!(gelse_bob_px(32), 0, "periodic");
+    }
+
+    #[test]
+    fn a_regattaboot_sprite_stands_on_its_cell_bottom_below_the_keel() {
+        use crate::testutil::{A, atlas, image, sprite};
+        // The catalog's 32×64 sprite with its origin at the bottom centre:
+        // its bottom row is the cell's bottom, 4 px below the hitbox.
+        let rows = vec!["a".repeat(32); 64];
+        let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
+        let boat = sprite(
+            "regattaboot",
+            (16, 64),
+            false,
+            vec![("idle", 30, vec![image(&rows)])],
+        );
+        let atlas = atlas(&[boat]);
+        let texts = Texts::default();
+        let text = "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"b\" = { entity = \"regattaboot\" }\n\
+             \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n........b...........\n\
+             ....................\n....................\n..P.................\n\
+             ####################\n'''\n";
+        let mut g = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
+        g.step(InputFrame::NONE);
+        let b = *g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Regattaboot))
+            .unwrap();
+        assert_eq!((b.y + b.h).to_px(), 92, "keel 12 px under the cell top");
+        let ctx = RenderContext::new(&atlas, &texts, g.level());
+        let mut fb = crate::testutil::fb();
+        render(&g, &ctx, &mut fb);
+        let cam = g.camera();
+        let (x, bottom) = (144 - cam.x, 96 - cam.y);
+        assert_eq!(fb.get(x, bottom - 1), Some(A), "down to the cell bottom");
+        assert_ne!(fb.get(x, bottom), Some(A));
+        assert_eq!(fb.get(x, bottom - 64), Some(A), "64 px tall");
+        assert_ne!(fb.get(x, bottom - 65), Some(A));
     }
 }

@@ -1,0 +1,14 @@
+# The Gelse hovers until it has been fully on screen for 60 frames, then
+# homes in on Resi standing on the deck; she jumps as it comes at her
+# head and lands on it: 100 points (after swan #2's 200).
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Stomped score=300 no_event=Hurt
+---
+RB 325
+RBJ 36
+RB 20
+- 249
+J 20
+- 80
