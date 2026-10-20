@@ -1,0 +1,63 @@
+# Stage 7 Gelse #1 outrun (D-100 condition, D-085 precedent): the walk-on
+# answer to the walkway's Gelse, measured by hand because the solver passes
+# before it hunts. As strobl_gelse to deck C (2370), then she waits on the
+# deck's left part: Gelse #1 (218, row 8) is fully on screen for 60 frames
+# and starts hunting at 2400 (0.75 px/frame per axis, towards her head).
+# At 2410 she runs right under it while it is still above her head, jumps
+# C -> D off the deck's right end (press 2457, Jumped 2458; the Gelse is
+# behind her, ~12 px above her head) and D -> bridge right after landing
+# (press 2511), never stomping it; it is still hunting behind her when she
+# lands on the Klausbruecke (2556) and drops off the screen's left edge.
+# Windows, each press shifted alone with every other input at its frame
+# (win.py-style, 2 s after landing): C -> D -3..+7 = 11 frames (earlier
+# she jumps into the Gelse: death; later the fixed D -> bridge press comes
+# too early: a route limit), D -> bridge -7..+12 = >= 20 (earlier she
+# falls short into the gap; +12 = the shift limit). Both >= 5: no gap
+# narrowed (the D-100 fallback was not needed). score=8500: the Gelse is
+# never stomped (its 100 would show; the earlier Stomped events are
+# Selfie-Tourists on the way).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing player_x>=3830 score=8500 oblaten=42
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 376
+RJ 20
+R 70
+RJ 20
+R 24
+- 41
+RB 47
+RBJ 16
+RB 38
+RBJ 16
+RB 120

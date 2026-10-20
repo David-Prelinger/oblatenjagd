@@ -1,0 +1,224 @@
+# Stage 7: Strobl (docs/game-design.md "Stage 7: Strobl", D-092 ... D-097;
+# as built: the D-097 addendum "Stage 7 as built"). 280 columns x 17 rows,
+# side camera; the street top is row 15 (rows 15-16 ground, road, kies or
+# water), the goal meadow row 16. Generated from a layout list by a
+# throwaway script; the grid is the source.
+#   1 Anlegestelle   0-30    kai 0-7 (start col 2, schiffsstation (back)
+#                            over 0-5), Bus 150 / faehrt durch 5, 5 Oblaten
+#                            8-12, M-box 14 (row 11) between bricks, garden
+#                            wall (stone, 2 high) 18 turns the Mozartkugel,
+#                            an Oblaten arc over it; Willkommen 22; Nordic-
+#                            Walker #1 at 25 penned 19-29 by the wall and
+#                            the 2-high flower bed at 30 (arc over it).
+#   2 Promenade     31-89    plinth 36 (stone, 2 high) with the buste prop
+#                            (front) and the taube_sitting on its head (row
+#                            11, dy -8: 56 px above the street). Selfie-
+#                            Tourist #1 at 42 penned 37-45 by the plinth and
+#                            the garden fence (46, 2 high). Pension Seeblick
+#                            (pension prop, back, col 51 dx 8 = 47-56),
+#                            Zimmer frei 47, Lueften 54 (under the balcony).
+#                            Fensterladen #1 in (49, 12), phase 0, 3 above
+#                            the garden; balcony 51-55 (row 11) with the
+#                            flower box (stone, row 10) at 51 and a 3-high
+#                            stopper (stone, rows 8-10) at 55, 3 Oblaten, the
+#                            Z-box at (53, 8): the Zaunerstollen rolls off
+#                            the box top, turns at the stopper and comes back
+#                            (a 1-high box at 55 let it land on top of it and
+#                            roll off the balcony). D-100 looks: the
+#                            balkon_pfosten prop (front, cell (56, 10) dx
+#                            -16) draws the carved corner post over the
+#                            stopper cells, the balkon_blumenkasten (cell
+#                            (50, 10) dx 16) the geranium box over 51;
+#                            collision unchanged (stone).
+#                            Garden 57-60, then Pension Alpenrose: facade
+#                            (wall_village_bg, rows 9-14, roof_bg hipped roof
+#                            rows 6-8) at 61-71, Fensterladen #2 in (67, 12) phase
+#                            90, #3 in (69, 9) phase 150 (both open together
+#                            at clock 150-239 mod 240, 90 frames), the solid
+#                            annex (facade_village, roof_shingle on row 6, 9
+#                            tiles high) at 72-77, 4 Oblaten on row 5 over
+#                            it, steps down 78 (row 9) and 79 (row 12).
+#                            Bypass rules (D-094 addendum): 10 columns of
+#                            garden and facade between the balcony (55) and
+#                            the annex, and an annex 96 px above #2, so
+#                            neither a running jump from the balcony, the
+#                            stopper or the Z-box top nor one off #2 reaches
+#                            the roof: #3 is the only step onto it. (The
+#                            Z-box top, 128, is a perch from which a long
+#                            running jump reaches #2: that is the staircase
+#                            entered from above, not a bypass.)
+#                            Promenade 80-89: Oblaten, ?-box (84, 11),
+#                            Selfie-Tourist #2 at 88.
+#   3 Dorfplatz     90-139   cobbles to 104, road from 105. Umsteigen 91;
+#                            shelter A (wartehaus_dach row 12) 96-99 with 3
+#                            Oblaten; Gasthof (gasthof_strobl, back, 101-110)
+#                            with Fensterlaeden #4 (102, 12) phase 0 and #5
+#                            (106, 12) phase 120 (one of them always open),
+#                            Oblaten over both; Selfie-Tourist #3 at 108;
+#                            Stau 109 (between the Gasthof door and shelter
+#                            B; moved from 141 in the art-director's golden
+#                            round 1 to make room for Gruen blinkt);
+#                            shelter B 111-114 (3 Oblaten); Postbus 150
+#                            (reisebus, look postbus, stop 4) parked at 119:
+#                            it triggers once her centre passes col 111 (on
+#                            shelter B), halts at 115-118 (Oblaten arc over
+#                            the halt, row 10) and drives on through the
+#                            Dorfplatz (lane 95-122, clear). Checkpoint 132,
+#                            Bus 150 / haelt! Voll. 135, M-box 139 (row 11)
+#                            between bricks. From the checkpoint the parked
+#                            bus is 184 px away (no trigger) and its hitbox
+#                            ends left of the respawn screen's edge.
+#   4 Kreuzung     140-189   Gruen blinkt 141 (was 157, inside Ampel #1's
+#                            lane: the cars covered its face; at 141 its
+#                            board ends at x 2304 and a car is only drawn
+#                            right of the screen's left edge, which stays
+#                            >= 2288 once the Ampel counts: <= 16 px at the
+#                            edge in theory, none in any replay);
+#                            Gastgarten terrace (oneway_wood row 12)
+#                            147-154 on terrasse posts, 4 Oblaten; Ampel #1
+#                            (2 cars, period 400, range 12) in the einfahrt_bg mouth (162-163, rows
+#                            12-14): it counts once its cell is fully on
+#                            screen, i.e. with her centre right of col 152
+#                            (the terrace's right part), and its cars drive
+#                            beneath her. Shelter C 172-175 (3 Oblaten);
+#                            Selfie-Tourist #4 at 178; Ampel #2 (3 cars,
+#                            period 400, phase 250, range 15) in the mouth at
+#                            186-187: it starts in red when her centre passes
+#                            col 176 (fully on screen), so a first approach
+#                            can cross; range 15 keeps all of shelter C in
+#                            range (with 12 its left half paused the light
+#                            in red). Lanes 138-163 and 162-187 are clear.
+#   5 Buergelstein 190-239   ground 190-191 with Baden heute 190; the cliff
+#                            (kalkfels_bg, a hump inside rows 3-14) behind
+#                            192-228; deck A (jetty, row 15) 192-197 with
+#                            Steg wird saniert 196; gap 198-200 -> deck B
+#                            (felssteg row 13) 201-206 -> gap 207-210 -> deck
+#                            C (felssteg row 13) 211-218 -> gap 219-221 ->
+#                            deck D (jetty row 15) 222-226 -> gap 227-228 ->
+#                            the Klausbruecke (jetty row 15) 229-239, posts
+#                            in the water (jetty_post). Lethal
+#                            wolfgangsee_water under every gap. Gelse #1 at
+#                            (218, 8), over deck C's right end and above
+#                            every running arc between the decks (at (215,
+#                            9) the solver stomped it in mid-air off the B-C
+#                            jump, window 3); it starts hunting while she
+#                            stands on deck C. Oblaten arcs over the gaps, 4
+#                            on deck C. Hier rinnt 233, Radweg war Bahn 239.
+#   6 Radweg -> Maibaum 240-279  kies; buffer (stone, 2 high) 241-242 with
+#                            the prellbock prop; E-Biker #1 parked at 244, one
+#                            column from the buffer, so it crashes into it
+#                            before a running Resi can land in its path
+#                            (parked at 248 the solver had to stomp it in a
+#                            two-stomp chain, window 3). Ischler Ache
+#                            (salzach_water) 250-252 with an Oblaten arc;
+#                            E-Biker #2 parked at 256 on the landing rides
+#                            into it. Step (stone, 3 high) 258-259, the
+#                            Lokalbahn halt (prop back, invisible 260-265 x
+#                            rows 10-15, roof 6 above the meadow, 3 Oblaten),
+#                            meadow from 266, Maibaum 270, Ortsende 273.
+# Oblaten: 78 placed + 1 in the ?-box.
+# time_limit 240: provisional (D-045, D-092); QA measures the relaxed run.
+# Solver (D-092: gate 5, target narrowest 5-7): see the D-097 addendum.
+# Replays: tests/replays/strobl_*.replay.
+
+[meta]
+id = "strobl"
+title_key = "stage.strobl.title"
+time_limit = 240
+min_jump_window = 5
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_wolfgangsee", factor = 8, y = 40 },
+  { sprite = "bg_strobl", factor = 13 },
+]
+
+[legend]
+"=" = "ground"
+"_" = "strasse"
+"K" = "kai"
+"k" = "kies"
+"," = "meadow"
+"#" = "stone"
+"I" = "invisible"
+"B" = "brick"
+"&" = "balcony"
+"W" = "wall_village_bg"
+"^" = "roof_bg"
+"F" = "facade_village"
+"R" = "roof_shingle"
+"-" = "wartehaus_dach"
+"+" = "oneway_wood"
+"(" = "terrasse_post_l"
+")" = "terrasse_post_r"
+"E" = "einfahrt_bg"
+":" = "kalkfels_bg"
+"/" = "felssteg"
+"j" = "jetty"
+"J" = "jetty_post"
+"~" = "wolfgangsee_water"
+"w" = "wolfgangsee_water_deep"
+"<" = "salzach_water"
+">" = "salzach_water_deep"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
+"P" = { entity = "player_start" }
+"2" = { entity = "prop", sprite = "schiffsstation", dx = -8, layer = "back" }
+"A" = { entity = "sign", text = "stage.strobl.sign_bus", style = "bus" }
+"o" = { entity = "oblate" }
+"D" = { entity = "sign", text = "stage.strobl.sign_willkommen" }
+"n" = { entity = "nordic_walker" }
+"3" = { entity = "prop", sprite = "buste" }
+"q" = { entity = "taube_sitting", dy = -8 }
+"t" = { entity = "selfie_tourist" }
+"4" = { entity = "prop", sprite = "pension", dx = 8, layer = "back" }
+"H" = { entity = "sign", text = "stage.strobl.sign_zimmer" }
+"f" = { entity = "fensterladen", period = 240, open = 150, phase = 0 }
+"L" = { entity = "sign", text = "stage.strobl.sign_lueften" }
+"a" = { entity = "prop", sprite = "balkon_pfosten", dx = -16 }
+"b" = { entity = "prop", sprite = "balkon_blumenkasten", dx = 16 }
+"!" = { entity = "fensterladen", period = 240, open = 150, phase = 90, tile = "wall_village_bg" }
+"@" = { entity = "fensterladen", period = 240, open = 150, phase = 150, tile = "wall_village_bg" }
+"N" = { entity = "sign", text = "stage.strobl.sign_umsteigen" }
+"5" = { entity = "prop", sprite = "wartehaus", dx = 8, layer = "back" }
+"6" = { entity = "prop", sprite = "gasthof_strobl", dx = 8, layer = "back" }
+"l" = { entity = "fensterladen", period = 240, open = 150, phase = 120 }
+"y" = { entity = "reisebus", stop = 4, look = "postbus" }
+"C" = { entity = "checkpoint" }
+"Q" = { entity = "sign", text = "stage.strobl.sign_checkpoint", style = "bus" }
+"S" = { entity = "sign", text = "stage.strobl.sign_stau" }
+"T" = { entity = "sign", text = "stage.strobl.sign_ampel" }
+"$" = { entity = "ampel", cars = 2, period = 400, range = 12, tile = "einfahrt_bg" }
+"%" = { entity = "ampel", cars = 3, period = 400, phase = 250, range = 15, tile = "einfahrt_bg" }
+"U" = { entity = "sign", text = "stage.strobl.sign_baden" }
+"*" = { entity = "sign", text = "stage.strobl.sign_steg", tile = "kalkfels_bg" }
+"{" = { entity = "oblate", tile = "kalkfels_bg" }
+"}" = { entity = "gelse", tile = "kalkfels_bg" }
+"X" = { entity = "sign", text = "stage.strobl.sign_ausfluss" }
+"7" = { entity = "prop", sprite = "prellbock", dx = 8 }
+"Y" = { entity = "sign", text = "stage.strobl.sign_radweg" }
+"e" = { entity = "e_biker" }
+"8" = { entity = "prop", sprite = "lokalbahn_haltestelle", dx = -40, layer = "back" }
+"G" = { entity = "goal_maibaum" }
+"O" = { entity = "sign", text = "stage.strobl.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+........................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................................................................
+.........................................................................................................................................................................................................::::::::::::::::::::...........................................................
+......................................................................................................................................................................................................::::::::::::::::::::::::::........................................................
+.........................................................................oooo......................................................................................................................::::::::::::::::::::::::::::::::.....................................................
+...............................................................^^^^^^^..RRRRRR.....................................................................................................................::::::::::::::::::::::::::::::::.....................................................
+..............................................................^^^^^^^^^.FFFFFF..................................................................................................................:::::::::::::::::::::::::::::::::::::...................................................
+.....................................................Z.#.....^^^^^^^^^^^FFFFFFo.................................................................................................................::::::::::::::::::::::::::}::::::::::...................................................
+.......................................................#.....WWWWWWWW@WWFFFFFF#.................................................................................................................:::::::::::::::::::::::::::::::::::::................................ooo................
+..................................................b#ooo#a....WWWWWWWWWWWFFFFFF#.....................................ooo.........................................................................::::::::::::::::{{:::::::::::::::::::...............................IIIIII..............
+.............BMB..o...........o.....q..............&&&&&.....WWWWWWWWWWWFFFFFF#o....?............ooo..oo..oo....ooo.......................BMB........oooo....................ooo................:::::::{{::::::{::{::::::::{{::::::::......................o........IIIIII..............
+.................o.o.........o.o....3.........o..f...........WWWWWW!WWWWFFFFFF##................----..f...l....----................................++++++++.......EE........----..........EE....::::::{:::::::::::::{{::{{:::{:::::{{............7........o.o.....##IIIIII..............
+........ooooo.....#...........#.....#..ooo....#..............WWWWWWWWWWWFFFFFF##.ooo..ooo......................................ooo.................(......).......EE...ooo................EE....::::::::://////::::////////::::::::::............##...............##IIIIII..............
+..P2.A............#...D..n....#.....#.....t...#H...4..L......WWWWWWWWWWWFFFFFF##........t..N.....5.......6..tS..5......y............C..Q.....T.....(......).......$E.........5....t.......%E..U.::::*::::::::::::::::::::::::::::::::....X.....Y.##.e...........e.##IIIIII..............
+KKKKKKKK=================================================================================================_____________________________________________________________________________________==jjjjjj~~~~~~~~~~~~~~~~~~~~~~~~jjjjj~~jjjjjjjjjjjkkkkkkkkkk<<<kkkkkkkIIIIII8...G..O......
+KKKKKKKK=================================================================================================_____________________________________________________________________________________==JwwJwJwwwwwwwwwwwwwwwwwwwwwwwwJwJwJwwJwwJwwJwwwJkkkkkkkkkk>>>kkkkkkkkkkkkk,,,,,,,,,,,,,,
+'''

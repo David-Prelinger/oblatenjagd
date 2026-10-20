@@ -1,0 +1,36 @@
+# Stage 7 Postbus 150 (D-097, D-070): bounced over during its halt. As
+# strobl_postbus_shelter to shelter B, then while the bus stands at its
+# halt (115-118, frames 890-1035) a jump off the shelter onto its roof
+# (975: the roof bounce, no damage, no points) through the Oblaten arc over
+# the halt, down behind it (1002) and on to the checkpoint.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped event=CheckpointReached state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 120
+R 30
+RJ 20
+R 30
+RB 110

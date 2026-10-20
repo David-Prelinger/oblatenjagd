@@ -1,0 +1,23 @@
+# Stage 7 (D-094): a shutter closing under her. The solver's first 320
+# frames to the Pension Seeblick garden, back under Fensterladen #1 and a
+# jump up through it: she lands on its top at 386 (clock 386, the rattle),
+# it closes at clock 390 and she drops 3 tiles into the garden, unhurt.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_y>=218 state=playing
+---
+RB 96
+RBJ 6
+RB 9
+RBJ 20
+RB 40
+RBJ 36
+RB 64
+RBJ 20
+RB 29
+L 16
+L 12
+- 6
+J 20     # up through #1, lands on it at 386
+- 50     # it closes at 390: the drop into the garden

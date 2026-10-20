@@ -3,10 +3,13 @@
 # stands there for 600 frames, longer than his rest and wake together
 # (340): both counters pause while she stands on him, so he never gets up
 # under her (no hurt), and she still stands on the chair at the end.
+# Shot (M6 flow task): `on_chair` (700), Resi standing on Kurgast #1's
+# deck chair (the solver only bounces off chairs).
 level  = bad_ischl
 seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt event=Stomped player_y>=200 player_y<=202
+shots  = 700:on_chair
 ---
 R 150
 RJ 16

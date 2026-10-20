@@ -1,0 +1,81 @@
+# Stage 7 golden tour (M6, D-036 style): the real game from the title with
+# the run started in Strobl (`level = strobl`, D-047): START at frame 21,
+# stage intro 21..170, then the inputs of strobl_solver.replay unchanged
+# from frame 171 (re-copy them after `cargo xtask solve strobl --write`;
+# the xtask tour coupling test checks it), then 800 idle frames: the
+# Maibaum sequence, the tally and the route map Strobl -> Bad Ischl, which
+# waits (Wait from 2502) for START or its 300 frames; the tour ends in it.
+# Play frame = tour frame - 171 (stage clock likewise until the goal).
+# Shots, per section:
+#   1 Anlegestelle   60 intro
+#   2 Promenade      470 the Pension Seeblick balcony (D-100 corner post and
+#                    geranium box), 558 shutter #2 opening (clock 387),
+#                    618 Resi standing on shutter #3 (the D-100 HUD-band
+#                    check: the surface she lands on is below the HUD band)
+#   3 Dorfplatz      820 the Gasthof shutters, 955 the Postbus triggered on
+#                    its way to its halt (the route passes before it stops;
+#                    the halt itself is strobl_postbus_shelter's `halt`
+#                    shot), 1022 the checkpoint joke „Bus 150 / hält! Voll."
+#   4 Kreuzung       1180 Ampel #1 sends its first car (the route walks the
+#                    street; the car stream under the terrace is
+#                    strobl_ampel_watch's `car_stream` shot)
+#   5 Buergelstein   1530 the walkway (decks B/C over the outflow), 1560
+#                    Gelse #1 over deck C
+#   6 Radweg         1736 E-Biker #1 crashed at the buffer, 1792 E-Biker #2
+#                    riding at the Ache, 1900 Maibaum, 2100 tally, 2560 the
+#                    route map Strobl -> Bad Ischl in Wait: both D-098
+#                    alternate label slots (Bad Ischl left of its dot,
+#                    Café Zauner raised), Normal form.
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1900..1900 deaths=0 state=route_map stage=strobl score=17800 lives=3 oblaten=34
+shots  = 0:title 60:intro 470:balkon 558:shutter_opening 618:shutter3 820:gasthof 955:postbus 1022:checkpoint 1180:ampel 1530:walkway 1560:gelse 1736:ebiker_crash 1792:ebiker 1900:maibaum 2100:tally 2560:route_map
+---
+- 20
+S 1       # START: stage intro
+- 150     # stage intro; play starts at frame 171
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+- 800     # Maibaum sequence, tally, route map

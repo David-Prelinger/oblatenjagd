@@ -1,0 +1,66 @@
+# M6 flow (D-047, D-098): Strobl clear -> route map Strobl -> Bad Ischl in
+# Wait -> the Bad Ischl intro with the run carried over. Title flow with
+# the run started in Strobl: START at 21, intro 21..170, the inputs of
+# strobl_solver.replay from 171 (Maibaum 1900), then idle: the tally, the
+# route map (2418; Wait from 2502, Resi on the Bad Ischl dot with both
+# D-098 alternate label slots: Bad Ischl left of its dot, Café Zauner
+# raised; that screen is strobl_tour's `route_map` shot at the same
+# frame), no START: the map's 300-frame wait starts the Bad Ischl intro at
+# 2802, play starts at 2952 with score, lives and Oblaten kept (17800, 3,
+# 34), Normal. Shot: the Bad Ischl intro (2822).
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1900..1900 deaths=0 no_event=Hurt
+expect = state=playing stage=bad_ischl power=normal score=17800 lives=3 oblaten=34 player_x>=34 player_y>=218 player_y<=218
+shots  = 2822:intro
+---
+- 20
+S 1       # START: Strobl intro
+- 150     # play from 171
+# --- strobl_solver.replay (1729 frames) ---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+# --- tally, route map (Wait), Bad Ischl intro: 1052 idle frames, then 30 of play ---
+- 1082

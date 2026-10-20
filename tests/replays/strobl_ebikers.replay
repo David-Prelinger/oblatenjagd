@@ -1,0 +1,76 @@
+# Stage 7 E-Bikers (section 6) and the Maibaum walk-off zone. As
+# strobl_gelse to deck C, on over the last two gaps and the Klausbruecke;
+# she stops at col 236: E-Biker #1 (244) triggers (2762), rings and
+# crashes into the old railway buffer („Hoppala!" 2808, no points). Over
+# the buffer to the take-off (col 247.7): E-Biker #2 (256) triggers (3042)
+# and rides left into the Ischler Ache (gone 3112). She jumps the Ache,
+# climbs the step and the Lokalbahn halt's roof (row 10, 6 tiles above the
+# meadow) and walks off its right edge: the Maibaum catches her low, 100
+# points (score 10200 -> 10300; the Wurstkranz is strobl_wurstkranz).
+# Shot (M6 flow task): `ache` (3110), E-Biker #2 riding into the
+# Ischler Ache.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = complete frames=3419..3419 score=10300 deaths=0 no_event=Hurt state=stage_clear
+shots  = 3110:ache
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 280
+R 56
+RJ 20
+R 20
+R 50
+RJ 20
+R 24
+- 100
+RJ 16
+- 60
+R 20
+RJ 20
+R 20
+- 4
+R 42
+RJ 16
+R 90
+- 150
+R 40
+RJ 20
+R 60
+- 150
+R 22
+RJ 20
+R 50
+RJ 20
+R 10
+RJ 16
+R 104

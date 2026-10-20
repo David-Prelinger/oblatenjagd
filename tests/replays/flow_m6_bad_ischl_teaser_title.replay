@@ -1,0 +1,121 @@
+# M6 flow (D-047, D-097, D-098; a D-101 acceptance condition): the end of
+# the playable journey on the real route. Title flow with the run started
+# in Strobl: the flow_m6_strobl_to_bad_ischl inputs to the start of Bad
+# Ischl play (2952: score 17800, lives 3, 34 Oblaten carried over), then
+# the inputs of bad_ischl_solver.replay (Bad Ischl clear at 4803, the
+# goal sequence past the queue at Café Zauner), then idle: the tally, the
+# route map Bad Ischl -> Café Zauner (5349; the walk from 5389, primary
+# label slots on this screen per D-098), which has no level yet, so the
+# teaser („Fortsetzung folgt …", 5413-5592) and the title (5593) with
+# the run reset to its first stage (Strobl), Normal, score 0, lives 3.
+# Shot: the map walk to Café Zauner (5400). The teaser itself is
+# bad_ischl_tour's `teaser` shot (Normal) and flow_m6_hackl_bad_ischl_teaser's
+# (Hackl).
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1900..1900 deaths=0 no_event=Hurt
+expect = event=LevelComplete state=title stage=strobl power=normal score=0 lives=3 oblaten=0
+shots  = 5400:map_walk
+---
+- 20
+S 1       # START: Strobl intro
+- 150     # play from 171
+# --- strobl_solver.replay (1729 frames) ---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+# --- tally, route map (Wait), Bad Ischl intro: play from 2952 ---
+- 1052
+# --- bad_ischl_solver.replay (1851 frames) ---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 65
+RBJ 12
+RB 78
+RBJ 36
+RB 2
+RBJ 6
+RB 19
+RBJ 36
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56
+# --- tally, route map, teaser, title ---
+- 800
