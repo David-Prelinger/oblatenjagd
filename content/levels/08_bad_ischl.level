@@ -73,10 +73,10 @@
 #   6 Pfarrgasse 260-299   cobbles. Zauner: anstellen! 262, planters 265
 #                          and 275 (2) pen Selfie-Tourist #2 (270). Step
 #                          278-279 (3), the Trafik: invisible 280-285 x
-#                          rows 10-15 under the trafik prop (col 286 dx
-#                          -56), roof 6 above the square, 3 Oblaten. The
+#                          rows 10-15 under the trafik prop (col 287 dx
+#                          -72), roof 6 above the square, 3 Oblaten. The
 #                          square (row 16) from 280, Maibaum 290, Café
-#                          Zauner / gleich da 293 (street style, no
+#                          Zauner / gleich da 286 (street style, no
 #                          Ortsende, D-097), zauner_fassade col 295 dx 8
 #                          with the warteschlange in front (col 296 dx -8:
 #                          same centre, spawned later, drawn later).
@@ -141,7 +141,7 @@ background = [
 "6" = { entity = "prop", sprite = "trinkhalle", dx = 8, layer = "back" }
 "7" = { entity = "prop", sprite = "musikpavillon", dx = 8, layer = "back" }
 "8" = { entity = "prop", sprite = "kongresshaus", layer = "back" }
-"9" = { entity = "prop", sprite = "trafik", dx = -56, layer = "back" }
+"9" = { entity = "prop", sprite = "trafik", dx = -72, layer = "back" }
 "z" = { entity = "prop", sprite = "zauner_fassade", dx = 8, layer = "back" }
 "Q" = { entity = "prop", sprite = "warteschlange", dx = -8, layer = "back" }
 "a" = { entity = "sign", text = "stage.bad_ischl.sign_bus", style = "bus" }
@@ -177,6 +177,6 @@ grid = '''
 .................ooo........................,,,,,,,,,,.............ooKoo.............KKK...............................o.o.....................o..o......................................o.o.......................m.....KKo............................o.........KK.......o.....o....KKIIIIII..............
 ........ooooo.....K...KK...............K...KKKKKKKKKKK.............KKKKK....oo......KKKK...oo....oo..oooo.........................K........K........................ooooo....K..............................K..++++++++.KKK.o.................ooo.....oo.KK.......KK.....K.........K..KKIIIIII..............
 ..P..a............K..1KK..b....2......uK.cKKKKKKKKKKKK....LO.......KKKKK.e....u.f..3KKKK.....F................g.4..............u..K..h5T...K............C..i.....k.....6.....K..l.....u...............DEE...K.....7.....KKK....n.......8..p..........s...KK.Yy....KK..v..K....T....K..KKIIIIII..............
-____________________________________________________________________________________________________jjjjjjj============~~~=====================~~~~===========================_____________,,,,,,,,,,,,,,,,,________________============================================================IIIIII9...G..x.zQ...
+____________________________________________________________________________________________________jjjjjjj============~~~=====================~~~~===========================_____________,,,,,,,,,,,,,,,,,________________============================================================IIIIIIx9..G....zQ...
 ____________________________________________________________________________________________________JwwJwwJ############www#####################wwww#############==============_____________,,,,,,,,,,,,,,,,,________________================================================================================
 '''
