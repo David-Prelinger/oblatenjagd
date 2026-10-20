@@ -28,7 +28,9 @@
 //!
 //! Auto-scroll (M5, [`crate::scrolllint`], D-075): the goal at column
 //! ≥ `to + 20`, squeeze faces in the zone at most 3 tiles above the surface
-//! in front of them, and a checkpoint in the zone on a deck tile.
+//! in front of them (2 over swim water), no raised steps in the lake bed
+//! where the edge pushes (E31, D-085), and a checkpoint in the zone on a
+//! deck tile.
 
 use std::path::Path;
 use std::process::ExitCode;
