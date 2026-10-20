@@ -606,8 +606,10 @@ pub const MAX_STEP_UP_TILES: i32 = 3;
 /// end of the track to the exit, no step up from one floor to the next
 /// may exceed [`MAX_STEP_UP_TILES`]. Columns without a floor (bottomless
 /// or hazard pits: deaths, not softlocks) are skipped, and so are columns
-/// over water (D-077: the first tile below the track's top is water; under
-/// a boat a fall is a swim, not a softlock); an exit over water passes.
+/// over swim water (D-077, D-076: the first tile below the track's top is
+/// swim water; under a boat a fall is a swim, not a softlock); an exit over
+/// swim water passes. Lethal water is looked through, as before D-077
+/// (D-084).
 ///
 /// Limits: it does not check headroom above a step, jump distances across
 /// skipped columns, that the camera (which never scrolls back) leaves the
@@ -632,23 +634,25 @@ pub fn recovery_problems(level: &Level, t: &Tuning) -> Vec<String> {
                 *h = (*h).min(y);
             }
         }
-        // The floor row; `None` when there is none or water comes first.
+        // The floor row; `None` when there is none or swim water comes
+        // first. Lethal water is no floor and doesn't stop the search (as
+        // before D-077: a fall into it is a death, not a softlock).
         let floor = |col: i32, y_px: i32| {
             (0..map.height)
                 .filter(|&r| r * TILE_PX >= y_px)
                 .find(|&r| {
                     matches!(
                         map.kind_at(col, r),
-                        TileKind::Solid | TileKind::OneWay | TileKind::Water // E27: | Swim
+                        TileKind::Solid | TileKind::OneWay | TileKind::Swim
                     )
                 })
-                .filter(|&r| map.kind_at(col, r) != TileKind::Water) // E27: | Swim
+                .filter(|&r| map.kind_at(col, r) != TileKind::Swim)
         };
         let over_water = |col: i32, y_px: i32| {
             (0..map.height)
                 .filter(|&r| r * TILE_PX >= y_px)
                 .find(|&r| map.kind_at(col, r) != TileKind::Empty)
-                .is_some_and(|r| map.kind_at(col, r) == TileKind::Water) // E27: | Swim
+                .is_some_and(|r| map.kind_at(col, r) == TileKind::Swim)
         };
         let upper_top = (car.y + delta.1.min(Fx::ZERO)).to_px();
         let at = format!(
@@ -1156,7 +1160,7 @@ mod tests {
         let mut grid: Vec<String> = vec![".".repeat(width); 17 - rows.len()];
         grid.extend(rows.iter().map(|r| r.to_string()));
         let text = format!(
-            "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"=\" = \"steg\"\n\"~\" = \"wolfgangsee_water\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"B\" = {{ entity = \"{entity}\", to = {to} }}\n[map]\ngrid = '''\n{}\n'''\n",
+            "[meta]\nid = \"t\"\ntime_limit = 1\n[legend]\n\"#\" = \"solid\"\n\"=\" = \"steg\"\n\"~\" = \"see_wasser\"\n\"w\" = \"wolfgangsee_water\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"B\" = {{ entity = \"{entity}\", to = {to} }}\n[map]\ngrid = '''\n{}\n'''\n",
             grid.join("\n")
         );
         Level::parse(&text).unwrap()
@@ -1167,7 +1171,7 @@ mod tests {
         let t = tuning();
         // A Dampfer (10 tiles) from the quay (columns 0–1) 8 tiles right to
         // a pier (columns 20–23) over open water: every column under it is
-        // water, so a fall is a swim, never a softlock (D-077).
+        // swim water, so a fall is a swim, never a softlock (D-077).
         let lake = [
             "P.....................G.", // row 10
             "##B.................====", // row 11: quay, pier
@@ -1180,7 +1184,14 @@ mod tests {
         let lvl = lake_level("dampfer", "[8, 0]", &lake);
         assert_eq!(recovery_problems(&lvl, &t), Vec::<String>::new());
         assert_eq!(track_problems(&lvl, &t), Vec::<String>::new());
-        // The same basin dry: a 5-tile step up from its floor to the pier.
+        // The same basin dry, or filled with lethal water (looked through
+        // as before D-077, D-084): a 5-tile step up from its floor
+        // to the pier.
+        let lethal: Vec<String> = lake.iter().map(|r| r.replace('~', "w")).collect();
+        let lethal: Vec<&str> = lethal.iter().map(String::as_str).collect();
+        let p = recovery_problems(&lake_level("dampfer", "[8, 0]", &lethal), &t);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("a 5-tile step up to column 21"), "{p:?}");
         let dry: Vec<String> = lake.iter().map(|r| r.replace('~', ".")).collect();
         let dry: Vec<&str> = dry.iter().map(String::as_str).collect();
         let p = recovery_problems(&lake_level("dampfer", "[8, 0]", &dry), &t);

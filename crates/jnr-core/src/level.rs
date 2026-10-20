@@ -1028,7 +1028,7 @@ fn parse_legend_value(
                 (tile, Some(name)) => {
                     let tile = match tile {
                         None => Tile::default(),
-                        Some(tile_name) => entity_tile(key, name, tile_name, tile_names)?,
+                        Some(tile_name) => entity_tile(key, tile_name, tile_names)?,
                     };
                     parse_entity(key, name, tile, t)
                 }
@@ -1083,20 +1083,10 @@ fn parse_tile(
 
 /// The tile under an entity (`tile = "..."` on an entity entry): it must
 /// not collide, so the entity behaves exactly as on empty air, or be swim
-/// water (D-076: Oblaten, swans and regatta boats in the lake). A `schwan`
-/// floats in a surface-row water cell (D-078), so it may also stand on
-/// water.
-fn entity_tile(
-    key: &str,
-    entity: &str,
-    name: &str,
-    tile_names: &mut Vec<String>,
-) -> Result<Tile, ParseError> {
+/// water (D-076: Oblaten, swans and regatta boats in the lake).
+fn entity_tile(key: &str, name: &str, tile_names: &mut Vec<String>) -> Result<Tile, ParseError> {
     match parse_tile(key, name, None, tile_names)? {
         LegendEntry::Tile(t) if matches!(t.kind, TileKind::Empty | TileKind::Swim) => Ok(t),
-        // E27: | Swim (and widen to every entity on a swim cell: Oblaten,
-        // regatta boats, D-076)
-        LegendEntry::Tile(t) if t.kind == TileKind::Water && entity == "schwan" => Ok(t),
         _ => Err(ParseError::new(format!(
             "legend \"{key}\": the tile under an entity must not collide (\"{name}\" does; use a decorative tile such as wall_village_bg or railing_bg, or swim water such as see_wasser)"
         ))),

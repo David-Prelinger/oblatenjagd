@@ -1238,13 +1238,13 @@ impl Game {
         self.entities.extend(spawned);
     }
 
-    /// True while the player swims (D-076): no stomps and no roof bounces
-    /// then, every enemy contact hurts ([`crate::enemies::contact`]).
-    /// A stub until E27's swimming lands: today every water tile kills
-    /// before her chest is under, so she never swims.
-    // E30: switch to E27's swim query (the chest-point rule).
+    /// True while the player swims (D-076, [`Player::swimming`]: her chest
+    /// point was in swim water when this step began): no stomps and no
+    /// roof bounces then, every enemy contact hurts
+    /// ([`crate::enemies::contact`]). A jump-out is airborne from its next
+    /// step, so it can end in a stomp.
     pub(crate) fn player_swimming(&self) -> bool {
-        false
+        self.player.swimming
     }
 
     /// Puts the player's feet on `top` (a bounce off a non-stompable

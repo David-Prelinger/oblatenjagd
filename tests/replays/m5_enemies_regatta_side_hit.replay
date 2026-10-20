@@ -1,6 +1,7 @@
-# Side hit as Zuckerschock: with the Mozartkugel Resi drops to the floor
-# in front of the boat and stays there; it races into her side: Hurt,
-# back to Normal, no points.
+# Side hit as Zuckerschock: with the Mozartkugel Resi drops into the swim
+# water in front of the boat (E30: it was a dry floor) and floats there;
+# it races into her: Hurt, back to Normal, no points (same inputs and
+# outcome as before E30).
 level  = m5_enemies
 seed   = 1
 source = handwritten

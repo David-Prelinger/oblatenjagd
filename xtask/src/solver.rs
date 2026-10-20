@@ -46,15 +46,18 @@
 //! held-JUMP segment is shifted by d ∈ [-12, +12] frames with the rest of
 //! the inputs unchanged (padded with the last input past the end of the
 //! route). Its checkpoint is the first landing after that `Jumped` + 2 s,
-//! capped at the route's end; the progress there is the original x minus
-//! one tile. A shift succeeds if the player survives the shifted jump and
+//! capped at the route's end (if the route is off the ground there and
+//! swims before it stands again: that next frame on the ground, D-084); the
+//! progress there is the original x minus one tile. A shift succeeds if the player survives the shifted jump and
 //! then reaches that progress (or completes the level) without dying:
 //! either the unchanged later inputs do it by the checkpoint, standing on
 //! the ground (fast path), or a short re-planning beam search ([`recovers`], beam
 //! [`REPLAN_BEAM`]) from the state right after the shifted jump's landing
 //! (or, if the press made no jump, after its buffer ran out) reaches it
-//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames. So
-//! a later press that a 1-frame shift makes miss its buffer no longer
+//! standing on the ground by the checkpoint + [`REPLAN_MARGIN`] frames
+//! (a shifted jump that ends in swim water re-plans from its first swimming
+//! step; a surface swimmer never counts as standing, the lake bed is ground).
+//! So a later press that a 1-frame shift makes miss its buffer no longer
 //! collapses the window: a player would simply press it a frame later. The
 //! jump window is the contiguous successful range around d = 0. Each side
 //! records why it stopped ([`Bound`]): a failed shift, the route (the
@@ -609,10 +612,34 @@ struct Trace {
     x: Vec<i32>,
     feet: Vec<i32>,
     ground: Vec<bool>,
+    /// Whether she swims after each frame (D-076).
+    swimming: Vec<bool>,
     events: Vec<(u32, Event)>,
 }
 
 impl Trace {
+    /// The checkpoint of a jump whose first `Landed` is at `landing`:
+    /// `landing` + 2 s, capped at the route's end (D-033). If the route
+    /// doesn't stand on the ground there and swims before it stands again
+    /// (D-084), it moves on to that next frame on the ground: the progress
+    /// of a swimmer (or of a jump into the water) is no point a recovery
+    /// could stand on, and the swim to the next deck is part of the route.
+    /// Routes that never swim keep the D-033 checkpoint.
+    fn checkpoint(&self, landing: u32, total: u32) -> u32 {
+        let check = landing.saturating_add(CHECKPOINT_AFTER_LANDING).min(total);
+        if self.ground[check as usize] {
+            return check;
+        }
+        let next = (check..total)
+            .find(|&f| self.ground[f as usize])
+            .unwrap_or(total);
+        if (check..=next).any(|f| self.swimming[f as usize]) {
+            next
+        } else {
+            check
+        }
+    }
+
     /// The climb height goal's feet at frame `f` (D-059 addendum, E17):
     /// her feet if she stands on the ground then, else the lower (larger
     /// y) of the last ground before `f` and the next ground after it. A
@@ -640,6 +667,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
         x: vec![g.player().x.to_px()],
         feet: vec![g.player().feet().1.to_px()],
         ground: vec![g.player().on_ground],
+        swimming: vec![g.player().swimming],
         events: Vec::new(),
     };
     for &i in inputs {
@@ -648,6 +676,7 @@ fn trace(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Trace {
         t.x.push(g.player().x.to_px());
         t.feet.push(g.player().feet().1.to_px());
         t.ground.push(g.player().on_ground);
+        t.swimming.push(g.player().swimming);
     }
     t
 }
@@ -922,7 +951,7 @@ pub fn jump_windows(
             }
             Some(JumpAt {
                 hold: (s, e),
-                check: landing.saturating_add(CHECKPOINT_AFTER_LANDING).min(total),
+                check: orig.checkpoint(landing, total),
                 start: run.clone(),
             })
         })
@@ -2117,6 +2146,37 @@ mod tests {
     }
 
     #[test]
+    fn a_checkpoint_off_the_ground_before_a_swim_moves_to_the_next_ground() {
+        // 300 frames: on the ground until 150, in the air 150-159, then
+        // (case `swim`) swimming 160-199, on the ground again from 200.
+        let trace = |swim: bool| {
+            let ground: Vec<bool> = (0..=300).map(|f| !(150..200).contains(&f)).collect();
+            let swimming: Vec<bool> = (0..=300).map(|f| swim && (160..200).contains(&f)).collect();
+            Trace {
+                x: vec![0; 301],
+                feet: vec![0; 301],
+                ground,
+                swimming,
+                events: Vec::new(),
+            }
+        };
+        let after = CHECKPOINT_AFTER_LANDING;
+        // Standing at landing + 2 s: unchanged (D-033).
+        assert_eq!(trace(true).checkpoint(10, 300), 10 + after);
+        // In the air there, landing without a swim: unchanged.
+        assert_eq!(trace(false).checkpoint(155 - after, 300), 155);
+        // In the air there and swimming before the next ground: moved there.
+        assert_eq!(trace(true).checkpoint(155 - after, 300), 200);
+        assert_eq!(
+            trace(true).checkpoint(170 - after, 300),
+            200,
+            "swimming at it"
+        );
+        // Capped at the route's end.
+        assert_eq!(trace(true).checkpoint(170 - after, 190), 190);
+    }
+
+    #[test]
     fn jump_windows_skip_strokes_and_count_jump_outs() {
         let t = tuning();
         // On the lake bed: three strokes, no jump.
@@ -2428,6 +2488,7 @@ mod tests {
             x: vec![0; feet.len()],
             feet: feet.to_vec(),
             ground: ground.to_vec(),
+            swimming: vec![false; feet.len()],
             events: Vec::new(),
         };
         let (y, n) = (true, false);

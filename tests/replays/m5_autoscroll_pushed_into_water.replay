@@ -1,13 +1,14 @@
 # Auto-scroll push (D-075): Resi walks into the zone (the scroll starts as
 # her centre passes column 17, camera x 128) and then stands still on the
 # quay. The screen's left edge reaches her and pushes her along the quay
-# and over its edge (column 24) into the water. The water is the lethal
-# `wolfgangsee_water` until E27's swim water lands, so she dies there; with
-# swim water this replay is to end with her swimming instead.
+# and over its edge (column 24) into the swim water (E30; it was the lethal
+# stand-in and a death at frame 527 before). She falls in (~frame 530),
+# floats at the surface without input and the edge keeps pushing her
+# across the water: still swimming, alive, at the end.
 level  = m5_autoscroll
 seed   = 1
 source = handwritten
-expect = dies_at frames=527..527 deaths=1 state=dying player_x>=400 no_event=Jumped
+expect = deaths=0 state=playing swimming=true player_x>=505 no_event=Jumped
 ---
 R 160
-- 400
+- 500
