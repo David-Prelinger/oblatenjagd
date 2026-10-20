@@ -1,0 +1,29 @@
+# Written by `cargo xtask solve m6_mix --write`; re-create it instead of editing.
+level  = m6_mix
+seed   = 1
+source = solver
+expect = complete frames=923..923 deaths=0
+---
+RB 156
+RBJ 1
+RB 22
+RBJ 31
+RB 61
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+RBJ 36
+RB 18
+RBJ 6
+RB 56
+RBJ 36
+RB 120
+RBJ 20
+RB 18
+RBJ 34
+RB 12
+RBJ 36
+RB 54
+RBJ 36
+RB 40

@@ -16,6 +16,7 @@ mod lake_enemies;
 mod m2;
 mod m3;
 mod m4;
+mod m6_mix;
 mod modes;
 mod offiziere;
 mod reisebus;
