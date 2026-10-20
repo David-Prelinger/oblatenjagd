@@ -679,6 +679,8 @@ pub const PROP_SPRITES: &[&str] = &[
     "startboje",
     "buste",
     "pension",
+    "balkon_pfosten",
+    "balkon_blumenkasten",
     "gasthof_strobl",
     "lokalbahn_haltestelle",
     "kaiser_jagdstandbild",
