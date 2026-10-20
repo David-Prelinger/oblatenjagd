@@ -192,7 +192,7 @@ Art (pixel-artist, art-director APPROVED)
 - [x] Wolfgangsee package: tiles `see_wasser`, `see_wasser_tief`, `steg_pfahl`, `seegrund`, `steg`, `kai`, `poller`; props `adventlaterne`, `dalben`, `schilf`, `startboje`; layer `bg_suedufer`. Swim water must read as different from the lethal `wolfgangsee_water` at 1× (contact sheet side by side)
 
 Levels (level-designer)
-- [ ] `06_wolfgangsee.level` (260 × 17, `camera = "autoscroll"`, `autoscroll = [8, 208]`) with the 7 sections as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; narrowest window and the named hazard timings recorded for the game-designer (D-074/D-073 style)
+- [ ] `06_wolfgangsee.level` (260 × 17, `camera = "autoscroll"`, `autoscroll = [16, 208]`, D-087) with the 7 sections as specified; app `options::LEVELS` line; solver finishes it; `min_jump_window = 5` holds; narrowest window and the named hazard timings recorded for the game-designer (D-074/D-073 style)
 - [ ] `levels lint` clean (squeeze faces, swim beds, regatta lanes, boat clearance, goal ≥ `to + 20`); every enemy on screen ≥ 60 frames before it can touch Resi (checked with a replay hugging the right clamp); the respawn on the pontoon checked with a replay; the steamer's `to` puts its moored front within reach soon after arrival
 - [ ] `time_limit` set from the measured relaxed run (D-045); Oblaten 70 ± 10; Maibaum zones checked by replay (walk off → 100, running jump → Wurstkranz)
 
