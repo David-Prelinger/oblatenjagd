@@ -3,7 +3,7 @@
 # drive_1 a white w/i estate with a dark m/d roof box, drive_2 a pale-blue
 # h/s/S camper van with orange o curtains. Dark windows d with faint heads E,
 # k/d wheels with i hubs, headlight w and Y indicator at the front (left),
-# r tail lamp. Faces LEFT, no mirror (like the bus). The roof (or roof box)
+# r tail lamp (R on the camper). Faces LEFT, no mirror (like the bus). The roof (or roof box)
 # is one flat line of 21+ px on hitbox row 2: the bounce surface.
 # drive = hubs turn, body bounces 1 px (wheels stay on the road).
 # Built with a scratch script (body templates + wheels), frozen here.
@@ -92,7 +92,7 @@ frame drive_2 0
 ..ksddEEdssoddddoossoddddoossSk.
 ..ksddEEdssoddddoossoddddoossSk.
 .ksssssssssssssssssssssssssssSk.
-kwssssskkkksssssSsssskkkkssssrk.
+kwssssskkkksssssSsssskkkkssssRk.
 kYSSSSkddddkSSSSSSSSkddddkSSSSk.
 ksssskddddddksssSsskddddddkssSk.
 kdddSkddimddkSSSSSSkddimddkdddk.
@@ -110,7 +110,7 @@ frame drive_2 1
 ..ksddEEdssoddddoossoddddoossSk.
 ..ksddEEdssoddddoossoddddoossSk.
 .kssssskkkksssssssssskkkkssssSk.
-kwsssskddddkssssSssskddddksssrk.
+kwsssskddddkssssSssskddddksssRk.
 kYSSSkddddddkSSSSSSkddddddkSSSk.
 ksssskddiiddksssSsskddiiddkssSk.
 kdddSkddmiddkSSSSSSkddmiddkdddk.

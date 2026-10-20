@@ -6,7 +6,7 @@
 # The roof line is flat over the whole length (the roof bounce covers it).
 # idle = door open, engine running (1 px body shake, exhaust puff i/w).
 # telegraph = door closed, hazard lamps blink. drive = hubs turn, 1 px bounce.
-# halt = stopped at its halt, doors shut, faces E (noses c) and hands c
+# halt = stopped at its halt, doors shut, faces E (noses c) under l/O/i/o hair caps; the shrugger's hands c
 # pressed to the windows; frame 1 the passenger in the 4th window shrugs.
 # Derived from reisebus.sprite with a scratch remap script, frozen here.
 sprite = postbus
@@ -226,8 +226,8 @@ frame halt 0
 ..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
 .kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
 kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
-kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
-kmkddddddmddmddmEEEddddmddddEEEmEEEdEEEmddEEEddmddddEEEYYYYook..
+kmkddddddmddmddmlllddddmddddooomllldOOOmddiiiddmddddlllYYYYook..
+kmkddddddmddmddmEEEdOOOmiiidEEEmEEEdEEEmddEEEddmooodEEEYYYYook..
 .kkdddEEdmddmddmEcEdEEEmEEEdEcEmEcEdEcEmddEEEddmEEEdEcEYYYYook..
 ..kdddEEdmddmddmEEEdEcEmEcEdEEEmEEEdEEEmddEEEddmEcEdEEEYYYYook..
 ..kddddddmddmddmddddEEEmEEEddddmdddddddmdmmmmmdmEEEddddYYYYook..
@@ -258,9 +258,9 @@ frame halt 1
 ...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
 ..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
 .kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
-kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
-kmkddddddmddmddmdddddddmdddddddmdddddddmddEEEddmdddddddYYYYook..
-kmkddddddmddmddmEEEddddmddddEEEmEEEdEEEmcdEEEdcmddddEEEYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmddiiiddmdddddddYYYYook..
+kmkddddddmddmddmlllddddmddddooomllldOOOmddEEEddmddddlllYYYYook..
+kmkddddddmddmddmEEEdOOOmiiidEEEmEEEdEEEmcdEEEdcmooodEEEYYYYook..
 .kkdddEEdmddmddmEcEdEEEmEEEdEcEmEcEdEcEmmmEEEmmmEEEdEcEYYYYook..
 ..kdddEEdmddmddmEEEdEcEmEcEdEEEmEEEdEEEmdmmmmmdmEcEdEEEYYYYook..
 ..kddddddmddmddmddddEEEmEEEddddmdddddddmdddddddmEEEddddYYYYook..
