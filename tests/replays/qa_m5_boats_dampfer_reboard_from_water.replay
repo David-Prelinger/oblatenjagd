@@ -1,0 +1,20 @@
+# QA M5 (D-077 Dampfer, game-design.md Stage 6 sec. 2 "a Resi who misses
+# the steamer swims after it and boards with a jump-out at the bow or
+# stern"): Resi hops onto the Dampfer (lands 126, it leaves and the scroll
+# runs), walks straight off its stern into the water (~200) and swims
+# after it at the surface (1.25 vs 0.8 px/frame). Under the stern, well
+# behind the paddle wheel, a held jump-out (press 292) puts her back on
+# the deck (lands 328). She rides to Gschwendt and stands on the moored
+# deck, pushed across it by the edge. No hurt, no death.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Jumped player_x>=973 player_y>=154 player_y<=154 state=playing
+---
+RB 64
+RBJ 36
+RB 26
+L 60
+R 105
+RJ 20
+- 900

@@ -1,0 +1,23 @@
+# QA M5 (D-075, D-045): time-up on the exact frame the auto-scroll starts.
+# Resi idles on the St. Wolfgang quay for 16094 frames, then takes the
+# solver's notch hop (RB 64, RBJ 36): the camera reaches column 8 and the
+# scroll starts in step 16200, the same step the timer (270 s = 16200
+# frames) runs out. She dies (TimeUp) with the camera at x 128 in the
+# scroll, respawns at the start (no checkpoint yet) at 16260 with the
+# camera back in the lead-in (x 0) and the level reset, and the second
+# hop starts the scroll again: she lands on the Dampfer, which leaves
+# again (it was reset to its waiting spawn) and carries her to x >= 570.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = dies_at frames=16200..16200 deaths=1 lives=2 event=Respawned no_event=Hurt
+expect = state=playing player_x>=570 player_y>=154 player_y<=154
+---
+- 16094
+RB 64
+RBJ 36
+RB 100
+- 100
+RB 64
+RBJ 36
+RB 300

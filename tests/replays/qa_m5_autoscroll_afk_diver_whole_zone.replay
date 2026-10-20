@@ -1,0 +1,22 @@
+# QA M5 (D-075, D-076, D-085 flat lake bed): a diver resting on the lake
+# bed is never squeezed anywhere in the scroll. Resi hops onto the Dampfer
+# (the scroll starts in step 106), walks off its stern into the water at
+# once and holds DOWN for the rest of the run: she sinks to the bed
+# (feet y 256) and the left edge pushes her along the flat bed for the
+# whole zone, under the Gschwendt pier, swan #2, Gelse #1, the lantern
+# pontoon (checkpoint), the Traundl section, swan #3 and the regatta
+# lanes, collecting the 16 Oblaten on the bed. The scroll hands over to
+# the lead-out at step 4373 (4267 frames after its start) with her at the
+# camera's left edge, x 3328, still on the row-16 bed (the Strobl shallows
+# start at column 212). No hurt, no death.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=CheckpointReached oblaten=18
+expect = state=playing swimming=true player_x>=3328 player_y>=234 player_y<=234
+---
+RB 64
+RBJ 36
+RB 26
+L 60
+D 4300
