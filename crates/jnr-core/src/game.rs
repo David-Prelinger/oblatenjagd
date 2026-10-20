@@ -1006,6 +1006,13 @@ impl Game {
                 hurt = true;
                 continue;
             }
+            // A turning paddle wheel hurts like an enemy that can't be
+            // stomped (D-077); a rider on the deck never reaches it.
+            if crate::platform::paddle_wheel(&e, &self.tuning).is_some_and(|z| z.overlaps(&hitbox))
+            {
+                hurt = true;
+                continue;
+            }
             if !e.hitbox().overlaps(&hitbox) {
                 continue;
             }
@@ -1081,6 +1088,8 @@ impl Game {
                 | EntityKind::Festungsbahn
                 | EntityKind::Gondel
                 | EntityKind::Schafbergbahn
+                | EntityKind::Traundl
+                | EntityKind::Dampfer
                 | EntityKind::ThrownHackl
                 | EntityKind::Durchkriechstein => {}
             }
@@ -1410,6 +1419,8 @@ impl Game {
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel
                     | EntityKind::Schafbergbahn
+                    | EntityKind::Traundl
+                    | EntityKind::Dampfer
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
             ) {

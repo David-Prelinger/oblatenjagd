@@ -238,6 +238,13 @@ pub enum EntityKind {
     /// The Schafbergbahn steam train: the Festungsbahn's waiting state
     /// machine with its own body and timing ([`crate::platform`], D-067).
     Schafbergbahn,
+    /// A Traundl: the Gondel's free-running ping-pong on the lake with its
+    /// own hull and timing ([`crate::platform`], D-077).
+    Traundl,
+    /// The Dampfer paddle steamer: the Festungsbahn's waiting machine, one
+    /// way (moored for good at the far end), with a paddle-wheel hurt zone
+    /// while it travels ([`crate::platform::paddle_wheel`], D-077).
+    Dampfer,
 }
 
 impl EntityKind {
@@ -262,6 +269,8 @@ impl EntityKind {
             EntityKind::Souvenirstand => Some("souvenirstand"),
             EntityKind::SchneekugelScherben => Some("schneekugel_scherben"),
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
+            EntityKind::Traundl => Some("traundl"),
+            EntityKind::Dampfer => Some("dampfer"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -269,12 +278,17 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn):
-    /// one-way tops that carry the player and never despawn (D-027).
+    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn,
+    /// Traundl, Dampfer): one-way tops that carry the player and never
+    /// despawn (D-027).
     pub const fn is_platform(self) -> bool {
         matches!(
             self,
-            EntityKind::Festungsbahn | EntityKind::Gondel | EntityKind::Schafbergbahn
+            EntityKind::Festungsbahn
+                | EntityKind::Gondel
+                | EntityKind::Schafbergbahn
+                | EntityKind::Traundl
+                | EntityKind::Dampfer
         )
     }
 
@@ -307,6 +321,8 @@ impl EntityKind {
             EntityKind::Souvenirstand => 21,
             EntityKind::SchneekugelScherben => 22,
             EntityKind::Schafbergbahn => 23,
+            EntityKind::Traundl => 24,
+            EntityKind::Dampfer => 25,
         }
     }
 
@@ -495,6 +511,37 @@ impl Entity {
                 train.state = crate::platform::initial_state(s);
                 train
             }
+            SpawnKind::Dampfer => {
+                // Left-aligned in its cell like the Festungsbahn (10 tiles
+                // wide), bottom on the cell's bottom (the water line),
+                // waiting for its rider.
+                let mut ship = Entity::at_feet(
+                    EntityKind::Dampfer,
+                    feet_x,
+                    feet_y,
+                    t.platforms.dampfer_size,
+                );
+                ship.x = cell_x;
+                ship.base_x = cell_x;
+                ship.state = crate::platform::initial_state(s);
+                ship
+            }
+            SpawnKind::Traundl => {
+                // Left-aligned in its cell like the Gondel, bottom on the
+                // cell's bottom (the water line), at `phase` frames into
+                // its cycle.
+                let mut boat = Entity::at_feet(
+                    EntityKind::Traundl,
+                    feet_x,
+                    feet_y,
+                    t.platforms.traundl_size,
+                );
+                boat.x = cell_x;
+                boat.base_x = cell_x;
+                boat.count = s.phase % crate::platform::free_period(EntityKind::Traundl, s, t);
+                crate::platform::place_free(&mut boat, s, t);
+                boat
+            }
             SpawnKind::Gondel => {
                 // Left-aligned in its cell like the Festungsbahn, then at
                 // `phase` frames into its cycle.
@@ -502,8 +549,8 @@ impl Entity {
                     Entity::at_feet(EntityKind::Gondel, feet_x, feet_y, t.platforms.gondel_size);
                 cab.x = cell_x;
                 cab.base_x = cell_x;
-                cab.count = s.phase % crate::platform::gondel_period(s, t);
-                crate::platform::place_gondel(&mut cab, s, t);
+                cab.count = s.phase % crate::platform::free_period(EntityKind::Gondel, s, t);
+                crate::platform::place_free(&mut cab, s, t);
                 cab
             }
             SpawnKind::NordicWalker => Entity::at_feet(
@@ -679,12 +726,12 @@ impl Entity {
                 crate::enemies::update_thrown(self, map, t);
                 None
             }
-            EntityKind::Festungsbahn | EntityKind::Schafbergbahn => {
+            EntityKind::Festungsbahn | EntityKind::Schafbergbahn | EntityKind::Dampfer => {
                 crate::platform::update_car(self, ctx);
                 None
             }
-            EntityKind::Gondel => {
-                crate::platform::update_gondel(self, ctx);
+            EntityKind::Gondel | EntityKind::Traundl => {
+                crate::platform::update_free(self, ctx);
                 None
             }
             EntityKind::Note => {
@@ -869,6 +916,8 @@ mod tests {
                 EntityKind::Schafbergbahn => 21,
                 EntityKind::Souvenirstand => 22,
                 EntityKind::SchneekugelScherben => 23,
+                EntityKind::Traundl => 24,
+                EntityKind::Dampfer => 25,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -897,6 +946,8 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Souvenirstand,
             EntityKind::SchneekugelScherben,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -1090,6 +1141,7 @@ mod tests {
         assert_eq!(Popup::Hoppala.text_key(), Some("popup.hoppala"));
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
         assert!(EntityKind::Schafbergbahn.is_platform());
+        assert!(EntityKind::Traundl.is_platform() && EntityKind::Dampfer.is_platform());
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);

@@ -50,7 +50,9 @@ impl TileKind {
     /// its awning `standl_dach` and the bus shelter roof `wartehaus_dach`
     /// one-way, the bypass tunnel's inside `tunnel_bg` (and `tunnel_bg_lamp`,
     /// the same with a lamp) and the fallback
-    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067).
+    /// rack-track segments `zahnrad_gleis_0..3` decorative (D-067). M5: the
+    /// lake bed `seegrund`, the quay wall `kai` and the bollard `poller` are
+    /// solid, the pier planks `steg` one-way (D-077).
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
@@ -61,9 +63,11 @@ impl TileKind {
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
             | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
-            | "strasse" => Some(TileKind::Solid),
+            | "strasse" | "seegrund" | "kai" | "poller" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" => Some(TileKind::OneWay),
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" => {
+                Some(TileKind::OneWay)
+            }
             "hazard" => Some(TileKind::Hazard),
             "salzach_water"
             | "salzach_water_deep"
@@ -230,11 +234,17 @@ pub enum SpawnKind {
     Schafbergbahn,
     /// Enemy `reisebus` (stop-and-go charger, `stop`: D-070).
     Reisebus,
+    /// A Traundl (`to = [dx, 0]`, `phase`): the Gondel's free-running
+    /// machine on the lake with its own size and timing (D-077).
+    Traundl,
+    /// The Dampfer paddle steamer (`to = [dx, 0]`): the Festungsbahn's
+    /// waiting machine, one way, with a paddle-wheel hurt zone (D-077).
+    Dampfer,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 25] = [
+    pub const ALL: [SpawnKind; 27] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -260,6 +270,8 @@ impl SpawnKind {
         SpawnKind::Souvenirstand,
         SpawnKind::Schafbergbahn,
         SpawnKind::Reisebus,
+        SpawnKind::Traundl,
+        SpawnKind::Dampfer,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -291,6 +303,8 @@ impl SpawnKind {
             SpawnKind::Souvenirstand => "souvenirstand",
             SpawnKind::Schafbergbahn => "schafbergbahn",
             SpawnKind::Reisebus => "reisebus",
+            SpawnKind::Traundl => "traundl",
+            SpawnKind::Dampfer => "dampfer",
         }
     }
 
@@ -352,9 +366,8 @@ pub struct EntitySpawn {
     /// Board style (signs only; default street).
     pub style: SignStyle,
     /// The other end point `[dx, dy]` in tiles, relative to the spawn cell
-    /// (`to = [dx, dy]`, required for `festungsbahn`, `gondel` and
-    /// `schafbergbahn`, `None`
-    /// otherwise).
+    /// (`to = [dx, dy]`, required for `festungsbahn`, `gondel`,
+    /// `schafbergbahn`, `traundl` and `dampfer`, `None` otherwise).
     pub to: Option<[i32; 2]>,
     /// `still = true` on a `selfie_tourist`: it never walks (a fixed
     /// target for grey-box test levels, `00_*.level` only, checked by
@@ -368,8 +381,8 @@ pub struct EntitySpawn {
     /// Horizontal offset of a `prop` in px (`dx = N`, 0 by default, within
     /// ±[`MAX_PROP_DX_PX`]), e.g. 8 to centre it between two columns.
     pub dx: i32,
-    /// Frames into its cycle at activation (`phase = N`, `gondel` and
-    /// `bienenschwarm`; 0 by default).
+    /// Frames into its cycle at activation (`phase = N`, `gondel`,
+    /// `traundl` and `bienenschwarm`; 0 by default).
     pub phase: u16,
     /// Direction of a `bienenschwarm`'s waggle run in 45° steps
     /// (`dir = 0..=7`: 0 right, 2 up, 4 left, 6 down; 0 by default).
@@ -450,6 +463,11 @@ pub const MAX_GONDEL_DX_TILES: i32 = 8;
 /// Allowed `|dx|` of a `schafbergbahn`'s `to`, in tiles (D-067: a long
 /// ride, at least one body length across).
 pub const SCHAFBERGBAHN_DX_TILES: std::ops::RangeInclusive<i32> = 4..=32;
+/// Allowed `|dx|` of a `traundl`'s `to`, in tiles (D-077; dy must be 0).
+pub const TRAUNDL_DX_TILES: std::ops::RangeInclusive<i32> = 2..=8;
+/// Allowed `dx` of a `dampfer`'s `to`, in tiles (D-077: it travels right,
+/// at least one hull length; dy must be 0).
+pub const DAMPFER_DX_TILES: std::ops::RangeInclusive<i32> = 8..=64;
 
 /// Largest `|dx|` of a `prop`, in px.
 pub const MAX_PROP_DX_PX: i32 = 64;
@@ -512,6 +530,10 @@ pub const PROP_SPRITES: &[&str] = &[
     "weisses_roessl",
     "roessl_pferd",
     "schiffsstation",
+    "adventlaterne",
+    "dalben",
+    "schilf",
+    "startboje",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -896,7 +918,8 @@ fn parse_legend_value(
                 (Some(_), None) => &["tile", "contains"],
                 (_, Some("sign")) => &["entity", "tile", "text", "style"],
                 (_, Some("festungsbahn" | "schafbergbahn")) => &["entity", "tile", "to"],
-                (_, Some("gondel")) => &["entity", "tile", "to", "phase"],
+                (_, Some("gondel" | "traundl")) => &["entity", "tile", "to", "phase"],
+                (_, Some("dampfer")) => &["entity", "tile", "to"],
                 (_, Some("bienenschwarm")) => &["entity", "tile", "dir", "len", "phase", "dy"],
                 (_, Some("durchkriechstein")) => &["entity", "tile", "len"],
                 (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
@@ -1024,7 +1047,11 @@ fn parse_entity(
     let mut to = None;
     if matches!(
         kind,
-        SpawnKind::Festungsbahn | SpawnKind::Gondel | SpawnKind::Schafbergbahn
+        SpawnKind::Festungsbahn
+            | SpawnKind::Gondel
+            | SpawnKind::Schafbergbahn
+            | SpawnKind::Traundl
+            | SpawnKind::Dampfer
     ) {
         let (min_dx, max_dx) = match kind {
             SpawnKind::Gondel => (0, MAX_GONDEL_DX_TILES),
@@ -1032,10 +1059,19 @@ fn parse_entity(
                 *SCHAFBERGBAHN_DX_TILES.start(),
                 *SCHAFBERGBAHN_DX_TILES.end(),
             ),
+            SpawnKind::Traundl => (*TRAUNDL_DX_TILES.start(), *TRAUNDL_DX_TILES.end()),
+            SpawnKind::Dampfer => (*DAMPFER_DX_TILES.start(), *DAMPFER_DX_TILES.end()),
             _ => (0, MAX_TRACK_TILES),
         };
+        // Boats stay on the water line (dy 0); the steamer only goes right.
+        let flat = matches!(kind, SpawnKind::Traundl | SpawnKind::Dampfer);
+        let rightwards = kind == SpawnKind::Dampfer;
         let bad = || {
-            let dx_rule = if min_dx > 0 {
+            let dx_rule = if rightwards {
+                format!("{min_dx} <= dx <= {max_dx}, dy = 0")
+            } else if flat {
+                format!("{min_dx} <= |dx| <= {max_dx}, dy = 0")
+            } else if min_dx > 0 {
                 format!("{min_dx} <= |dx| <= {max_dx}, |dy| <= |dx|")
             } else {
                 format!("dx within ±{max_dx}")
@@ -1056,6 +1092,8 @@ fn parse_entity(
                     && range_x.contains(&dx)
                     && dx.abs() >= i64::from(min_dx)
                     && (kind != SpawnKind::Schafbergbahn || dy.abs() <= dx.abs())
+                    && (!flat || dy == 0)
+                    && (!rightwards || dx > 0)
                     && range.contains(&dy)
                     && (dx, dy) != (0, 0) =>
             {
@@ -1788,6 +1826,97 @@ P.sSC.tfG
             SpawnKind::from_name("schafbergbahn"),
             Some(SpawnKind::Schafbergbahn)
         );
+    }
+
+    /// [`SMALL`] with a `b` spawn of `entity` and `fields` in front of the
+    /// one-way tiles.
+    fn boat_level(entity: &str, fields: &str) -> String {
+        SMALL
+            .replace(
+                "\"G\" = { entity = \"goal\" }",
+                &format!(
+                    "\"G\" = {{ entity = \"goal\" }}\n\"b\" = {{ entity = \"{entity}\"{fields} }}"
+                ),
+            )
+            .replace(".P.--..", ".Pb--..")
+    }
+
+    fn boat(entity: &str, fields: &str) -> EntitySpawn {
+        let kind = SpawnKind::from_name(entity).unwrap();
+        Level::parse(&boat_level(entity, fields))
+            .unwrap()
+            .entities
+            .into_iter()
+            .find(|e| e.kind == kind)
+            .unwrap()
+    }
+
+    #[test]
+    fn traundl_needs_a_flat_to_of_2_to_8_tiles_and_takes_a_phase() {
+        let b = boat("traundl", ", to = [6, 0]");
+        assert_eq!(
+            (b.kind, b.to, b.phase),
+            (SpawnKind::Traundl, Some([6, 0]), 0)
+        );
+        let b = boat("traundl", ", to = [-2, 0], phase = 100");
+        assert_eq!((b.to, b.phase), (Some([-2, 0]), 100));
+        assert_eq!(boat("traundl", ", to = [8, 0]").to, Some([8, 0]));
+        for bad in [
+            "",
+            ", to = [1, 0]",
+            ", to = [-1, 0]",
+            ", to = [9, 0]",
+            ", to = [6, 1]",
+            ", to = [0, 0]",
+            ", to = [6]",
+        ] {
+            let e = err(&boat_level("traundl", bad));
+            assert!(
+                e.contains("a traundl needs to = [dx, dy]") && e.contains("2 <= |dx| <= 8, dy = 0"),
+                "{bad}: {e}"
+            );
+        }
+        let e = err(&boat_level("traundl", ", to = [6, 0], dir = 1"));
+        assert!(e.contains("field \"dir\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn dampfer_needs_a_flat_to_of_8_to_64_tiles_to_the_right() {
+        let b = boat("dampfer", ", to = [40, 0]");
+        assert_eq!((b.kind, b.to), (SpawnKind::Dampfer, Some([40, 0])));
+        assert_eq!(boat("dampfer", ", to = [8, 0]").to, Some([8, 0]));
+        assert_eq!(boat("dampfer", ", to = [64, 0]").to, Some([64, 0]));
+        for bad in [
+            "",
+            ", to = [7, 0]",
+            ", to = [65, 0]",
+            ", to = [-40, 0]",
+            ", to = [40, -1]",
+        ] {
+            let e = err(&boat_level("dampfer", bad));
+            assert!(
+                e.contains("a dampfer needs to = [dx, dy]") && e.contains("8 <= dx <= 64, dy = 0"),
+                "{bad}: {e}"
+            );
+        }
+        let e = err(&boat_level("dampfer", ", to = [40, 0], phase = 1"));
+        assert!(e.contains("field \"phase\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn m5_tile_names_have_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("steg", OneWay),
+            ("seegrund", Solid),
+            ("kai", Solid),
+            ("poller", Solid),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        for prop in ["adventlaterne", "dalben", "schilf", "startboje"] {
+            assert!(PROP_SPRITES.contains(&prop), "{prop}");
+        }
     }
 
     #[test]

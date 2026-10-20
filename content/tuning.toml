@@ -188,6 +188,13 @@ gondel_frames_per_tile = 16     # 1 px/frame along the major axis: travel = max(
 schafbergbahn_size = [64, 32]   # px [w, h], whole tiles: the train body; its roof is flush with the station platforms (D-067)
 schafbergbahn_frames_per_tile = 24  # travel = max(|dx|, |dy|) × 24 frames: 0.67 px/frame across a 1:4 track
 schafbergbahn_wait = 90         # frames standing at the upper end (at the lower end it waits for its rider)
+traundl_size = [48, 16]         # px [w, h]: the Traundl's flat hull; its top is the deck, flush with every row-11 deck (D-077)
+traundl_wait = 30               # frames at each end; it never waits for a rider (the Gondel's machine, D-044)
+traundl_frames_per_tile = 16    # 1 px/frame: travel = |dx| × 16 frames (to = [6, 0]: a 252-frame period)
+dampfer_size = [160, 16]        # px [w, h], whole tiles: the paddle steamer's hull; its top is the deck, flush with the quays (D-077)
+dampfer_frames_per_tile = 20    # travel = dx × 20 frames (0.8 px/frame, >= the auto-scroll's 0.75); it waits for its rider, then stays moored
+dampfer_wheel_zone = [32, 20]   # px [w, h]: the paddle wheel's hurt zone while it travels, centred on the hull's centre x
+dampfer_wheel_rise = 4          # px the wheel zone's top is above the hull's bottom (the water line); the rest is under it
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)
