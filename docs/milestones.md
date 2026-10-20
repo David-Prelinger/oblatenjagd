@@ -166,7 +166,7 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the St. Wolfgang filmstrip, the train ride, a bus photo stop, a high C over the street, the Hackl replays, the route-map label screens and all new German text.
 
-## M5 – Stage 6 Wolfgangsee: auto-scroll, swimming, Traundl and Dampfer, Schwäne, Gelsen, Regatta
+## M5 – Stage 6 Wolfgangsee: auto-scroll, swimming, Traundl and Dampfer, Schwäne, Gelsen, Regatta — ✅ accepted 2026-10-20 (docs/reports/M5.md)
 
 Scope as in `game-design.md` → "Stage 6: Wolfgangsee" (incl. "Difficulty and reach rules (stage 6)", "Auto-scroll camera" and "Swimming") and "Power states"; decisions D-074 … D-081; sprites in `sprite-catalog.md` → "M5 additions". One stage only; extras are in the backlog (D-074). Branch `m5-wolfgangsee`.
 
@@ -204,7 +204,7 @@ Replays and goldens
 - [x] Route-map goldens: St. Wolfgang → Wolfgangsee Wait and the Wolfgangsee → Strobl teaser, Normal and Hackl form (St. Wolfgang's raised label, D-072)
 
 Platform
-- [x] wasm build plays the route through the Wolfgangsee; `wasm-smoke` still green; verify runtime within budget after E25 (record it): 260 s at M5 acceptance, solver step 210 s
+- [x] wasm build plays the route through the Wolfgangsee; `wasm-smoke` still green; verify runtime within budget after E25 (record it): 320 s at M5 acceptance, solver step 271 s
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Wolfgangsee filmstrip, the scroll start on the steamer, a dive under a swan, a Gelse waiting over a diver, a regatta start, the respawn on the pontoon, the Hackl replays and all new German text.
 
@@ -221,7 +221,7 @@ Platform
 
 - **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (accepted, docs/reports/M3.md)
 - **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (accepted, docs/reports/M4.md)
-- **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (in progress, section above)
+- **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (accepted, docs/reports/M5.md)
 - **M6** Strobl + Bad Ischl
 - **M7** Café Zauner finale + ending
 - **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
