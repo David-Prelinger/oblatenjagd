@@ -1,0 +1,83 @@
+# Swim water, surface row (TileKind::Swim, D-076): the Wolfgangsee as
+# "Badewasser" - calm and clear, clearly unlike the lethal
+# tile_wolfgangsee_water. A flat s surface skin (no wave crests, no
+# transparent top) with a w glint drifting right and a short s streak
+# drifting left, a t band, then clear t water with a sparse s caustic net
+# that deepens into T with t caustics at the bottom (same net as
+# tile_see_wasser_tief, so the lines run on across the tile edge). No
+# dither, no dark b/B bands. The caustic net shimmers (its cell points
+# circle by 1 px over the 4 frames).
+# Drawn by the pixel-artist with a throwaway script; the grids are the source.
+sprite = tile_see_wasser
+size   = 16x16
+origin = 0,0
+anim   = idle frames=4 ticks=12 loop
+---
+frame idle 0
+ssswwsssssssssss
+tttttttttttttttt
+ttttttttttttssst
+tttttttttttttttt
+tttttttttttttttt
+ttttttttsttttttt
+tttttttstttttttt
+ttttttsstttttttt
+ttssstttsttttttt
+ttsttttttttttttt
+ttttttttTTTtTTtt
+tsttttTTTTTTtTTT
+ttTTTTTTTTTTTtTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+frame idle 1
+ssssssswwsssssss
+tttttttttttttttt
+ttttttttsssttttt
+tttttttttttttttt
+tttttttttttttttt
+ttttttttsttttttt
+ttttttttsttttttt
+ttttttsstttttttt
+tttsstttsttttttt
+ttsttttttttttttt
+ttttttttTTTTTTtt
+tsttttTTTTtTTTTT
+tTTTTTTTTTTtTTTT
+tTTTTTTTTTTTtTTT
+TtTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+frame idle 2
+ssssssssssswwsss
+tttttttttttttttt
+ttttsssttttttttt
+tttttttttttttttt
+tttttttttttttttt
+tttttttttttttttt
+tttttttttttttttt
+ttttttsstttttttt
+ttssstttsttttttt
+tstttttttttttttt
+tsttttttTTTTTTtt
+stttttTTTTtTTTTT
+tTTTTTTTTTTtTTTT
+TTTTTTTTTTTTtTTT
+TtTTTTTTTTTTtTTT
+TTtTTTTTTTTTTTTT
+frame idle 3
+wssssssssssssssw
+tttttttttttttttt
+sssttttttttttttt
+tttttttttttttttt
+tttttttttttttttt
+tttttttstttttttt
+tttttttstttttttt
+ttttttsstttttttt
+tttsstttsttttttt
+tsstttttttsttttt
+tsttttttTTTtTTtt
+stttttTTTTTTtTTT
+tTTTTTTTTTTTTttT
+tTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT
+TTTTTTTTTTTTTTTT

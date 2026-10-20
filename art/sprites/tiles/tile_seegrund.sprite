@@ -1,0 +1,286 @@
+# Lake bed (solid): pale gravel i with m pebble clusters (d under the
+# deeper ones), more m towards the bottom; seen through clear swim water.
+# Open top: a 2 px y sand lip (the light top lip of a solid tile) with two
+# small G/j weed tufts whose blade tips stand in water T. Open left/right:
+# a rounded gravel slope (shallows), the cut corner filled with swim-water
+# T; lit y edge left, m edge right.
+# Drawn by the pixel-artist with a throwaway script; the grids are the source.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_seegrund
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+TTTTTyyyyyGTTTTT
+TTTGjyyyyyGGjTTT
+TTyjjiiiiiijjmTT
+TyiiiiiiimmiiimT
+TymiiiiiiddiiimT
+ymmdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 1
+TTiiiiiiiiiiimTT
+TiiiiiiiiiiiiimT
+iiiiiiiiiiiiiiim
+iiiiiiiiimmiiiim
+immiiiiiiddiiiim
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 2
+TTTTTyyyyyGTjyyy
+TTTGjyyyyyGGjyyy
+TTyjjiiiiiijjiii
+Tyiiiiiiimmiiiii
+Tymiiiiiiddiiiii
+ymmdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 3
+TTiiiiiiiiiiiiii
+Tiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 4
+TTTTTyyyyyGTTTTT
+TTTGjyyyyyGGjTTT
+TTyjjiiiiiijjmTT
+TyiiiiiiimmiiimT
+TymiiiiiiddiiimT
+ymmdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 5
+TTiiiiiiiiiiimTT
+TiiiiiiiiiiiiimT
+iiiiiiiiiiiiiiim
+iiiiiiiiimmiiiim
+immiiiiiiddiiiim
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 6
+TTTTTyyyyyGTjyyy
+TTTGjyyyyyGGjyyy
+TTyjjiiiiiijjiii
+Tyiiiiiiimmiiiii
+Tymiiiiiiddiiiii
+ymmdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 7
+TTiiiiiiiiiiiiii
+Tiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 8
+yyGTjyyyyyGTTTTT
+yyGGjyyyyyGGjTTT
+iiijjiiiiiijjmTT
+iiiiiiiiimmiiimT
+immiiiiiiddiiimT
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 9
+iiiiiiiiiiiiimTT
+iiiiiiiiiiiiiimT
+iiiiiiiiiiiiiiim
+iiiiiiiiimmiiiim
+immiiiiiiddiiiim
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 10
+yyGTjyyyyyGTjyyy
+yyGGjyyyyyGGjyyy
+iiijjiiiiiijjiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 11
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 12
+yyGTjyyyyyGTTTTT
+yyGGjyyyyyGGjTTT
+iiijjiiiiiijjmTT
+iiiiiiiiimmiiimT
+immiiiiiiddiiimT
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 13
+iiiiiiiiiiiiimTT
+iiiiiiiiiiiiiimT
+iiiiiiiiiiiiiiim
+iiiiiiiiimmiiiim
+immiiiiiiddiiiim
+immdiiiiiiiiiiim
+iiiiiiiiiiiiiiim
+iiiiiiiiiiiiimmm
+iiiiiiiiiiiimmmm
+iiiimmmiiiiiiddm
+iiiimddiiiiiiiim
+iiiiiiiiiimmiiim
+iiiiiiiiiimmdiim
+mmiiiiimmiiiiiim
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 14
+yyGTjyyyyyGTjyyy
+yyGGjyyyyyGGjyyy
+iiijjiiiiiijjiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd
+frame auto 15
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiimmiiiii
+immiiiiiiddiiiii
+immdiiiiiiiiiiii
+iiiiiiiiiiiiiiii
+iiiiiiiiiiiiimmi
+iiiiiiiiiiiimmmi
+iiiimmmiiiiiiddi
+iiiimddiiiiiiiii
+iiiiiiiiiimmiiii
+iiiiiiiiiimmdiii
+mmiiiiimmiiiiiii
+ddiiiimmmiiiimmm
+iiiiiiiddiiiimdd

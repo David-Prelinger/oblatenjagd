@@ -1,0 +1,27 @@
+# Cast-iron mooring bollard (solid, 1 tile) standing on a deck: a squat
+# post with a wide rounded cap (its top rows 1-2 are the walking surface),
+# a waist and a flared foot plate. Iron ramp i/m/d (no k: a static solid
+# tile), lit left with an i highlight on the cap, d right side and
+# underside of the cap.
+sprite = tile_poller
+size   = 16x16
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+................
+...ddmmiiimmdd..
+..dmiiiiimmmmdd.
+.dmmmmmmmmmmmddd
+.ddddddddddddddd
+....dimmmmddd...
+....dimmmmddd...
+....dimmmmddd...
+....dimmmmddd...
+....dimmmmddd...
+....dimmmmddd...
+...ddimmmmdddd..
+..dimmmmmmmdddd.
+..dimmmmmmdddd..
+.ddmmmmmmmmdddd.
+.dddddddddddddd.
