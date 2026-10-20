@@ -1,0 +1,53 @@
+# The deck chair as a step over file B (D-095, D-096): the solver's route
+# into the Kurpark, where it stomps Kurgast #4 (his chair at col 178, in
+# the pen he shares with file B). Resi walks back, hops onto the chair and
+# waits there (his rest pauses) while the file marches up, salutes and
+# marches on until the flag bearer turns at the chair. In that march a
+# held walking jump from the chair carries her over all three officers
+# (no stomp, no points), and she walks on to the bandstand under the
+# Kurkapelle's notes.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score=6700 player_x>=3200
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+- 6
+L 40
+L 38
+LJ 6
+- 3
+R 3
+- 660
+RJ 36
+R 30
+R 150
+RJ 20
+R 80

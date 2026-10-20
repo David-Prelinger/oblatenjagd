@@ -1,0 +1,32 @@
+# Stage 8 Kurgast #1 (D-095, game-design "Stage 8" New mechanics): Resi
+# hops the garden wall and the Kaiser's statue (the pigeon on his hat flies
+# off left), meets Kurgast #1 shuffling towards her under the Katrin
+# canopy and stomps him (100, „Kurruhe!"): he lies down in his deck chair
+# at col 30. She steps back onto the chair (his rest pauses) and a
+# straight walking jump from it rises through the one-way canopy (4 tiles
+# up), bumps the ?-box and lands on the canopy for its Oblaten.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped event=BlockBumped score=2700 oblaten=13 player_y<=160
+---
+R 150
+RJ 16     # over the garden wall
+R 6
+- 60
+RJ 20     # onto the statue block and down
+R 20
+- 1
+R 30
+RJ 12     # onto Kurgast #1: the stomp
+R 25
+- 6
+L 8
+- 30
+LJ 8      # back onto the deck chair
+- 4
+L 6
+- 30
+RJ 20     # from the chair through the canopy, bumping the ?-box
+R 20
+- 30

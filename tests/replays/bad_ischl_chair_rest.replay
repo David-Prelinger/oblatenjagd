@@ -1,0 +1,27 @@
+# Waiting on a deck chair through a whole rest (D-095): Kurgast #1 is
+# stomped as in bad_ischl_kurgast, Resi steps back onto his chair and
+# stands there for 600 frames, longer than his rest and wake together
+# (340): both counters pause while she stands on him, so he never gets up
+# under her (no hurt), and she still stands on the chair at the end.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped player_y>=200 player_y<=202
+---
+R 150
+RJ 16
+R 6
+- 60
+RJ 20
+R 20
+- 1
+R 30
+RJ 12     # the stomp: he lies down at col 30
+R 25
+- 6
+L 8
+- 30
+LJ 8      # back onto the chair
+- 4
+L 6
+- 600     # a whole rest and more on the chair

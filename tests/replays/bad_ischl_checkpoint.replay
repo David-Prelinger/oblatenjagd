@@ -1,0 +1,46 @@
+# Checkpoint respawn at col 152 (game-design "Stage 8" New mechanics):
+# the solver's route past the Esplanade checkpoint and Kurgast #4 (stomped,
+# 100), then Resi runs into file B as Normal and dies. She respawns at the
+# checkpoint as Normal with the stage clock at 0, so the drill restarts
+# (file B's drill frame is clock - 1 again) and Kurgast #4 walks again
+# (his deck chair is gone); the M-box at 158 is fresh: she bumps it and
+# takes the Mozartkugel when the Trinkhalle steps turn it back.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=1 event=CheckpointReached event=Respawned event=PowerUp power=big lives=2 score=7700
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+R 200
+- 10
+R 12
+- 20
+J 10
+- 480
