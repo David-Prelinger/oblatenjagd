@@ -32,7 +32,7 @@
 //! where the edge pushes (E31, D-085), and a checkpoint in the zone on a
 //! deck tile.
 //!
-//! Signs (M5, [`crate::signlint`], E33, D-086 addendum): no placed Oblate
+//! Signs (M5, [`crate::signlint`], E33, D-088): no placed Oblate
 //! overlaps a sign board's drawn rectangle (known findings only warn).
 
 use std::path::Path;

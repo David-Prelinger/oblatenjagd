@@ -1,4 +1,4 @@
-//! Oblaten clear of sign boards (M5, E33, D-086 addendum): signs are drawn
+//! Oblaten clear of sign boards (M5, E33, D-088): signs are drawn
 //! first, so an Oblate placed on a board's rectangle covers its text.
 //!
 //! For every `sign` the board is computed as the renderer draws it
