@@ -1,0 +1,21 @@
+# Air bubble (renderer only, M5): rises from Resi's mouth every 40 frames
+# while her chest is under water, 0.5 px/frame up to the water line.
+# A small ring h with a 1 px w highlight top-left, no outline (it sits on
+# clear water t/T and must stay light). Like the `dampf` particle it lives in
+# `props`, the group without the k-outline rule (the engine looks sprites up
+# by name). rise: the ring wobbles 4 px <-> 3 px.
+sprite = blase
+size   = 4x4
+origin = 2,4
+anim   = rise frames=2 ticks=8 loop
+---
+frame rise 0
+.hh.
+hw.h
+h..h
+.hh.
+frame rise 1
+....
+.wh.
+.h.h
+..h.

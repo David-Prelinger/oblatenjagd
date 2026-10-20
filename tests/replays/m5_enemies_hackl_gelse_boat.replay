@@ -1,0 +1,37 @@
+# Hackl against the Gelse and the regatta boat (D-081): an axe from the
+# deck defeats the hunting Gelse (100); on the regatta floor an axe
+# bounces off the boat (no effect) and Resi steps into the trench while
+# it races over her.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=AxeHit score=1100 no_event=Hurt no_event=Stomped
+---
+R 42
+J 14
+- 10
+R 10
+- 20
+L 6
+LJ 20
+- 50
+RB 153
+RBJ 20
+RB 76
+RBJ 36
+RB 30
+- 10
+R 80
+- 120
+B 1
+- 80
+RB 105
+RBJ 36
+RB 124
+DJ 4
+- 30
+R 62
+- 2
+B 1
+R 30
+- 200

@@ -1,0 +1,11 @@
+# Normal Resi stands still on the deck: the Gelse hunts her down and
+# stings (death).
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = dies_at frames=655..655 deaths=1
+---
+RB 325
+RBJ 36
+RB 20
+- 300

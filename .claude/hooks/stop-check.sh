@@ -10,6 +10,11 @@ set -u
 root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 cd "$root" || exit 0
 
+# The hook builds in its own target dir per checkout: the shared
+# /workspaces/.cargo-target is also used by agents in worktrees, and
+# parallel checkouts overwrite each other's build artifacts there.
+export CARGO_TARGET_DIR="/workspaces/.cargo-target/hook-$(basename "$root")"
+
 target="${CARGO_TARGET_DIR:-target}"
 case "$target" in /*) ;; *) target="$root/$target" ;; esac
 reports="$target/reports"

@@ -1,0 +1,14 @@
+# E28 (D-077): walk from the St. Wolfgang quay onto the waiting Dampfer
+# (flush deck: never airborne); that calls it. Stand over the paddle wheel
+# (the hull's middle) for the whole 320-frame trip (16 tiles at 0.8 px per
+# frame): a rider never touches the wheel. It moors flush with the
+# Gschwendt pier; walk off onto the pier.
+level  = m5_boats
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Jumped state=playing player_x>=620
+---
+R 162     # onto the deck, to its middle (over the wheel)
+- 300     # the ride
+R 100     # off onto the pier
+- 10
