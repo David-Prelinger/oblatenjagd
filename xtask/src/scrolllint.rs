@@ -17,6 +17,19 @@
 //!   swimmer climbs it with a held jump-out, and big Resi's reaches only
 //!   ~45 px). A face with nothing below it in front (bottomless) is
 //!   skipped.
+//! - **Under-water faces** (D-085): a face whose front cell at its top is
+//!   swim water lies wholly under the water line, so the rule above can't
+//!   see it. A diver resting on the lake bed is pushed sideways into it
+//!   with no step-up and squeezed, so it is an error unless at least
+//!   [`PASS_UNDER_ROWS`] rows of swim water lie between its bottom and the
+//!   bed in front (a block she passes under). In short: no raised steps in
+//!   the lake bed where the edge pushes. A quay or pier face rises above
+//!   the water line and stays under the swim-surface rule; faces under
+//!   *lethal* water are not checked (there is no diver to squeeze). Only
+//!   faces in columns ≤ `to + 1` are checked: the edge stops at camera x
+//!   `to × 16` and pushes a hitbox ≤ 16 px wide, so it never reaches
+//!   further, and a beach rising to the lead-out quay is fine (the faces
+//!   above use the stricter `to + 20`, D-083).
 //! - **Checkpoint**: a checkpoint in the zone's columns stands on a deck
 //!   tile (solid or one-way), not on water.
 
@@ -110,6 +123,26 @@ pub fn problems(level: &Level) -> Vec<String> {
             }
             let bottom = r;
             r += 1;
+            if kind(level, c - 1, top) == Some(TileKind::Swim) {
+                if c > to + 1 {
+                    continue;
+                }
+                let below = (bottom + 1..level.height)
+                    .take_while(|&r| kind(level, c - 1, r) == Some(TileKind::Swim))
+                    .count() as i32;
+                if below < PASS_UNDER_ROWS {
+                    let bed = bottom + 1 + below;
+                    out.push(format!(
+                        "left-facing solid face at column {}, rows {}–{}: under water, {} tiles above the lake bed in front of it ({}); in an auto-scroll zone the lake bed has no raised steps (a block under water leaves >= {PASS_UNDER_ROWS} rows of water below it), since the edge's push has no step-up and squeezes a diver resting on the bed (D-085)",
+                        c + 1,
+                        top + 1,
+                        bottom + 1,
+                        bed - top,
+                        at(c - 1, bed)
+                    ));
+                }
+                continue;
+            }
             let Some((s, swim)) = surface(level, c - 1, top) else {
                 continue;
             };
@@ -289,6 +322,80 @@ mod tests {
             "##############################",
         ]);
         assert_eq!(problems(&step), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_raised_step_in_the_lake_bed_squeezes_a_resting_diver() {
+        // Stage 6's former shallows (D-085): the bed rises 2 tiles at
+        // column 11 (1-based), wholly under swim water.
+        let p = problems(&grid(&[
+            "P.............................",
+            "#sssssssssssssssssssssssssssss",
+            "#sssssssssssssssssssssssssssss",
+            "#sssssssss#####sssssssssssssss",
+            "#sssssssss#####sssssssssssssss",
+            "##############################",
+        ]));
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].starts_with("left-facing solid face at column 11, rows 12–13: under water, 2 tiles above the lake bed in front of it (row 14, column 10)"),
+            "{p:?}"
+        );
+        // A 1-tile step is a step too: the push has no step-up.
+        let p = problems(&grid(&[
+            "P.............................",
+            "#sssssssssssssssssssssssssssss",
+            "#sssssssssssssssssssssssssssss",
+            "#sssssssssssssssssssssssssssss",
+            "#sssssssss#####sssssssssssssss",
+            "##############################",
+        ]));
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("1 tiles above the lake bed"), "{p:?}");
+        // Right of `to + 1` (column 12, 1-based) the edge never pushes: a
+        // beach rising to the lead-out quay is fine.
+        let beach = grid(&[
+            "P.............................",
+            "#ssssssssssssss###############",
+            "#sssssssssssss################",
+            "#ssssssssssss#################",
+            "#sssssssssss##################",
+            "##############################",
+        ]);
+        assert_eq!(problems(&beach), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_quay_over_a_flat_lake_bed_is_fine() {
+        // The quay wall rises from the bed to 2 tiles above the swim
+        // surface: the swim-surface rule (D-084) covers it (a resting diver
+        // surfaces and climbs out), and the bed in front of it is flat. A
+        // one-way deck over the water changes nothing.
+        let quay = grid(&[
+            "..........###############",
+            "P..--.....###############",
+            "#sssssssss###############",
+            "#sssssssss###############",
+            "#sssssssss###############",
+            "##############################",
+        ]);
+        assert_eq!(problems(&quay), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_block_under_water_needs_2_rows_of_water_below_it() {
+        let block = |gap: usize| {
+            let mut g = vec!["P.............................".to_owned()];
+            g.push("#sssssssssssssssssssssssssssss".to_owned());
+            g.push("#sssssssss###sssssssssssssssss".to_owned());
+            g.extend((0..gap).map(|_| "#sssssssssssssssssssssssssssss".to_owned()));
+            g.push("##############################".to_owned());
+            problems(&grid(&g.iter().map(String::as_str).collect::<Vec<_>>()))
+        };
+        assert_eq!(block(2), Vec::<String>::new());
+        let p = block(1);
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(p[0].contains("2 tiles above the lake bed"), "{p:?}");
     }
 
     #[test]
