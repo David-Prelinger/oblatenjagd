@@ -1,0 +1,166 @@
+# QA M6 relaxed run of Bad Ischl (D-045 measurement, ZEIT clock up to the
+# goal touch, D-090). Sensible non-speedrun play at walking speed (RUN never
+# held): 1.5 s at the start by the „Bus 150“ board, the M-box and its
+# Mozartkugel (Zuckerschock from 350), past the Kaiser's statue and Kurgast
+# #1, 4 s at the Kaiserpark terrace's edge watching file A march and
+# present, past the fountain and Kurgast #2 onto the villa steps, where she
+# waits 3.3 s while the Fiaker charges beneath her, the Esplanade and the
+# two Traun notches with Kurgast #3, the checkpoint (0.7 s), the M-box
+# (1000), the Trinkhalle, Kurgast #4 and file B, past the Kurkapelle onto
+# the wall steps (1 s), the theatre balconies B1 -> B2, the Z-box bumped
+# from B2 (its Zaunerstollen turns at B2's stone end pier and rolls back
+# to her: ExtraLife), down past singer #2 onto the bench (0.5 s), file C,
+# the Pfarrgasse, the Trafik and a walk-off to the Maibaum (100). Movement
+# between the pauses: walking-only QA beam search (4-frame chunks, never
+# hurt). LevelComplete at 4211; ZEIT clock consumed 4180 frames = 69.67 s:
+# 3 x 69.67 = 209.0 -> 210 s (D-045, D-102).
+# Re-cut for D-102 (E42), same frames and goal touch: the notch-2 leap now
+# lands on the kerb (151), so the braking after it is shifted (2405-2440,
+# rest at the same x); B2's stone end pier (237, rows 7-10, with the bridge
+# at (236, row 8): D-102 E42 addendum) blocks the old hop over the flower
+# box, so she steps left, jumps onto the box top, hops the pier and walks
+# off onto the street (3475-3606); two walking jumps over singer #2 onto
+# the bench (3607-3730) and a brake to the old resting x (3731-3768); from
+# 3769 on her inputs and positions are the old ones.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = complete frames=4211..4211 deaths=0 no_event=Hurt no_event=Died event=PowerUp event=Stomped event=CheckpointReached power=big state=stage_clear
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 260
+RJ 4
+R 32
+RJ 12
+R 24
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 36
+RJ 36
+R 20
+RJ 28
+R 34
+L 11
+- 43
+R 40
+RJ 4
+R 8
+RJ 4
+R 16
+RJ 4
+R 124
+RJ 12
+R 20
+RJ 4
+R 172
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 12
+RJ 28
+R 56
+RJ 8
+R 56
+- 4
+L 8
+- 60
+R 24
+RJ 4
+R 36
+L 8
+LJ 4
+RJ 24
+R 4
+RJ 36
+R 16
+RJ 32
+R 20
+- 4
+R 6
+- 12
+J 14
+- 20
+L 10
+RJ 18
+R 10
+RJ 20
+R 54
+- 22
+R 10
+RJ 14
+R 40
+RJ 14
+R 24
+- 1
+L 5
+- 7
+R 1
+- 24
+R 12
+RJ 8
+R 40
+RJ 36
+R 40
+RJ 36
+R 44
+RJ 36
+R 12
+RJ 8
+R 20
+RJ 12
+R 20
+RJ 36
+R 84

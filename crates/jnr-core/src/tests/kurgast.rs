@@ -20,6 +20,10 @@ const LEGEND: &str = r##"
 "w" = { entity = "nordic_walker" }
 "T" = { entity = "selfie_tourist", still = true }
 "f" = { entity = "fiaker" }
+"o" = { entity = "offizier" }
+"1" = { entity = "offizier", phase = 60 }
+"2" = { entity = "offizier", phase = 120 }
+"3" = { entity = "offizier", phase = 180 }
 "P" = { entity = "player_start" }
 "G" = { entity = "goal" }
 "##;
@@ -430,6 +434,148 @@ fn walkers_turn_at_his_chair() {
         turned |= w.dir == 1;
     }
     assert!(turned);
+}
+
+/// The chair (the Kurgast in it) and the other walker of kind `kind`.
+fn chair_and_walker(g: &Game, kind: EntityKind) -> (Entity, Entity) {
+    let chair = *g.entities().iter().find(|e| is_platform_now(e)).unwrap();
+    let walker = *g
+        .entities()
+        .iter()
+        .find(|e| e.kind == kind && !is_platform_now(e))
+        .unwrap_or_else(|| panic!("no {kind:?}"));
+    (chair, walker)
+}
+
+/// D-102: a walker (`w` in [`LEGEND`]) at column `col` heads for a
+/// Kurgast lying in his chair at column 20 (the player start on the far
+/// side) and turns at the berth: it never comes closer than
+/// `kurgast_berth` − its speed px to the chair.
+fn keeps_its_berth(w: char, kind: EntityKind, col: usize) {
+    let t = tuning();
+    let start = if col > 20 { 2 } else { 24 };
+    let mut g = game(&world(40, &[(11, 20, 'k'), (11, col, w), (11, start, 'P')]));
+    safe_step(&mut g);
+    // The Kurgast at column 20 (centre x 328, at most 0.375 px off).
+    let i = g
+        .entities()
+        .iter()
+        .position(|e| e.kind == KURGAST && (centre(e) - Fx::from_px(328)).abs() < Fx::ONE)
+        .unwrap();
+    lie_down(&mut g.entities[i], &t);
+    let speed = first_speed(&chair_and_walker(&g, kind).1, &t);
+    let berth = Fx::from_px(t.enemies.kurgast_berth);
+    let (mut closest, mut turned, mut after) = (Fx::from_px(1000), false, 0);
+    // Until 30 frames after the turn (before a fast walker leaves).
+    for _ in 0..250 {
+        safe_step(&mut g);
+        let (chair, wk) = chair_and_walker(&g, kind);
+        let clear = if col > 20 {
+            wk.x - chair.right()
+        } else {
+            chair.x - wk.right()
+        };
+        closest = closest.min(clear);
+        turned |= i32::from(wk.dir) == if col > 20 { 1 } else { -1 };
+        after += u32::from(turned);
+        if after > 30 {
+            break;
+        }
+    }
+    assert!(turned, "{kind:?} from column {col} turned");
+    assert!(
+        closest >= berth - speed && closest < berth,
+        "{kind:?} from column {col}: {closest:?} px clear"
+    );
+}
+
+/// The walking speed of a walker kind.
+fn first_speed(e: &Entity, t: &crate::Tuning) -> Fx {
+    match e.kind {
+        EntityKind::Enemy(EnemyKind::Offizier) => t.enemies.offizier_speed,
+        EntityKind::Enemy(EnemyKind::NordicWalker) => t.enemies.walker_speed,
+        _ => t.enemies.kurgast_speed,
+    }
+}
+
+#[test]
+fn walkers_turn_at_the_berth_round_his_chair_from_both_sides() {
+    for (w, kind) in [
+        ('o', EntityKind::Enemy(EnemyKind::Offizier)),
+        ('w', EntityKind::Enemy(EnemyKind::NordicWalker)),
+        ('k', KURGAST),
+    ] {
+        keeps_its_berth(w, kind, 23);
+        keeps_its_berth(w, kind, 17);
+    }
+}
+
+#[test]
+fn a_walking_kurgast_is_met_with_the_plain_overlap_turn() {
+    // D-102: the berth belongs to the chair only. A Kurgast walking right
+    // from 18 and a Nordic-Walker walking left from 22 meet: they turn
+    // only once their hitboxes overlap.
+    let mut g = game(&world(40, &[(11, 18, 'k'), (11, 22, 'w'), (11, 30, 'P')]));
+    safe_step(&mut g);
+    let walker = EntityKind::Enemy(EnemyKind::NordicWalker);
+    let (k, w) = (index(&g, KURGAST), index(&g, walker));
+    g.entities[k].dir = 1;
+    g.entities[w].dir = -1;
+    let mut closest = Fx::from_px(1000);
+    for _ in 0..120 {
+        safe_step(&mut g);
+        let (a, b) = (g.entities()[k], g.entities()[w]);
+        closest = closest.min(b.x - a.right());
+        if a.dir == -1 && b.dir == 1 {
+            break;
+        }
+    }
+    assert_eq!(
+        (g.entities()[k].dir, g.entities()[w].dir),
+        (-1, 1),
+        "both turned"
+    );
+    assert!(closest < Fx::ZERO, "they overlapped first: {closest:?}");
+}
+
+/// D-102: Resi standing still on the chair with 11 of her 12 px hanging
+/// past its edge (the most a rider can) on the side a file of officers
+/// marches in from is never touched by them, in any drill phase.
+fn a_rider_past_the_chair_is_safe_from(side: i32) {
+    for (c, col) in [('o', 23), ('1', 24), ('2', 25), ('3', 26), ('o', 28)] {
+        let (col, start) = if side > 0 { (col, 2) } else { (40 - col, 24) };
+        let mut g = game(&world(40, &[(11, 20, 'k'), (11, col, c), (11, start, 'P')]));
+        safe_step(&mut g);
+        let i = g.entities().iter().position(|e| e.kind == KURGAST).unwrap();
+        lie_down(&mut g.entities[i], &tuning());
+        let chair = first(&g, KURGAST);
+        let x = if side > 0 {
+            chair.right() - Fx::ONE
+        } else {
+            chair.x + Fx::ONE - g.player.w
+        };
+        assert_eq!(g.player.w, Fx::from_px(12), "Normal: 11 px past the chair");
+        for n in 0..480 {
+            g.player.x = x;
+            g.player.y = chair.y - g.player.h;
+            g.player.vx = Fx::ZERO;
+            g.player.vy = Fx::ZERO;
+            g.player.on_ground = true;
+            g.player.invulnerable = 0;
+            let events = g.step(input("-")).to_vec();
+            assert!(
+                !events.contains(&Event::Hurt) && g.death_cause().is_none(),
+                "officer {c} at {col}, side {side}, frame {n}: {events:?}"
+            );
+            assert!(is_platform_now(&first(&g, KURGAST)), "still lying");
+        }
+    }
+}
+
+#[test]
+fn a_rider_hanging_11_px_past_the_chair_is_never_touched_by_a_file() {
+    a_rider_past_the_chair_is_safe_from(1);
+    a_rider_past_the_chair_is_safe_from(-1);
 }
 
 #[test]

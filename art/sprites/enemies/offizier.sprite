@@ -9,8 +9,8 @@
 # (a w/i stub rising from the Y guard at the hip), the scabbard hanging
 # straight down behind the back leg.
 # praesentiert: the sabre raised vertically in front of the face, blade w/i
-# with a k outline in columns 8-11, tip closed by a single k at row 0 (inside the 8x16 sabre zone
-# above the hitbox, columns 4-11). Nothing else is drawn above row 10.
+# with a k outline in columns 8-11, tip closed by a single k at row 0 (inside the 8x10 sabre zone
+# above the hitbox, rows 0-9, columns 4-11; D-102). Nothing else is drawn above row 10.
 # squished: sits on the ground, shako askew, salutes anyway.
 # Faces right; mirror = auto. Built with a scratch script (layers + automatic
 # k outline, plus a pixel post-pass), frozen to text here.

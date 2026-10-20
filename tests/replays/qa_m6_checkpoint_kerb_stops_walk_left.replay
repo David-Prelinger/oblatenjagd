@@ -1,0 +1,50 @@
+# QA M6 regression (was qa_m6_bug_checkpoint_left_into_traun; fixed by
+# D-102, E42): holding LEFT after the Bad Ischl checkpoint respawn must not
+# walk Resi into the Traun (the M4 "holding LEFT after a checkpoint
+# respawn" class; Strobl was designed against it, D-097 addendum item 4).
+# bad_ischl_checkpoint's inputs to its death in file B (1266) and the
+# respawn at the Esplanade checkpoint (col 152, x 2434, 1326, camera x
+# 2296). Then LEFT is held. The bug: she walked left along the landing
+# 147-151 and dropped into landing notch 2 (cols 143-146, lethal
+# salzach_water) at 1403, 77 frames after the respawn, again at the next
+# respawn, then game over. Since D-102 a stone kerb at (151, row 14),
+# directly left of the checkpoint, stops her on the landing. Inputs
+# unchanged (bad_ischl_checkpoint's prefix is a frozen copy of the pre-E42
+# solver route, which the re-solve changed from frame 918 on).
+# Expected: a respawned Resi who holds LEFT is stopped on solid ground
+# (x >= 2352) and does not die.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=1266..1266 lives=2 state=playing player_x>=2352 no_event=GameOver
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+R 162
+L 300

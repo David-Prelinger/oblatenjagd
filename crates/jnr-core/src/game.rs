@@ -1151,7 +1151,7 @@ impl Game {
                 e.removed = true;
             }
         }
-        crate::enemies::turn_at_enemies(&mut self.entities);
+        crate::enemies::turn_at_enemies(&mut self.entities, &self.tuning);
         self.entities.extend(spawned);
     }
 

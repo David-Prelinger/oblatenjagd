@@ -4,7 +4,10 @@
 # from frame 171 (re-copy them after `cargo xtask solve strobl --write`;
 # the xtask tour coupling test checks it), then 800 idle frames: the
 # Maibaum sequence, the tally and the route map Strobl -> Bad Ischl, which
-# waits (Wait from 2502) for START or its 300 frames; the tour ends in it.
+# waits (Wait from 2492) for START or its 300 frames; the tour ends in it.
+# D-102 (E42): time_limit 230 (was 240): 10 s less time bonus (score
+# 17300, was 17800) and a 10-frame shorter tally, so the map comes 10
+# frames earlier.
 # Play frame = tour frame - 171 (stage clock likewise until the goal).
 # Shots, per section:
 #   1 Anlegestelle   60 intro
@@ -30,7 +33,7 @@ level  = strobl
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=1900..1900 deaths=0 state=route_map stage=strobl score=17800 lives=3 oblaten=34
+expect = complete frames=1900..1900 deaths=0 state=route_map stage=strobl score=17300 lives=3 oblaten=34
 shots  = 0:title 60:intro 470:balkon 558:shutter_opening 618:shutter3 820:gasthof 955:postbus 1022:checkpoint 1180:ampel 1530:walkway 1560:gelse 1736:ebiker_crash 1792:ebiker 1900:maibaum 2100:tally 2560:route_map
 ---
 - 20

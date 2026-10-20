@@ -1,0 +1,128 @@
+# QA M6 regression (was qa_m6_bug_zaunerstollen_rolls_off_b2; fixed by
+# D-102, E42): Bad Ischl's Zaunerstollen must stay on balcony B2 (the
+# Strobl balcony bug of the D-097 addendum item 2, again). QA's relaxed-run
+# prefix (walking; the Mozartkugel at the start, Zuckerschock from 350) up
+# onto B2 (cols 232-237, row 11) at 3442, then she steps under the Z-box
+# (235, row 8), bumps it with a standing hop (3461) and stands still on the
+# balcony. The bug: the Zaunerstollen rose onto the box top, rolled right,
+# dropped onto the 1-high flower box at 237 (row 10), rolled off it and
+# off the balcony and was lost. Since D-102 (E42 addendum) a stone end
+# pier (237, rows 7-10) one tile above the box top, joined to the box by a
+# stone bridge at (236, row 8), stops it: it turns at the pier's face, rolls
+# back left off the box and into her on the balcony.
+# Re-cut for D-102 (E42): the relaxed run's braking after the notch-2 leap
+# is shifted for the kerb at 151 (2405-2440, rest at the same x), as in
+# qa_m6_bad_ischl_relaxed; from 2441 on everything is as before.
+# Expected (as in Strobl since its 3-high stopper): the 1-up comes back to
+# her on the balcony (ExtraLife, lives 4).
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=PowerUp event=ExtraLife lives=4 player_y<=146
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 260
+RJ 4
+R 32
+RJ 12
+R 24
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 36
+RJ 36
+R 20
+RJ 28
+R 34
+L 11
+- 43
+R 40
+RJ 4
+R 8
+RJ 4
+R 16
+RJ 4
+R 124
+RJ 12
+R 20
+RJ 4
+R 172
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 12
+RJ 28
+R 56
+RJ 8
+R 56
+- 4
+L 8
+- 60
+R 24
+RJ 4
+R 36
+L 8
+LJ 4
+RJ 24
+R 4
+RJ 36
+R 16
+RJ 32
+R 20
+- 4
+R 6
+- 12
+J 14
+- 600

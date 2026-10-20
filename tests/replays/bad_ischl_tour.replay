@@ -4,9 +4,12 @@
 # unchanged from frame 171 (re-copy them after `cargo xtask solve
 # bad_ischl --write`; the xtask tour coupling test checks it), then 800
 # idle frames: the Maibaum sequence at Café Zauner (no Ortsende, D-097),
-# the tally, the route map Bad Ischl -> Café Zauner (2568), which has no
-# level yet, so the teaser („Fortsetzung folgt …", 2632) and the title
-# (2812) with the run reset.
+# the tally, the route map Bad Ischl -> Café Zauner (2508), which has no
+# level yet, so the teaser („Fortsetzung folgt …", 2572) and the title
+# (2752) with the run reset. D-102 (E42): re-copied from the re-solved
+# route (solver frames 918-1545 changed); time_limit 210 (was 270)
+# shortens the tally by 60 frames, so the map, the teaser shot (2700 ->
+# 2640) and the title come 60 frames earlier.
 # Play frame = tour frame - 171 (stage clock likewise until the goal).
 # Shots, per section:
 #   1 Katrin          60 intro, 260 the Kaiser statue with the pigeon on
@@ -16,20 +19,20 @@
 #   3 Esplanade       958 Kurgast #3 stomped on the promenade over the
 #                     Ischl („Kurruhe!"), 1144 the checkpoint joke
 #                     „Bus 150 / fährt zurück"
-#   4 Kurpark         1438 the stomp chain on file B in the pen
+#   4 Kurpark         1438 a stomp on file B's rear officer in the pen
 #   5 Theater         1640 the Kongresshaus balconies with singer #1's
 #                     high C, 1817 file C in „Präsentiert!" (sabres up,
-#                     drill frame 205; Resi on the bench)
+#                     drill frame 205; Resi on the 3-high step past it)
 #   6 Pfarrgasse      2022 Maibaum, 2100 the goal sequence: Resi walks
 #                     past the queue at Café Zauner (D-101 condition),
-#                     2200 tally, 2700 the teaser on the route map (Café
+#                     2200 tally, 2640 the teaser on the route map (Café
 #                     Zauner, primary label slots), Normal form.
 level  = bad_ischl
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=2022..2022 deaths=0 state=title score=0 lives=3 oblaten=0
-shots  = 0:title 60:intro 260:kaiser_taube 384:liegestuhl 527:file_a 958:esplanade 1144:checkpoint 1438:file_b 1640:kongresshaus 1817:praesentiert 2022:maibaum 2100:zauner_queue 2200:tally 2700:teaser
+shots  = 0:title 60:intro 260:kaiser_taube 384:liegestuhl 527:file_a 958:esplanade 1144:checkpoint 1438:file_b 1640:kongresshaus 1817:praesentiert 2022:maibaum 2100:zauner_queue 2200:tally 2640:teaser
 ---
 - 20
 S 1       # START: stage intro
@@ -56,24 +59,25 @@ RB 18
 RBJ 33
 RB 27
 RBJ 31
-RB 43
+RB 42
 RBJ 36
 RB 136
 RBJ 20
-RB 18
+RB 16
 RBJ 36
 RB 40
 RBJ 36
 RB 18
 RBJ 33
-RB 65
+RB 69
 RBJ 12
 RB 78
 RBJ 36
-RB 2
-RBJ 6
-RB 19
-RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
 RB 56
 RBJ 20
 RB 24

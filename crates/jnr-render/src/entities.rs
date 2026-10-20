@@ -2228,8 +2228,8 @@ mod tests {
         for e in officers(&g) {
             let z = jnr_core::enemies::sabre_zone(&e, &t).unwrap();
             let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
-            for y in zy..zy + 16 {
-                for x in zx..zx + 8 {
+            for y in zy..zy + z.h.to_px() {
+                for x in zx..zx + z.w.to_px() {
                     let c = fb.get(x, y);
                     assert!(c == Some(WHITE) || c == Some(SILVER_LIGHT), "({x}, {y})");
                 }
@@ -3251,7 +3251,8 @@ mod tests {
                     let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
                     assert!(above.iter().any(|&(_, y)| y == top - 10), "tip at row 0");
                     for &(x, y) in &above {
-                        let in_zone = (zx..zx + 8).contains(&x) && (zy..zy + 16).contains(&y);
+                        let in_zone = (zx..zx + z.w.to_px()).contains(&x)
+                            && (zy..zy + z.h.to_px()).contains(&y);
                         assert!(
                             in_zone || (lead && col(x) <= 2),
                             "frame {frames}: ({x}, {y}) col {} outside the zone",

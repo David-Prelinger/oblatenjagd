@@ -294,7 +294,7 @@ fn a_file_stays_in_step_after_staggered_activation() {
 // -------------------------------------------------------- the sabre zone
 
 #[test]
-fn the_sabre_zone_is_8_by_16_above_him_only_while_presenting() {
+fn the_sabre_zone_is_8_by_10_above_him_only_while_presenting() {
     let t = tuning();
     let mut g = officer_world(&[]);
     for n in 1..=240 {
@@ -303,9 +303,11 @@ fn the_sabre_zone_is_8_by_16_above_him_only_while_presenting() {
         match sabre_zone(&o, &t) {
             Some(z) => {
                 assert_eq!(o.state, state::PRESENT, "frame {n}");
-                assert_eq!((z.w, z.h), (Fx::from_px(8), Fx::from_px(16)));
+                assert_eq!((z.w, z.h), (Fx::from_px(8), Fx::from_px(10)));
                 assert_eq!(z.x + z.w.div_int(2), o.x + o.w.div_int(2), "centred");
                 assert_eq!(z.y + z.h, o.y, "from his hitbox top up");
+                // D-102: the drawn blade, level with a 2-high wall's top.
+                assert_eq!(o.y + o.h - z.y, Fx::from_px(32), "32 px above his feet");
             }
             None => assert_ne!(o.state, state::PRESENT, "frame {n}"),
         }
@@ -314,6 +316,53 @@ fn the_sabre_zone_is_8_by_16_above_him_only_while_presenting() {
         sabre_zone(&Entity::at_feet(OFFIZIER, Fx::ZERO, Fx::ZERO, [12, 22]), &t),
         None
     );
+}
+
+/// D-102: a 2-high wall (top y 160) at column `wall` right beside a
+/// presenting officer: Resi standing still on it anywhere, her hitbox
+/// reaching over him as far as she can stand, is hurt neither by the
+/// blade nor by his body.
+fn standing_on_a_2_high_wall_beside_him_is_safe(wall: usize) {
+    let mut g = officer_world(&[(10, wall, '#'), (11, wall, '#')]);
+    until_state(&mut g, state::PRESENT);
+    let i = g.entities.iter().position(|e| e.kind == OFFIZIER).unwrap();
+    let left = Fx::from_px(16 * wall as i32);
+    let right = left + Fx::from_px(16);
+    g.entities[i].x = if wall < 20 {
+        right
+    } else {
+        left - g.entities[i].w
+    };
+    let w = g.player.w;
+    let mut n = 0;
+    let mut x = left - w + Fx::ONE;
+    while x < right {
+        let mut h = g.clone();
+        h.player.x = x;
+        h.player.y = Fx::from_px(160) - h.player.h;
+        h.player.vx = Fx::ZERO;
+        h.player.vy = Fx::ZERO;
+        h.player.on_ground = true;
+        h.player.invulnerable = 0;
+        let events = h.step(input("-")).to_vec();
+        assert_eq!(first(&h, OFFIZIER).state, state::PRESENT);
+        assert!(!events.contains(&Event::Hurt), "x {x:?}: {events:?}");
+        assert_eq!(h.death_cause(), None, "x {x:?}");
+        assert_eq!(h.player().y + h.player().h, Fx::from_px(160), "standing");
+        x += Fx::from_px(1);
+        n += 1;
+    }
+    assert_eq!(n, 16 + 12 - 1, "every x she can stand at");
+}
+
+#[test]
+fn standing_on_a_2_high_wall_left_of_a_presenting_officer_is_safe() {
+    standing_on_a_2_high_wall_beside_him_is_safe(19);
+}
+
+#[test]
+fn standing_on_a_2_high_wall_right_of_a_presenting_officer_is_safe() {
+    standing_on_a_2_high_wall_beside_him_is_safe(21);
 }
 
 #[test]

@@ -704,6 +704,10 @@ pub struct EnemyTuning {
     /// ... then shows the wake telegraph for this many frames before he
     /// stands up; both counters pause while the player stands on him.
     pub kurgast_wake: u16,
+    /// The berth at a lying Kurgast (D-102), px: walkers turn at him once
+    /// their hitbox overlaps his chair widened by this on each side (same
+    /// rows), so they stay clear of a rider hanging past the chair.
+    pub kurgast_berth: i32,
     /// Offizier (D-096).
     pub offizier_hitbox: [i32; 2],
     /// Marching speed.
@@ -1084,6 +1088,13 @@ impl EnemyTuning {
         if self.kurgast_speed <= Fx::ZERO || self.kurgast_speed >= Fx::from_px(12) {
             return Err(ParseError::new(
                 "tuning.toml: enemies.kurgast_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        // At most two tiles: a walker turns before it reaches a rider, but
+        // never from across a whole gap.
+        if !(0..=2 * TILE_PX).contains(&self.kurgast_berth) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_berth must be 0..=32 px",
             ));
         }
         for (name, v) in [
@@ -2321,11 +2332,13 @@ mod tests {
     #[test]
     fn kurgast_keys_are_validated() {
         let t = Tuning::parse(REAL).unwrap().enemies;
-        // D-095: 12×22, 0.375 px/frame, a 16×16 chair, rest 300 + wake 40.
+        // D-095: 12×22, 0.375 px/frame, a 16×16 chair, rest 300 + wake 40;
+        // D-102: a 16 px berth.
         assert_eq!(t.kurgast_hitbox, [12, 22]);
         assert_eq!(t.kurgast_speed, Fx(96), "0.375 px/frame");
         assert_eq!(t.kurgast_chair, [16, 16]);
         assert_eq!((t.kurgast_rest, t.kurgast_wake), (300, 40));
+        assert_eq!(t.kurgast_berth, 16);
         for (field, bad) in [
             ("kurgast_hitbox", "[17, 22]"),
             ("kurgast_hitbox", "[12, 0]"),
@@ -2337,6 +2350,8 @@ mod tests {
             ("kurgast_chair", "[16, 23]"),
             ("kurgast_rest", "0"),
             ("kurgast_wake", "0"),
+            ("kurgast_berth", "-1"),
+            ("kurgast_berth", "33"),
         ] {
             let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             let err = Tuning::parse(&text).unwrap_err().to_string();
@@ -2438,11 +2453,12 @@ mod tests {
             t.offizier_cycle - t.offizier_march - t.offizier_attention,
             48
         );
-        assert_eq!(t.offizier_sabre, [8, 16]);
+        // D-102: the drawn blade, up to 32 px above his feet.
+        assert_eq!(t.offizier_sabre, [8, 10]);
         for (field, bad, named) in [
             ("offizier_hitbox", "[17, 22]", "offizier_hitbox"),
             ("offizier_hitbox", "[12, 0]", "offizier_hitbox"),
-            ("offizier_sabre", "[0, 16]", "offizier_sabre"),
+            ("offizier_sabre", "[0, 10]", "offizier_sabre"),
             ("offizier_sabre", "[8, 33]", "offizier_sabre"),
             ("offizier_speed", "0", "offizier_speed"),
             ("offizier_speed", "3072", "offizier_speed"),
