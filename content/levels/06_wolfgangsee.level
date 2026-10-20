@@ -1,24 +1,29 @@
 # Stage 6: Wolfgangsee (docs/game-design.md "Stage 6: Wolfgangsee",
 # D-074 ... D-084). 260 columns x 17 rows, camera = "autoscroll" with the
-# zone [8, 208]: the side camera on the St. Wolfgang quay, the scroll
-# (0.75 px/frame) from the moment Resi's centre passes column 17 until the
+# zone [16, 208] (D-087): the side camera on the St. Wolfgang quay, the
+# scroll (0.75 px/frame) from the moment Resi's centre passes column 25
+# (~130 frames into the steamer ride, the camera's left edge on the
+# notch's right wall, so the notch is behind the screen for good) until the
 # camera's left edge reaches column 208, then the side camera again for
 # the Strobl landing and the Maibaum. Decks on row 11, swim water rows
 # 12-15 (see_wasser / see_wasser_tief), lake bed (seegrund) row 16, the
 # goal meadow row 16. No lethal tile in the stage.
 #   1 Schiffsstation  0-17   quay (kai, rows 11-16) 0-12 and 16-17, start
 #                            col 2, schiffsstation (back) over 0-5, Bus
-#                            150 / wasserscheu 5, M-box 9 (row 7, bricks 8
-#                            and 10), Baden heute 11, bollard 12 (row 10:
+#                            150 / wasserscheu 4, M-box 9 (row 7, bricks 8
+#                            and 10), Baden heute 10, bollard 12 (row 10:
 #                            turns the Mozartkugel; Resi hops it). Bathing
 #                            notch 13-15: swim water rows 12-15, 3 Oblaten
 #                            on row 14 (dive), an arc of 3 over it.
-#                            Raddampfer / ohne Dampf 16. Side camera: the
-#                            scroll starts when her centre passes col 17.
+#                            Raddampfer / ohne Dampf 16 (boards 6 columns
+#                            apart). Side camera: the scroll starts when her
+#                            centre passes col 25, on the steamer.
 #   2 Raddampfer     18-75   Dampfer in (18, 11), to = [40, 0]: hull 18-27
 #                            flush with the quay, moored at 58-67 (frame
-#                            ~925 after an immediate boarding), its front
-#                            inside the right clamp ~115 frames later.
+#                            ~925 after an immediate boarding); the scroll
+#                            starts on its deck (her centre past col 25),
+#                            and a rider standing still finds the moored
+#                            front inside the right clamp at once.
 #                            Three arcs of 3 Oblaten over the track (30-48,
 #                            rows 8-9). Swan #1 at 46 charges under the
 #                            deck. Gschwendt pier (steg) 68-75 with
@@ -35,35 +40,38 @@
 #   4 Adventlaterne 120-139  pontoon (steg) 121-133, bollards 121 and 133
 #                            (row 10, 2 tiles above the water: D-084),
 #                            checkpoint 122, Bus 150 / im Stau. Ha! 126,
-#                            M-box 129 (row 7, bricks 128/130), lantern
-#                            (back) 131, 5 Oblaten. Respawn: camera x 1816,
-#                            60 frames of hold, no enemy on screen.
-#                            Wie Venedig 138 (in the water).
+#                            M-box 128 (row 7, bricks 127/129, clear of the
+#                            lantern roof), lantern (back) 131, 5 Oblaten.
+#                            Respawn: camera x 1816, 60 frames of hold, no
+#                            enemy on screen. Wie Venedig 136 (in the water,
+#                            clear of the dalben cap at 139).
 #   5 Traundl-Faehre 140-179 a dalben at every track end. Traundl A 140
 #                            (to [6, 0]: 140-142 <-> 146-148), border raft
 #                            150-151 (Landesgrenze 150), B 153 (153-155 <->
 #                            159-161), C 164 (164-166 <-> 170-172). The
 #                            phases (A 182, B 181, C 226) are set from the
-#                            scroll: in a continuous run A reaches its far
-#                            end at ~2866, B its near end at the raft at
-#                            ~3018 (~2 s on the raft), B its far end at
-#                            ~3142 as C reaches its near end (~3146): every
-#                            hop is 1-2 tiles. After a respawn A wakes at
+#                            scroll: on the solver's timeline (D-087) A
+#                            reaches its far end at ~2732, B its near end
+#                            at the raft at ~2885 (~2 s on the raft), B its
+#                            far end at ~3011 as C reaches its near end:
+#                            every hop is 1-2 tiles. After a respawn A wakes at
 #                            once (shifted); B and C wake by the scroll.
 #                            Gelse #2 at 154 (row 6, D-085) over B's near
 #                            berth: it reaches her on the raft, before B
 #                            docks, never mid-ride. #3 at 171
 #                            (row 6) over C's far end. Zaunerstollen perch
 #                            (steg, row 8) 173-177 with a bollard at 177
-#                            (row 7) and the Z-box at 175 (row 4), reached
+#                            (row 7) and the Z-box at 173 (row 4, D-087: the
+#                            item lands short of the bollard), reached
 #                            from C's far end. Swan #3 at 184.
 #   6 Regatta       180-211  Regatta / Vorrang: wir 182 (in the water).
 #                            Traundl D 186 (to [5, 0], phase 214) between
 #                            dalben 185 and 194. Regatta boats at 198, 204
 #                            and 210 (a start buoy 2 columns right of
 #                            each), 2 columns right of the spec so that
-#                            Gelse #3's hunt (ends ~3713) is over before
-#                            the first boat shows (~3740). 8 Oblaten on the
+#                            Gelse #3's hunt (ends ~3582 on the solver's
+#                            timeline) is over before the first boat shows
+#                            (~3609). 8 Oblaten on the
 #                            bed (185-192), 3 over D's track.
 #   7 Strobl        212-259  shallows 212-221 (bed row 15, then 14) with
 #                            reeds; the scroll ends at camera col 208.
@@ -77,10 +85,10 @@
 [meta]
 id = "wolfgangsee"
 title_key = "stage.wolfgangsee.title"
-time_limit = 270
+time_limit = 260
 min_jump_window = 5
 camera = "autoscroll"
-autoscroll = [8, 208]
+autoscroll = [16, 208]
 background = [
   { sprite = "bg_sky_salzburg", factor = 0 },
   { sprite = "bg_suedufer", factor = 8 },
@@ -143,14 +151,14 @@ grid = '''
 ....................................................................................................................................................................................................................................................................
 ....................................................................................................................................................................................................................................................................
 ....................................................................................................................................................................................................................................................................
-...............................................................................................................................................................................Z....................................................................................
+.............................................................................................................................................................................Z......................................................................................
 ....................................................................................................................................................................................................................................................................
 ..........................................................................................................................................................g................g........................................................................................
-........BMB............................................................?........................................................BMB...........................................*.*p..................................................................................
+........BMB............................................................?.......................................................BMB............................................*.*p..................................................................................
 ..............*................*.......*.......*............................................................g................................................................-----..........***.....................................................................
 ......**.....*.*..............*.*.....*.*.....*.*...............................................................****.......***.*....*.........*****........****.......***...........................................................................................
-..Ph.1.....2p...3....................................................4.***.5.............................................pC...7....L.p................9...........................................................................!.******....IIIIII................
-KKKKKKKKKKKKK...KKD.................................................========.........................6.r..r.....====.....=============....8dT........d==dU........ddV........d........0..dX.......d.....y.....y.....yr...r....KKKKKKKKKKKKKKKKIIIIII................
+..Ph1.....2.p...3....................................................4.***.5.............................................pC...7....L.p................9...........................................................................!.******....IIIIII................
+KKKKKKKKKKKKK...KKD.................................................========.........................6.r..r.....====.....=============..8..dT........d==dU........ddV........d........0..dX.......d.....y.....y.....yr...r....KKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKK~~~KK~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~~~~~|~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~|~~~~~|~~~~~~~~~~~|~~~~~~~~~~~~~~~~||~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~R~~~~~R~~~~~R~~~~~~~~~~~KKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKIIIIII................
 KKKKKKKKKKKKKuuuKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww______KKKKKKKKKKKKKKKKIIIIII................

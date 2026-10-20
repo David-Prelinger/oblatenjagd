@@ -1,13 +1,14 @@
-# Stage 6 steamer ride (D-077; game-design.md Stage 6 section 2): the
-# solver's first 140 frames (over the bollard and the bathing notch onto
-# the Dampfer, which starts as she lands and starts the scroll), then she
-# stands still on the deck for the whole 800-frame trip. Swan #1 (col 46)
-# hisses and charges under the deck (frames ~550-820) without reaching her
-# (no Hurt). Standing, she drifts right on the screen until the right
-# clamp holds her (she slides back on the deck, x 984 at the arrival,
-# frame ~925). The Dampfer moors at cols 58-67 (x 928), flush with the
-# Gschwendt pier (x 1088); its front is inside the right clamp ~115
-# frames after the arrival (frame ~1040), and she walks onto the pier.
+# Stage 6 steamer ride (D-077, D-087; game-design.md Stage 6 section 2):
+# the solver's first 140 frames (over the bollard and the bathing notch
+# onto the Dampfer, which starts as she lands; she runs on along the deck),
+# then she stands still on the deck for the rest of the 800-frame trip.
+# With the zone at [16, 208] the scroll starts as her centre passes col 25
+# (camera x 256, ~frame 145). Swan #1 (col 46) hisses and charges under the
+# deck (frames ~440-700) without reaching her (no Hurt). Standing, she
+# drifts right on the screen; the Dampfer moors at cols 58-67 (x 928) at
+# ~925, flush with the Gschwendt pier (x 1088), with her at x 1040: the
+# moored front is already inside the right clamp (camera x ~840, clamp
+# 1096), and she walks onto the pier.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
@@ -15,8 +16,8 @@ expect = deaths=0 no_event=Hurt player_x>=1090 player_y<=154 player_y>=154 state
 ---
 # --- the first 140 frames of wolfgangsee_solver.replay ---
 RB 64
-RBJ 36
-RB 40
+RBJ 12
+RB 64
 # --- handwritten ---
 - 960
 R 90

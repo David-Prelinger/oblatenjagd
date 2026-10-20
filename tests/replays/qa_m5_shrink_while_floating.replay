@@ -1,20 +1,17 @@
-# QA M5 (fixed in E32, D-086: a power change while floating keeps the
-# chest point; was qa_m5_bug_shrink_while_floating_sinks) (D-076 "floating at the surface: no gravity unless DOWN is
-# held", "same numbers in every form"; backlog note "the chest point moves
-# by 8 px"): a hurt while floating at the surface as Zuckerschock drops
-# Normal Resi out of the surface band, so she sinks without DOWN.
+# QA M5 regression (D-076, D-086; was qa_m5_bug_shrink_while_floating_sinks,
+# fixed in E32): a hurt while floating at the surface as Zuckerschock used
+# to drop Normal Resi out of the surface band, so she sank without DOWN.
 # Resi bumps the start M-box (col 9) and catches the Mozartkugel (big at
-# 159), hops the bollard and the notch onto the Dampfer (lands 362), rides
-# it to Gschwendt, walks off the pier's far end and floats at the surface
-# with no input: big, top 184 = chest point 192 exactly on the water line
-# (surface y 192). Swan #2 charges into her: Hurt at 1756, Zuckerschock ->
-# Normal. Shrinking keeps the feet (214), so the top drops to 192 and the
-# chest point to 200 = surface + 8, which is not "less than surface_band
-# = 8 px below the surface": from the end of the 30-frame freeze (1788)
-# she sinks at 1 px/frame to the lake bed (top 221 at 1822, on the bed at
-# 1835), and a JUMP press now strokes instead of jumping out.
-# Expected (correct): after the shrink she still floats at the surface
-# (chest point in the surface band, top <= 191) with no input.
+# 159), hops the bollard and the notch onto the Dampfer, rides it to
+# Gschwendt, walks off the pier's far end and floats at the surface with
+# no input: big, top 184 = chest point 192 exactly on the water line.
+# Swan #2 charges into her: Hurt at 1612 (with D-087's zone; 1756 before),
+# Zuckerschock -> Normal. Before E32 the shrink kept the feet, so the
+# chest point landed at surface + 8, outside the surface band, and she
+# sank to the lake bed after the 30-frame freeze (and a JUMP press stroked
+# instead of jumping out). Since E32 a power change while swimming keeps
+# the top, and so the chest point: she still floats at the surface (top
+# <= 191) with no input to the end (frame 1830).
 level  = wolfgangsee
 seed   = 1
 source = handwritten

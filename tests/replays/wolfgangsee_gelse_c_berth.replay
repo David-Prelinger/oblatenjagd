@@ -1,30 +1,32 @@
 # Stage 6, Gelse #3 vs the Traundl C ride (D-085: a Gelse first reaches
 # Resi where she stands still or swims, never mid-ride): as
 # wolfgangsee_traundl onto Traundl C (stomping Gelse #2 on the raft), then
-# she just stands on C. C carries her from ~3176 to its far-end berth
-# (~3273) untouched; Gelse #3 (col 171, row 6) starts hunting at 3233 and
-# reaches her only at 3306, while she has stood still on the berth for ~30
-# frames (C starts back 3 frames before): the death as Normal at 3306.
+# she just stands on C. C carries her from ~3045 to its far-end berth
+# (~3142) untouched; Gelse #3 (col 171, row 6) starts hunting at 3102 and
+# reaches her only at 3175, while she has stood still on the berth for ~30
+# frames (C starts back 3 frames before): the death as Normal at 3175.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = dies_at frames=3306..3306 deaths=1 event=Stomped
+expect = dies_at frames=3175..3175 deaths=1 event=Stomped
 ---
-# --- the first 2560 frames of wolfgangsee_solver.replay ---
+# --- the first 2429 frames of wolfgangsee_solver.replay ---
 RB 64
-RBJ 36
-RB 953
+RBJ 12
+RB 89
 L 4
-RB 8
+- 16
+L 4
 - 4
 RB 4
-DJ 1
-- 3
-RB 389
-RBJ 20
-RB 18
-RBJ 31
-RB 1025
+L 4
+- 352
+L 4
+RB 767
+RBJ 33
+RB 5
+RBJ 36
+RB 1031
 # --- handwritten ---
 - 100
 R 40

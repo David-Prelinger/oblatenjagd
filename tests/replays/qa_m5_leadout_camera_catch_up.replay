@@ -1,79 +1,77 @@
-# QA M5 (fixed in E32, D-086: the lead-out camera catches up at most
-# camera.autoscroll_catch_up_speed = 4 px/frame; was
-# qa_m5_bug_leadout_camera_snap; checked frame by frame by the unit test
-# `the_lead_out_camera_catches_up_without_a_snap` in tests/lake.rs) (D-075 "Lead-out: once the camera's x reaches to x 16, the
-# side camera takes over again"; D-083): the hand-over from the scroll to
-# the side camera snaps the camera 105 px in one frame. The solver route
-# to frame 4380: Resi jumps out of the Strobl shallows and lands on the
-# Strobl quay (4368) near the right clamp (screen x ~242). The scroll
-# reaches camera x 3328 (col 208) in step 4373; in step 4374 the side
-# camera frames her at its follow line (centre at screen x 144) at once:
-# camera x 3328 -> 3433, i.e. the whole picture jumps 105 px (6.5 tiles)
-# in one frame, then follows at her speed. Any Resi right of the follow
-# line at the hand-over (where the right clamp keeps a player who holds
-# RIGHT: up to 99 px right of it) gets this jump; the relaxed run
-# (qa_m5_wolfgangsee_relaxed) shows it at 4793 -> 4794.
-# The replay format has no camera expectation, so this replay only
-# reproduces it; the shots show the two frames (camera x from
-# `Game::camera()`: 3328 at 4373, 3433 at 4374). Expected (correct): the
-# camera moves on continuously at the hand-over (e.g. it keeps scrolling
-# or catches up at a bounded speed until she reaches the follow line).
+# QA M5 regression (D-075 "Lead-out", D-083, D-086; was
+# qa_m5_bug_leadout_camera_snap, fixed in E32; re-cut for D-087): at the
+# hand-over from the scroll to the side camera the camera used to snap
+# 105 px in one frame (3328 -> 3433), because the side camera re-framed
+# Resi at its follow line at once while the right clamp had kept her up to
+# 99 px right of it. Since E32 the lead-out camera catches up at most
+# `camera.autoscroll_catch_up_speed` = 4 px per frame. The solver route to
+# frame 4248: Resi jumps out of the Strobl shallows onto the Strobl quay
+# near the right clamp (screen x ~240); the scroll reaches camera x 3328
+# (col 208) in step 4242 and from step 4243 the camera moves 4 px a frame
+# (3332, 3336, ...) until it has caught up with her. The unit test
+# `the_lead_out_camera_catches_up_without_a_snap` (tests/lake.rs) plays
+# this replay plus 60 still frames and checks every camera step is 0..=4
+# px; the replay format has no camera expectation. The shots show the
+# hand-over frame and the next one.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
 expect = deaths=0 state=playing
-shots  = 4373:handover_before 4374:handover_after
+shots  = 4242:handover_before 4243:handover_after
 ---
-# --- the first 4380 frames of wolfgangsee_solver.replay ---
+# --- the first 4248 frames of wolfgangsee_solver.replay ---
 RB 64
-RBJ 36
-RB 953
+RBJ 12
+RB 89
 L 4
-RB 8
+- 16
+L 4
 - 4
 RB 4
-DJ 1
-- 3
-RB 389
-RBJ 20
+L 4
+- 352
+L 4
+RB 767
+RBJ 33
+RB 5
+RBJ 36
+RB 1950
+RBJ 12
 RB 18
 RBJ 31
-RB 1885
-- 16
-LB 8
-RB 8
-RJ 33
-R 5
-RBJ 36
-RB 270
+RB 253
+RBJ 33
+RB 5
+RBJ 32
+RB 66
 RBJ 33
 RB 5
 RBJ 31
-RB 67
-RBJ 20
-RB 2
-RBJ 36
-RB 62
-RBJ 33
-RB 5
-RBJ 20
-RB 34
-- 16
-LB 8
-RB 4
-DJ 1
-- 3
-L 4
+RB 25
+LB 16
 RB 8
 LB 8
+RB 8
+RBJ 20
+RB 5
+RBJ 20
+RB 37
+RBJ 20
+RB 22
+- 16
+LB 8
 RB 4
 - 16
 RBJ 20
-RB 25
-LBJ 33
-LB 5
-RB 14
+RB 10
+- 16
+LBJ 12
+LB 2
+RB 4
+L 4
 - 8
-RBJ 33
-RB 26
-# --- handwritten ---
+RB 4
+L 4
+- 12
+RBJ 20
+RB 32

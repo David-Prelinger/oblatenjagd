@@ -1,23 +1,25 @@
-# QA M5 (D-075, D-045): time-up on the exact frame the auto-scroll ends.
-# Resi idles on the St. Wolfgang quay for 11827 frames, hops onto the
-# Dampfer (the scroll starts in step 11933), walks off its stern and rests
-# on the lake bed with DOWN held, pushed along the flat bed by the left
-# edge through the whole zone (as qa_m5_autoscroll_afk_diver_whole_zone).
-# The camera reaches column 208 and hands over to the lead-out in step
-# 16200 (11933 + 4267), the same step the timer runs out: she dies
-# (TimeUp) on the bed at x 3328 with the camera at 3328 in the lead-out.
-# She passed the lantern checkpoint under the pontoon, so she respawns
-# there at 16260 (x 1954, camera x 1816) back in the scroll with the
-# 60-frame hold.
+# QA M5 (D-075, D-045; re-cut for D-087's zone [16, 208] and
+# time_limit 260): time-up on the exact frame the auto-scroll ends.
+# Resi idles on the St. Wolfgang quay for 11348 frames, hops onto the
+# Dampfer and runs on along its deck (her centre passes col 25: the
+# scroll starts in step 11504), walks back off its stern and rests on the
+# lake bed with DOWN held, pushed along the flat bed by the left edge
+# through the whole zone (as qa_m5_autoscroll_afk_diver_whole_zone). The
+# camera reaches column 208 and hands over to the lead-out in step 15600
+# (11504 + 4096), the same step the timer runs out: she dies (TimeUp) on
+# the bed at x 3328 with the camera at 3328 in the lead-out. She passed
+# the lantern checkpoint under the pontoon, so she respawns there at
+# 15660 (x 1954, camera x 1816) back in the scroll with the 60-frame hold.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = dies_at frames=16200..16200 deaths=1 lives=2 event=CheckpointReached event=Respawned no_event=Hurt
+expect = dies_at frames=15600..15600 deaths=1 lives=2 event=CheckpointReached event=Respawned no_event=Hurt
 expect = state=playing player_x>=1954 player_y>=154 player_y<=154 swimming=false
 ---
-- 11827
+- 11348
 RB 64
 RBJ 36
 RB 26
-L 60
-D 4347
+R 30
+L 120
+D 4076

@@ -1,0 +1,37 @@
+# QA M5 intended death (D-087 deck-bollard rule; was
+# qa_m5_bug_pontoon_bollard_squeeze): a Resi who stands still on the
+# lantern pontoon is pushed into the bollard at its right end (col 133,
+# row 10, 1 tile above the deck) and squeezed, the SMB3 rule. As
+# wolfgangsee_checkpoint to the respawn on the pontoon (Gelse #1 stings her,
+# death 1 at 2148, respawn at 2208, x 1954, camera x 1816, 60-frame hold).
+# She then stands still: the edge reaches her and pushes her right along
+# the deck until her right edge meets the bollard (x 2116 + 12 = 2128):
+# death 2 at 2670, 462 frames (7.7 s) after the respawn, cause Squeezed
+# (checked with a frame trace; the replay format has no death-cause
+# expectation). One standing jump clears the bollard in every form; the
+# last-moment hop is qa_m5_pontoon_bollard_hop.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=2 dies_at frames=2670..2670 event=Respawned event=CheckpointReached
+---
+# --- the first 2208 frames of wolfgangsee_checkpoint.replay ---
+RB 64
+RBJ 12
+RB 89
+L 4
+- 16
+L 4
+- 4
+RB 4
+L 4
+- 352
+L 4
+RB 767
+RBJ 33
+RB 5
+RBJ 36
+RB 711
+- 99
+# --- handwritten ---
+- 470
