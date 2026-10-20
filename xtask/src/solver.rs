@@ -161,7 +161,7 @@ const MAX_THREADS: usize = 8;
 /// Search threads per level when `verify` searches several levels at once
 /// (D-082): few levels at once with many threads each keeps every search
 /// far below the wall-clock limit (measured on 14 cores: 2 × 7 threads,
-/// slowest search 13.5 s; 4 × 3: 22–25 s), at about the same total time.
+/// slowest search 13.5 s idle, 16.5–18.2 s under load; 4 × 3: 22–25 s), at about the same total time.
 const LEVEL_THREADS: usize = 7;
 /// Buckets smaller than this are expanded on the calling thread.
 const PARALLEL_MIN_NODES: usize = 16;
