@@ -25,7 +25,7 @@
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = complete frames=4992..4992 deaths=0 no_event=Hurt event=Stomped event=CheckpointReached power=big oblaten=44 state=stage_clear
+expect = complete frames=4992..4992 deaths=0 no_event=Hurt event=Stomped event=CheckpointReached power=big oblaten=42 state=stage_clear
 ---
 # --- relaxed lead-in (QA): look around, M-box, the notch lesson, jump out onto the quay 16-17, stand by the steamer ---
 - 40

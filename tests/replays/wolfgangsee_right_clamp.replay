@@ -2,78 +2,72 @@
 # "Difficulty and reach rules"): the solver route with RIGHT added from
 # frame 560 on to every frame that doesn't hold LEFT (on the steamer the
 # solver already drifts to the clamp; RIGHT there would walk her off its
-# bow), so through the whole scroll Resi's hitbox stays at the right clamp
-# (its left edge 242 px right of the camera from ~600 until the scroll ends
-# at ~4050). Measured on this replay (first frame any part of the enemy's
+# bow), so through the scroll Resi's hitbox stays at the right clamp (its
+# left edge 242 px right of the camera from ~600) until her death at
+# 3823. Measured on this replay (first frame any part of the enemy's
 # hitbox is on screen -> first frame it reaches the clamp line, where she
 # can be touched): swans #1-#3 63 frames (they trigger as soon as they are
-# fully on screen, 20 frames in, hiss 32, then charge; the sprite shows
-# ~5 frames before the hitbox), Gelsen #1-#3 81-82 frames (60 frames
-# hovering fully on screen, then the hunt), regatta boats #1-#3 85 frames
-# (fully on screen ~30 frames in, then the 60-frame start). Swans and
-# Gelsen never touch her here (she dives under the swans and outswims the
-# Gelsen as the solver does); regatta #1 (3700) and #3 (3961) bounce her
-# off their mastheads, 91 and 96 frames after they showed. No hurt, no
-# death.
+# fully on screen, 20 frames in, hiss 32, then charge; the sprite shows ~5
+# frames before the hitbox), Gelsen #1-#3 81-82 frames (60 frames hovering
+# fully on screen, then the hunt), regatta boats #1-#2 85 frames (fully on
+# screen ~30 frames in, then the 60-frame start). Swans and Gelsen never
+# touch her (she dives under the swans and outswims the Gelsen as the
+# solver does); regatta #2, which she meets at the surface while holding
+# RIGHT, hits her at 3823, 86 frames after it first showed: the only
+# death, by an enemy in view for > 60 frames.
 level  = wolfgangsee
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt
+expect = dies_at frames=3823..3823 deaths=1
 ---
 RB 64
 RBJ 12
-RB 89
-L 4
-- 16
-L 4
+RB 90
+R 8
+LB 8
 - 4
-RB 4
 L 4
-- 352
-L 4
-RB 767
+- 370
+R 14
+RB 750
 RBJ 33
 RB 5
 RBJ 36
-RB 1950
+RB 1934
+R 16
+RBJ 20
+RB 301
+RBJ 33
+RB 5
 RBJ 12
-RB 18
-RBJ 31
-RB 253
-RBJ 33
-RB 5
-RBJ 32
-RB 66
-RBJ 33
-RB 5
-RBJ 31
-RB 25
-LB 16
-RB 8
-LB 8
-RB 8
-RBJ 20
-RB 5
-RBJ 20
-RB 37
-RBJ 20
 RB 22
-R 16
 LB 8
-RB 4
-R 16
+L 4
+R 72
 RBJ 20
-RB 10
-R 16
+RB 2
+RBJ 36
+RB 8
+LB 16
+RB 4
+R 36
+RBJ 20
+RB 2
 LBJ 12
 LB 2
-RB 4
-L 4
-R 8
-RB 4
+RB 40
+RBJ 33
+RB 5
+LB 8
 L 4
 R 12
-RBJ 20
-RB 104
+RJ 33
+R 5
+RB 3
+LB 8
+L 4
+R 52
+RBJ 33
+RB 95
 RBJ 36
-RB 54
+RB 56

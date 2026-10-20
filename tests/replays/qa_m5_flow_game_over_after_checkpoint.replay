@@ -15,7 +15,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = deaths=3 event=CheckpointReached event=GameOver dies_at frames=4241..4241
-expect = state=playing lives=3 score=400 oblaten=2 power=normal player_x>=400 player_y>=154 player_y<=154
+expect = state=playing lives=3 score=200 oblaten=1 power=normal player_x>=400 player_y>=154 player_y<=154
 ---
 # title -> intro
 - 20
@@ -24,16 +24,13 @@ S 1
 # --- wolfgangsee_checkpoint.replay frames 0-2168 ---
 RB 64
 RBJ 12
-RB 89
-L 4
-- 16
-L 4
+RB 90
+R 8
+LB 8
 - 4
-RB 4
 L 4
-- 352
-L 4
-RB 767
+- 384
+RB 750
 RBJ 33
 RB 5
 RBJ 36
