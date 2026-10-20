@@ -15,12 +15,12 @@ anim   = auto frames=16 ticks=1
 frame auto 0
 ..iiiiiiiiiiii..
 .immmmmmmmmmmmm.
-moOiimmiiiiiiiid
+miiiimmiiiiiiiid
 miiimdiiimmimmmd
 miiiiiiiiiiimdid
 miiiiiimmiiiiiid
 miiimmiimdiimmid
-miiiimdiiiiiiimd
+miiiimdiioOiiimd
 miiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 miiiiiiiimmimmid
@@ -32,12 +32,12 @@ mddddddddddddddd
 frame auto 1
 miiiiiiiiiiiiiid
 miiiiiimmiiiiimd
-moOiimmiiiiiiiid
+miiiimmiiiiiiiid
 miiimdiiimmimmmd
 miiiiiiiiiiimdid
 miiiiiimmiiiiiid
 miiimmiimdiimmid
-miiiimdiiiiiiimd
+miiiimdiioOiiimd
 miiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 miiiiiiiimmimmid
@@ -49,12 +49,12 @@ mddddddddddddddd
 frame auto 2
 ..iiiiiiiiiiiiii
 .immmmmmmmmmmmmm
-moOiimmiiiiiiiii
+miiiimmiiiiiiiii
 miiimdiiimmimmii
 miiiiiiiiiiimdii
 miiiiiimmiiiiiii
 miiimmiimdiimmii
-miiiimdiiiiiiiii
+miiiimdiioOiiiii
 miiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 miiiiiiiimmimmii
@@ -66,12 +66,12 @@ mddddddddddddddd
 frame auto 3
 miiiiiiiiiiiiiii
 miiiiiimmiiiiimm
-moOiimmiiiiiiiii
+miiiimmiiiiiiiii
 miiimdiiimmimmii
 miiiiiiiiiiimdii
 miiiiiimmiiiiiii
 miiimmiimdiimmii
-miiiimdiiiiiiiii
+miiiimdiioOiiiii
 miiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 miiiiiiiimmimmii
@@ -83,12 +83,12 @@ mddddddddddddddd
 frame auto 4
 ..iiiiiiiiiiii..
 .immmmmmmmmmmmm.
-moOiimmiiiiiiiid
+miiiimmiiiiiiiid
 miiimdiiimmimmmd
 miiiiiiiiiiimdid
 miiiiiimmiiiiiid
 miiimmiimdiimmid
-miiiimdiiiiiiimd
+miiiimdiioOiiimd
 miiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 miiiiiiiimmimmid
@@ -100,12 +100,12 @@ mimmiiiiiiimdimd
 frame auto 5
 miiiiiiiiiiiiiid
 miiiiiimmiiiiimd
-moOiimmiiiiiiiid
+miiiimmiiiiiiiid
 miiimdiiimmimmmd
 miiiiiiiiiiimdid
 miiiiiimmiiiiiid
 miiimmiimdiimmid
-miiiimdiiiiiiimd
+miiiimdiioOiiimd
 miiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 miiiiiiiimmimmid
@@ -117,12 +117,12 @@ mimmiiiiiiimdimd
 frame auto 6
 ..iiiiiiiiiiiiii
 .immmmmmmmmmmmmm
-moOiimmiiiiiiiii
+miiiimmiiiiiiiii
 miiimdiiimmimmii
 miiiiiiiiiiimdii
 miiiiiimmiiiiiii
 miiimmiimdiimmii
-miiiimdiiiiiiiii
+miiiimdiioOiiiii
 miiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 miiiiiiiimmimmii
@@ -134,12 +134,12 @@ mimmiiiiiiimdiim
 frame auto 7
 miiiiiiiiiiiiiii
 miiiiiimmiiiiimm
-moOiimmiiiiiiiii
+miiiimmiiiiiiiii
 miiimdiiimmimmii
 miiiiiiiiiiimdii
 miiiiiimmiiiiiii
 miiimmiimdiimmii
-miiiimdiiiiiiiii
+miiiimdiioOiiiii
 miiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 miiiiiiiimmimmii
@@ -151,12 +151,12 @@ mimmiiiiiiimdiim
 frame auto 8
 iiiiiiiiiiiiii..
 mmmmmmmmmmmmmmm.
-ioOiimmiiiiiiiid
+iiiiimmiiiiiiiid
 iiiimdiiimmimmmd
 mmiiiiiiiiiimdid
 iiiiiiimmiiiiiid
 iiiimmiimdiimmid
-iiiiimdiiiiiiimd
+iiiiimdiioOiiimd
 iiiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 iiiiiiiiimmimmid
@@ -168,12 +168,12 @@ dddddddddddddddd
 frame auto 9
 iiiiiiiiiiiiiiid
 iiiiiiimmiiiiimd
-ioOiimmiiiiiiiid
+iiiiimmiiiiiiiid
 iiiimdiiimmimmmd
 mmiiiiiiiiiimdid
 iiiiiiimmiiiiiid
 iiiimmiimdiimmid
-iiiiimdiiiiiiimd
+iiiiimdiioOiiimd
 iiiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 iiiiiiiiimmimmid
@@ -185,12 +185,12 @@ dddddddddddddddd
 frame auto 10
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-ioOiimmiiiiiiiii
+iiiiimmiiiiiiiii
 iiiimdiiimmimmii
 mmiiiiiiiiiimdii
 iiiiiiimmiiiiiii
 iiiimmiimdiimmii
-iiiiimdiiiiiiiii
+iiiiimdiioOiiiii
 iiiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 iiiiiiiiimmimmii
@@ -202,12 +202,12 @@ dddddddddddddddd
 frame auto 11
 iiiiiiiiiiiiiiii
 iiiiiiimmiiiiimm
-ioOiimmiiiiiiiii
+iiiiimmiiiiiiiii
 iiiimdiiimmimmii
 mmiiiiiiiiiimdii
 iiiiiiimmiiiiiii
 iiiimmiimdiimmii
-iiiiimdiiiiiiiii
+iiiiimdiioOiiiii
 iiiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 iiiiiiiiimmimmii
@@ -219,12 +219,12 @@ dddddddddddddddd
 frame auto 12
 iiiiiiiiiiiiii..
 mmmmmmmmmmmmmmm.
-ioOiimmiiiiiiiid
+iiiiimmiiiiiiiid
 iiiimdiiimmimmmd
 mmiiiiiiiiiimdid
 iiiiiiimmiiiiiid
 iiiimmiimdiimmid
-iiiiimdiiiiiiimd
+iiiiimdiioOiiimd
 iiiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 iiiiiiiiimmimmid
@@ -236,12 +236,12 @@ mimmiiiiiiimdimd
 frame auto 13
 iiiiiiiiiiiiiiid
 iiiiiiimmiiiiimd
-ioOiimmiiiiiiiid
+iiiiimmiiiiiiiid
 iiiimdiiimmimmmd
 mmiiiiiiiiiimdid
 iiiiiiimmiiiiiid
 iiiimmiimdiimmid
-iiiiimdiiiiiiimd
+iiiiimdiioOiiimd
 iiiiiiiiiiiiiiid
 miOOiimmiiiiiiid
 iiiiiiiiimmimmid
@@ -253,12 +253,12 @@ mimmiiiiiiimdimd
 frame auto 14
 iiiiiiiiiiiiiiii
 mmmmmmmmmmmmmmmm
-ioOiimmiiiiiiiii
+iiiiimmiiiiiiiii
 iiiimdiiimmimmii
 mmiiiiiiiiiimdii
 iiiiiiimmiiiiiii
 iiiimmiimdiimmii
-iiiiimdiiiiiiiii
+iiiiimdiioOiiiii
 iiiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 iiiiiiiiimmimmii
@@ -270,12 +270,12 @@ mimmiiiiiiimdiim
 frame auto 15
 iiiiiiiiiiiiiiii
 iiiiiiimmiiiiimm
-ioOiimmiiiiiiiii
+iiiiimmiiiiiiiii
 iiiimdiiimmimmii
 mmiiiiiiiiiimdii
 iiiiiiimmiiiiiii
 iiiimmiimdiimmii
-iiiiimdiiiiiiiii
+iiiiimdiioOiiiii
 iiiiiiiiiiiiiiii
 miOOiimmiiiiiiim
 iiiiiiiiimmimmii
