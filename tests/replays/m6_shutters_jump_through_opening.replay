@@ -1,0 +1,19 @@
+# E37 (D-094): jump through a shutter while it opens. Run under
+# Fensterladen #2 (closed at clock 150-239) and jump straight up so her
+# body is inside its body on the frame it opens (clock 240): it never
+# lifts her, she rises on through it and lands on its top on the way
+# down. Then the pair: up onto #3 (open at 180-329), hop onto the annex
+# roof and on to the goal.
+level  = m6_shutters
+seed   = 1
+source = handwritten
+expect = complete deaths=0 no_event=Hurt
+---
+RB 182   # run under #2 (closed at 150-239)
+- 48
+J 20     # under #2 at clock 231: inside its body when it opens at 240
+- 15     # lands on #2 at 262
+RJ 18    # up onto #3
+R 6
+RJ 18    # the hop onto the annex roof
+RB 140   # over the roof, down the steps, to the goal

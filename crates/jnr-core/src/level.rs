@@ -267,11 +267,14 @@ pub enum SpawnKind {
     Ampel,
     /// Enemy `kurgast` (a slow walker who becomes a deck chair, D-095).
     Kurgast,
+    /// A Fensterladen (`period`, `open`, `phase`): a stationary one-way
+    /// platform that is there only while open on the stage clock (D-094).
+    Fensterladen,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 32] = [
+    pub const ALL: [SpawnKind; 33] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -304,6 +307,7 @@ impl SpawnKind {
         SpawnKind::Regattaboot,
         SpawnKind::Ampel,
         SpawnKind::Kurgast,
+        SpawnKind::Fensterladen,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -342,6 +346,7 @@ impl SpawnKind {
             SpawnKind::Regattaboot => "regattaboot",
             SpawnKind::Ampel => "ampel",
             SpawnKind::Kurgast => "kurgast",
+            SpawnKind::Fensterladen => "fensterladen",
         }
     }
 
@@ -441,7 +446,8 @@ pub struct EntitySpawn {
     /// ±[`MAX_PROP_DX_PX`]), e.g. 8 to centre it between two columns.
     pub dx: i32,
     /// Frames into its cycle at activation (`phase = N`, `gondel`,
-    /// `traundl` and `bienenschwarm`; 0 by default).
+    /// `traundl` and `bienenschwarm`; 0 by default); a `fensterladen`'s
+    /// offset on the stage clock (0..period, D-094).
     pub phase: u16,
     /// Direction of a `bienenschwarm`'s waggle run in 45° steps
     /// (`dir = 0..=7`: 0 right, 2 up, 4 left, 6 down; 0 by default).
@@ -466,8 +472,15 @@ pub struct EntitySpawn {
     /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period; an
     /// `ampel`: [`AMPEL_PERIOD_RANGE`] and at least [`ampel_min_period`],
     /// [`DEFAULT_AMPEL_PERIOD`] by default, `phase` 0 or
-    /// [`ampel_min_phase`]..period).
+    /// [`ampel_min_phase`]..period); a `fensterladen`'s cycle on the stage
+    /// clock ([`FENSTERLADEN_PERIOD_RANGE`], [`DEFAULT_FENSTERLADEN_PERIOD`]
+    /// by default; D-094).
     pub period: u16,
+    /// A `fensterladen`'s open frames at the start of each cycle (`open =
+    /// N`, [`FENSTERLADEN_MIN_OPEN`]..=period − [`FENSTERLADEN_MIN_CLOSED`],
+    /// [`DEFAULT_FENSTERLADEN_OPEN`] by default; D-094). Unused by the other
+    /// kinds.
+    pub open: u16,
     /// A `steinschlag`'s, `souvenirstand`'s or `ampel`'s range in tiles
     /// (`range = N`, [`STEINSCHLAG_RANGE_TILES`] / [`AMPEL_RANGE_TILES`];
     /// [`DEFAULT_STEINSCHLAG_RANGE`] / [`DEFAULT_SOUVENIRSTAND_RANGE`] /
@@ -484,6 +497,18 @@ pub struct EntitySpawn {
     /// A `reisebus`'s look (`look = "postbus"`, D-097; renderer only).
     pub look: BusLook,
 }
+
+/// A `fensterladen`'s `period` without the field, in frames (D-094).
+pub const DEFAULT_FENSTERLADEN_PERIOD: u16 = 240;
+/// Allowed `period` of a `fensterladen`, in frames.
+pub const FENSTERLADEN_PERIOD_RANGE: std::ops::RangeInclusive<u16> = 120..=480;
+/// A `fensterladen`'s `open` without the field, in frames.
+pub const DEFAULT_FENSTERLADEN_OPEN: u16 = 150;
+/// The shortest open phase of a `fensterladen` (`open` >= this), in frames.
+pub const FENSTERLADEN_MIN_OPEN: u16 = 60;
+/// The shortest closed phase of a `fensterladen` (`open` <= period − this),
+/// in frames.
+pub const FENSTERLADEN_MIN_CLOSED: u16 = 30;
 
 /// Allowed `stop` of a `reisebus`, in tiles (D-070).
 pub const REISEBUS_STOP_TILES: std::ops::RangeInclusive<u8> = 1..=16;
@@ -803,6 +828,7 @@ enum LegendEntry {
         dy: i32,
         lead: bool,
         period: u16,
+        open: u16,
         range: u8,
         stop: u8,
         cars: u8,
@@ -899,6 +925,7 @@ impl Level {
                         dy,
                         lead,
                         period,
+                        open,
                         range,
                         stop,
                         cars,
@@ -922,6 +949,7 @@ impl Level {
                             dy: *dy,
                             lead: *lead,
                             period: *period,
+                            open: *open,
                             range: *range,
                             stop: *stop,
                             cars: *cars,
@@ -1112,6 +1140,7 @@ fn parse_legend_value(
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
                 (_, Some("reisebus")) => &["entity", "tile", "stop", "look"],
                 (_, Some("ampel")) => &["entity", "tile", "period", "cars", "phase", "range"],
+                (_, Some("fensterladen")) => &["entity", "tile", "period", "open", "phase"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -1354,10 +1383,10 @@ fn parse_entity(
     };
     let dy = int_field("dy", -i64::from(max_dy)..=i64::from(max_dy))?.unwrap_or(0) as i32;
     let ampel = kind == SpawnKind::Ampel;
-    let (period_range, period_default) = if ampel {
-        (AMPEL_PERIOD_RANGE, DEFAULT_AMPEL_PERIOD)
-    } else {
-        (STEINSCHLAG_PERIOD_RANGE, DEFAULT_STEINSCHLAG_PERIOD)
+    let (period_range, period_default) = match kind {
+        SpawnKind::Ampel => (AMPEL_PERIOD_RANGE, DEFAULT_AMPEL_PERIOD),
+        SpawnKind::Fensterladen => (FENSTERLADEN_PERIOD_RANGE, DEFAULT_FENSTERLADEN_PERIOD),
+        _ => (STEINSCHLAG_PERIOD_RANGE, DEFAULT_STEINSCHLAG_PERIOD),
     };
     let period = int_field(
         "period",
@@ -1369,6 +1398,22 @@ fn parse_entity(
         SpawnKind::Souvenirstand => (STEINSCHLAG_RANGE_TILES, DEFAULT_SOUVENIRSTAND_RANGE),
         _ => (STEINSCHLAG_RANGE_TILES, DEFAULT_STEINSCHLAG_RANGE),
     };
+    let open =
+        int_field("open", 0..=i64::from(u16::MAX))?.map_or(DEFAULT_FENSTERLADEN_OPEN, |n| n as u16);
+    if kind == SpawnKind::Fensterladen {
+        let max_open = period - FENSTERLADEN_MIN_CLOSED;
+        if !(FENSTERLADEN_MIN_OPEN..=max_open).contains(&open) {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": a fensterladen's open must be {FENSTERLADEN_MIN_OPEN}..={max_open} (period {period} − {FENSTERLADEN_MIN_CLOSED}), so it is open and closed for long enough to read"
+            )));
+        }
+        if phase >= period {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": a fensterladen's phase must be 0..={} (below its period {period})",
+                period - 1
+            )));
+        }
+    }
     let range = int_field(
         "range",
         i64::from(*range_tiles.start())..=i64::from(*range_tiles.end()),
@@ -1445,6 +1490,7 @@ fn parse_entity(
         dy,
         lead,
         period,
+        open,
         range,
         stop,
         cars,
@@ -1509,6 +1555,7 @@ grid = '''
             dy: 0,
             lead: false,
             period: DEFAULT_STEINSCHLAG_PERIOD,
+            open: DEFAULT_FENSTERLADEN_OPEN,
             range: DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
             cars: 0,
@@ -2074,6 +2121,50 @@ P.sSC.tfG
             .unwrap()
     }
 
+    #[test]
+    fn fensterladen_takes_period_open_and_phase_validated_as_d094() {
+        let s = boat("fensterladen", "");
+        assert_eq!(
+            (s.kind, s.period, s.open, s.phase, s.to),
+            (SpawnKind::Fensterladen, 240, 150, 0, None)
+        );
+        let s = boat("fensterladen", ", period = 120, open = 60, phase = 119");
+        assert_eq!((s.period, s.open, s.phase), (120, 60, 119));
+        let s = boat("fensterladen", ", period = 480, open = 450");
+        assert_eq!((s.period, s.open), (480, 450));
+        // A tile under it (the façade behind the window).
+        let lvl = boat_level("fensterladen", ", tile = \"wall_village_bg\"");
+        assert!(Level::parse(&lvl).is_ok());
+        for (bad, msg) in [
+            (
+                ", period = 119",
+                "field \"period\" must be a whole number in 120..=480",
+            ),
+            (
+                ", period = 481",
+                "field \"period\" must be a whole number in 120..=480",
+            ),
+            (", open = 59", "a fensterladen's open must be 60..=210"),
+            (", open = 211", "a fensterladen's open must be 60..=210"),
+            (
+                ", period = 120, open = 91",
+                "a fensterladen's open must be 60..=90",
+            ),
+            (", phase = 240", "a fensterladen's phase must be 0..=239"),
+            (
+                ", period = 120, open = 60, phase = 120",
+                "phase must be 0..=119",
+            ),
+            (", to = [1, 0]", "field \"to\" is not allowed"),
+            (", range = 6", "field \"range\" is not allowed"),
+        ] {
+            let e = err(&boat_level("fensterladen", bad));
+            assert!(e.contains(msg), "{bad}: {e}");
+        }
+        // `open` belongs to the Fensterladen only.
+        let e = err(&boat_level("steinschlag", ", open = 100"));
+        assert!(e.contains("field \"open\" is not allowed"), "{e}");
+    }
     #[test]
     fn traundl_needs_a_flat_to_of_2_to_8_tiles_and_takes_a_phase() {
         let b = boat("traundl", ", to = [6, 0]");

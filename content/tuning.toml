@@ -239,6 +239,9 @@ dampfer_size = [160, 16]        # px [w, h], whole tiles: the paddle steamer's h
 dampfer_frames_per_tile = 20    # travel = dx × 20 frames (0.8 px/frame, >= the auto-scroll's 0.75); it waits for its rider, then stays moored
 dampfer_wheel_zone = [32, 20]   # px [w, h]: the paddle wheel's hurt zone while it travels, centred on the hull's centre x
 dampfer_wheel_rise = 4          # px the wheel zone's top is above the hull's bottom (the water line); the rest is under it
+fensterladen_size = [32, 8]     # px [w, h], whole tiles wide: a Fensterladen's body, left-aligned in its cell, its top on the cell's top edge (D-094)
+fensterladen_rattle = 30        # frames: the last frames of the open phase rattle (closing telegraph, renderer only); <= the shortest open phase (60)
+fensterladen_warn = 20          # frames: the last frames of the closed phase show the landlady (opening telegraph); <= the shortest closed phase (30)
 
 [goal]
 zone_heights = [32, 64, 96, 112]          # px of the feet above the Maibaum base at the touch: 2/4/6/7 tiles (D-038)

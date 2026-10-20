@@ -1,0 +1,19 @@
+# E37 (D-094): the shutter pair as a staircase. Run to the street in front
+# of Pension Alpenrose's façade and wait there while Fensterladen #2 is
+# closed (clock 150-239); once it is open again (240) both are open
+# (#3 at 180-329): a walking jump onto #2, one onto #3, the hop onto the
+# annex roof (no other way up its 7 tiles) and on to the goal.
+level  = m6_shutters
+seed   = 1
+source = handwritten
+expect = complete frames=1..9999 deaths=0 no_event=Hurt
+---
+RB 170   # to the street in front of #2 (x ~476)
+- 75     # wait for #2 to open (clock 240)
+RJ 18    # onto #2 (lands at 275)
+- 14
+RJ 10    # onto #3
+J 8
+- 20
+RJ 18    # the hop onto the annex roof
+RB 140   # over the roof, down the steps, to the goal

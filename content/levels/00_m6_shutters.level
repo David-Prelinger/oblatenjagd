@@ -1,0 +1,65 @@
+# Grey-box test level for the Fensterläden (M6 task E37, D-094; not part of
+# the journey; side camera). 17 rows like Stage 7: the street top on row 15
+# (y 240), rows 15-16 ground. Every shutter is `period` 240, `open` 150 on
+# the stage clock (f = (clock + phase) mod 240: open for f < 150, the last
+# 30 open frames rattle, the last 20 closed frames show the landlady).
+# Sections (columns), after Stage 7's section 2:
+# - the street from 0 (start at 2);
+# - a garden (12-21) with Fensterladen #1 (intro) in cell (14, 12): body
+#   14-15, 3 tiles above the garden, `phase` 0. It is the step up to the
+#   `balcony` (one-way, row 11, cols 16-19, 4 above the garden) with two
+#   Oblaten. A shutter closing under her drops her into the garden;
+# - the street (20-29): 10 columns, so no running jump from the balcony
+#   reaches the annex's roof (with 2 columns the solver jumped from the
+#   balcony straight onto it);
+# - Pension Alpenrose: the façade (`wall_village_bg`, walk-through) at
+#   30-35, then the solid annex (`facade_village` walls, a `roof_shingle`
+#   top on row 8) at 36-41, 7 tiles high: the shutters are the stairs.
+#   Fensterladen #2 in cell (31, 12) (body 31-32, 3 above the street),
+#   `phase` 0; #3 in cell (33, 9) (body 33-34, 3 above #2), `phase` 60.
+#   Both are open together at clock 0-89 of every 240 (#2 at 0-149, #3 at
+#   180-329). From #3 the annex top is 1 up over a 1-column gap (35);
+#   Oblaten along the roof. The right side steps down (42: row 11, 43: row
+#   14) to the street at 44;
+# - the street to the goal at 54.
+# Every shutter has 3 tiles of air above its body; the pit-recovery lint
+# finds the street (or the garden) under each. Replays:
+# tests/replays/m6_shutters_*.replay.
+
+[meta]
+id = "m6_shutters"
+time_limit = 300
+
+[legend]
+"#" = "ground"
+"=" = "balcony"
+"F" = "facade_village"
+"R" = "roof_shingle"
+"w" = "wall_village_bg"
+"a" = { entity = "fensterladen", period = 240, open = 150, phase = 0 }
+"b" = { entity = "fensterladen", period = 240, open = 150, phase = 0, tile = "wall_village_bg" }
+"c" = { entity = "fensterladen", period = 240, open = 150, phase = 60, tile = "wall_village_bg" }
+"*" = { entity = "oblate" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+........................................................
+........................................................
+........................................................
+........................................................
+........................................................
+........................................................
+.....................................****...............
+........................................................
+..............................wwwwwwRRRRRR..............
+..............................wwwcwwFFFFFF..............
+.................**...........wwwwwwFFFFFF..............
+................====..........wwwwwwFFFFFFF.............
+..............a...............wbwwwwFFFFFFF.............
+..............................wwwwwwFFFFFFF.............
+..P...........................wwwwwwFFFFFFFF..........G.
+########################################################
+########################################################
+'''

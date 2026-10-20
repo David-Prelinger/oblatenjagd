@@ -1,6 +1,25 @@
-//! Moving one-way platforms: the Festungsbahn car (`docs/game-design.md`
+//! One-way platforms: the Festungsbahn car (`docs/game-design.md`
 //! → "Festungsbahn car", D-026), the Zwölferhorn Gondel (D-044), the
-//! Schafbergbahn (D-067) and the Wolfgangsee boats (D-077).
+//! Schafbergbahn (D-067), the Wolfgangsee boats (D-077) and Strobl's
+//! Fensterläden (D-094).
+//!
+//! The **Fensterladen** (M6, `{ entity = "fensterladen", period, open,
+//! phase }`) never moves: a `platforms.fensterladen_size` body (32×8)
+//! left-aligned in its cell with its top on the cell's top edge. Its
+//! cycle runs on **the stage clock** (`Game::stage_clock`, the frames the
+//! ZEIT timer counts since the stage start or the last respawn): frame
+//! f = (clock + `phase`) mod `period` ([`shutter_frame`]); it is open for
+//! f < `open` and closed for the rest ([`shutter`]). `Game` sets every
+//! shutter's `count` = f and `state` when the clock ticks
+//! ([`place_shutter`]), so all shutters keep an exact relative phase however
+//! the player approaches (the Gondel B/C lesson, D-052). Only an open
+//! shutter's top lands and carries the player ([`carries`]); a closing one
+//! simply stops holding her (she falls with her coyote frames, nothing is
+//! pushed or crushed), and an opening one never lifts a player whose feet
+//! are already below its top (the landing rule needs her feet to cross the
+//! top from above). The renderer's looks come from [`shutter_look`] (open,
+//! rattle, closed, warn; the rattle shake is drawn only). It shares
+//! never-despawn and the clearance and recovery lints (a zero-length track).
 //!
 //! The boats (M5): the **Traundl** (`{ entity = "traundl", to = [dx, 0],
 //! phase = N }`, 2 ≤ |dx| ≤ 8) is the Gondel's free-running ping-pong with
@@ -88,6 +107,86 @@ pub mod car {
     /// Arrived at the far end for good (a one-way car, the Dampfer, D-077):
     /// it stays there until the level resets (`count` stays 0).
     pub const MOORED: u8 = 4;
+}
+
+/// A Fensterladen's states (`Entity::state`, D-094); `count` is its frame
+/// f in its cycle on the stage clock ([`shutter_frame`]).
+pub mod shutter {
+    /// Folded up against the wall: no collision.
+    pub const CLOSED: u8 = 0;
+    /// Folded out: a one-way top.
+    pub const OPEN: u8 = 1;
+}
+
+/// A Fensterladen's frame in its cycle at stage clock `clock`:
+/// (clock + `phase`) mod `period` (D-094).
+pub fn shutter_frame(spawn: &EntitySpawn, clock: u32) -> u16 {
+    let period = u32::from(spawn.period.max(1));
+    ((clock % period + u32::from(spawn.phase)) % period) as u16
+}
+
+/// Sets a Fensterladen's `count` (its frame f) and `state` (open for
+/// f < `open`) for stage clock `clock`. The body never moves.
+pub(crate) fn place_shutter(e: &mut Entity, spawn: &EntitySpawn, clock: u32) {
+    e.count = shutter_frame(spawn, clock);
+    e.state = if e.count < spawn.open {
+        shutter::OPEN
+    } else {
+        shutter::CLOSED
+    };
+}
+
+/// What the renderer shows of a Fensterladen (D-094, sprite-catalog anims
+/// `open`, `rattle`, `closed`, `warn`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ShutterLook {
+    /// Open, a ledge.
+    Open,
+    /// The last `platforms.fensterladen_rattle` open frames: the closing
+    /// telegraph (the body still carries her).
+    Rattle,
+    /// Closed, no ledge.
+    Closed,
+    /// The last `platforms.fensterladen_warn` closed frames: the opening
+    /// telegraph (still no collision).
+    Warn,
+}
+
+/// The look of a Fensterladen at frame `f` of its cycle (`period`,
+/// `open` from its spawn): open → rattle → closed → warn.
+pub fn shutter_look_at(f: u16, period: u16, open: u16, t: &Tuning) -> ShutterLook {
+    let p = &t.platforms;
+    if f < open {
+        if f + p.fensterladen_rattle >= open {
+            ShutterLook::Rattle
+        } else {
+            ShutterLook::Open
+        }
+    } else if f + p.fensterladen_warn >= period {
+        ShutterLook::Warn
+    } else {
+        ShutterLook::Closed
+    }
+}
+
+/// The look of the Fensterladen `e` (from its `count`, which follows the
+/// stage clock); `None` for other entities.
+pub fn shutter_look(e: &Entity, level: &Level, t: &Tuning) -> Option<ShutterLook> {
+    if e.kind != EntityKind::Fensterladen {
+        return None;
+    }
+    let spawn = level.entities.get(usize::from(e.spawn?))?;
+    Some(shutter_look_at(e.count, spawn.period, spawn.open, t))
+}
+
+/// True if `e`'s top holds the player now: every active platform (a
+/// Fensterladen only while open, D-094) and a Kurgast in his deck chair
+/// (`enemies::is_platform_now`, D-095).
+pub fn carries(e: &Entity) -> bool {
+    (e.kind.is_platform() || crate::enemies::is_platform_now(e))
+        && e.active
+        && !e.removed
+        && (e.kind != EntityKind::Fensterladen || e.state == shutter::OPEN)
 }
 
 /// Whether the car's spawn cell is the upper end of its track (`to` goes
@@ -314,7 +413,8 @@ pub fn paddle_wheel(e: &Entity, t: &Tuning) -> Option<Aabb> {
 
 /// Both end points of a moving platform's track as the feet (bottom centre
 /// of the hitbox) in subpixels: the spawn end first. `None` for other
-/// entities. The renderer draws the Gondel's cable from them.
+/// entities. A Fensterladen gets two equal ends (a zero-length track).
+/// The renderer draws the Gondel's cable from them.
 pub fn track_ends(e: &Entity, level: &Level) -> Option<[(Fx, Fx); 2]> {
     if !e.kind.is_platform() {
         return None;
@@ -451,12 +551,7 @@ pub(crate) fn land(
     }
     let hb = p.hitbox();
     let car = entities.iter().find(|c| {
-        (c.kind.is_platform() || crate::enemies::is_platform_now(c))
-            && c.active
-            && !c.removed
-            && prev_bottom <= c.y
-            && hb.bottom() >= c.y
-            && overlaps_x(&hb, &c.hitbox())
+        carries(c) && prev_bottom <= c.y && hb.bottom() >= c.y && overlaps_x(&hb, &c.hitbox())
     });
     if let Some(c) = car {
         // Already on the ground (a tile caught the feet this frame): its
@@ -507,11 +602,12 @@ pub(crate) fn carry(
     }
 }
 
-/// A moving platform's track for the lints: its hitbox at the spawn end,
-/// the delta to the other end and the travel frames. `None` for other
-/// spawns.
+/// A platform's track for the lints: its hitbox at the spawn end, the
+/// delta to the other end and the travel frames (a Fensterladen: a
+/// zero-length track of one frame). `None` for other spawns.
 fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)> {
     let travel = match s.kind {
+        SpawnKind::Fensterladen => 1,
         SpawnKind::Festungsbahn => t.platforms.festungsbahn_travel.max(1),
         SpawnKind::Gondel => gondel_travel(s, t),
         SpawnKind::Schafbergbahn => schafbergbahn_travel(s, t),
@@ -535,7 +631,8 @@ fn track(s: &EntitySpawn, i: usize, t: &Tuning) -> Option<(Aabb, (Fx, Fx), i32)>
 /// **swept body** and the [`TRACK_CLEARANCE_PX`] above its roof must be
 /// free of solid and one-way tiles (D-067: a 64×32 box moving up a slope
 /// sweeps a parallelogram that stepped ground under the track could cut).
-/// Empty if fine.
+/// A Fensterladen is a zero-length track: 3 tiles of air above its body
+/// (D-094). Empty if fine.
 pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let map = TileMap::from_level(level);
     let mut problems = Vec::new();
@@ -597,8 +694,9 @@ pub fn track_problems(level: &Level, t: &Tuning) -> Vec<String> {
 /// need: a walking jump reaches 4 tiles, minus one tile of safety margin.
 pub const MAX_STEP_UP_TILES: i32 = 3;
 
-/// Problems of every moving platform (Festungsbahn, Gondel, Schafbergbahn,
-/// Traundl, Dampfer) whose pit has no way back up (D-027, D-044: falling
+/// Problems of every platform (Festungsbahn, Gondel, Schafbergbahn,
+/// Traundl, Dampfer, Fensterladen: a zero-length vertical track, so either
+/// side may be the way out) whose pit has no way back up (D-027, D-044: falling
 /// off means waiting for the car or climbing back, never a softlock).
 /// Empty if fine.
 ///
@@ -843,6 +941,7 @@ mod tests {
             dy: 0,
             lead: false,
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
+            open: crate::level::DEFAULT_FENSTERLADEN_OPEN,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
             cars: 0,
