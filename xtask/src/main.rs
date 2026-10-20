@@ -14,6 +14,7 @@ mod par;
 mod replay;
 mod report;
 mod scrolllint;
+mod signlint;
 mod solver;
 mod sprites;
 mod steps;
