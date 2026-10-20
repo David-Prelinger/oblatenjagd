@@ -1,0 +1,50 @@
+# QA M5 (re-cut for D-087; D-075: the scroll moves only in frames of play, not paused):
+# a pause in the middle of the auto-scroll changes nothing but the frame
+# numbers. Title flow (START at 20, intro until 170, play from 171), then
+# the inputs of wolfgangsee_checkpoint with a 302-frame pause inserted
+# after its first 1200 frames of play (frame 1371: she swims at the right
+# clamp past the Gschwendt pier, camera x ~1046): START pauses, 300
+# frames idle, START resumes. Everything after it is
+# wolfgangsee_checkpoint shifted by exactly 171 + 302 = 473 frames: the
+# Gelse #1 sting at 2148 + 473 = 2621, the respawn on the pontoon, the
+# 60-frame hold (the title flow adds the 150-frame stage intro after the
+# death), the M-box and the Mozartkugel (power big, x >= 2080).
+# If the scroll, the push, the timer or any entity moved during the
+# pause, the death frame would differ.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+start  = title
+expect = dies_at frames=2621..2621 deaths=1 lives=2 event=CheckpointReached event=Respawned event=PowerUp power=big player_x>=2080 state=playing
+---
+- 20
+S 1
+- 150
+# --- wolfgangsee_checkpoint.replay frames 0-1199 (play from 171) ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 618
+# --- pause for 300 frames while swimming in the scroll ---
+S 1
+- 300
+S 1
+# --- wolfgangsee_checkpoint.replay frames 1200-2168 (the sting at its 2148) ---
+RB 124
+RBJ 33
+RB 5
+RBJ 36
+RB 711
+- 60
+# --- the stage intro after the death (title flow) ---
+- 150
+# --- wolfgangsee_checkpoint.replay frames 2169-end ---
+- 98
+R 66
+RJ 12
+- 120

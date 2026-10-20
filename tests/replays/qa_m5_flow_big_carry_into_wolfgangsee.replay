@@ -1,0 +1,129 @@
+# QA M5 flow (D-047 carry-over, D-081): Zuckerschock Resi carried from
+# St. Wolfgang into the Wolfgangsee. qa_m4_flow_st_wolfgang_hackl_to_
+# wolfgangsee (title flow, the relaxed St. Wolfgang run with the Hackl),
+# but at stand #3 she does not hop its snow globe (5177): it hits her as
+# Hackl -> Zuckerschock (Hurt at 5215, the 30-frame freeze), then she
+# walks on to where the original run hops the next globe and follows it
+# to the Maibaum (clear at 5534, as Zuckerschock). The route map waits,
+# the Wolfgangsee intro draws her big, and play starts on the St.
+# Wolfgang quay as Zuckerschock with score, lives and Oblaten kept. There
+# she walks to the bollard, hops it and drops into the bathing notch,
+# where she floats as Zuckerschock (swimming, top 186).
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=5534..5534 deaths=0 event=Hurt
+expect = state=playing stage=wolfgangsee power=big lives=3 swimming=true player_y>=184 player_y<=191
+---
+# --- qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee.replay frames 0-5176 ---
+- 20
+S 1
+- 150
+R 150
+RJ 20
+R 62
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+R 225
+RJ 10
+R 70
+- 180
+R 200
+RJ 18
+R 6
+- 345
+R 265
+RJ 12
+R 20
+- 40
+R 16
+- 20
+J 14
+- 230
+R 40
+RJ 12
+R 10
+- 20
+RJ 16
+R 6
+- 30
+RJ 12
+R 8
+- 30
+R 30
+- 255
+R 6
+- 30
+R 40
+- 52
+J 12
+- 60
+R 30
+RJ 14
+R 40
+- 20
+RJ 16
+R 16
+RJ 8
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+- 68
+RJ 16
+R 40
+- 35
+J 10
+- 5
+L 14
+- 16
+RJ 20
+- 34
+R 300
+- 20
+B 1
+- 30
+R 259
+RJ 14
+R 60
+RJ 30
+R 50
+- 80
+# stand #3's globe hits her (Hackl -> Zuckerschock)
+- 16
+# --- qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee.replay frames 5193-5214 ---
+R 22
+# the transformation freeze, then catch up to the original run's position
+- 30
+R 44
+# --- qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee.replay frames 5245-6502 ---
+RJ 8
+R 82
+RJ 16
+R 16
+RJ 16
+R 120
+- 1000
+# the Wolfgangsee: to the bollard, hop it into the bathing notch, float
+R 105
+RJ 20
+R 20
+- 60

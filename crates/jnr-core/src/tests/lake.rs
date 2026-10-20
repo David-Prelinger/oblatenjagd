@@ -324,3 +324,202 @@ fn a_respawn_on_a_raft_in_the_zone_holds_the_scroll_then_the_edge_pushes_her_int
     assert!(g.camera().x > cam);
     assert!(g.player().x >= Fx::from_px(g.camera().x));
 }
+
+// ------------------------------------------- the camera's rest (D-086)
+
+/// The 17-row lake's bottom clamp: the auto-scroll camera's rest.
+const REST: i32 = 17 * 16 - crate::SCREEN_H;
+
+#[test]
+fn the_autoscroll_camera_starts_at_its_rest_and_the_side_camera_does_not() {
+    let g = game(&lake(80, Some((20, 40)), &[]), Power::Normal);
+    assert_eq!(REST, 92);
+    assert_eq!(g.camera().y, REST, "decks at screen y 84");
+    assert_eq!(176 - g.camera().y, 84);
+    // The same world with the side camera keeps the dead-zone framing.
+    let g = game(&lake(80, None, &[]), Power::Normal);
+    assert!(g.camera().y < REST, "side: {}", g.camera().y);
+}
+
+/// Jumps straight up on the quay and lands again; returns the camera y of
+/// every frame from the landing on (`frames` of them), and the highest
+/// camera (smallest y) in the air.
+fn jump_on_the_quay(level: &Level, frames: u32) -> (i32, Vec<i32>) {
+    let mut g = game(level, Power::Normal);
+    hold(&mut g, "-", 2);
+    let mut top = g.camera().y;
+    g.step(input("J"));
+    let mut ys = Vec::new();
+    for _ in 0..200 {
+        g.step(input("J"));
+        top = top.min(g.camera().y);
+        if g.player().on_ground {
+            break;
+        }
+    }
+    assert!(g.player().on_ground, "landed");
+    ys.push(g.camera().y);
+    for _ in 1..frames {
+        g.step(input("-"));
+        assert!(g.camera_rests());
+        ys.push(g.camera().y);
+    }
+    (top, ys)
+}
+
+#[test]
+fn after_a_jump_from_a_deck_the_autoscroll_camera_settles_back_at_2_px_per_frame() {
+    let (top, ys) = jump_on_the_quay(&lake(80, Some((20, 40)), &[]), 60);
+    assert!(top < REST - 20, "the jump moved the camera up to {top}");
+    for w in ys.windows(2) {
+        assert!(
+            w[1] - w[0] == 2 || (w[1] == REST && w[1] - w[0] <= 2),
+            "settles down 2 px per frame to the rest: {ys:?}"
+        );
+    }
+    assert_eq!(*ys.last().unwrap(), REST);
+    // The side camera (the old Stage 6 behaviour) stays up after landing.
+    let (_, side) = jump_on_the_quay(&lake(80, None, &[]), 60);
+    assert!(side.iter().all(|&y| y == side[0] && y < REST), "{side:?}");
+}
+
+#[test]
+fn the_camera_rests_at_the_surface_and_on_the_bed_but_not_diving_or_in_the_air() {
+    let level = lake(80, Some((20, 40)), &[(12, 8, 'S')]);
+    let mut g = game(&level, Power::Normal);
+    settle(&mut g, "-");
+    assert!(g.camera_rests(), "floating at the surface");
+    // Up at y 80 (as after a jump-out), it settles back while she floats.
+    g.camera.y = 80;
+    let mut ys = Vec::new();
+    for _ in 0..20 {
+        g.step(input("-"));
+        ys.push(g.camera().y);
+    }
+    assert_eq!(&ys[..3], [82, 84, 86]);
+    assert_eq!(*ys.last().unwrap(), REST);
+    // Diving: no rest until she stands on the bed.
+    hold(&mut g, "D", 30);
+    assert!(g.player().swimming && !g.player().on_ground);
+    assert!(!g.camera_rests(), "diving");
+    settle(&mut g, "D");
+    assert!(g.player().on_ground && g.camera_rests(), "on the bed");
+    // A jump-out from the surface: in the air, no rest.
+    let mut g = game(&level, Power::Normal);
+    settle(&mut g, "-");
+    let mut airborne = false;
+    for frame in 0..20 {
+        g.step(input(if frame < 2 { "J" } else { "-" }));
+        if !g.player().swimming && !g.player().on_ground {
+            airborne = true;
+            assert!(!g.camera_rests(), "in the air");
+        }
+    }
+    assert!(airborne);
+}
+
+#[test]
+fn wolfgangsee_rests_on_its_bottom_clamp_wherever_she_stands_or_floats() {
+    // The art-director finding (E32): on Stage 6 the camera stayed ~17 px
+    // (decks) to ~48 px (the steamer) above its rest, so the lake bed never
+    // showed while she swam at the surface. The solver route: from the
+    // start, and once she has rested for 30 frames, the camera is at y 92
+    // (decks at screen y 84, the water at 100, the bed at 164) unless the
+    // dead zone holds her higher up (the perch).
+    let level = Level::parse(include_str!(
+        "../../../../content/levels/06_wolfgangsee.level"
+    ))
+    .unwrap();
+    let replay = crate::Replay::parse(include_str!(
+        "../../../../tests/replays/wolfgangsee_solver.replay"
+    ))
+    .unwrap();
+    let t = tuning();
+    let mut g = replay.new_game(&[level], &t).unwrap();
+    assert_eq!(g.camera().y, REST, "the start");
+    let (mut resting, mut checked) = (0, 0);
+    for i in replay.frames() {
+        g.step(i);
+        if g.mode() != Mode::Playing {
+            continue;
+        }
+        resting = if g.camera_rests() { resting + 1 } else { 0 };
+        let cy = g.player().center_px().1;
+        if resting >= 30 && cy - REST >= t.camera.deadzone_top {
+            checked += 1;
+            assert_eq!(g.camera().y, REST, "frame {}", g.frame());
+        }
+    }
+    assert!(checked > 2000, "checked {checked} frames");
+}
+#[test]
+fn the_lead_out_camera_catches_up_without_a_snap() {
+    // QA M5 (`qa_m5_leadout_camera_catch_up`, was `..._bug_leadout_camera_snap`):
+    // at the scroll -> side-camera hand-over the camera jumped 3328 -> 3433
+    // in one frame, because the side camera re-framed her at the follow line
+    // at once. Now it moves at most `autoscroll_catch_up_speed` px per frame
+    // and still reaches the side framing.
+    let level = Level::parse(include_str!(
+        "../../../../content/levels/06_wolfgangsee.level"
+    ))
+    .unwrap();
+    let replay = crate::Replay::parse(include_str!(
+        "../../../../tests/replays/qa_m5_leadout_camera_catch_up.replay"
+    ))
+    .unwrap();
+    let t = tuning();
+    let step = t.camera.autoscroll_catch_up_speed;
+    let mut g = replay.new_game(&[level], &t).unwrap();
+    let mut x = g.camera().x;
+    let (mut handover, mut caught_up) = (None, None);
+    // The replay ends ~6 frames after the hand-over; she then stands still.
+    let still = std::iter::repeat_n(crate::InputFrame::NONE, 60);
+    for i in replay.frames().chain(still) {
+        g.step(i);
+        let dx = g.camera().x - x;
+        assert!(
+            (0..=step).contains(&dx),
+            "frame {}: camera x {x} -> {}",
+            g.frame(),
+            g.camera().x
+        );
+        x = g.camera().x;
+        if g.autoscroll().phase == ScrollPhase::LeadOut {
+            handover.get_or_insert(g.frame());
+            let cx = g.player().center_px().0;
+            if caught_up.is_none() && cx - x <= t.camera.follow_x {
+                caught_up = Some(g.frame());
+            }
+        }
+    }
+    let handover = handover.expect("reaches the lead-out");
+    let caught_up = caught_up.expect("catches up");
+    // 105 px at 4 px per frame while she still walks on for a few frames:
+    // 42 frames (hand-over 4373, caught up 4415).
+    assert!(
+        caught_up - handover <= 45,
+        "caught up {caught_up}, hand-over {handover}"
+    );
+}
+#[test]
+fn the_title_keeps_the_side_framing_and_play_starts_at_the_rest() {
+    // D-086: the title screen draws the stage behind the logo; at the rest
+    // the Stage 6 bollard (col 12, row 10) would sit in the subtitle band
+    // (D-035), so the title keeps the side camera's framing. START re-places
+    // the camera at its rest behind the navy intro card.
+    let level = Level::parse(include_str!(
+        "../../../../content/levels/06_wolfgangsee.level"
+    ))
+    .unwrap();
+    let t = tuning();
+    let mut g = Game::new_at(&level, &t, 1, crate::Start::Title);
+    let side = crate::Camera::new(g.player().center_px(), 260 * 16, 17 * 16, &t.camera);
+    assert_eq!(g.camera(), side);
+    assert!(side.y < REST);
+    hold(&mut g, "-", 5);
+    assert_eq!(g.camera(), side, "the title doesn't settle");
+    g.step(input("S"));
+    assert_eq!(g.camera().y, REST, "the intro card: placed at the rest");
+    until(&mut g, "-", 400, |g| g.mode() == Mode::Playing);
+    assert_eq!(g.camera().y, REST, "play starts at the rest");
+}

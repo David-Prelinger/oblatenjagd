@@ -1,15 +1,24 @@
-# QA M4 flow (D-047, D-072): St. Wolfgang clear -> teaser to the Wolfgangsee
-# (no level yet) -> title with the run reset. Title flow with the run
+# QA M4 flow (D-047, D-072), re-cut in M5 (D-074): St. Wolfgang clear with
+# the Hackl -> route map St. Wolfgang -> Wolfgangsee in Wait -> the
+# Wolfgangsee intro with the run carried over. Title flow with the run
 # started at St. Wolfgang, the qa_st_wolfgang_relaxed inputs from 171
-# (Maibaum at 5491; 5413 before the pen-wall re-cut of the relaxed run),
-# then idle: tally, route map / teaser (from ~5960), title (~6200) with
-# score 0, 3 lives, Normal.
+# (Maibaum at 5491; the relaxed run picks up the Hackl), then idle: tally,
+# route map from 5956 (Wait, `player_hackl` on the map), no START: the
+# map's 300-frame wait starts the Wolfgangsee intro at 6320, play starts
+# at 6470 as Hackl with the score, lives and Oblaten kept. Shots: the map
+# in Wait as Hackl (6090, prompt on, St. Wolfgang's raised label, D-072)
+# and the Wolfgangsee intro drawing `player_hackl` (6340).
+# Was `qa_m4_flow_st_wolfgang_teaser_title` (teaser, title, run reset):
+# the Wolfgangsee is playable since M5, so the map waits instead of
+# playing the teaser (the teaser moved to Wolfgangsee -> Strobl,
+# flow_m5_wolfgangsee_teaser_title).
 level  = st_wolfgang
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=5491..5491 deaths=0 no_event=Hurt
-expect = state=title score=0 lives=3 oblaten=0
+expect = state=playing stage=wolfgangsee power=hackl score=19750 lives=3 oblaten=41
+shots  = 6090:route_map 6340:intro
 ---
 # title -> intro
 - 20
@@ -113,5 +122,5 @@ RJ 16
 R 16
 RJ 16      # onto the landing hall, walk off to the Maibaum (100)
 R 120
-# tally, map, teaser, title
-- 900
+# tally, map (Wait), Wolfgangsee intro, play
+- 1000

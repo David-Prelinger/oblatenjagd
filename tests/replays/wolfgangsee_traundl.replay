@@ -1,0 +1,68 @@
+# Stage 6 Traundl chain (D-077, D-085, D-087; game-design.md Stage 6
+# section 5): the solver route to frame 2429 (swimming past the lantern
+# pontoon, camera x 1967), then by hand: float until Traundl A comes back
+# to its spawn end above her, jump out onto it (press 2615), ride A to its
+# far end (2732), hop to the border raft (press 2735). Gelse #2 (col 154,
+# row 6) hunts 2740-3220 and comes down on her on the raft (standing still
+# it would reach her at 2819, 66 frames before B docks at 2885): a
+# standing full jump (press 2794) stomps it. Hop onto Traundl B as it docks
+# (press 2876), ride B to its far end, hop onto C (press 3010), ride C to
+# its far-end berth (~3142), jump up onto the Zaunerstollen perch (press
+# 3142, landing under the Z-box at 173). Gelse #3 (col 171, row 6, hunting
+# 3102-3582) comes up to her on the perch; a standing full jump (press
+# 3214) bumps the Z-box and stomps the Gelse on the way down; the
+# Zaunerstollen lands on the perch short of the bollard (177), turns at its
+# side and comes back to her: 1-up.
+# Hand-measured press windows (only that press shifted, the rest
+# unchanged; counted = she ends dry on the target / the Gelse is stomped):
+# jump-out onto A 53 frames, A -> raft 45, Gelse #2 stomp >= 39 (every
+# shift tried from landing on), raft -> B 48, B -> C 31, C -> perch 41,
+# Gelse #3 stomp + box bump 8 (3211-3218).
+# Gelse #3 never touches her during the C ride: standing on C at its far
+# end she would first be reached at 3175 (wolfgangsee_gelse_c_berth), as
+# C leaves the berth.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped event=ExtraLife lives=4 state=playing
+---
+# --- the first 2429 frames of wolfgangsee_solver.replay ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 5
+RBJ 36
+RB 1031
+# --- handwritten ---
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+- 41
+J 24
+- 120

@@ -1,0 +1,170 @@
+# Stage 6: Wolfgangsee (docs/game-design.md "Stage 6: Wolfgangsee",
+# D-074 ... D-084). 260 columns x 17 rows, camera = "autoscroll" with the
+# zone [16, 208] (D-087): the side camera on the St. Wolfgang quay, the
+# scroll (0.75 px/frame) from the moment Resi's centre passes column 25
+# (~130 frames into the steamer ride, the camera's left edge on the
+# notch's right wall, so the notch is behind the screen for good) until the
+# camera's left edge reaches column 208, then the side camera again for
+# the Strobl landing and the Maibaum. Decks on row 11, swim water rows
+# 12-15 (see_wasser / see_wasser_tief), lake bed (seegrund) row 16, the
+# goal meadow row 16. No lethal tile in the stage.
+#   1 Schiffsstation  0-17   quay (kai, rows 11-16) 0-12 and 16-17, start
+#                            col 2, schiffsstation (back) over 0-5, Bus
+#                            150 / wasserscheu 4, M-box 9 (row 7, bricks 8
+#                            and 10), Baden heute 10, bollard 12 (row 10:
+#                            turns the Mozartkugel; Resi hops it). Bathing
+#                            notch 13-15: swim water rows 12-15, 3 Oblaten
+#                            on row 14 (dive), an arc of 3 over it.
+#                            Raddampfer / ohne Dampf 16 (boards 6 columns
+#                            apart). Side camera: the scroll starts when her
+#                            centre passes col 25, on the steamer.
+#   2 Raddampfer     18-75   Dampfer in (18, 11), to = [40, 0]: hull 18-27
+#                            flush with the quay, moored at 58-67 (frame
+#                            ~925 after an immediate boarding); the scroll
+#                            starts on its deck (her centre past col 25),
+#                            and a rider standing still finds the moored
+#                            front inside the right clamp at once.
+#                            Three arcs of 3 Oblaten over the track (30-48,
+#                            rows 8-9). Swan #1 at 46 charges under the
+#                            deck. Gschwendt pier (steg) 68-75 with
+#                            steg_pfahl under its ends, ?-box 71 (row 7),
+#                            3 Oblaten, Baujahr 1873 69, Seit 1950 75
+#                            (signs 6 apart: the boards are ~5 tiles wide).
+#   3 Seebad         76-119  open water 76-111 (the required swim). Swan #2
+#                            at 90, 8 Oblaten on the bed (row 15, 85-92) in
+#                            its charge zone. Reed belt 100-106 over the
+#                            flat row-16 bed (D-085: no bed steps where the
+#                            edge pushes) with Blutspende 101 (in the water).
+#                            Gelse #1 at 108 (row 8). Raft (steg) 112-115
+#                            with 4 Oblaten.
+#   4 Adventlaterne 120-139  pontoon (steg) 121-133, bollards 121 and 133
+#                            (row 10, 2 tiles above the water: D-084),
+#                            checkpoint 122, Bus 150 / im Stau. Ha! 126,
+#                            M-box 128 (row 7, bricks 127/129, clear of the
+#                            lantern roof), lantern (back) 131, 5 Oblaten
+#                            (4 under the pontoon on row 14, 123-126: a
+#                            dive reward; collectibles stay on row 8 or
+#                            lower, clear of the HUD).
+#                            Respawn: camera x 1816, 60 frames of hold, no
+#                            enemy on screen. Wie Venedig 136 (in the water,
+#                            clear of the dalben cap at 139).
+#   5 Traundl-Faehre 140-179 a dalben at every track end. Traundl A 140
+#                            (to [6, 0]: 140-142 <-> 146-148), border raft
+#                            150-151 (Landesgrenze 150), B 153 (153-155 <->
+#                            159-161), C 164 (164-166 <-> 170-172). The
+#                            phases (A 182, B 181, C 226) are set from the
+#                            scroll: on the solver's timeline (D-087) A
+#                            reaches its far end at ~2732, B its near end
+#                            at the raft at ~2885 (~2 s on the raft), B its
+#                            far end at ~3011 as C reaches its near end:
+#                            every hop is 1-2 tiles. After a respawn A wakes at
+#                            once (shifted); B and C wake by the scroll.
+#                            Gelse #2 at 154 (row 6, D-085) over B's near
+#                            berth: it reaches her on the raft, before B
+#                            docks, never mid-ride. #3 at 171
+#                            (row 6) over C's far end. Zaunerstollen perch
+#                            (steg, row 8) 173-177 with a bollard at 177
+#                            (row 7) and the Z-box at 173 (row 4, D-087: the
+#                            item lands short of the bollard), reached
+#                            from C's far end. Swan #3 at 184.
+#   6 Regatta       180-211  Regatta / Vorrang: wir 182 (in the water).
+#                            Traundl D 186 (to [5, 0], phase 214) between
+#                            dalben 185 and 194. Regatta boats at 198, 204
+#                            and 210 (a start buoy 2 columns right of
+#                            each), 2 columns right of the spec so that
+#                            Gelse #3's hunt (ends ~3582 on the solver's
+#                            timeline) is over before the first boat shows
+#                            (~3609). 8 Oblaten on the
+#                            bed (185-192), 3 over D's track.
+#   7 Strobl        212-259  shallows 212-221 (bed row 15, then 14) with
+#                            reeds; the scroll ends at camera col 208.
+#                            Quay (kai) 222-237 with Strobl: bitte halten
+#                            226 and 6 Oblaten; schiffsstation (back) over
+#                            invisible 238-243 (rows 10-15, the launch);
+#                            meadow row 16 from 238; Maibaum 250, Ortsende
+#                            253.
+# Oblaten: 68 + 1 in the ?-box. Replays: tests/replays/wolfgangsee_*.
+
+[meta]
+id = "wolfgangsee"
+title_key = "stage.wolfgangsee.title"
+time_limit = 260
+min_jump_window = 5
+camera = "autoscroll"
+autoscroll = [16, 208]
+background = [
+  { sprite = "bg_sky_salzburg", factor = 0 },
+  { sprite = "bg_suedufer", factor = 8 },
+]
+
+[legend]
+"K" = "kai"
+"=" = "steg"
+"-" = "steg"
+"|" = "steg_pfahl"
+"~" = "see_wasser"
+"w" = "see_wasser_tief"
+"_" = "seegrund"
+"p" = "poller"
+"B" = "brick"
+"I" = "invisible"
+"," = "meadow"
+"?" = { tile = "oblaten_box", contains = "oblate" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"Z" = { tile = "oblaten_box", contains = "zaunerstollen" }
+"*" = { entity = "oblate" }
+"u" = { entity = "oblate", tile = "see_wasser_tief" }
+"P" = { entity = "player_start" }
+"C" = { entity = "checkpoint" }
+"G" = { entity = "goal_maibaum" }
+"D" = { entity = "dampfer", to = [40, 0] }
+# traundl A
+"T" = { entity = "traundl", to = [6, 0], phase = 182 }
+# traundl B
+"U" = { entity = "traundl", to = [6, 0], phase = 181 }
+# traundl C
+"V" = { entity = "traundl", to = [6, 0], phase = 226 }
+# traundl D
+"X" = { entity = "traundl", to = [5, 0], phase = 214 }
+"S" = { entity = "schwan", tile = "see_wasser" }
+"g" = { entity = "gelse" }
+"R" = { entity = "regattaboot", tile = "see_wasser" }
+"d" = { entity = "prop", sprite = "dalben" }
+"r" = { entity = "prop", sprite = "schilf" }
+"y" = { entity = "prop", sprite = "startboje" }
+"L" = { entity = "prop", sprite = "adventlaterne", layer = "back" }
+"h" = { entity = "prop", sprite = "schiffsstation", dx = -8, layer = "back" }
+"H" = { entity = "prop", sprite = "schiffsstation", dx = -56, layer = "back" }
+"1" = { entity = "sign", text = "stage.wolfgangsee.sign_bus", style = "bus" }
+"2" = { entity = "sign", text = "stage.wolfgangsee.sign_baden" }
+"3" = { entity = "sign", text = "stage.wolfgangsee.sign_dampfer" }
+"4" = { entity = "sign", text = "stage.wolfgangsee.sign_baujahr" }
+"5" = { entity = "sign", text = "stage.wolfgangsee.sign_schwan" }
+"6" = { entity = "sign", text = "stage.wolfgangsee.sign_gelsen" }
+"7" = { entity = "sign", text = "stage.wolfgangsee.sign_checkpoint", style = "bus" }
+"8" = { entity = "sign", text = "stage.wolfgangsee.sign_venedig" }
+"9" = { entity = "sign", text = "stage.wolfgangsee.sign_grenze" }
+"0" = { entity = "sign", text = "stage.wolfgangsee.sign_regatta" }
+"!" = { entity = "sign", text = "stage.wolfgangsee.sign_strobl" }
+"O" = { entity = "sign", text = "stage.wolfgangsee.sign_ortsende", style = "ortsende" }
+
+[map]
+grid = '''
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+....................................................................................................................................................................................................................................................................
+.............................................................................................................................................................................Z......................................................................................
+....................................................................................................................................................................................................................................................................
+..........................................................................................................................................................g................g........................................................................................
+........BMB............................................................?.......................................................BMB...............................................p..................................................................................
+.......*.....***...............*.......*.......*............................................................g................................................................-----..........***.....................................................................
+.......*......................*.*.....*.*.....*.*...............................................................****................*.........*****........****.......***.**........................................................................................
+..Ph1.....2.p...3...................................................4..***...............................................pC...7....L.p................9...........................................................................!..******...IIIIII................
+KKKKKKKKKKKKK...KKD.................................................========5........................6.r..r.....====.....=============..8..dT........d==dU........ddV........d........0..dX.......d.....y.....y.....y.r..r....KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKK~~~KK~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~~~~~|~~~~~~~~~~~~~~S~~~~~~~~~~~~~~~~~~~~~|~~|~~~~~|~~~~~~~~~~~|~~~~~~~~~~~~~~~~||~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~S~~~~~~~~~~~~~R~~~~~R~~~~~R~~~~~~~~~~~KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKuuuKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|ww|wwwww|wuuuuwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww______KKKKKKKKKKKKKKKKIIIIII................
+KKKKKKKKKKKKKwwwKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww|wwwwww|wwwwwwwwwuuuuuuuuwwwwwwwwwwwwwwwwwww|ww|wwwww|wwwwwwwwwww|wwwwwwwwwwwwwwww||wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwuuuuuuuuwwwwwwwwwwwwwwwwwww__________KKKKKKKKKKKKKKKKIIIIIIH.....G..O......
+KKKKKKKKKKKKK___KK____________________________________________________________________________________________________________________________________________________________________________________________________________KKKKKKKKKKKKKKKK,,,,,,,,,,,,,,,,,,,,,,
+'''

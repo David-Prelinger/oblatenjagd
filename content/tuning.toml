@@ -48,6 +48,8 @@ climb_activate_y = 64     # px: an entity activates only while its spawn cell is
 autoscroll_speed = 192    # subpx/frame: 0.75 px/frame, half the walk speed (must be > 0, < player.walk_speed and < swim.speed)
 autoscroll_hold = 60      # frames of play the scroll waits after a start or respawn framed inside the zone
 autoscroll_right_margin = 64  # px: in the scroll the hitbox's right edge stays <= camera x + 320 - this
+autoscroll_settle_speed = 2   # px/frame: grounded or swimming at the surface, the camera settles back to its rest, the level's bottom clamp (D-086)
+autoscroll_catch_up_speed = 4 # px/frame: in the lead-out the camera catches up with her at most this fast, no snap at the hand-over (> run_speed; D-086)
 
 [game]
 death_frames = 60         # 1 s from death to respawn

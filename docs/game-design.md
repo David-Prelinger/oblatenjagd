@@ -648,7 +648,7 @@ New in this stage: **the auto-scroll camera** (D-075), **swimming** in a new kin
 | lake bed (`seegrund`, solid) | 16; in the shallows (reeds) the bed's top is row 14 or 15 |
 | the goal meadow at Strobl | 16 |
 
-At the side camera's rest (camera y 92, as in Stages 1–5) the decks are at screen y 84, the water surface at y 100 and the lake bed at y 164: ~5 tiles of air above the water below the HUD, 4 tiles of water. A Resi standing on a deck or swimming at the surface stays inside the vertical dead zone, so the camera only moves up for high jumps, as in every side level. Every deck in the scroll zone is exactly 1 tile above the water, so boarding from the water is always the same move.
+At the side camera's rest (camera y 92, as in Stages 1–5) the decks are at screen y 84, the water surface at y 100 and the lake bed at y 164: ~5 tiles of air above the water below the HUD, 4 tiles of water. The auto-scroll camera starts at this rest (the 17-row level's bottom clamp) and, whenever Resi stands (deck, boat, quay, lake bed) or swims at the surface, settles back to it at 2 px/frame after a jump has moved it up (D-086); only the dead zone can hold it higher (the Zaunerstollen perch). Every deck in the scroll zone is exactly 1 tile above the water, so boarding from the water is always the same move.
 
 ### Difficulty and reach rules (stage 6)
 

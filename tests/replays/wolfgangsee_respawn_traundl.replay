@@ -1,0 +1,66 @@
+# Stage 6 boat route after a checkpoint respawn (D-075 hold, D-085, D-087;
+# was QA's qa_m5_respawn_gelse2_stomp_on_traundl_a, carried on to the
+# perch). As wolfgangsee_checkpoint to the respawn on the lantern pontoon
+# (Gelse #1 death at 2148, respawn 2208, hold until ~2268). Traundl A is in
+# range at the respawn, so it wakes at once and runs ~125 frames ahead of
+# its continuous phase (D-087's rule); B, C and the Gelsen wake by the
+# scroll. Resi walks to the pontoon's end, hops the bollard (133, press
+# 2313) into the water, waits for A at its near end and boards it with a
+# held jump-out (press 2803). Gelse #2 closes in during the ride and first
+# reaches her after A rests at its far end; a standing full jump (press
+# 2907) stomps it and she steers onto the border raft. The edge sweeps the
+# raft before B docks again (in this phase B's near berth is off screen),
+# so she swims on to B's far berth and jumps out onto B (press 3047), hops
+# on at once to C as it docks (running jump, press 3077), rides C to its
+# far berth and jumps up onto the Zaunerstollen perch (press 3192). Gelse
+# #3 comes up to her there; a standing full jump (press 3248) bumps the
+# Z-box (col 173) and stomps the Gelse on the way down, and the
+# Zaunerstollen comes back to her: 1-up (lives 2 -> 3), standing on the
+# perch at the end.
+# Hand-measured press windows (only that press shifted, every other input
+# at its frame; counted = the replay still passes): bollard hop not
+# measured (no timing), jump-out onto A 39 frames (>=, -20..18), Gelse #2
+# stomp 8 (-1..6), jump-out onto B 12 (-9..2), B -> C 15 (>=, -2..12),
+# C -> perch 18 (>=, -15..2), Gelse #3 stomp + box bump 18 (-8..9).
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=2148..2148 event=Stomped event=ExtraLife lives=3 player_y>=106 player_y<=106
+---
+# --- the first 2208 frames of wolfgangsee_checkpoint.replay ---
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 5
+RBJ 36
+RB 711
+- 99
+# --- handwritten ---
+R 104
+RJ 20
+R 60
+- 390
+R 20
+RJ 20
+- 84
+J 24
+- 10
+R 30
+R 76
+RJ 16
+R 6
+RB 8
+RBJ 20
+- 95
+RJ 16
+R 16
+- 24
+J 24
+- 100

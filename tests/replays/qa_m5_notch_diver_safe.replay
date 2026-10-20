@@ -1,0 +1,24 @@
+# QA M5 regression (D-087; was qa_m5_bug_notch_diver_squeezed): a diver
+# resting on the bathing notch's bed is never squeezed. Resi falls into the
+# notch (cols 13-15), jumps out onto the quay 16-17, goes back for the
+# three Oblaten on the notch's bed (the swim lesson): DOWN, she rests on
+# the bed at x 241 to the end (frame 437). With `from = 8` the scroll
+# started as her centre passed col 17 and the edge pushed her into the
+# quay face (squeezed at 370). With the zone at [16, 208] (D-087) the
+# camera stays in the lead-in (x 128, her centre left of col 25), so
+# nothing pushes her: no death.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died state=playing player_x>=241 swimming=true player_y>=234
+---
+R 105
+RJ 20
+R 20
+- 20
+J 14
+RJ 10
+R 4
+- 30
+L 14
+D 200

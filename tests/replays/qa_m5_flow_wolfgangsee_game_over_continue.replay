@@ -1,0 +1,57 @@
+# QA M5 flow (D-017, D-047): game over in the Wolfgangsee -> continue
+# restarts the Wolfgangsee. Title flow with the run started at the
+# Wolfgangsee: three times the solver route's first 1299 play frames (the
+# notch hop, the steamer ride, the swim off the Gschwendt pier), then she
+# floats at the surface and swan #2 charges into her (deaths at 1560, 3159,
+# 4758, each after the 150-frame intro; the Oblaten and the score of each
+# try are kept until the game over); game over at 4818; START at 4918 ->
+# the Wolfgangsee intro and play at the St. Wolfgang quay: 3 lives, score
+# 0, 0 Oblaten.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver dies_at frames=4758..4758
+expect = state=playing stage=wolfgangsee lives=3 score=0 oblaten=0 power=normal player_x>=34 player_y>=154 player_y<=154
+---
+# title -> intro
+- 20
+S 1
+- 150
+# death 1: the solver route to the Seebad (1299 play frames), then float
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 717
+- 300
+# death 2: the solver route to the Seebad (1299 play frames), then float
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 717
+- 300
+# death 3, game over
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 717
+- 90
+# START -> intro -> play
+- 160
+S 1
+- 160

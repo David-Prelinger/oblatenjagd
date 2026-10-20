@@ -1,0 +1,30 @@
+# QA M5 regression (D-076, D-086; was qa_m5_bug_shrink_while_floating_sinks,
+# fixed in E32): a hurt while floating at the surface as Zuckerschock used
+# to drop Normal Resi out of the surface band, so she sank without DOWN.
+# Resi bumps the start M-box (col 9) and catches the Mozartkugel (big at
+# 159), hops the bollard and the notch onto the Dampfer, rides it to
+# Gschwendt, walks off the pier's far end and floats at the surface with
+# no input: big, top 184 = chest point 192 exactly on the water line.
+# Swan #2 charges into her: Hurt at 1612 (with D-087's zone; 1756 before),
+# Zuckerschock -> Normal. Before E32 the shrink kept the feet, so the
+# chest point landed at surface + 8, outside the surface band, and she
+# sank to the lake bed after the 30-frame freeze (and a JUMP press stroked
+# instead of jumping out). Since E32 a power change while swimming keeps
+# the top, and so the chest point: she still floats at the surface (top
+# <= 191) with no input to the end (frame 1830).
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Hurt power=normal swimming=true player_y<=191
+---
+R 76
+J 20
+- 100
+L 50
+- 10
+RB 44
+RBJ 36
+RB 4
+- 820
+R 500
+- 170
