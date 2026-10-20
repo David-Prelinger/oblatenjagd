@@ -1036,16 +1036,25 @@ impl Game {
             .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Schneekugel) && !e.removed)
             .map(|e| (e.base_x, e.base_y))
             .collect();
+        // Every Ampel counts its own cars by their spawn point (D-093).
+        let cars: Vec<(Fx, Fx)> = self
+            .entities
+            .iter()
+            .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Auto) && !e.removed)
+            .map(|e| (e.base_x, e.base_y))
+            .collect();
         let ctx = UpdateCtx {
             map: &self.map,
             tuning: &self.tuning,
             level: &self.level,
             player_cx: self.player.x + self.player.w.div_int(2),
             player_top: self.player.y,
+            player_box: self.player.hitbox(),
             player_standing: self.player.on_ground.then(|| self.player.hitbox()),
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
             globes: &globes,
+            cars: &cars,
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -1249,6 +1258,7 @@ impl Game {
                 EntityKind::PoppedOblate
                 | EntityKind::Steinschlag
                 | EntityKind::Souvenirstand
+                | EntityKind::Ampel
                 | EntityKind::SchneekugelScherben
                 | EntityKind::SteinDebris
                 | EntityKind::Defeated(_)
@@ -1628,6 +1638,7 @@ impl Game {
                     | EntityKind::Note
                     | EntityKind::Steinschlag
                     | EntityKind::Souvenirstand
+                    | EntityKind::Ampel
                     | EntityKind::Stein
                     | EntityKind::Festungsbahn
                     | EntityKind::Gondel

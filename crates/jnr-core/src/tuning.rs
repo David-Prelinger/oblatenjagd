@@ -656,6 +656,28 @@ pub struct EnemyTuning {
     pub regattaboot_telegraph: u16,
     /// ... then races left at this speed, ignoring tiles.
     pub regattaboot_speed: Fx,
+    /// Ampel (D-093): counter frames of red and amber (the telegraph) at
+    /// the start of each cycle ...
+    pub ampel_telegraph: u16,
+    /// ... then green with a car every this many frames (`cars` of them)
+    /// ...
+    pub ampel_gap: u16,
+    /// ... then four green blinks over this many frames (each an eighth on,
+    /// an eighth off) ...
+    pub ampel_blink: u16,
+    /// ... then amber, then red for the rest of the period. Each at most
+    /// its `level::AMPEL_*` value, so a level's period and phase rules
+    /// hold for any tuning.
+    pub ampel_amber: u16,
+    /// At most this many of an Ampel's cars are alive at once.
+    pub ampel_max_alive: u16,
+    /// Auto, the car (D-093).
+    pub auto_hitbox: [i32; 2],
+    /// A car's hitbox starts this many px into its spawner cell (left
+    /// edge), its bottom on the cell's bottom.
+    pub auto_spawn_dx: i32,
+    /// It drives left at this speed, ignoring tiles.
+    pub auto_speed: Fx,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -926,6 +948,61 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The M6 traffic keys (Ampel and Auto, D-093).
+    fn validate_traffic(&self) -> Result<(), ParseError> {
+        use crate::level::{AMPEL_AMBER, AMPEL_BLINK, AMPEL_GAP, AMPEL_TELEGRAPH};
+        for (name, v, max) in [
+            (
+                "enemies.ampel_telegraph",
+                self.ampel_telegraph,
+                AMPEL_TELEGRAPH,
+            ),
+            ("enemies.ampel_gap", self.ampel_gap, AMPEL_GAP),
+            ("enemies.ampel_blink", self.ampel_blink, AMPEL_BLINK),
+            ("enemies.ampel_amber", self.ampel_amber, AMPEL_AMBER),
+        ] {
+            if !(1..=max).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..={max} frames (the level rules' Ampel cycle, D-093)"
+                )));
+            }
+        }
+        if !self.ampel_blink.is_multiple_of(8) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.ampel_blink must be a multiple of 8 (four blinks, each an eighth on and an eighth off)",
+            ));
+        }
+        if !(1..=8).contains(&self.ampel_max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.ampel_max_alive must be 1..=8",
+            ));
+        }
+        let [w, h] = self.auto_hitbox;
+        if !(1..=32).contains(&w) || !(1..=TILE_PX).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_hitbox must be 1..=32 px wide and 1..=16 px high",
+            ));
+        }
+        if !(0..TILE_PX).contains(&self.auto_spawn_dx) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_spawn_dx must be 0..=15 px",
+            ));
+        }
+        if self.auto_speed <= Fx::ZERO || self.auto_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        // The cars of one green never overlap: each has driven its own
+        // length before the next one spawns.
+        if self.auto_speed.mul_int(i32::from(self.ampel_gap)) < Fx::from_px(w) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.ampel_gap × auto_speed >= auto_hitbox width (the cars of one green must not overlap)",
+            ));
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1106,6 +1183,7 @@ impl Tuning {
         self.enemies.validate_singer_and_stand()?;
         self.enemies.validate_reisebus()?;
         self.enemies.validate_lake()?;
+        self.enemies.validate_traffic()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1979,6 +2057,49 @@ mod tests {
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("reisebus_restart"), "{err}");
     }
+    #[test]
+    fn traffic_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        assert_eq!(
+            (t.ampel_telegraph, t.ampel_gap, t.ampel_blink, t.ampel_amber),
+            (30, 40, 64, 30),
+            "D-093's cycle"
+        );
+        assert_eq!(t.ampel_max_alive, 4);
+        assert_eq!((t.auto_hitbox, t.auto_spawn_dx), ([28, 14], 2));
+        assert_eq!(t.auto_speed, Fx(512), "2.0 px/frame");
+        for (field, bad) in [
+            ("ampel_telegraph", "0"),
+            ("ampel_telegraph", "31"),
+            ("ampel_gap", "0"),
+            ("ampel_gap", "41"),
+            ("ampel_blink", "0"),
+            ("ampel_blink", "72"),
+            ("ampel_blink", "60"),
+            ("ampel_amber", "0"),
+            ("ampel_amber", "31"),
+            ("ampel_max_alive", "0"),
+            ("ampel_max_alive", "9"),
+            ("auto_hitbox", "[33, 14]"),
+            ("auto_hitbox", "[28, 0]"),
+            ("auto_hitbox", "[28, 17]"),
+            ("auto_spawn_dx", "-1"),
+            ("auto_spawn_dx", "16"),
+            ("auto_speed", "0"),
+            ("auto_speed", "3072"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+        // Two cars of one green must not overlap: 10 frames × 2 px < 28 px.
+        let text = REAL.replace("ampel_gap = ", "ampel_gap = 10 #");
+        let err = Tuning::parse(&text).unwrap_err().to_string();
+        assert!(err.contains("must not overlap"), "{err}");
+        let text = REAL.replace("ampel_gap = ", "ampel_gap = 14 #");
+        assert!(Tuning::parse(&text).is_ok(), "14 × 2 px = 28 px");
+    }
+
     #[test]
     fn swim_keys_are_validated() {
         let s = Tuning::parse(REAL).unwrap().swim;

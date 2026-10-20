@@ -18,16 +18,19 @@
 //!    puffs, the Traundl boats and the Dampfer with the `gischt` spray of
 //!    its turning paddle wheel; then enemies and projectiles (animation by
 //!    `Entity::pose`, facing by `Entity::dir`, the swarm's shake by
-//!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), falling
-//!    rocks, the Operettensänger's high-C column (`hohes_c` rings) and
-//!    snow globes, so a hazard never hides behind a hull or car
+//!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`, a car's look
+//!    by its spawn index, a `look = "postbus"` Reisebus as `postbus`),
+//!    falling rocks, the Operettensänger's high-C column (`hohes_c` rings)
+//!    and snow globes, so a hazard never hides behind a hull or car; the
+//!    Ampel's light (from its counter) is a middle-layer prop, so its cars
+//!    drive in front of it
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
 //!    popups on top (the last world pass, under the HUD)
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
-use jnr_core::{Block, Camera, Game, Pose, Tile};
+use jnr_core::{AmpelLight, Block, BusLook, Camera, Game, Pose, Tile};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
@@ -87,6 +90,16 @@ pub const STONE_GREY: u32 = 0x5d6680ff;
 pub const SKY_HAZE: u32 = 0xdff1f0ff;
 /// `S` sky_blue: the Souvenirstand vendor (apron).
 pub const SKY_BLUE: u32 = 0x64aee6ff;
+
+/// A car's looks (D-093): anims `drive_0` … `drive_2` (a red hatchback, a
+/// white estate, a camper van), picked by its spawn index in its green
+/// (`Entity::count`) modulo this.
+pub const AUTO_LOOKS: u16 = 3;
+/// The cars' grey-box colours by look (until the `auto` art lands): `r`
+/// red, `w` white, `h` pale.
+pub const AUTO_GREY_BOX: [u32; AUTO_LOOKS as usize] = [DIRNDL_RED, WHITE, SKY_HAZE];
+/// The `ampel` sprite is this tall (origin on its cell's bottom centre).
+pub const AMPEL_H: i32 = 48;
 
 /// Pebbles in a Steinschlag's telegraph trickle (renderer only) ...
 pub const KIESEL_COUNT: i32 = 3;
@@ -157,6 +170,9 @@ pub struct EntityLooks<'a> {
     pilger_lead: Option<&'a AtlasSprite>,
     gams: Option<&'a AtlasSprite>,
     reisebus: Option<&'a AtlasSprite>,
+    postbus: Option<&'a AtlasSprite>,
+    auto: Option<&'a AtlasSprite>,
+    ampel: Option<&'a AtlasSprite>,
     schwan: Option<&'a AtlasSprite>,
     gelse: Option<&'a AtlasSprite>,
     regattaboot: Option<&'a AtlasSprite>,
@@ -207,6 +223,9 @@ impl<'a> EntityLooks<'a> {
             pilger_lead: s("pilger_lead"),
             gams: s(EnemyKind::Gams.sprite()),
             reisebus: s(EnemyKind::Reisebus.sprite()),
+            postbus: s("postbus"),
+            auto: s(EnemyKind::Auto.sprite()),
+            ampel: s("ampel"),
             schwan: s(EnemyKind::Schwan.sprite()),
             gelse: s(EnemyKind::Gelse.sprite()),
             regattaboot: s(EnemyKind::Regattaboot.sprite()),
@@ -256,6 +275,7 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Schwan => self.schwan,
                 EnemyKind::Gelse => self.gelse,
                 EnemyKind::Regattaboot => self.regattaboot,
+                EnemyKind::Auto => self.auto,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -269,6 +289,7 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Schafbergbahn => self.schafbergbahn,
             EntityKind::Traundl => self.traundl,
             EntityKind::Dampfer => self.dampfer,
+            EntityKind::Ampel => self.ampel,
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -303,6 +324,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Schwan => WHITE,
             EnemyKind::Gelse => OUTLINE,
             EnemyKind::Regattaboot => CREAM,
+            EnemyKind::Auto => DIRNDL_RED,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -317,6 +339,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Schafbergbahn => OUTLINE,
         EntityKind::Traundl => LEATHER_DARK,
         EntityKind::Dampfer => WHITE,
+        EntityKind::Ampel => STONE_GREY,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
@@ -426,6 +449,7 @@ fn draw_entity(
             draw_enemy(game, looks, atlas, fb, cam, e);
         }
         EntityKind::Souvenirstand => draw_souvenirstand(game, looks, atlas, fb, cam, e),
+        EntityKind::Ampel => draw_ampel(game, looks, atlas, fb, cam, e),
         EntityKind::Sign => signs::draw_sign(game, looks, atlas, font, texts, fb, cam, e),
         EntityKind::Checkpoint => draw_checkpoint(game, looks, atlas, fb, cam, e),
         EntityKind::Enemy(_)
@@ -919,14 +943,26 @@ fn draw_enemy(
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
     let lead = is_lead_pilger(game, e);
-    let sprite = match looks.pilger_lead {
-        Some(s) if lead => Some(s),
+    let postbus = is_postbus(game, e);
+    let sprite = match (looks.pilger_lead, looks.postbus) {
+        (Some(s), _) if lead => Some(s),
+        // Until the `postbus` art lands: the yellow grey box.
+        (_, s) if postbus => s,
         _ => looks.sprite(e.kind),
     };
+    let car = e.kind == EntityKind::Enemy(EnemyKind::Auto);
     match sprite {
         Some(s) => {
-            let (name, frame) = pose_anim(pose);
-            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            let (name, frame) = match pose {
+                // Postbus 150 at its stop: doors shut, faces at the windows.
+                Pose::Fotostopp { .. } if postbus => ("halt", None),
+                _ => pose_anim(pose),
+            };
+            let anim = match AUTO_DRIVE.get(usize::from(e.count % AUTO_LOOKS)) {
+                Some(look) if car => s.anim(look).or_else(|| s.anim(name)),
+                _ => s.anim(name),
+            }
+            .unwrap_or(&s.anims[0]);
             let tick = match frame {
                 Some(i) => i as u32 * anim.ticks,
                 None => game.frame(),
@@ -940,6 +976,7 @@ fn draw_enemy(
                         | EnemyKind::Schneekugel
                         | EnemyKind::Reisebus
                         | EnemyKind::Regattaboot
+                        | EnemyKind::Auto
                 ) | EntityKind::Defeated(
                     EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
                 )
@@ -963,10 +1000,22 @@ fn draw_enemy(
             };
             let bx = e.x.to_px() - cam.x + sx;
             let by = e.y.to_px() - cam.y + full - h + sy;
-            fb.fill_rect(bx, by, w, h, grey_box_colour(e.kind));
+            let colour = if postbus {
+                MOZART_YELLOW
+            } else if car {
+                AUTO_GREY_BOX[usize::from(e.count % AUTO_LOOKS)]
+            } else {
+                grey_box_colour(e.kind)
+            };
+            fb.fill_rect(bx, by, w, h, colour);
             fb.outline_rect(bx, by, w, h, OUTLINE);
-            if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
+            if postbus {
+                draw_postbus_marks(fb, bx, by, w, h, pose, game.frame());
+            } else if e.kind == EntityKind::Enemy(EnemyKind::Reisebus) {
                 draw_bus_marks(fb, bx, by, w, h, pose, game.frame());
+            }
+            if car {
+                draw_car_marks(fb, bx, by, w, h);
             }
             if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
                 draw_boat_marks(fb, bx, by, w, h, pose, game.frame());
@@ -1027,6 +1076,105 @@ fn draw_high_c(
             fb.fill_rect(x, y, w, h, WHITE);
             fb.outline_rect(x, y, w, h, SILVER_LIGHT);
         }
+    }
+}
+
+/// The anims of a car's looks (D-093), by its spawn index modulo
+/// [`AUTO_LOOKS`]; a missing one falls back to `drive`.
+pub const AUTO_DRIVE: [&str; AUTO_LOOKS as usize] = ["drive_0", "drive_1", "drive_2"];
+
+/// True for a Reisebus placed with `look = "postbus"` (D-097).
+fn is_postbus(game: &Game, e: &Entity) -> bool {
+    e.kind == EntityKind::Enemy(EnemyKind::Reisebus)
+        && e.spawn
+            .and_then(|i| game.level().entities.get(usize::from(i)))
+            .is_some_and(|s| s.look == BusLook::Postbus)
+}
+
+/// The `ampel` anim (and fixed frame) for a light: `rot`, `rotgelb`,
+/// `gruen`, `gruen_blink` (frame 0 lit, 1 dark, from the counter so the
+/// four blinks stay in step with the cars) and `gelb`.
+pub fn ampel_anim(light: AmpelLight) -> (&'static str, Option<usize>) {
+    match light {
+        AmpelLight::Red => ("rot", None),
+        AmpelLight::RedAmber => ("rotgelb", None),
+        AmpelLight::Green => ("gruen", None),
+        AmpelLight::GreenBlink { on } => ("gruen_blink", Some(usize::from(!on))),
+        AmpelLight::Amber => ("gelb", None),
+    }
+}
+
+/// An Ampel (D-093): the `ampel` light (16×48, its origin on the spawner
+/// cell's bottom centre, the kerb) in the anim of its light
+/// ([`jnr_core::enemies::ampel_light`]), never mirrored. Without the
+/// sprite a grey box: a 2 px `m` pole and a `k` housing with three lamps
+/// (red, amber, green; unlit `d`). In the red-and-amber telegraph two
+/// headlights (`Y`) flash in the mouth (every [`BUS_HAZARD_TICKS`]).
+fn draw_ampel(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let Some(light) = jnr_core::enemies::ampel_light(e, game.level(), game.tuning()) else {
+        return;
+    };
+    let (x, y) = feet_on_screen(e, cam);
+    match looks.ampel {
+        Some(s) => {
+            let (name, frame) = ampel_anim(light);
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            let tick = frame.map_or(game.frame(), |i| i as u32 * anim.ticks);
+            draw_sprite(fb, atlas, s, anim, tick, x, y, false);
+        }
+        None => {
+            let top = y - AMPEL_H;
+            fb.fill_rect(x - 1, top + 18, 2, AMPEL_H - 18, STONE_GREY);
+            fb.fill_rect(x - 4, top, 8, 18, OUTLINE);
+            let lit = match light {
+                AmpelLight::Red => [true, false, false],
+                AmpelLight::RedAmber => [true, true, false],
+                AmpelLight::Green | AmpelLight::GreenBlink { on: true } => [false, false, true],
+                AmpelLight::GreenBlink { on: false } => [false, false, false],
+                AmpelLight::Amber => [false, true, false],
+            };
+            for (i, (on, colour)) in lit
+                .into_iter()
+                .zip([DIRNDL_RED, MOZART_YELLOW, MEADOW])
+                .enumerate()
+            {
+                let c = if on { colour } else { SLATE_DARK };
+                fb.fill_rect(x - 2, top + 1 + 6 * i as i32, 4, 4, c);
+            }
+        }
+    }
+    if light == AmpelLight::RedAmber && (game.frame() / BUS_HAZARD_TICKS).is_multiple_of(2) {
+        fb.fill_rect(x - 6, y - 7, 2, 2, MOZART_YELLOW);
+        fb.fill_rect(x + 4, y - 7, 2, 2, MOZART_YELLOW);
+    }
+}
+
+/// A car grey box's marks (until the `auto` art lands): a `d` window band
+/// over the upper half (the cabin) and a `Y` headlight at the front (left).
+fn draw_car_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32) {
+    fb.fill_rect(x + 4, y + 2, w - 8, h / 2 - 2, SLATE_DARK);
+    fb.fill_rect(x + 1, y + h - 5, 2, 2, MOZART_YELLOW);
+}
+
+/// The Postbus grey box's marks (until the `postbus` art lands, D-097):
+/// the Reisebus's window band and blinking hazard lights, and at its halt
+/// faces (`e`) pressed to the windows instead of photo flashes.
+fn draw_postbus_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Pose, tick: u32) {
+    match pose {
+        Pose::Fotostopp { .. } => {
+            draw_bus_marks(fb, x, y, w, h, Pose::Idle, tick);
+            for i in 1..=5 {
+                fb.fill_rect(x + i * w / 6 - 1, y + 5, 3, 3, SKIN_LIGHT);
+            }
+        }
+        _ => draw_bus_marks(fb, x, y, w, h, pose, tick),
     }
 }
 
@@ -2356,5 +2504,211 @@ mod tests {
             Some(PINE_DARK),
             "the rower is drawn"
         );
+    }
+
+    // ------------------------------------------------- traffic (M6, E36)
+
+    /// A 24x10 traffic grey box (ground in row 9): Resi on a one-way
+    /// shelter (row 6, columns 1–4) at column 2, above the lane; plus
+    /// `marks` (an Ampel in cell (12, 8) has its lamps at x 198–201 from
+    /// y 97).
+    fn traffic_game(marks: &[(usize, usize, char)]) -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 24])
+            .collect();
+        rows[6][1..=4].fill('-');
+        rows[5][2] = 'P';
+        for &(r, c, ch) in marks {
+            rows[r][c] = ch;
+        }
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"-\" = \"oneway\"\n\
+             \"a\" = {{ entity = \"ampel\" }}\n\
+             \"y\" = {{ entity = \"reisebus\", stop = 2, look = \"postbus\" }}\n\
+             \"r\" = {{ entity = \"reisebus\", stop = 2 }}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    /// The grey-box Ampel's three lamps (top red, middle amber, bottom
+    /// green) at the counter frames of D-093's cycle, the headlights in
+    /// the mouth during red and amber, and its cars in front of it in their
+    /// looks' colours.
+    #[test]
+    fn the_grey_box_ampel_shows_its_cycle_and_the_cars_their_looks() {
+        let mut g = traffic_game(&[(8, 12, 'a')]);
+        let lamps = |fb: &Framebuffer| [98, 104, 110].map(|y| fb.get(200, y).unwrap());
+        let dark = SLATE_DARK;
+        g.step(InputFrame::NONE);
+        let fb = rendered(&g);
+        assert_eq!(
+            lamps(&fb),
+            [DIRNDL_RED, MOZART_YELLOW, dark],
+            "red and amber"
+        );
+        assert_eq!(fb.get(194, 137), Some(MOZART_YELLOW), "headlights");
+        assert_eq!(fb.get(204, 137), Some(MOZART_YELLOW));
+        assert_eq!(fb.get(200, 120), Some(STONE_GREY), "the pole");
+        for _ in 1..41 {
+            g.step(InputFrame::NONE);
+        }
+        let fb = rendered(&g);
+        assert_eq!(lamps(&fb), [dark, dark, MEADOW], "green");
+        assert_ne!(fb.get(194, 137), Some(MOZART_YELLOW), "no headlights");
+        for _ in 41..112 {
+            g.step(InputFrame::NONE);
+        }
+        // Cars spawned at 30, 70, 110 (2 px/frame left from x 194).
+        let fb = rendered(&g);
+        for (x, colour) in [(32, DIRNDL_RED), (112, WHITE), (192, SKY_HAZE)] {
+            assert_eq!(fb.get(x + 16, 141), Some(colour), "car at {x}");
+            assert_eq!(fb.get(x + 10, 134), Some(SLATE_DARK), "its windows");
+        }
+        assert_eq!(fb.get(200, 141), Some(SKY_HAZE), "in front of the pole");
+        for _ in 112..159 {
+            g.step(InputFrame::NONE);
+        }
+        let a = g.entities().iter().find(|e| e.kind == EntityKind::Ampel);
+        assert_eq!(
+            jnr_core::enemies::ampel_light(a.unwrap(), g.level(), g.tuning()),
+            Some(AmpelLight::GreenBlink { on: false })
+        );
+        assert_eq!(lamps(&rendered(&g)), [dark, dark, dark], "a blink off");
+    }
+
+    #[test]
+    fn ampel_anims_follow_the_light() {
+        assert_eq!(ampel_anim(AmpelLight::Red), ("rot", None));
+        assert_eq!(ampel_anim(AmpelLight::RedAmber), ("rotgelb", None));
+        assert_eq!(ampel_anim(AmpelLight::Green), ("gruen", None));
+        assert_eq!(
+            ampel_anim(AmpelLight::GreenBlink { on: true }),
+            ("gruen_blink", Some(0))
+        );
+        assert_eq!(
+            ampel_anim(AmpelLight::GreenBlink { on: false }),
+            ("gruen_blink", Some(1))
+        );
+        assert_eq!(ampel_anim(AmpelLight::Amber), ("gelb", None));
+        let catalog = include_str!("../../../docs/sprite-catalog.md");
+        let names = [
+            "rot",
+            "rotgelb",
+            "gruen",
+            "gruen_blink",
+            "gelb",
+            "halt",
+            "postbus",
+            "ampel",
+        ];
+        for n in names.into_iter().chain(AUTO_DRIVE) {
+            assert!(
+                catalog.contains(&format!("`{n}`")),
+                "`{n}` not in the catalog"
+            );
+        }
+    }
+
+    /// With the sprites: the Ampel in its light's anim at the cell's
+    /// bottom centre; a car's look by its spawn index (`drive_2` missing:
+    /// `drive`); the Postbus's `drive` and its `halt` at its stop.
+    #[test]
+    fn traffic_sprites_pick_their_anims() {
+        use crate::testutil::{A, B, C};
+        let s = |name: &str, anims: Vec<(&str, u32, Vec<jnr_artkit::Image>)>| {
+            crate::testutil::sprite(name, (8, 24), true, anims)
+        };
+        let atlas = crate::testutil::atlas(&[
+            s(
+                "ampel",
+                vec![
+                    ("rot", 1, vec![solid('c')]),
+                    ("rotgelb", 1, vec![solid('a')]),
+                    ("gruen", 1, vec![solid('b')]),
+                ],
+            ),
+            s(
+                "auto",
+                vec![
+                    ("drive", 4, vec![solid('c')]),
+                    ("drive_0", 4, vec![solid('a')]),
+                    ("drive_1", 4, vec![solid('b')]),
+                ],
+            ),
+            s(
+                "postbus",
+                vec![
+                    ("drive", 4, vec![solid('b')]),
+                    ("halt", 16, vec![solid('a')]),
+                ],
+            ),
+        ]);
+        let texts = Texts::default();
+        let shown = |g: &Game, x: i32, y: i32| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            fb.get(x, y)
+        };
+        let mut g = traffic_game(&[(8, 12, 'a')]);
+        g.step(InputFrame::NONE);
+        assert_eq!(shown(&g, 200, 130), Some(A), "rotgelb");
+        for _ in 1..112 {
+            g.step(InputFrame::NONE);
+        }
+        assert_eq!(shown(&g, 194, 125), Some(B), "gruen (left of the car)");
+        // Car feet at x + 14 (the 16 px frames centred there).
+        assert_eq!(shown(&g, 46, 140), Some(A), "drive_0");
+        assert_eq!(shown(&g, 126, 140), Some(B), "drive_1");
+        assert_eq!(shown(&g, 206, 140), Some(C), "drive_2 falls back to drive");
+        // The Postbus (stop 2) at column 10 triggers at once (152 px) and
+        // halts after 60 + 22 frames at column 8.
+        let mut g = traffic_game(&[(8, 10, 'y')]);
+        for _ in 0..70 {
+            g.step(InputFrame::NONE);
+        }
+        let bus = |g: &Game| {
+            let b = g
+                .entities()
+                .iter()
+                .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Reisebus));
+            (b.unwrap().feet().0.to_px(), b.unwrap().pose(g.tuning()))
+        };
+        let (x, pose) = bus(&g);
+        assert_eq!(pose, Some(Pose::Drive));
+        assert_eq!(shown(&g, x, 140), Some(B), "drives");
+        for _ in 70..100 {
+            g.step(InputFrame::NONE);
+        }
+        let (x, pose) = bus(&g);
+        assert!(matches!(pose, Some(Pose::Fotostopp { .. })));
+        assert_eq!(shown(&g, x, 140), Some(A), "halt");
+    }
+
+    /// Until the `postbus` art lands its grey box is yellow, and at its
+    /// halt faces fill the windows instead of photo flashes.
+    #[test]
+    fn the_grey_box_postbus_is_yellow_with_faces_at_its_halt() {
+        let body = |g: &Game| rendered(g).get(150, 140);
+        let face = |g: &Game| rendered(g).get(140, 122);
+        let mut post = traffic_game(&[(8, 10, 'y')]);
+        let mut plain = traffic_game(&[(8, 10, 'r')]);
+        for _ in 0..100 {
+            post.step(InputFrame::NONE);
+            plain.step(InputFrame::NONE);
+        }
+        assert_eq!(body(&post), Some(MOZART_YELLOW));
+        assert_eq!(face(&post), Some(SKIN_LIGHT), "faces at the halt");
+        assert_eq!(body(&plain), Some(WHITE), "a plain bus stays white");
+        assert_ne!(face(&plain), Some(SKIN_LIGHT));
+        for _ in 100..215 {
+            post.step(InputFrame::NONE);
+        }
+        assert_ne!(face(&post), Some(SKIN_LIGHT), "driving on: no faces");
     }
 }

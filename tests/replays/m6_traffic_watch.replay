@@ -1,0 +1,15 @@
+# Ampel #1 watched from above (D-093's intro): Resi climbs the terrace and
+# stops on its right half, where the Ampel's counter starts (within 12
+# tiles, its cell on screen). Red and amber, green, and its two cars drive
+# beneath her and off screen; she drops down behind them and walks past
+# the mouth in the red phase (once she is right of it, it pauses for good).
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_x>=470
+---
+R 60
+RJ 30
+R 80
+- 220
+R 140

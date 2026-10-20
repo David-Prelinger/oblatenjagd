@@ -6,7 +6,9 @@
 //! spawner and its snow globes ([`EntityKind::Souvenirstand`],
 //! [`EnemyKind::Schneekugel`]), the Operettensänger's high-C column
 //! ([`high_c_column`]), the lake enemies of Stage 6 (Schwan, Gelse,
-//! Regattaboot) and defeated enemies ([`EntityKind::Defeated`]),
+//! Regattaboot), the Ampel spawner and its cars of Stage 7
+//! ([`EntityKind::Ampel`], [`EnemyKind::Auto`]) and defeated enemies
+//! ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -274,6 +276,8 @@ impl Entity {
                 state::HOP => Pose::Hop,
                 _ => Pose::Idle,
             },
+            // A car always drives (D-093).
+            EntityKind::Enemy(EnemyKind::Auto) => Pose::Drive,
             EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => match self.state {
                 state::TELEGRAPH | state::RESTART => Pose::Telegraph,
                 state::DRIVE => Pose::Drive,
@@ -417,6 +421,10 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
         }
         EnemyKind::Gelse => {
             update_gelse(e, ctx);
+            None
+        }
+        EnemyKind::Auto => {
+            update_auto(e, ctx);
             None
         }
         EnemyKind::Bienenschwarm => {
@@ -900,25 +908,31 @@ fn update_reisebus(e: &mut Entity, ctx: &UpdateCtx) {
 /// must be free (D-070, D-080).
 pub const REISEBUS_LANE_TILES: i32 = 24;
 
-/// `levels lint` (D-070, D-080): every Reisebus's and Regattaboot's lane,
-/// the rows of its hitbox from its own cells to [`REISEBUS_LANE_TILES`]
-/// tiles left of its parked hitbox (or the level's left edge), holds no
-/// solid or one-way tile, so it is never seen driving through a wall (one
-/// problem per vehicle, naming the first blocked cell from the left); and a
-/// bus's photo stop (`stop`) must not lie left of the level's left edge.
-/// Water tiles in a boat's lane are fine.
+/// `levels lint` (D-070, D-080, D-093): every Reisebus's and Regattaboot's
+/// lane, the rows of its hitbox from its own cells to
+/// [`REISEBUS_LANE_TILES`] tiles left of its parked hitbox (or the level's
+/// left edge), holds no solid or one-way tile, so it is never seen driving
+/// through a wall (one problem per vehicle, naming the first blocked cell
+/// from the left); and a bus's photo stop (`stop`) must not lie left of the
+/// level's left edge. Water tiles in a boat's lane are fine. An Ampel's
+/// lane is its cars' (the hitbox of a car at its spawn point, through the
+/// cell it pokes into, to 24 tiles left of the spawner).
 pub fn reisebus_lane_problems(level: &Level, t: &Tuning) -> Vec<String> {
     let mut problems = Vec::new();
     for (i, s) in level.entities.iter().enumerate() {
         let decision = match s.kind {
             SpawnKind::Reisebus => "D-070",
             SpawnKind::Regattaboot => "D-080",
+            SpawnKind::Ampel => "D-093",
             _ => continue,
         };
         let name = s.kind.name();
-        let Some(bus) = Entity::from_spawn(s, i, t) else {
+        let Some(mut bus) = Entity::from_spawn(s, i, t) else {
             continue;
         };
+        if s.kind == SpawnKind::Ampel {
+            bus = new_car(&bus, 0, t);
+        }
         let (rows, last) = (tile_of(bus.y)..=s.row, tile_of(bus.right() - Fx(1)));
         let first = tile_of(bus.x - TILE.mul_int(REISEBUS_LANE_TILES)).max(0);
         let blocked = (first..=last).find_map(|c| {
@@ -1767,6 +1781,149 @@ pub(crate) fn hit_by_projectile(e: &mut Entity, t: &Tuning) -> Option<u32> {
         _ => None,
     }
 }
+// ------------------------------------------------------------ M6 (D-093)
+
+/// What an Ampel shows (D-093; the renderer's `ampel` anims).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AmpelLight {
+    /// `rot`: red (also before the player first qualified).
+    Red,
+    /// `rotgelb`: red and amber together, the telegraph.
+    RedAmber,
+    /// `gruen`: green, the cars pull out.
+    Green,
+    /// `gruen_blink`: the four green blinks; `on` is frame 0 (lit).
+    GreenBlink {
+        /// The green lamp is lit (frame 0 of `gruen_blink`).
+        on: bool,
+    },
+    /// `gelb`: amber.
+    Amber,
+}
+
+/// The light of Ampel `e` at its counter frame f (`count`): red and amber
+/// for f < `ampel_telegraph`, green to the last car's spawn plus a gap
+/// (`ampel_telegraph + cars × ampel_gap`), then `ampel_blink` frames of
+/// blinks (each an eighth of it on, then an eighth off), `ampel_amber` of
+/// amber, and red for the rest of the period. Red while it never counted.
+/// `None` for every other entity.
+pub fn ampel_light(e: &Entity, level: &Level, t: &Tuning) -> Option<AmpelLight> {
+    if e.kind != EntityKind::Ampel {
+        return None;
+    }
+    if e.state == state::WAITING {
+        return Some(AmpelLight::Red);
+    }
+    let et = &t.enemies;
+    let cars = e
+        .spawn
+        .and_then(|i| level.entities.get(usize::from(i)))
+        .map_or(0, |s| s.cars);
+    let f = e.count;
+    let green_end = et.ampel_telegraph + u16::from(cars) * et.ampel_gap;
+    let blink_end = green_end + et.ampel_blink;
+    Some(if f < et.ampel_telegraph {
+        AmpelLight::RedAmber
+    } else if f < green_end {
+        AmpelLight::Green
+    } else if f < blink_end {
+        let half = (et.ampel_blink / 8).max(1);
+        AmpelLight::GreenBlink {
+            on: ((f - green_end) / half).is_multiple_of(2),
+        }
+    } else if f < blink_end + et.ampel_amber {
+        AmpelLight::Amber
+    } else {
+        AmpelLight::Red
+    })
+}
+
+/// Where Ampel `e`'s cars start (hitbox top left): `auto_spawn_dx` px into
+/// the spawner cell, the `auto_hitbox` bottom on the cell's bottom (the
+/// road). A car keeps it as `base_x`/`base_y`, which tells its Ampel.
+fn car_spawn_point(e: &Entity, t: &Tuning) -> (Fx, Fx) {
+    let et = &t.enemies;
+    (
+        e.x + Fx::from_px(et.auto_spawn_dx),
+        e.y + e.h - Fx::from_px(et.auto_hitbox[1]),
+    )
+}
+
+/// Car `k` (0-based) of a green from Ampel `e`, driving left. Its `count`
+/// is `k`: the renderer's look (`drive_0` … `drive_2`, D-093).
+fn new_car(e: &Entity, k: u16, t: &Tuning) -> Entity {
+    let [w, h] = t.enemies.auto_hitbox;
+    let (x, y) = car_spawn_point(e, t);
+    let mut car = Entity::new(
+        EntityKind::Enemy(EnemyKind::Auto),
+        x,
+        y,
+        Fx::from_px(w),
+        Fx::from_px(h),
+    );
+    car.dir = -1;
+    car.vx = -t.enemies.auto_speed;
+    car.count = k;
+    car
+}
+
+/// The car (0-based, of `cars`) an Ampel sends at its counter frame `f`:
+/// at f = `ampel_telegraph` + k × `ampel_gap` for k < `cars`.
+fn car_at(f: u16, cars: u8, t: &Tuning) -> Option<u16> {
+    let et = &t.enemies;
+    let d = f.checked_sub(et.ampel_telegraph)?;
+    let gap = et.ampel_gap.max(1);
+    (d % gap == 0 && d / gap < u16::from(cars)).then_some(d / gap)
+}
+
+/// The Ampel spawner (D-093). Its counter (`count`, the frame f of its
+/// `period`) runs only while the player's centre is left of the spawner
+/// cell's centre, within `range` tiles (horizontally, centre to centre),
+/// and the cell is fully on screen ([`UpdateCtx::fully_on_screen`], the
+/// Souvenirstand rule of D-069); otherwise it pauses with its light kept
+/// ([`ampel_light`]). On the first such frame it starts at `phase`. At
+/// f = `ampel_telegraph` + k × `ampel_gap` (k < `cars`) it returns car k
+/// to spawn, unless `ampel_max_alive` of its cars are alive
+/// (`UpdateCtx::cars`, by their spawn point) or the car's hitbox would
+/// overlap the player's: then that car is skipped.
+pub(crate) fn update_ampel(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    let t = ctx.tuning;
+    let s = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))?;
+    let left_of = ctx.player_cx < e.x + e.w.div_int(2);
+    let in_range = player_distance_px(e, ctx) <= i32::from(s.range) * TILE_PX;
+    if !(left_of && in_range && ctx.fully_on_screen(&e.hitbox())) {
+        return None;
+    }
+    let period = s.period.max(1);
+    e.count = if e.state == state::WAITING {
+        s.phase % period
+    } else {
+        (e.count + 1) % period
+    };
+    e.state = state::COUNTING;
+    let k = car_at(e.count, s.cars, t)?;
+    let origin = car_spawn_point(e, t);
+    let alive = ctx.cars.iter().filter(|&&c| c == origin).count();
+    if alive >= usize::from(t.enemies.ampel_max_alive) {
+        return None;
+    }
+    let car = new_car(e, k, t);
+    (!car.hitbox().overlaps(&ctx.player_box)).then_some(car)
+}
+
+/// A car (D-093) drives left at `auto_speed`, ignoring tiles, enemies and
+/// platforms; it never stops or turns, and is removed once its right edge
+/// is left of the screen.
+fn update_auto(e: &mut Entity, ctx: &UpdateCtx) {
+    e.vx = -ctx.tuning.enemies.auto_speed;
+    e.x += e.vx;
+    if e.right() <= ctx.screen_left {
+        e.removed = true;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

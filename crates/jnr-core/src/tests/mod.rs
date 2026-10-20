@@ -21,6 +21,7 @@ mod route;
 mod schafbergbahn;
 mod swim;
 mod testbed;
+mod traffic;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
 

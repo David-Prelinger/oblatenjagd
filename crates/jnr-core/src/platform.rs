@@ -837,6 +837,8 @@ mod tests {
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
+            cars: 0,
+            look: Default::default(),
         };
         assert_eq!(initial_state(&spawn([8, -5])), car::WAIT_LOWER);
         assert_eq!(initial_state(&spawn([8, 0])), car::WAIT_LOWER);

@@ -59,5 +59,6 @@ const FINISH_FRAME: u32 = 731;
 /// M5 E26: `camera.autoscroll_*`; M5 E27: the `[swim]` keys and the hashed
 /// `swimming`/`leaving_water`/`swim_frames`; M5 E32:
 /// `camera.autoscroll_settle_speed`/`autoscroll_catch_up_speed`; M5 E34:
-/// `camera.autoscroll_ground_y`/`autoscroll_top`; route and frame unchanged).
-const FINISH_HASH: u64 = 0x1381_f68a_5014_83e7;
+/// `camera.autoscroll_ground_y`/`autoscroll_top`; M6 E36: the
+/// `enemies.ampel_*` and `auto_*` keys; route and frame unchanged).
+const FINISH_HASH: u64 = 0xc50a_ecb4_05ea_7c12;

@@ -260,11 +260,14 @@ pub enum SpawnKind {
     Gelse,
     /// Enemy `regattaboot` (the Reisebus's machine on the water, D-080).
     Regattaboot,
+    /// An `ampel` traffic-light spawner at a side street's mouth that sends
+    /// out `auto` cars (`period`, `cars`, `phase`, `range`; D-093).
+    Ampel,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 30] = [
+    pub const ALL: [SpawnKind; 31] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -295,6 +298,7 @@ impl SpawnKind {
         SpawnKind::Schwan,
         SpawnKind::Gelse,
         SpawnKind::Regattaboot,
+        SpawnKind::Ampel,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -331,6 +335,7 @@ impl SpawnKind {
             SpawnKind::Schwan => "schwan",
             SpawnKind::Gelse => "gelse",
             SpawnKind::Regattaboot => "regattaboot",
+            SpawnKind::Ampel => "ampel",
         }
     }
 
@@ -372,6 +377,28 @@ impl SignStyle {
             SignStyle::Street => "street",
             SignStyle::Bus => "bus",
             SignStyle::Ortsende => "ortsende",
+        }
+    }
+}
+
+/// The look of a `reisebus` (`look = "..."`, D-097): renderer only, the
+/// bus behaves the same in every look.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BusLook {
+    /// The coach of St. Wolfgang (`reisebus`, the default).
+    #[default]
+    Reisebus,
+    /// Postbus 150 (`postbus`, with a `halt` anim at its stop; Strobl).
+    Postbus,
+}
+
+impl BusLook {
+    /// The look for a `look` value; `None` if unknown.
+    pub fn from_name(name: &str) -> Option<BusLook> {
+        match name {
+            "reisebus" => Some(BusLook::Reisebus),
+            "postbus" => Some(BusLook::Postbus),
+            _ => None,
         }
     }
 }
@@ -427,20 +454,29 @@ pub struct EntitySpawn {
     /// `lead = true` on a `pilger`: the group leader's sprite
     /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
     pub lead: bool,
-    /// A `steinschlag`'s or `souvenirstand`'s counter period in frames
-    /// (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
+    /// A `steinschlag`'s, `souvenirstand`'s or `ampel`'s counter period in
+    /// frames (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
     /// [`DEFAULT_STEINSCHLAG_PERIOD`] by default; with `phase` = 0 or
-    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period).
+    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period; an
+    /// `ampel`: [`AMPEL_PERIOD_RANGE`] and at least [`ampel_min_period`],
+    /// [`DEFAULT_AMPEL_PERIOD`] by default, `phase` 0 or
+    /// [`ampel_min_phase`]..period).
     pub period: u16,
-    /// A `steinschlag`'s or `souvenirstand`'s range in tiles (`range = N`,
-    /// [`STEINSCHLAG_RANGE_TILES`]; [`DEFAULT_STEINSCHLAG_RANGE`] /
-    /// [`DEFAULT_SOUVENIRSTAND_RANGE`] by default): its counter runs while
-    /// the player is this close.
+    /// A `steinschlag`'s, `souvenirstand`'s or `ampel`'s range in tiles
+    /// (`range = N`, [`STEINSCHLAG_RANGE_TILES`] / [`AMPEL_RANGE_TILES`];
+    /// [`DEFAULT_STEINSCHLAG_RANGE`] / [`DEFAULT_SOUVENIRSTAND_RANGE`] /
+    /// [`DEFAULT_AMPEL_RANGE`] by default): its counter runs while the
+    /// player is this close.
     pub range: u8,
     /// A `reisebus`'s photo stop (`stop = N`, [`REISEBUS_STOP_TILES`]):
     /// it halts once its hitbox is N tiles left of where it was parked
     /// (D-070). 0 = no stop (the default).
     pub stop: u8,
+    /// An `ampel`'s cars per green (`cars = N`, [`AMPEL_CARS`],
+    /// [`DEFAULT_AMPEL_CARS`] by default; 0 for every other kind).
+    pub cars: u8,
+    /// A `reisebus`'s look (`look = "postbus"`, D-097; renderer only).
+    pub look: BusLook,
 }
 
 /// Allowed `stop` of a `reisebus`, in tiles (D-070).
@@ -467,6 +503,47 @@ pub const DEFAULT_SOUVENIRSTAND_RANGE: u8 = 8;
 /// `period`), so the first globe of an approach always follows the whole
 /// 30-frame telegraph (`enemies.souvenirstand_telegraph` < this, validated).
 pub const SOUVENIRSTAND_MIN_PHASE: u16 = 31;
+
+/// Allowed `period` of an `ampel`, in frames (D-093; also at least
+/// [`ampel_min_period`] for its `cars`).
+pub const AMPEL_PERIOD_RANGE: std::ops::RangeInclusive<u16> = 300..=600;
+/// An `ampel`'s `period` without the field, in frames.
+pub const DEFAULT_AMPEL_PERIOD: u16 = 400;
+/// Allowed `cars` of an `ampel` (cars per green).
+pub const AMPEL_CARS: std::ops::RangeInclusive<u8> = 1..=4;
+/// An `ampel`'s `cars` without the field.
+pub const DEFAULT_AMPEL_CARS: u8 = 3;
+/// Allowed `range` of an `ampel`, in tiles.
+pub const AMPEL_RANGE_TILES: std::ops::RangeInclusive<u8> = 6..=16;
+/// An `ampel`'s `range` without the field, in tiles.
+pub const DEFAULT_AMPEL_RANGE: u8 = 12;
+/// The level rules' Ampel cycle (D-093), in frames: red and amber (the
+/// telegraph) ...
+pub const AMPEL_TELEGRAPH: u16 = 30;
+/// ... a car every this many frames of green ...
+pub const AMPEL_GAP: u16 = 40;
+/// ... four green blinks ...
+pub const AMPEL_BLINK: u16 = 64;
+/// ... amber ...
+pub const AMPEL_AMBER: u16 = 30;
+/// ... and at least this much red at the spawner. `Tuning::parse` keeps
+/// `enemies.ampel_telegraph`, `_gap`, `_blink` and `_amber` at most these,
+/// so the level rules hold for any tuning.
+pub const AMPEL_MIN_RED: u16 = 120;
+
+/// The shortest `period` of an `ampel` with `cars` cars: telegraph, green,
+/// blinks, amber and [`AMPEL_MIN_RED`] frames of red (D-093: 30 + cars ×
+/// 40 + 64 + 30 + 120).
+pub const fn ampel_min_period(cars: u8) -> u16 {
+    ampel_min_phase(cars) + AMPEL_BLINK + AMPEL_AMBER + AMPEL_MIN_RED
+}
+
+/// The smallest non-zero `phase` of an `ampel` with `cars` cars: the end of
+/// its green (30 + cars × 40), so the first car of an approach always
+/// follows the whole telegraph.
+pub const fn ampel_min_phase(cars: u8) -> u16 {
+    AMPEL_TELEGRAPH + cars as u16 * AMPEL_GAP
+}
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -708,6 +785,8 @@ enum LegendEntry {
         period: u16,
         range: u8,
         stop: u8,
+        cars: u8,
+        look: BusLook,
     },
 }
 
@@ -802,6 +881,8 @@ impl Level {
                         period,
                         range,
                         stop,
+                        cars,
+                        look,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -823,6 +904,8 @@ impl Level {
                             period: *period,
                             range: *range,
                             stop: *stop,
+                            cars: *cars,
+                            look: *look,
                         });
                     }
                 }
@@ -1007,7 +1090,8 @@ fn parse_legend_value(
                     &["entity", "tile", "period", "phase", "range"]
                 }
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
-                (_, Some("reisebus")) => &["entity", "tile", "stop"],
+                (_, Some("reisebus")) => &["entity", "tile", "stop", "look"],
+                (_, Some("ampel")) => &["entity", "tile", "period", "cars", "phase", "range"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -1249,23 +1333,44 @@ fn parse_entity(
         MAX_SWARM_DY_PX
     };
     let dy = int_field("dy", -i64::from(max_dy)..=i64::from(max_dy))?.unwrap_or(0) as i32;
+    let ampel = kind == SpawnKind::Ampel;
+    let (period_range, period_default) = if ampel {
+        (AMPEL_PERIOD_RANGE, DEFAULT_AMPEL_PERIOD)
+    } else {
+        (STEINSCHLAG_PERIOD_RANGE, DEFAULT_STEINSCHLAG_PERIOD)
+    };
     let period = int_field(
         "period",
-        i64::from(*STEINSCHLAG_PERIOD_RANGE.start())..=i64::from(*STEINSCHLAG_PERIOD_RANGE.end()),
+        i64::from(*period_range.start())..=i64::from(*period_range.end()),
     )?
-    .map_or(DEFAULT_STEINSCHLAG_PERIOD, |n| n as u16);
+    .map_or(period_default, |n| n as u16);
+    let (range_tiles, range_default) = match kind {
+        SpawnKind::Ampel => (AMPEL_RANGE_TILES, DEFAULT_AMPEL_RANGE),
+        SpawnKind::Souvenirstand => (STEINSCHLAG_RANGE_TILES, DEFAULT_SOUVENIRSTAND_RANGE),
+        _ => (STEINSCHLAG_RANGE_TILES, DEFAULT_STEINSCHLAG_RANGE),
+    };
     let range = int_field(
         "range",
-        i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
+        i64::from(*range_tiles.start())..=i64::from(*range_tiles.end()),
     )?
-    .map_or(
-        if kind == SpawnKind::Souvenirstand {
-            DEFAULT_SOUVENIRSTAND_RANGE
-        } else {
-            DEFAULT_STEINSCHLAG_RANGE
-        },
-        |n| n as u8,
-    );
+    .map_or(range_default, |n| n as u8);
+    let cars = if ampel {
+        int_field(
+            "cars",
+            i64::from(*AMPEL_CARS.start())..=i64::from(*AMPEL_CARS.end()),
+        )?
+        .map_or(DEFAULT_AMPEL_CARS, |n| n as u8)
+    } else {
+        0
+    };
+    let look = match string_field(key, t, "look")? {
+        None => BusLook::default(),
+        Some(l) => BusLook::from_name(l).ok_or_else(|| {
+            ParseError::new(format!(
+                "legend \"{key}\": unknown look \"{l}\" (expected reisebus or postbus)"
+            ))
+        })?,
+    };
     let stop = int_field(
         "stop",
         i64::from(*REISEBUS_STOP_TILES.start())..=i64::from(*REISEBUS_STOP_TILES.end()),
@@ -1289,6 +1394,21 @@ fn parse_entity(
             period - 1
         )));
     }
+    if ampel {
+        let min_period = ampel_min_period(cars);
+        if period < min_period {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": an ampel with {cars} cars needs a period of at least {min_period} frames (30 + cars × 40 + 64 + 30 + 120: at least 2 s of red, D-093), got {period}"
+            )));
+        }
+        let min_phase = ampel_min_phase(cars);
+        if phase != 0 && !(min_phase..period).contains(&phase) {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": an ampel's phase must be 0 or {min_phase}..={} (after its green, below its period {period}), so its first car follows the whole telegraph",
+                period - 1
+            )));
+        }
+    }
     Ok(LegendEntry::Entity {
         tile,
         kind,
@@ -1307,6 +1427,8 @@ fn parse_entity(
         period,
         range,
         stop,
+        cars,
+        look,
     })
 }
 
@@ -1369,6 +1491,8 @@ grid = '''
             period: DEFAULT_STEINSCHLAG_PERIOD,
             range: DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
+            cars: 0,
+            look: BusLook::Reisebus,
         }
     }
 

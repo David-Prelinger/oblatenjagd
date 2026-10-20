@@ -1,0 +1,54 @@
+# Grey-box test level for the M6 traffic (task E36, D-093, D-097; not part
+# of the journey; side camera, the Stage 7 framing: street top row 15).
+# Sections (columns): start 0-8 with an `M`-box at 5 (row 11); a one-way
+# terrace (row 12, 3 tiles above the street) at 10-19 over Ampel #1's lane;
+# Ampel #1 (2 cars, period 400, range 12) in cell (28, row 14): its counter
+# starts once Resi is within 12 tiles, i.e. on the terrace's right half, so
+# its first cars drive beneath her; she drops behind them and walks past
+# the mouth in red. Shelter C (one-way, row 12) at 36-39 halfway along
+# Ampel #2's lane; Ampel #2 (3 cars, period 400, phase 250) in cell
+# (46, row 14): its counter starts at a red frame when its cell is fully on
+# screen (Resi at ~36), so the first approach can cross in red, and the
+# next green is waited out on the shelter (or bounced across, three cars
+# 80 px apart). Shelter B (row 12) at 56-59 and Postbus 150 (`reisebus`,
+# `look = "postbus"`, `stop = 4`) parked at 64-67: it triggers while Resi
+# is on shelter B, halts at 60-63 for 120 frames (faces at the windows),
+# then drives on beneath the shelter. Goal at 82. Every lane (Ampel cars:
+# row 14, 24 tiles left of the spawner; the bus: rows 13-14) is clear
+# (`levels lint`, D-070/D-093).
+# Replays: tests/replays/m6_traffic_*.replay.
+
+[meta]
+id = "m6_traffic"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"a" = { entity = "ampel", cars = 2 }
+"b" = { entity = "ampel", cars = 3, phase = 250 }
+"y" = { entity = "reisebus", stop = 4, look = "postbus" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+..........................................................................................
+.....M....................................................................................
+..........----------................----................----..............................
+..........................................................................................
+..P.........................a.................b.................y.................G.......
+##########################################################################################
+##########################################################################################
+'''

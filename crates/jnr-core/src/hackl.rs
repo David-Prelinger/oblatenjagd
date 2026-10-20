@@ -74,7 +74,9 @@ impl EnemyKind {
             | EnemyKind::Schneekugel
             | EnemyKind::Schwan
             | EnemyKind::Gelse => AxeHit::Defeat,
-            EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot => AxeHit::Bounce,
+            EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot | EnemyKind::Auto => {
+                AxeHit::Bounce
+            }
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }
@@ -112,7 +114,8 @@ impl Entity {
             | EntityKind::Steinschlag
             | EntityKind::SteinDebris
             | EntityKind::Souvenirstand
-            | EntityKind::SchneekugelScherben => AxeHit::Pass,
+            | EntityKind::SchneekugelScherben
+            | EntityKind::Ampel => AxeHit::Pass,
             EntityKind::Stein => AxeHit::Shatter,
         }
     }

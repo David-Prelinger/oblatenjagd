@@ -69,7 +69,7 @@ impl Popup {
     }
 }
 
-/// The enemy types of Stages 1–6.
+/// The enemy types of Stages 1–7.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -112,6 +112,9 @@ pub enum EnemyKind {
     /// `regattaboot`: the Reisebus's machine on the water: parked, then
     /// races left; not stompable, its masthead only bounces (D-080).
     Regattaboot,
+    /// `auto`: a car from an Ampel's side street, drives left ignoring
+    /// tiles; not stompable, its roof only bounces (D-093).
+    Auto,
 }
 
 impl EnemyKind {
@@ -124,6 +127,7 @@ impl EnemyKind {
                 | EnemyKind::Bienenschwarm
                 | EnemyKind::Reisebus
                 | EnemyKind::Regattaboot
+                | EnemyKind::Auto
         )
     }
 
@@ -160,7 +164,9 @@ impl EnemyKind {
             // it), the Regattaboot sails in the surface row ignoring tiles.
             | EnemyKind::Schwan
             | EnemyKind::Gelse
-            | EnemyKind::Regattaboot => false,
+            | EnemyKind::Regattaboot
+            // A car ignores tiles like the bus (D-097).
+            | EnemyKind::Auto => false,
         }
     }
 
@@ -201,6 +207,7 @@ impl EnemyKind {
             EnemyKind::Schwan => "schwan",
             EnemyKind::Gelse => "gelse",
             EnemyKind::Regattaboot => "regattaboot",
+            EnemyKind::Auto => "auto",
         }
     }
 
@@ -223,6 +230,7 @@ impl EnemyKind {
             EnemyKind::Schwan => 14,
             EnemyKind::Gelse => 15,
             EnemyKind::Regattaboot => 16,
+            EnemyKind::Auto => 17,
         }
     }
 }
@@ -299,6 +307,11 @@ pub enum EntityKind {
     /// way (moored for good at the far end), with a paddle-wheel hurt zone
     /// while it travels ([`crate::platform::paddle_wheel`], D-077).
     Dampfer,
+    /// An Ampel: the traffic-light spawner in the road-level air cell of a
+    /// side street's mouth (no collision; its hitbox is that cell) that
+    /// sends out [`EnemyKind::Auto`] cars, see
+    /// [`crate::enemies::update_ampel`] (D-093).
+    Ampel,
 }
 
 impl EntityKind {
@@ -325,6 +338,7 @@ impl EntityKind {
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Traundl => Some("traundl"),
             EntityKind::Dampfer => Some("dampfer"),
+            EntityKind::Ampel => Some("ampel"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -377,6 +391,7 @@ impl EntityKind {
             EntityKind::Schafbergbahn => 23,
             EntityKind::Traundl => 24,
             EntityKind::Dampfer => 25,
+            EntityKind::Ampel => 26,
         }
     }
 
@@ -663,6 +678,8 @@ impl Entity {
             SpawnKind::Souvenirstand => {
                 Entity::at_feet(EntityKind::Souvenirstand, feet_x, feet_y, [16, 16])
             }
+            // The spawner cell (the cars start 2 px into it, D-093).
+            SpawnKind::Ampel => Entity::at_feet(EntityKind::Ampel, feet_x, feet_y, [16, 16]),
             // The 4-tile (64 px) bus starts in its cell and covers the 3
             // to its right; the hitbox is centred under the sprite and
             // `base_x` keeps where it was parked (its photo stop, D-070).
@@ -825,6 +842,7 @@ impl Entity {
             }
             EntityKind::Steinschlag => crate::enemies::update_steinschlag(self, ctx),
             EntityKind::Souvenirstand => crate::enemies::update_souvenirstand(self, ctx),
+            EntityKind::Ampel => crate::enemies::update_ampel(self, ctx),
             EntityKind::Stein => {
                 crate::enemies::update_stein(self, map, t);
                 None
@@ -925,6 +943,9 @@ pub(crate) struct UpdateCtx<'a> {
     pub player_cx: Fx,
     /// The player's hitbox top (a Gelse aims just below it, D-079).
     pub player_top: Fx,
+    /// The player's hitbox (an Ampel skips a car that would spawn inside
+    /// her, D-093).
+    pub player_box: Aabb,
     /// The player's hitbox while standing on the ground (a tile or a car),
     /// `None` in the air (a Festungsbahn waits for its rider).
     pub player_standing: Option<crate::physics::Aabb>,
@@ -936,6 +957,10 @@ pub(crate) struct UpdateCtx<'a> {
     /// (`base_x`, `base_y`): a Souvenirstand counts its own by its spawn
     /// point (D-069: at most `souvenirstand_max_alive`).
     pub globes: &'a [(Fx, Fx)],
+    /// Where every car alive at the start of the update started
+    /// (`base_x`, `base_y`): an Ampel counts its own by its spawn point
+    /// (D-093: at most `ampel_max_alive`).
+    pub cars: &'a [(Fx, Fx)],
 }
 
 impl UpdateCtx<'_> {
@@ -1018,6 +1043,7 @@ mod tests {
                 EntityKind::SchneekugelScherben => 23,
                 EntityKind::Traundl => 24,
                 EntityKind::Dampfer => 25,
+                EntityKind::Ampel => 26,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -1048,6 +1074,7 @@ mod tests {
             EntityKind::SchneekugelScherben,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Ampel,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -1079,6 +1106,7 @@ mod tests {
                 EnemyKind::Schwan => 14,
                 EnemyKind::Gelse => 15,
                 EnemyKind::Regattaboot => 16,
+                EnemyKind::Auto => 17,
             }
         }
         let enemies = [
@@ -1099,6 +1127,7 @@ mod tests {
             EnemyKind::Schwan,
             EnemyKind::Gelse,
             EnemyKind::Regattaboot,
+            EnemyKind::Auto,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1158,10 +1187,17 @@ mod tests {
             level: &level,
             player_cx: Fx::ZERO,
             player_top: Fx::ZERO,
+            player_box: Aabb {
+                x: Fx::ZERO,
+                y: Fx::ZERO,
+                w: Fx::ZERO,
+                h: Fx::ZERO,
+            },
             player_standing: None,
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
             globes: &[],
+            cars: &[],
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());
@@ -1199,6 +1235,8 @@ mod tests {
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
+            cars: 0,
+            look: Default::default(),
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());

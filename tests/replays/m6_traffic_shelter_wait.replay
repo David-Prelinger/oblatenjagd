@@ -1,0 +1,18 @@
+# A green waited out on shelter C: Resi jumps onto the shelter halfway
+# along Ampel #2's lane and stands there through its red, the next red and
+# amber and the whole green: its three cars drive beneath her. In the
+# following red she walks on past the mouth.
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_x>=760
+---
+R 60
+RJ 30
+R 80
+- 220
+R 170
+RJ 24
+R 8
+- 400
+R 140
