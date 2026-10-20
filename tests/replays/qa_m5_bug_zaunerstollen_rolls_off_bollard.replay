@@ -1,0 +1,65 @@
+# QA M5 BUG (level, game-design.md Stage 6 sec. 5 "Zaunerstollen perch":
+# "The Zaunerstollen rolls right, turns at the bollard and comes back over
+# Resi standing under the box"): the 1-up never comes back. As
+# wolfgangsee_traundl up the perch (3434, x 2777, Gelse #3 stomped), then
+# she steps under the Z-box (col 175, row 4) and bumps it with a standing
+# jump (3470) and stays there. The Zaunerstollen emerges on top of the box
+# (y 54), rolls right along the box's top, drops off its right edge and
+# lands on the TOP of the 1-high bollard (col 177, row 7: item bottom
+# y 112 at x ~2839, frame ~3533) instead of meeting its side, rolls on
+# off the bollard's right edge (the perch's end) and falls into the lake
+# (~3561): lost. The original wolfgangsee_traundl only gets it because
+# Resi stands on the bollard itself and catches it as it drops.
+# Expected (correct): standing under the box she gets the 1-up
+# (ExtraLife, lives 4).
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 event=ExtraLife lives=4
+---
+# --- the first 3434 frames of wolfgangsee_traundl.replay ---
+RB 64
+RBJ 36
+RB 953
+L 4
+RB 8
+- 4
+RB 4
+DJ 1
+- 3
+RB 389
+RBJ 20
+RB 18
+RBJ 31
+RB 1025
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 10
+- 31
+R 1
+J 24
+- 80
+# --- handwritten ---
+R 18
+- 10
+J 30
+- 178
