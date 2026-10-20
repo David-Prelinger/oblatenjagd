@@ -241,7 +241,7 @@ Starting layout (pixel-artist and engine may move dots and labels by a few px to
 | St. Gilgen | 100, 70 | left |
 | Brunnwinkl | 124, 58 | above-left: right-aligned to x 114, rows 43–51 (art-director M2; clear of the Salzburg label and the Salzburg→St. Gilgen route); alternate slot rows 20–28 on a map screen that ends with a big Resi on the St. Gilgen dot (M3) |
 | Falkenstein | 152, 68 | below, ending at x ≤ 172 (clear of the St. Wolfgang marker); alternate slot ending at x 170 on the map screen that ends on St. Wolfgang: for a big Resi since M3, for every form since M4 (D-072) |
-| St. Wolfgang | 180, 84 | right; alternate slot raised to top y 69 (same x) on map screens that end on Wolfgangsee or Strobl, for every form (M4, D-072) |
+| St. Wolfgang | 180, 84 | right; alternate slot raised to top y 59 (same x; 69 would touch „Café Zauner", D-072 addendum) on map screens that end on Wolfgangsee or Strobl, for every form (M4, D-072) |
 | Wolfgangsee (on the lake) | 196, 108 | below |
 | Strobl | 232, 118 | right |
 | Bad Ischl | 276, 98 | above (engine, E10: below touches the Strobl label); alternate slot **left of the dot**, right-aligned to x 266, top y 94, on the map screen that ends on Bad Ischl (Strobl → Bad Ischl), for every form (M6, D-098: Resi waiting on the dot covers the primary) |
