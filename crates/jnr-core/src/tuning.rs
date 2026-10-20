@@ -534,6 +534,53 @@ pub struct EnemyTuning {
     /// Renderer: the camera flashes in its windows switch on and off every
     /// this many frames of the photo stop (off first).
     pub reisebus_flash_frames: u16,
+    /// Schwan (D-078).
+    pub schwan_hitbox: [i32; 2],
+    /// Its hitbox bottom floats this many px below the water line.
+    pub schwan_float_px: i32,
+    /// A rested swan at home that is fully on screen triggers when the
+    /// player is this close (px) ...
+    pub schwan_range: i32,
+    /// ... telegraphs (the hiss) for this many frames ...
+    pub schwan_telegraph: u16,
+    /// ... charges towards the player's side at this speed ...
+    pub schwan_charge_speed: Fx,
+    /// ... for this many frames ...
+    pub schwan_charge_frames: u16,
+    /// ... returns home at this speed ...
+    pub schwan_return_speed: Fx,
+    /// ... and rests this many frames before it can trigger again.
+    pub schwan_rest: u16,
+    /// Gelse (D-079).
+    pub gelse_hitbox: [i32; 2],
+    /// Frames fully on screen before it hunts (the telegraph) ...
+    pub gelse_wait: u16,
+    /// ... frames of the hunt, then it leaves (harmless) ...
+    pub gelse_hunt: u16,
+    /// ... per-axis velocity change per frame towards its target ...
+    pub gelse_accel: Fx,
+    /// ... per-axis speed limit ...
+    pub gelse_speed: Fx,
+    /// ... the target: the player's hitbox centre x and her hitbox top +
+    /// this many px.
+    pub gelse_target_dy: i32,
+    /// A leaving Gelse flies straight up at this speed.
+    pub gelse_leave_speed: Fx,
+    /// Regattaboot (D-080).
+    pub regattaboot_hitbox: [i32; 2],
+    /// Its hitbox bottom (the keel) lies this many px below the water line.
+    pub regattaboot_keel_px: i32,
+    /// The masthead part `[w, h]` px: centred on the hitbox, from its top
+    /// down; the only part that bounces a falling player. Below it the body
+    /// spans the whole hitbox width (D-080 refinement, E29).
+    pub regattaboot_mast: [i32; 2],
+    /// The parked boat telegraphs when the player is this close to its
+    /// centre (px) and it is fully on screen ...
+    pub regattaboot_trigger: i32,
+    /// ... for this many frames ...
+    pub regattaboot_telegraph: u16,
+    /// ... then races left at this speed, ignoring tiles.
+    pub regattaboot_speed: Fx,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -662,6 +709,97 @@ impl EnemyTuning {
 }
 
 impl EnemyTuning {
+    /// The M5 lake enemies' keys (Schwan, Gelse, Regattaboot; D-078 …
+    /// D-080).
+    fn validate_lake(&self) -> Result<(), ParseError> {
+        for (name, [w, h], max_w, max_h) in [
+            ("enemies.schwan_hitbox", self.schwan_hitbox, 24, 24),
+            ("enemies.gelse_hitbox", self.gelse_hitbox, TILE_PX, TILE_PX),
+            (
+                "enemies.regattaboot_hitbox",
+                self.regattaboot_hitbox,
+                32,
+                64,
+            ),
+        ] {
+            if !(1..=max_w).contains(&w) || !(1..=max_h).contains(&h) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..={max_w} px wide and 1..={max_h} px high"
+                )));
+            }
+        }
+        let max = Fx::from_px(12);
+        for (name, v) in [
+            ("enemies.schwan_charge_speed", self.schwan_charge_speed),
+            ("enemies.schwan_return_speed", self.schwan_return_speed),
+            ("enemies.gelse_speed", self.gelse_speed),
+            ("enemies.gelse_leave_speed", self.gelse_leave_speed),
+            ("enemies.regattaboot_speed", self.regattaboot_speed),
+        ] {
+            if v <= Fx::ZERO || v >= max {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be > 0 and < 12 px/frame (3072)"
+                )));
+            }
+        }
+        let [mw, mh] = self.regattaboot_mast;
+        let [bw, bh] = self.regattaboot_hitbox;
+        if !(1..=bw).contains(&mw) || !(1..bh).contains(&mh) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.regattaboot_mast must be 1..=hitbox wide and 1..hitbox high",
+            ));
+        }
+        if self.gelse_accel <= Fx::ZERO || self.gelse_accel > self.gelse_speed {
+            return Err(ParseError::new(
+                "tuning.toml: need 0 < enemies.gelse_accel <= gelse_speed",
+            ));
+        }
+        for (name, v, range) in [
+            (
+                "enemies.schwan_float_px",
+                self.schwan_float_px,
+                0..=self.schwan_hitbox[1],
+            ),
+            (
+                "enemies.regattaboot_keel_px",
+                self.regattaboot_keel_px,
+                0..=TILE_PX.min(self.regattaboot_hitbox[1]),
+            ),
+            ("enemies.gelse_target_dy", self.gelse_target_dy, 0..=32),
+            (
+                "enemies.schwan_range",
+                self.schwan_range,
+                TILE_PX..=crate::camera::SCREEN_W,
+            ),
+            (
+                "enemies.regattaboot_trigger",
+                self.regattaboot_trigger,
+                0..=crate::camera::SCREEN_W * 2,
+            ),
+        ] {
+            if !range.contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be {}..={} px",
+                    range.start(),
+                    range.end()
+                )));
+            }
+        }
+        for (name, v) in [
+            ("enemies.schwan_telegraph", self.schwan_telegraph),
+            ("enemies.schwan_charge_frames", self.schwan_charge_frames),
+            ("enemies.schwan_rest", self.schwan_rest),
+            ("enemies.gelse_wait", self.gelse_wait),
+            ("enemies.gelse_hunt", self.gelse_hunt),
+            ("enemies.regattaboot_telegraph", self.regattaboot_telegraph),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -841,6 +979,7 @@ impl Tuning {
         self.enemies.validate_m3(self.player.max_fall_speed)?;
         self.enemies.validate_singer_and_stand()?;
         self.enemies.validate_reisebus()?;
+        self.enemies.validate_lake()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1520,5 +1659,85 @@ mod tests {
         let missing = REAL.replace("reisebus_restart = ", "#reisebus_restart = ");
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("reisebus_restart"), "{err}");
+    }
+
+    #[test]
+    fn lake_enemy_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-078: 16×12, 4 px under the water line, 96 px, 32 / 1.5 × 64 /
+        // 0.5 / 60.
+        assert_eq!((t.schwan_hitbox, t.schwan_float_px), ([16, 12], 4));
+        assert_eq!(t.schwan_range, 96, "< 97 px, 6 tiles");
+        assert_eq!(
+            (
+                t.schwan_telegraph,
+                t.schwan_charge_speed,
+                t.schwan_charge_frames,
+                t.schwan_return_speed,
+                t.schwan_rest
+            ),
+            (32, Fx(384), 64, Fx(128), 60)
+        );
+        // D-079: 8×8, wait 60, hunt 480, 1/32 px/frame², 0.75 px/frame,
+        // her top + 4, leaves at 1 px/frame.
+        assert_eq!(t.gelse_hitbox, [8, 8]);
+        assert_eq!((t.gelse_wait, t.gelse_hunt), (60, 480));
+        assert_eq!((t.gelse_accel, t.gelse_speed), (Fx(8), Fx(192)));
+        assert_eq!((t.gelse_target_dy, t.gelse_leave_speed), (4, Fx(256)));
+        // D-080: 24×56 with the keel 12 px under the water line, < 161 px,
+        // 60 frames, 1.5 px/frame.
+        assert_eq!(
+            (t.regattaboot_hitbox, t.regattaboot_keel_px),
+            ([24, 56], 12)
+        );
+        assert_eq!(t.regattaboot_mast, [8, 20], "the masthead part");
+        assert_eq!(
+            (
+                t.regattaboot_trigger,
+                t.regattaboot_telegraph,
+                t.regattaboot_speed
+            ),
+            (160, 60, Fx(384))
+        );
+        for (field, bad, named) in [
+            ("schwan_hitbox", "[25, 12]", "schwan_hitbox"),
+            ("schwan_hitbox", "[16, 0]", "schwan_hitbox"),
+            ("schwan_float_px", "-1", "schwan_float_px"),
+            ("schwan_float_px", "13", "schwan_float_px"),
+            ("schwan_range", "15", "schwan_range"),
+            ("schwan_range", "321", "schwan_range"),
+            ("schwan_telegraph", "0", "schwan_telegraph"),
+            ("schwan_charge_speed", "0", "schwan_charge_speed"),
+            ("schwan_charge_speed", "3072", "schwan_charge_speed"),
+            ("schwan_charge_frames", "0", "schwan_charge_frames"),
+            ("schwan_return_speed", "0", "schwan_return_speed"),
+            ("schwan_rest", "0", "schwan_rest"),
+            ("gelse_hitbox", "[17, 8]", "gelse_hitbox"),
+            ("gelse_wait", "0", "gelse_wait"),
+            ("gelse_hunt", "0", "gelse_hunt"),
+            ("gelse_accel", "0", "gelse_accel"),
+            ("gelse_accel", "193", "gelse_accel"),
+            ("gelse_speed", "0", "gelse_speed"),
+            ("gelse_speed", "3072", "gelse_speed"),
+            ("gelse_target_dy", "-1", "gelse_target_dy"),
+            ("gelse_target_dy", "33", "gelse_target_dy"),
+            ("gelse_leave_speed", "0", "gelse_leave_speed"),
+            ("regattaboot_hitbox", "[33, 56]", "regattaboot_hitbox"),
+            ("regattaboot_hitbox", "[24, 65]", "regattaboot_hitbox"),
+            ("regattaboot_keel_px", "-1", "regattaboot_keel_px"),
+            ("regattaboot_mast", "[0, 20]", "regattaboot_mast"),
+            ("regattaboot_mast", "[25, 20]", "regattaboot_mast"),
+            ("regattaboot_mast", "[8, 56]", "regattaboot_mast"),
+            ("regattaboot_keel_px", "17", "regattaboot_keel_px"),
+            ("regattaboot_trigger", "-1", "regattaboot_trigger"),
+            ("regattaboot_trigger", "641", "regattaboot_trigger"),
+            ("regattaboot_telegraph", "0", "regattaboot_telegraph"),
+            ("regattaboot_speed", "0", "regattaboot_speed"),
+            ("regattaboot_speed", "3072", "regattaboot_speed"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(named), "{field} = {bad}: {err}");
+        }
     }
 }

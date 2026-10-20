@@ -1,0 +1,17 @@
+# The regatta boat triggers when Resi drops from the walkway into the
+# trench (a diver: her top 26 px under the water line, the keel 12 px):
+# it telegraphs 60 frames and races left over her without touching her.
+# She climbs out and reaches the goal.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = complete frames=1080..1080 deaths=0 no_event=Hurt
+---
+RB 325
+RBJ 36
+RB 136
+RBJ 36
+RB 208
+- 200
+RBJ 30
+RB 120

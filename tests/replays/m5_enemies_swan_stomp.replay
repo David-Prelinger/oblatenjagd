@@ -1,0 +1,11 @@
+# Running off the deck edge into the gap onto swan #2 (it hisses at her
+# and has just started its charge): a stomp from the air, 200 points
+# (chain start 200) and „Beleidigt!“; the bounce carries her onto the
+# far deck.
+level  = m5_enemies
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Stomped score=200 no_event=Hurt player_x>=600
+---
+RB 240
+- 30

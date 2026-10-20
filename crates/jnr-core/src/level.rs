@@ -230,11 +230,17 @@ pub enum SpawnKind {
     Schafbergbahn,
     /// Enemy `reisebus` (stop-and-go charger, `stop`: D-070).
     Reisebus,
+    /// Enemy `schwan` (floats in a surface-row water cell, charges, D-078).
+    Schwan,
+    /// Enemy `gelse` (hovers, then homes in; never enters water, D-079).
+    Gelse,
+    /// Enemy `regattaboot` (the Reisebus's machine on the water, D-080).
+    Regattaboot,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 25] = [
+    pub const ALL: [SpawnKind; 28] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -260,6 +266,9 @@ impl SpawnKind {
         SpawnKind::Souvenirstand,
         SpawnKind::Schafbergbahn,
         SpawnKind::Reisebus,
+        SpawnKind::Schwan,
+        SpawnKind::Gelse,
+        SpawnKind::Regattaboot,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -291,6 +300,9 @@ impl SpawnKind {
             SpawnKind::Souvenirstand => "souvenirstand",
             SpawnKind::Schafbergbahn => "schafbergbahn",
             SpawnKind::Reisebus => "reisebus",
+            SpawnKind::Schwan => "schwan",
+            SpawnKind::Gelse => "gelse",
+            SpawnKind::Regattaboot => "regattaboot",
         }
     }
 
@@ -927,7 +939,7 @@ fn parse_legend_value(
                 (tile, Some(name)) => {
                     let tile = match tile {
                         None => Tile::default(),
-                        Some(tile_name) => entity_tile(key, tile_name, tile_names)?,
+                        Some(tile_name) => entity_tile(key, name, tile_name, tile_names)?,
                     };
                     parse_entity(key, name, tile, t)
                 }
@@ -981,10 +993,20 @@ fn parse_tile(
 }
 
 /// The tile under an entity (`tile = "..."` on an entity entry): it must
-/// not collide, so the entity behaves exactly as on empty air.
-fn entity_tile(key: &str, name: &str, tile_names: &mut Vec<String>) -> Result<Tile, ParseError> {
+/// not collide, so the entity behaves exactly as on empty air. A `schwan`
+/// floats in a surface-row water cell (D-078), so it may also stand on
+/// water.
+fn entity_tile(
+    key: &str,
+    entity: &str,
+    name: &str,
+    tile_names: &mut Vec<String>,
+) -> Result<Tile, ParseError> {
     match parse_tile(key, name, None, tile_names)? {
         LegendEntry::Tile(t) if t.kind == TileKind::Empty => Ok(t),
+        // E27: | Swim (and widen to every entity on a swim cell: Oblaten,
+        // regatta boats, D-076)
+        LegendEntry::Tile(t) if t.kind == TileKind::Water && entity == "schwan" => Ok(t),
         _ => Err(ParseError::new(format!(
             "legend \"{key}\": the tile under an entity must not collide (\"{name}\" does; use a decorative tile such as wall_village_bg or railing_bg)"
         ))),

@@ -48,6 +48,8 @@ pub enum Popup {
     Ballast,
     /// `popup.bravo` („Bravo!"), a defeated Operettensänger (D-068).
     Bravo,
+    /// `popup.beleidigt` („Beleidigt!"), a defeated Schwan (D-078).
+    Beleidigt,
 }
 
 impl Popup {
@@ -62,11 +64,12 @@ impl Popup {
             Popup::Hackl => Some("popup.hackl"),
             Popup::Ballast => Some("popup.ballast"),
             Popup::Bravo => Some("popup.bravo"),
+            Popup::Beleidigt => Some("popup.beleidigt"),
         }
     }
 }
 
-/// The enemy types of Stages 1–5.
+/// The enemy types of Stages 1–6.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -100,6 +103,15 @@ pub enum EnemyKind {
     /// `reisebus`: parked, then drives left (optional photo stop); not
     /// stompable, its roof only bounces (D-070).
     Reisebus,
+    /// `schwan`: floats on the surface, charges a close player from its
+    /// home point and returns (D-078).
+    Schwan,
+    /// `gelse`: hovers until it has been on screen a while, then homes in
+    /// on the player for a limited time; never enters water (D-079).
+    Gelse,
+    /// `regattaboot`: the Reisebus's machine on the water: parked, then
+    /// races left; not stompable, its masthead only bounces (D-080).
+    Regattaboot,
 }
 
 impl EnemyKind {
@@ -108,7 +120,10 @@ impl EnemyKind {
     pub const fn stompable(self) -> bool {
         !matches!(
             self,
-            EnemyKind::Fiaker | EnemyKind::Bienenschwarm | EnemyKind::Reisebus
+            EnemyKind::Fiaker
+                | EnemyKind::Bienenschwarm
+                | EnemyKind::Reisebus
+                | EnemyKind::Regattaboot
         )
     }
 
@@ -120,7 +135,8 @@ impl EnemyKind {
 
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker, Gams, Operettensänger; D-046, D-058, D-068),
+    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan; D-046, D-058,
+    /// D-068, D-078),
     /// else 0. Also the index of
     /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
@@ -129,7 +145,8 @@ impl EnemyKind {
             | EnemyKind::Blasmusiker
             | EnemyKind::EBiker
             | EnemyKind::Gams
-            | EnemyKind::Operettensaenger => 1,
+            | EnemyKind::Operettensaenger
+            | EnemyKind::Schwan => 1,
             _ => 0,
         }
     }
@@ -150,6 +167,9 @@ impl EnemyKind {
             EnemyKind::Operettensaenger => "operettensaenger",
             EnemyKind::Schneekugel => "schneekugel",
             EnemyKind::Reisebus => "reisebus",
+            EnemyKind::Schwan => "schwan",
+            EnemyKind::Gelse => "gelse",
+            EnemyKind::Regattaboot => "regattaboot",
         }
     }
 
@@ -169,6 +189,9 @@ impl EnemyKind {
             EnemyKind::Operettensaenger => 11,
             EnemyKind::Schneekugel => 12,
             EnemyKind::Reisebus => 13,
+            EnemyKind::Schwan => 14,
+            EnemyKind::Gelse => 15,
+            EnemyKind::Regattaboot => 16,
         }
     }
 }
@@ -325,6 +348,7 @@ impl EntityKind {
                 Popup::Hackl => h.u8(5),
                 Popup::Ballast => h.u8(6),
                 Popup::Bravo => h.u8(7),
+                Popup::Beleidigt => h.u8(8),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -570,6 +594,36 @@ impl Entity {
                 feet_y,
                 e.reisebus_hitbox,
             ),
+            // Floats on the surface (D-078): spawned in a surface-row water
+            // cell, its hitbox bottom `schwan_float_px` below the water
+            // line (the cell's top). `base_x` is its home point.
+            SpawnKind::Schwan => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Schwan),
+                feet_x,
+                tile.mul_int(s.row) + Fx::from_px(e.schwan_float_px),
+                e.schwan_hitbox,
+            ),
+            // Hitbox centred in its cell (D-079).
+            SpawnKind::Gelse => {
+                let [_, h] = e.gelse_hitbox;
+                let centre_y = tile.mul_int(s.row) + tile.div_int(2);
+                Entity::at_feet(
+                    EntityKind::Enemy(EnemyKind::Gelse),
+                    feet_x,
+                    centre_y + Fx::from_px(h).div_int(2),
+                    e.gelse_hitbox,
+                )
+            }
+            // The 2-tile (32 px) boat starts in its cell and covers the one
+            // to its right, in the surface row (D-080): the hitbox centred
+            // under the sprite, its bottom (the keel) `regattaboot_keel_px`
+            // below the water line (the cell's top).
+            SpawnKind::Regattaboot => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Regattaboot),
+                cell_x + tile,
+                tile.mul_int(s.row) + Fx::from_px(e.regattaboot_keel_px),
+                e.regattaboot_hitbox,
+            ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -791,6 +845,8 @@ pub(crate) struct UpdateCtx<'a> {
     pub level: &'a crate::Level,
     /// The player's hitbox centre x.
     pub player_cx: Fx,
+    /// The player's hitbox top (a Gelse aims just below it, D-079).
+    pub player_top: Fx,
     /// The player's hitbox while standing on the ground (a tile or a car),
     /// `None` in the air (a Festungsbahn waits for its rider).
     pub player_standing: Option<crate::physics::Aabb>,
@@ -925,6 +981,9 @@ mod tests {
                 EnemyKind::Operettensaenger => 11,
                 EnemyKind::Schneekugel => 12,
                 EnemyKind::Reisebus => 13,
+                EnemyKind::Schwan => 14,
+                EnemyKind::Gelse => 15,
+                EnemyKind::Regattaboot => 16,
             }
         }
         let enemies = [
@@ -942,6 +1001,9 @@ mod tests {
             EnemyKind::Operettensaenger,
             EnemyKind::Schneekugel,
             EnemyKind::Reisebus,
+            EnemyKind::Schwan,
+            EnemyKind::Gelse,
+            EnemyKind::Regattaboot,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1000,6 +1062,7 @@ mod tests {
             tuning: &t,
             level: &level,
             player_cx: Fx::ZERO,
+            player_top: Fx::ZERO,
             player_standing: None,
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
@@ -1061,6 +1124,10 @@ mod tests {
                     SpawnKind::Bienenschwarm => 1,
                     // The resting rock sits 2 px above the niche floor.
                     SpawnKind::Steinschlag => 2,
+                    // A swan floats 4 px under its cell's top (the water
+                    // line), a boat's keel 12 px; a Gelse is centred.
+                    SpawnKind::Schwan => 12,
+                    SpawnKind::Regattaboot | SpawnKind::Gelse => 4,
                     _ => 0,
                 };
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");

@@ -8,6 +8,7 @@ mod flow;
 mod goal;
 mod hackl;
 mod items;
+mod lake_enemies;
 mod m2;
 mod m3;
 mod m4;
