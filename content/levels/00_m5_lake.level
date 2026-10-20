@@ -1,0 +1,63 @@
+# Grey-box test level for the M5 integration (M5 task E30; not part of the
+# journey): every M5 kind inside an auto-scroll zone over swim water.
+# 152 x 17 like Stage 6: decks on row 11, the swim-water surface on row 12
+# (`see_wasser`, `see_wasser_tief` below), the lake bed on row 16
+# (`seegrund`). `autoscroll = [8, 114]`: the scroll starts when Resi's
+# centre passes column 17 and ends at camera column 114; the goal at 144
+# is past to + 20 = 134. Sections (columns): the quay (`kai`) 0-17, start
+# at 2; the Dampfer in cell (18, 11), `to = [16, 0]` (hull 18-27, moored
+# at 34-43, flush with the pier `steg` 44-49), swan #1 (30) under its way;
+# open water 50-67 with swan #2 (60) and a dive line of Oblaten on row 15
+# (52-57); a raft 68-71; Traundl A (73, `to = [6, 0]`: 73-75 <-> 79-81)
+# under the Gelse (78, row 6); the checkpoint raft 82-85 (checkpoint at
+# 83, inside the zone: its respawn holds the scroll for 60 frames);
+# Traundl B (87, `to = [6, 0]`: 87-89 <-> 93-95); a pier 96-99; open
+# water 100-133 with the Regattaboot at 130 (its lane 106-129 clear); the
+# Strobl quay from 134 (1 tile above the water: a held jump-out), goal 144.
+# Replays: tests/replays/m5_lake_*.replay.
+
+[meta]
+id = "m5_lake"
+time_limit = 300
+camera = "autoscroll"
+autoscroll = [8, 114]
+min_jump_window = 5
+
+[legend]
+"K" = "kai"
+"=" = "steg"
+"_" = "seegrund"
+"~" = "see_wasser"
+"w" = "see_wasser_tief"
+"D" = { entity = "dampfer", to = [16, 0] }
+"A" = { entity = "traundl", to = [6, 0] }
+"B" = { entity = "traundl", to = [6, 0] }
+"s" = { entity = "schwan", tile = "see_wasser" }
+"g" = { entity = "gelse" }
+"b" = { entity = "regattaboot", tile = "see_wasser" }
+"o" = { entity = "oblate", tile = "see_wasser_tief" }
+"*" = { entity = "oblate" }
+"C" = { entity = "checkpoint" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+........................................................................................................................................................
+........................................................................................................................................................
+........................................................................................................................................................
+........................................................................................................................................................
+........................................................................................................................................................
+........................................................................................................................................................
+..............................................................................g.........................................................................
+........................................................................................................................................................
+........................................................................................................................................................
+.............................................***.....................**..........................**.....................................................
+..P................................................................................C............................................................G.......
+KKKKKKKKKKKKKKKKKKD.........................======..................====.A........====.B........====..................................KKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKK~~~~~~~~~~~~s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~b~~~KKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKKwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwoooooowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwKKKKKKKKKKKKKKKKKK
+KKKKKKKKKKKKKKKKKK____________________________________________________________________________________________________________________KKKKKKKKKKKKKKKKKK
+'''

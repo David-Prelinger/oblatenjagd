@@ -4,12 +4,12 @@ seed   = 1
 source = solver
 expect = complete frames=859..859 deaths=0
 ---
-RB 325
+RB 319
 RBJ 36
-RB 136
+RB 144
 RBJ 36
-RB 168
+RB 172
 RBJ 36
 RB 24
 RBJ 36
-RB 62
+RB 56

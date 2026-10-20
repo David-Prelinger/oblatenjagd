@@ -3,10 +3,9 @@
 //! 48×16 hull) and the Dampfer (the Festungsbahn's waiting machine, one
 //! way, 20 frames per tile) with its paddle wheel.
 //!
-//! Swim water (E27) doesn't exist yet: the lake here is the lethal
-//! `wolfgangsee_water` (// E27: Swim), and the wheel is tested against a
-//! player standing in a dry dock under the hull (the spec: any player
-//! overlapping it).
+//! The lake is swim water (`see_wasser`, D-076); the wheel is tested here
+//! against a player standing in a dry dock under the hull (the spec: any
+//! player overlapping it) and against a real swimmer in `tests/lake.rs`.
 
 use super::*;
 use crate::platform::{CarTiming, car, car_timing, free_period, free_timing, gondel_progress};
@@ -41,7 +40,7 @@ fn lake_world() -> Level {
         "########################################", // row 16: the lake bed
     ];
     let text = format!(
-        "[meta]\nid = \"boats\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"~\" = \"wolfgangsee_water\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"D\" = {{ entity = \"dampfer\", to = [8, 0] }}\n\"T\" = {{ entity = \"traundl\", to = [6, 0], phase = {PHASE} }}\n[map]\ngrid = '''\n{}\n'''\n",
+        "[meta]\nid = \"boats\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\"~\" = \"see_wasser\"\n\"P\" = {{ entity = \"player_start\" }}\n\"G\" = {{ entity = \"goal\" }}\n\"D\" = {{ entity = \"dampfer\", to = [8, 0] }}\n\"T\" = {{ entity = \"traundl\", to = [6, 0], phase = {PHASE} }}\n[map]\ngrid = '''\n{}\n'''\n",
         rows.join("\n")
     );
     Level::parse(&text).unwrap()
@@ -269,9 +268,8 @@ fn boats_never_despawn_and_reset_with_the_level() {
     board(&mut g, s, 4);
     hold(&mut g, "-", 200);
     assert_eq!(ship(&g).state, car::MOORED);
-    // Walk into the lake (lethal until E27's swim water): the level resets.
-    g.player.x = Fx::from_px(27 * 16);
-    g.player.y = Fx::from_px(200);
+    // A death (out of the level's bottom): the level resets.
+    g.player.y = Fx::from_px(17 * 16);
     g.player.on_ground = false;
     until(&mut g, "-", 400, |g| {
         g.mode() == crate::Mode::Playing && g.deaths() == 1

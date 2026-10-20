@@ -12,8 +12,11 @@
 //!   with at least [`PASS_UNDER_ROWS`] empty rows between its bottom and
 //!   that surface is overhead (Resi passes under it in every form) and is
 //!   skipped; any other face's top must be ≤ [`MAX_FACE_TILES`] tiles above
-//!   the surface, so the edge can only push her onto it, never pin her. A
-//!   face with nothing below it in front (bottomless) is skipped.
+//!   the surface, so the edge can only push her onto it, never pin her;
+//!   over a **swim** surface ≤ [`MAX_FACE_TILES_OVER_SWIM`] (D-084: a
+//!   swimmer climbs it with a held jump-out, and big Resi's reaches only
+//!   ~45 px). A face with nothing below it in front (bottomless) is
+//!   skipped.
 //! - **Checkpoint**: a checkpoint in the zone's columns stands on a deck
 //!   tile (solid or one-way), not on water.
 
@@ -23,6 +26,8 @@ use jnr_core::{Level, SpawnKind, TileKind};
 /// Highest a face in an auto-scroll zone may rise above the surface in
 /// front of it, tiles (D-075).
 pub const MAX_FACE_TILES: i32 = 3;
+/// The same over a swim surface (D-084, [`jnr_core::swim::MAX_FACE_TILES`]).
+pub use jnr_core::swim::MAX_FACE_TILES as MAX_FACE_TILES_OVER_SWIM;
 /// Empty rows under a face that Resi passes through in every form (the
 /// tallest hitbox is 30 px).
 pub const PASS_UNDER_ROWS: i32 = 2;
@@ -37,8 +42,9 @@ fn solid(level: &Level, c: i32, r: i32) -> bool {
 
 /// The surface in front of a face whose top is at row `top`, in column
 /// `c`: the first non-empty cell from `top` down (for water, the top row
-/// of that water body). `None` if the column is empty down to the bottom.
-fn surface(level: &Level, c: i32, top: i32) -> Option<i32> {
+/// of that water body), and whether it is swim water. `None` if the column
+/// is empty down to the bottom.
+fn surface(level: &Level, c: i32, top: i32) -> Option<(i32, bool)> {
     let r = (top..level.height).find(|&r| kind(level, c, r) != Some(TileKind::Empty))?;
     let water = |r: i32| match kind(level, c, r) {
         Some(TileKind::Water | TileKind::Swim) => true,
@@ -50,7 +56,11 @@ fn surface(level: &Level, c: i32, top: i32) -> Option<i32> {
     while top > 0 && water(top - 1) {
         top -= 1;
     }
-    Some(if water(r) { top } else { r })
+    Some(if water(r) {
+        (top, kind(level, c, top) == Some(TileKind::Swim))
+    } else {
+        (r, false)
+    })
 }
 
 /// "row R, column C", 1-based like the other lint messages.
@@ -100,15 +110,28 @@ pub fn problems(level: &Level) -> Vec<String> {
             }
             let bottom = r;
             r += 1;
-            let Some(s) = surface(level, c - 1, top) else {
+            let Some((s, swim)) = surface(level, c - 1, top) else {
                 continue;
             };
             if s - bottom > PASS_UNDER_ROWS {
                 continue;
             }
-            if s - top > MAX_FACE_TILES {
+            let (max, what, why) = if swim {
+                (
+                    MAX_FACE_TILES_OVER_SWIM,
+                    "swim surface",
+                    "a held jump-out lands on it in every form (D-084)",
+                )
+            } else {
+                (
+                    MAX_FACE_TILES,
+                    "surface",
+                    "the screen's edge can push Resi onto it instead of squeezing her (D-075)",
+                )
+            };
+            if s - top > max {
                 out.push(format!(
-                    "left-facing solid face at column {}, rows {}–{}: its top is {} tiles above the surface in front of it ({}); in an auto-scroll zone at most {MAX_FACE_TILES}, so the screen's edge can push Resi onto it instead of squeezing her (D-075)",
+                    "left-facing solid face at column {}, rows {}–{}: its top is {} tiles above the {what} in front of it ({}); in an auto-scroll zone at most {max}, so {why}",
                     c + 1,
                     top + 1,
                     bottom + 1,
@@ -180,8 +203,34 @@ mod tests {
         ]));
         assert_eq!(p.len(), 1, "{p:?}");
         assert!(
-            p[0].contains("4 tiles above the surface in front of it (row 12, column 10)"),
+            p[0].contains("4 tiles above the swim surface in front of it (row 12, column 10)"),
             "{p:?}"
+        );
+    }
+
+    #[test]
+    fn a_face_over_swim_water_is_at_most_2_tiles() {
+        // D-084: 2 tiles above the swim surface is fine, 3 is not (it would
+        // be fine over a deck or lethal water).
+        let face = |rows: usize, water: char| {
+            let mut g: Vec<String> = (0..rows).map(|_| "..........#".to_owned()).collect();
+            g.push(format!("#{}#", water.to_string().repeat(9)));
+            g.push(format!("#{}#", water.to_string().repeat(9)));
+            g.push("##############################".to_owned());
+            g[0].replace_range(0..1, "P");
+            problems(&grid(&g.iter().map(String::as_str).collect::<Vec<_>>()))
+        };
+        assert_eq!(face(2, 's'), Vec::<String>::new());
+        let p = face(3, 's');
+        assert_eq!(p.len(), 1, "{p:?}");
+        assert!(
+            p[0].contains("3 tiles above the swim surface") && p[0].contains("at most 2"),
+            "{p:?}"
+        );
+        assert_eq!(
+            face(3, '~'),
+            Vec::<String>::new(),
+            "lethal water: 3 is fine"
         );
     }
 

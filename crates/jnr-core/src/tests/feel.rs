@@ -714,6 +714,24 @@ fn jump_out_height(power: crate::Power, held: bool) -> Fx {
 }
 
 #[test]
+fn jump_out_heights_bound_the_squeeze_face_over_swim() {
+    // D-084: every form's held jump-out clears a face of
+    // `swim::MAX_FACE_TILES` above the water line; the weakest one would
+    // not clear one tile more.
+    let max = crate::swim::MAX_FACE_TILES * TILE_PX;
+    let weakest = crate::Power::ALL
+        .into_iter()
+        .map(|p| jump_out_height(p, true))
+        .min()
+        .unwrap();
+    assert!(weakest >= Fx::from_px(max), "{weakest:?}");
+    assert!(
+        weakest < Fx::from_px(max + TILE_PX),
+        "{weakest:?}: the limit could be higher"
+    );
+}
+
+#[test]
 fn jump_out_heights_match_the_design() {
     // Held, Normal Resi's feet rise ~53 px above the water (big ~45): a
     // deck 1 tile up is in reach; a tap only ~11 (big ~3).

@@ -1,17 +1,26 @@
-# The regatta boat triggers when Resi drops from the walkway into the
-# trench (a diver: her top 26 px under the water line, the keel 12 px):
-# it telegraphs 60 frames and races left over her without touching her.
-# She climbs out and reaches the goal.
+# The regatta dive (re-cut in E30 for swim water): Resi runs along the
+# walkway and off its end into the water, holding DOWN: she dives to the
+# lake bed in front of the boat. That triggers it (within 160 px and fully
+# on screen); it telegraphs 60 frames and races left over the diver
+# without touching her (its keel 12 px under the water line, her top
+# 42 px). She strokes up twice, jumps out onto the Strobl quay (1 tile up,
+# JUMP held) and reaches the goal. (Before E30: a dry lane with a trench
+# for the diver, complete at frame 1080.)
 level  = m5_enemies
 seed   = 1
 source = handwritten
-expect = complete frames=1080..1080 deaths=0 no_event=Hurt
+expect = complete frames=1110..1110 deaths=0 no_event=Hurt event=Stroke
 ---
 RB 325
 RBJ 36
 RB 136
 RBJ 36
-RB 208
-- 200
-RBJ 30
-RB 120
+RB 200
+D 80
+- 160
+RJ 1
+R 25
+RJ 1
+R 25
+RJ 30
+R 150

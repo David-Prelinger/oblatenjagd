@@ -3,9 +3,9 @@
 //! the Gelse and the Regattaboot, their contact rules (also while Resi
 //! swims), the thrown Hackl against them and the regatta lane lint.
 //!
-//! Until E27's swim water lands the lake is `wolfgangsee_water`
-//! (`TileKind::Water`, lethal): a swimmer or a diver is checked with the
-//! contact rule ([`contact`]) and hitbox geometry instead of a live dive.
+//! The lake is swim water (`see_wasser`, D-076). Live dives against the
+//! lake enemies are in `tests/lake.rs` (E30); here the contact rule
+//! ([`contact`]) and hitbox geometry are checked directly.
 
 use super::*;
 use crate::enemies::{Contact, Pose, contact, regatta_parts, reisebus_lane_problems, state};
@@ -19,8 +19,8 @@ use crate::{EnemyKind, Entity, EntityKind, Fx, Popup, TileKind};
 const LEGEND: &str = r##"
 "#" = "solid"
 "-" = "oneway"
-"~" = "wolfgangsee_water"
-"s" = { entity = "schwan", tile = "wolfgangsee_water" }
+"~" = "see_wasser"
+"s" = { entity = "schwan", tile = "see_wasser" }
 "g" = { entity = "gelse" }
 "b" = { entity = "regattaboot" }
 "r" = { entity = "reisebus" }
@@ -174,7 +174,8 @@ fn while_swimming_every_contact_hurts() {
         contact(EnemyKind::Bienenschwarm, true, false),
         Contact::Hurt
     );
-    // The stub until E27's swimming lands (E30 switches it).
+    // On the quay she doesn't swim (`Game::player_swimming` is
+    // `Player::swimming`, E30).
     let g = game(&world(20, &[]));
     assert!(!g.player_swimming());
 }
@@ -196,15 +197,19 @@ fn axe_classification_of_the_lake_enemies() {
 }
 
 #[test]
-fn only_a_swan_may_float_on_a_water_cell() {
+fn any_entity_may_sit_on_a_swim_cell_none_on_lethal_water() {
+    // D-076 extends D-049 to swim tiles for every entity; lethal water
+    // stays a colliding tile for entities (the D-078 swan-on-water special
+    // case is gone with swim water, E30).
     let ok = world_text(20, &[(12, 10, 's')]);
-    assert!(Level::parse(&ok).is_ok());
-    for entity in ["gelse", "regattaboot", "selfie_tourist"] {
-        let bad = ok.replace(
+    for entity in ["schwan", "gelse", "regattaboot", "selfie_tourist"] {
+        let text = ok.replace(
             "\"s\" = { entity = \"schwan\", tile",
             &format!("\"s\" = {{ entity = \"{entity}\", tile"),
         );
-        let err = Level::parse(&bad).unwrap_err().to_string();
+        assert!(Level::parse(&text).is_ok(), "{entity}");
+        let lethal = text.replace("tile = \"see_wasser\" }", "tile = \"wolfgangsee_water\" }");
+        let err = Level::parse(&lethal).unwrap_err().to_string();
         assert!(err.contains("must not collide"), "{entity}: {err}");
     }
 }
@@ -244,7 +249,7 @@ fn a_swan_floats_4_px_under_the_water_line_8_px_below_the_decks() {
         (s.state, s.pose(g.tuning())),
         (state::HOME, Some(Pose::Idle))
     );
-    assert_eq!(g.tile(20, 12).map(|t| t.kind), Some(TileKind::Water));
+    assert_eq!(g.tile(20, 12).map(|t| t.kind), Some(TileKind::Swim));
 }
 
 #[test]
@@ -551,7 +556,7 @@ fn a_gelse_never_enters_water_and_waits_at_the_water_line_above_a_diver() {
     let diver = (168 + 32, WATER_LINE + 48);
     for k in 0..300 {
         gelse_update(&mut e, &level, diver, (0, 0));
-        assert!(!map.touches(&e.hitbox(), TileKind::Water), "frame {k}");
+        assert!(!map.touches(&e.hitbox(), TileKind::Swim), "frame {k}");
     }
     assert_eq!(
         e.y + e.h,
@@ -579,7 +584,7 @@ fn a_gelse_is_stopped_at_the_side_of_a_water_tile() {
     let mut stopped = false;
     for k in 0..200 {
         gelse_update(&mut e, &level, (500, 130), (0, 0));
-        assert!(!map.touches(&e.hitbox(), TileKind::Water), "frame {k}");
+        assert!(!map.touches(&e.hitbox(), TileKind::Swim), "frame {k}");
         stopped |= e.right() == Fx::from_px(320) && e.vx == Fx::ZERO;
     }
     assert!(stopped, "cut at the column's left edge");

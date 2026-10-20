@@ -1711,15 +1711,14 @@ fn update_gelse(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
-/// Moves a Gelse by its velocity through every tile except water (D-079):
-/// a move (per axis, x first) that would put any of its hitbox into a
-/// water tile is cut at that tile's edge (a move down at the tile's top)
+/// Moves a Gelse by its velocity through every tile except water, lethal
+/// or swim (D-079): a move (per axis, x first) that would put any of its
+/// hitbox into such a tile is cut at that tile's edge (a move down at the tile's top)
 /// and that velocity set to 0. So it waits at the water line above a
 /// diver. Its moves are shorter than a tile, so only the cells it newly
 /// enters can be water.
 fn move_clear_of_water(e: &mut Entity, map: &TileMap) {
-    // E27: | Swim
-    let wet = |b: &Aabb| map.touches(b, TileKind::Water);
+    let wet = |b: &Aabb| map.touches(b, TileKind::Water) || map.touches(b, TileKind::Swim);
     let mut b = e.hitbox();
     b.x += e.vx;
     if e.vx != Fx::ZERO && wet(&b) {

@@ -1,6 +1,8 @@
-# Masthead bounce: Resi drops through the walkway to the floor (the
-# surface swimmer's height), triggers the boat and jumps as it races at
-# her: she lands on the masthead and bounces without damage or points.
+# Masthead bounce: Resi drops through the walkway into the swim water
+# (E30: it was a dry floor at the surface swimmer's height), floats,
+# triggers the boat and jumps out as it races at her: airborne from the
+# next frame, she lands on the masthead and bounces without damage or
+# points (same inputs and outcome as before E30).
 level  = m5_enemies
 seed   = 1
 source = handwritten

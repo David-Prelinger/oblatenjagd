@@ -15,6 +15,13 @@ use crate::physics::{TILE, TileMap, tile_of};
 use crate::player::Player;
 use crate::tuning::SwimTuning;
 
+/// Highest a solid face may rise above a swim surface in front of it in
+/// an auto-scroll zone, tiles (D-084, `levels lint`): the weakest form's
+/// held jump-out (big Resi: feet ~45 px above the water line, Normal ~53)
+/// must land on its top. The feel test
+/// `jump_out_heights_bound_the_squeeze_face_over_swim` keeps it honest.
+pub const MAX_FACE_TILES: i32 = 2;
+
 /// The player's chest point: her hitbox centre x, `chest_px` below its top.
 pub fn chest(p: &Player, t: &SwimTuning) -> (Fx, Fx) {
     (p.x + p.w.div_int(2), p.y + Fx::from_px(t.chest_px))

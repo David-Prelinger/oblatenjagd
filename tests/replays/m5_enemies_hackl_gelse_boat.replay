@@ -1,11 +1,13 @@
 # Hackl against the Gelse and the regatta boat (D-081): an axe from the
-# deck defeats the hunting Gelse (100); on the regatta floor an axe
-# bounces off the boat (no effect) and Resi steps into the trench while
-# it races over her.
+# deck defeats the hunting Gelse (100); from the end of the walkway an axe
+# bounces off the parked boat (no effect). Then she steps off into the
+# swim water holding DOWN and dives to the bed (that triggers the boat),
+# and it races over the diver. (Re-cut in E30: before, she threw from the
+# dry regatta floor and stepped into a trench; a swimmer throws nothing.)
 level  = m5_enemies
 seed   = 1
 source = handwritten
-expect = deaths=0 event=AxeHit score=1100 no_event=Hurt no_event=Stomped
+expect = deaths=0 event=AxeHit score=1100 no_event=Hurt no_event=Stomped swimming=true
 ---
 R 42
 J 14
@@ -28,10 +30,11 @@ B 1
 RB 105
 RBJ 36
 RB 124
-DJ 4
+RB 37
+R 45
 - 30
-R 62
-- 2
 B 1
-R 30
-- 200
+- 40
+R 12
+D 70
+- 150
