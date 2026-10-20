@@ -613,7 +613,7 @@ pub const TRAUNDL_DX_TILES: std::ops::RangeInclusive<i32> = 2..=8;
 pub const DAMPFER_DX_TILES: std::ops::RangeInclusive<i32> = 8..=64;
 
 /// Largest `|dx|` of a `prop`, in px.
-pub const MAX_PROP_DX_PX: i32 = 64;
+pub const MAX_PROP_DX_PX: i32 = 96;
 
 /// Draw layer of a `prop` (D-031).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1998,8 +1998,8 @@ P.sSC.tfG
         assert_eq!(prop(", sprite = \"sphaera\", dx = 8").0.dx, 8);
         assert_eq!(prop(", sprite = \"sphaera\", dx = -64").0.dx, -64);
         for bad in [
-            ", sprite = \"a\", dx = 65",
-            ", sprite = \"a\", dx = -65",
+            ", sprite = \"a\", dx = 97",
+            ", sprite = \"a\", dx = -97",
             ", sprite = \"a\", dx = -9223372036854775808",
             ", sprite = \"a\", dx = true",
             ", sprite = \"a\", dx = \"8\"",
