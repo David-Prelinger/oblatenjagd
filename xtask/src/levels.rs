@@ -31,6 +31,9 @@
 //! in front of them (2 over swim water), no raised steps in the lake bed
 //! where the edge pushes (E31, D-085), and a checkpoint in the zone on a
 //! deck tile.
+//!
+//! Signs (M5, [`crate::signlint`], E33, D-086 addendum): no placed Oblate
+//! overlaps a sign board's drawn rectangle (known findings only warn).
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -55,7 +58,8 @@ Commands:
               sits on a swim surface); climbing: no 7-9 tile drops in climb levels, rock
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
-              columns (warnings never fail)
+              columns (warnings never fail); no placed Oblate on a sign
+              board (face and frame as drawn, posts left out)
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -92,7 +96,7 @@ pub fn lint_report(root: &Path, only: Option<&str>) -> (bool, String) {
     let (problems, warned) = match loaded {
         (Ok(levels), Ok(texts), Ok(tuning)) => (
             lint(&levels, &texts, &tuning, only),
-            warnings(&levels, only),
+            warnings(&levels, &texts, &tuning, only),
         ),
         (Err(e), _, _) | (_, Err(e), _) | (_, _, Err(e)) => (vec![e], Vec::new()),
     };
@@ -184,6 +188,12 @@ pub fn lint(
         for p in crate::climblint::problems(level)
             .into_iter()
             .chain(crate::scrolllint::problems(level))
+            .chain(crate::signlint::problems(
+                level,
+                texts,
+                tuning,
+                crate::signlint::KNOWN,
+            ))
         {
             problems.push(format!("{shown}: {p}"));
         }
@@ -215,8 +225,14 @@ fn scroll_columns(level: &jnr_core::Level) -> Option<(i32, i32)> {
 }
 
 /// Warnings (printed, never failing): climb shafts wider than the shaft
-/// rule allows ([`crate::climblint::warnings`]).
-pub fn warnings(levels: &[LevelFile], only: Option<&str>) -> Vec<String> {
+/// rule allows ([`crate::climblint::warnings`]) and known Oblaten on sign
+/// boards ([`crate::signlint::warnings`]).
+pub fn warnings(
+    levels: &[LevelFile],
+    texts: &Texts,
+    tuning: &Tuning,
+    only: Option<&str>,
+) -> Vec<String> {
     levels
         .iter()
         .filter_map(|(path, level)| Some((path, level.as_ref().ok()?)))
@@ -224,6 +240,12 @@ pub fn warnings(levels: &[LevelFile], only: Option<&str>) -> Vec<String> {
         .flat_map(|(path, l)| {
             crate::climblint::warnings(l)
                 .into_iter()
+                .chain(crate::signlint::warnings(
+                    l,
+                    texts,
+                    tuning,
+                    crate::signlint::KNOWN,
+                ))
                 .map(move |w| format!("{}: {w}", path.display()))
         })
         .collect()
@@ -579,14 +601,17 @@ mod tests {
             ),
             "{problems:?}"
         );
-        let warned = warnings(&levels, None);
+        let warned = warnings(&levels, &texts, &tuning(), None);
         assert_eq!(
             warned,
             [
                 "c.level: shaft between the walls at columns 4 and 15 (rows 2–10) is 10 columns wide inside; the shaft rule allows 9 (D-055)"
             ]
         );
-        assert_eq!(warnings(&levels, Some("other")), Vec::<String>::new());
+        assert_eq!(
+            warnings(&levels, &texts, &tuning(), Some("other")),
+            Vec::<String>::new()
+        );
     }
 
     #[test]
