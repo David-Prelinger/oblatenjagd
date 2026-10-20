@@ -69,8 +69,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use jnr_core::replay::{Expect, FrameRange, Shot, Source};
@@ -158,8 +158,11 @@ pub const DEFAULT_TIME_LIMIT: Duration = Duration::from_secs(60);
 const BUDGET_PER_PX: u32 = 3;
 /// Most threads used to expand a bucket.
 const MAX_THREADS: usize = 8;
-/// Threads per level when `verify` solves several levels at once.
-const LEVEL_THREADS: usize = 3;
+/// Search threads per level when `verify` searches several levels at once
+/// (D-082): few levels at once with many threads each keeps every search
+/// far below the wall-clock limit (measured on 14 cores: 2 × 7 threads,
+/// slowest search 13.5 s; 4 × 3: 22–25 s), at about the same total time.
+const LEVEL_THREADS: usize = 7;
 /// Buckets smaller than this are expanded on the calling thread.
 const PARALLEL_MIN_NODES: usize = 16;
 
@@ -195,10 +198,6 @@ pub struct SolveOptions {
     pub time_limit: Duration,
     /// Threads for expanding nodes; the result does not depend on it.
     pub threads: usize,
-    /// Threads for measuring the jump windows; the result does not depend
-    /// on it. No clock runs there, so `verify` gives it every core even
-    /// while other levels are solved at the same time.
-    pub window_threads: usize,
 }
 
 impl SolveOptions {
@@ -215,7 +214,6 @@ impl SolveOptions {
             frame_budget: BUDGET_PER_PX * (tiles as u32) * jnr_core::level::TILE_PX as u32,
             time_limit: DEFAULT_TIME_LIMIT,
             threads,
-            window_threads: threads,
         }
     }
 }
@@ -1207,11 +1205,17 @@ struct Files {
 /// Searches and, if complete, cleans up the route and measures the jump
 /// windows.
 pub fn solve(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Solution {
-    let search = search(level, tuning, opts);
+    measure(level, tuning, search(level, tuning, opts), opts.threads)
+}
+
+/// The part of [`solve`] after the search: if it is complete, cleans up
+/// the route and measures the jump windows on `threads` threads. No clock
+/// runs here.
+pub fn measure(level: &Level, tuning: &Tuning, search: Search, threads: usize) -> Solution {
     let mut inputs = search.best.inputs();
     let windows = if search.complete() {
         inputs = clean_route(level, tuning, &inputs);
-        jump_windows(level, tuning, &inputs, opts.window_threads)
+        jump_windows(level, tuning, &inputs, threads)
     } else {
         Vec::new()
     };
@@ -1280,9 +1284,9 @@ struct Args {
     shots: bool,
     beam: Option<usize>,
     time_limit: Option<Duration>,
-    /// Threads for one level's (search, jump windows) (default: up to
-    /// `MAX_THREADS` each); the result does not depend on them.
-    threads: Option<(usize, usize)>,
+    /// Threads for one level's search and jump windows (default: up to
+    /// `MAX_THREADS`); the result does not depend on it.
+    threads: Option<usize>,
 }
 
 /// `cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S]`.
@@ -1399,6 +1403,12 @@ fn solve_and_report(
     out: &OutDirs,
 ) -> Result<(Solution, String), String> {
     let tuning = content::tuning(root)?;
+    let sol = solve(level, &tuning, &options(level, a));
+    report(root, level, &tuning, sol, a, out)
+}
+
+/// [`SolveOptions::for_level`] with the overrides from `a`.
+fn options(level: &Level, a: &Args) -> SolveOptions {
     let mut opts = SolveOptions::for_level(level);
     if let Some(b) = a.beam {
         opts.beam_width = b;
@@ -1406,11 +1416,22 @@ fn solve_and_report(
     if let Some(t) = a.time_limit {
         opts.time_limit = t;
     }
-    if let Some((search, windows)) = a.threads {
-        opts.threads = search;
-        opts.window_threads = windows;
+    if let Some(n) = a.threads {
+        opts.threads = n;
     }
-    let sol = solve(level, &tuning, &opts);
+    opts
+}
+
+/// Writes the image, report and (with `--write`) the replay of a solved
+/// (or stuck) `level` into `out`; returns (solution, printable text).
+fn report(
+    root: &Path,
+    level: &Level,
+    tuning: &Tuning,
+    sol: Solution,
+    a: &Args,
+    out: &OutDirs,
+) -> Result<(Solution, String), String> {
     let id = &sol.level;
     let mut files = Files::default();
 
@@ -1420,7 +1441,7 @@ fn solve_and_report(
     fs::create_dir_all(dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
     if sol.search.complete() {
         if let Some(w) = narrowest(&sol.windows) {
-            let mut g = Game::new(level, &tuning, 1);
+            let mut g = Game::new(level, tuning, 1);
             for &i in &sol.inputs[..w.index] {
                 g.step(i);
             }
@@ -1507,17 +1528,24 @@ pub fn verify(root: &Path) -> (bool, String, String) {
     }
 }
 
-/// [`verify`] for `levels`, writing into `dirs`. The levels are solved in
-/// parallel with `threads` threads in all (largest level first, so the long
-/// stages start at once), split between the levels running at the same
-/// time and each level's search ([`split_threads`]). Neither changes a
-/// route (see the module doc), and the output is in `levels` order.
+/// [`verify`] for `levels`, writing into `dirs`, with `threads` threads in
+/// all. First every level's search (the only part with a clock) runs, in
+/// parallel and largest level first, with the threads split between the
+/// levels running at once and each search ([`split_threads`]), so no more
+/// threads are busy than there are cores. Only then do the route clean-ups
+/// and jump windows (no clock) run, every level at once with up to
+/// `threads` threads each. Neither changes a route
+/// (see the module doc), and the output is in `levels` order (D-082).
 fn verify_into(
     root: &Path,
     dirs: &OutDirs,
     levels: &[Level],
     threads: usize,
 ) -> (bool, String, String) {
+    let tuning = match content::tuning(root) {
+        Ok(t) => t,
+        Err(e) => return (false, e, String::new()),
+    };
     let (outer, inner) = split_threads(threads, levels.len());
     let a = Args {
         target: None,
@@ -1525,19 +1553,35 @@ fn verify_into(
         shots: false,
         beam: None,
         time_limit: None,
-        threads: Some((inner, threads.max(1))),
+        threads: Some(inner),
     };
+    // Pass 1: every level's timed search, `outer` levels at a time with
+    // `inner` threads each (about one thread per core), largest first.
     let order = largest_first(levels);
-    let solved = crate::par::map_ordered(&order, outer, |&i| {
-        solve_and_report(root, &levels[i], &a, dirs)
+    let found = crate::par::map_ordered(&order, outer, |&i| {
+        Mutex::new(Some(search(&levels[i], &tuning, &options(&levels[i], &a))))
     });
-    let mut results: Vec<Option<_>> = levels.iter().map(|_| None).collect();
-    for (i, r) in order.into_iter().zip(solved) {
-        results[i] = Some(r);
+    // Pass 2 (no clock): route clean-up and jump windows, every level at
+    // once with up to `threads` threads each (largest first again).
+    let threads = threads.max(1);
+    let jobs: Vec<(usize, Mutex<Option<Search>>)> = order.into_iter().zip(found).collect();
+    let measured = crate::par::map_ordered(&jobs, threads, |(i, s)| {
+        let s = s
+            .lock()
+            .expect("one job per level")
+            .take()
+            .expect("searched once");
+        (*i, measure(&levels[*i], &tuning, s, threads))
+    });
+    let mut solutions: Vec<Option<Solution>> = levels.iter().map(|_| None).collect();
+    for (i, sol) in measured {
+        solutions[i] = Some(sol);
     }
+    // The reports and checks, in level order.
     let (mut ok, mut out, mut notes) = (true, String::new(), Vec::new());
-    for (level, result) in levels.iter().zip(results) {
-        match result.expect("every level is solved once") {
+    for (level, sol) in levels.iter().zip(solutions) {
+        let sol = sol.expect("every level is measured once");
+        match report(root, level, &tuning, sol, &a, dirs) {
             Ok((sol, text)) => {
                 ok &= sol.search.complete();
                 out.push_str(&text);
@@ -1670,13 +1714,16 @@ mod tests {
     /// the same time (`check` and `verify`) never delete each other's files.
     fn tmp_dirs(name: &str) -> OutDirs {
         let all = crate::target_dir(&root()).join("tmp/xtask-solver-test");
-        // Left over from finished test runs (Linux: no /proc/<pid> any more).
-        for entry in fs::read_dir(&all).into_iter().flatten().flatten() {
-            let pid = entry.file_name();
-            let is_pid = pid.to_str().is_some_and(|p| p.parse::<u32>().is_ok());
-            if is_pid && Path::new("/proc/self").exists() && !Path::new("/proc").join(&pid).exists()
-            {
-                let _ = fs::remove_dir_all(entry.path());
+        // Left over from finished test runs (no /proc/<pid> any more) or from
+        // before the per-process folders (any non-numeric name). Without
+        // /proc (not Linux) this removes nothing.
+        if Path::new("/proc/self").exists() {
+            for entry in fs::read_dir(&all).into_iter().flatten().flatten() {
+                let name = entry.file_name();
+                let is_pid = name.to_str().is_some_and(|p| p.parse::<u32>().is_ok());
+                if !is_pid || !Path::new("/proc").join(&name).exists() {
+                    let _ = fs::remove_dir_all(entry.path());
+                }
             }
         }
         let base = all.join(std::process::id().to_string()).join(name);
@@ -2341,7 +2388,7 @@ mod tests {
     }
 
     /// The `SOLVED`/`STUCK`/`FAIL` lines of a verify output, without the
-    /// runtimes (the last `, …s` of a summary).
+    /// runtimes (a summary's last item `, <digits>.<digit>s`).
     fn result_lines(out: &str) -> Vec<String> {
         out.lines()
             .filter(|l| {
@@ -2350,17 +2397,40 @@ mod tests {
                     .any(|p| l.starts_with(p))
             })
             .map(|l| match l.rsplit_once(", ") {
-                Some((head, tail)) if tail.ends_with('s') && !l.starts_with("FAIL ") => {
-                    head.to_owned()
-                }
+                Some((head, tail)) if is_runtime(tail) => head.to_owned(),
                 _ => l.to_owned(),
             })
             .collect()
     }
 
+    /// `\d+\.\ds` (the summary's `{:.1}s`).
+    fn is_runtime(s: &str) -> bool {
+        let Some((int, frac)) = s.strip_suffix('s').and_then(|n| n.split_once('.')) else {
+            return false;
+        };
+        let digits = |t: &str| !t.is_empty() && t.bytes().all(|b| b.is_ascii_digit());
+        digits(int) && frac.len() == 1 && digits(frac)
+    }
+
+    #[test]
+    fn result_lines_strip_only_the_runtime() {
+        let out = "SOLVED a: complete at frame 9, 1 jumps, narrowest 5, 0 search deaths, 12.3s\n  \
+                   report x\nSTUCK b: dead end – furthest x=3 px at frame 1, 2 search deaths, 0.0s\n\
+                   FAIL c: missing solver replay x, y\nFAIL d: ends in 1.5s";
+        assert_eq!(
+            result_lines(out),
+            [
+                "SOLVED a: complete at frame 9, 1 jumps, narrowest 5, 0 search deaths",
+                "STUCK b: dead end – furthest x=3 px at frame 1, 2 search deaths",
+                "FAIL c: missing solver replay x, y",
+                "FAIL d: ends in 1.5s",
+            ]
+        );
+    }
+
     /// The `solver` step itself runs over every real level in `verify`;
     /// this checks its bookkeeping on synthetic levels (it used to solve
-    /// every real level twice inside `cargo test`, D-0XX).
+    /// every real level twice inside `cargo test`, D-082).
     #[test]
     fn verify_fails_without_the_committed_solver_replay() {
         let dirs = tmp_dirs("verify_missing_replay");
@@ -2433,9 +2503,10 @@ mod tests {
     #[test]
     fn threads_are_split_between_levels_and_searches() {
         // (threads, levels) -> (levels at once, threads per level)
-        assert_eq!(split_threads(14, 17), (4, 3));
-        assert_eq!(split_threads(14, 2), (2, 7));
-        assert_eq!(split_threads(32, 17), (10, 3));
+        assert_eq!(split_threads(14, 17), (2, 7));
+        assert_eq!(split_threads(14, 1), (1, MAX_THREADS));
+        assert_eq!(split_threads(8, 17), (1, MAX_THREADS));
+        assert_eq!(split_threads(32, 17), (4, MAX_THREADS));
         assert_eq!(split_threads(64, 1), (1, MAX_THREADS));
         assert_eq!(split_threads(2, 17), (1, 2));
         assert_eq!(split_threads(1, 5), (1, 1));
