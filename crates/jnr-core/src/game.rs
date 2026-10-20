@@ -33,6 +33,7 @@ use crate::physics::{Aabb, TILE, TileMap, hash_tile, tile_of};
 use crate::player::{Bounds, Player, Power};
 use crate::rng::Rng;
 use crate::route::{Route, RouteMap};
+use crate::swim;
 use crate::tuning::Tuning;
 
 /// How many columns left and right [`Game::teleport_player`] searches for a floor.
@@ -371,6 +372,7 @@ impl Game {
         game.place_camera();
         if start == Start::Title {
             game.mode = Mode::Title { frames: 0 };
+            game.frame_title();
         }
         game
     }
@@ -613,8 +615,9 @@ impl Game {
         let t = &self.tuning.camera;
         if let Some(zone) = self.autoscroll_zone() {
             let focus = self.player.center_px();
+            let rest = self.camera_rests();
             self.camera
-                .follow_autoscroll(&mut self.scroll, zone, focus, w, h, t);
+                .follow_autoscroll(&mut self.scroll, zone, focus, rest, w, h, t);
             return;
         }
         if !self.climb() {
@@ -635,6 +638,21 @@ impl Game {
         self.ground_feet = focus.ground_feet;
         self.settle_feet = focus.settle_feet;
         self.slack_x = focus.slack_x;
+    }
+
+    /// The auto-scroll camera settles back to its rest (D-086) while she
+    /// stands (a tile, a deck, a boat or the lake bed) or swims at the
+    /// surface; not in the air and not diving.
+    pub(crate) fn camera_rests(&self) -> bool {
+        let p = &self.player;
+        if p.on_ground {
+            return true;
+        }
+        let st = &self.tuning.swim;
+        p.swimming
+            && !p.leaving_water
+            && swim::swim_surface(p, &self.map, st)
+                .is_some_and(|surface| swim::at_surface(swim::chest(p, st).1, surface, st))
     }
 
     /// D-051: the player's own movement stops at the screen's left edge,
@@ -714,6 +732,18 @@ impl Game {
         };
     }
 
+    /// The title screen's view of the stage: an auto-scroll stage keeps the
+    /// side camera's framing there (D-086), so the title's subtitle stays in
+    /// the sky (D-035); START re-places the camera at its rest behind the
+    /// navy intro card, so play still starts at the rest. Other levels:
+    /// unchanged (`place_camera` already framed them so).
+    pub(super) fn frame_title(&mut self) {
+        if self.autoscroll_zone().is_some() {
+            let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
+            self.camera = Camera::new(self.player.center_px(), w, h, &self.tuning.camera);
+        }
+    }
+
     /// A Normal player at the checkpoint (or the start), the camera on it.
     /// Keeps `jump_held`, so a held JUMP is not a new press.
     fn place_player(&mut self) {
@@ -759,7 +789,8 @@ impl Game {
     }
 
     /// The camera on the player at the start, on respawn and on a stage
-    /// change (climb: at the settle target at once, D-054).
+    /// change (climb: at the settle target at once, D-054; auto-scroll: at
+    /// its rest, D-086).
     fn place_camera(&mut self) {
         let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
         let t = &self.tuning.camera;
@@ -770,7 +801,12 @@ impl Game {
             self.settle_feet = feet;
             self.slack_x = self.player.center_px().0;
         } else {
-            self.camera = Camera::new(self.player.center_px(), w, h, t);
+            self.camera = if self.autoscroll_zone().is_some() {
+                // D-086: at its rest, the level's bottom clamp.
+                Camera::new_autoscroll(self.player.center_px(), w, h, t)
+            } else {
+                Camera::new(self.player.center_px(), w, h, t)
+            };
             self.ground_feet = 0;
             self.settle_feet = 0;
             self.slack_x = 0;
@@ -1132,7 +1168,7 @@ impl Game {
                 EntityKind::Mozartkugel => {
                     self.entities[i].removed = true;
                     if self.player.power == Power::Normal {
-                        self.player.set_power(Power::Big, &self.tuning.player);
+                        self.set_player_power(Power::Big);
                         grew = true;
                         self.events.push(Event::PowerUp);
                     }
@@ -1320,6 +1356,26 @@ impl Game {
         true
     }
 
+    /// A power change during play. On land (and standing on the lake bed)
+    /// the feet stay in place ([`Player::set_power`]). Floating or diving
+    /// (swimming, not on the ground) the top stays, and with it the chest
+    /// point (D-076: `chest_px` below the top in every form), so a floater
+    /// stays in the surface band after a shrink or a grow (D-086). If the
+    /// grown hitbox would reach into a solid tile (just above the lake
+    /// bed), the feet stay instead.
+    pub(crate) fn set_player_power(&mut self, power: Power) {
+        let floating = self.player.swimming && !self.player.on_ground;
+        let top = self.player.y;
+        self.player.set_power(power, &self.tuning.player);
+        if floating {
+            let mut b = self.player.hitbox();
+            b.y = top;
+            if !self.map.touches(&b, TileKind::Solid) {
+                self.player.y = top;
+            }
+        }
+    }
+
     /// A hit steps down one power state (Hackl → Zuckerschock →
     /// Normal, with invulnerability); Normal dies. Nothing happens while
     /// invulnerable or transforming.
@@ -1329,7 +1385,7 @@ impl Game {
         }
         match self.player.power.after_hit() {
             Some(power) => {
-                self.player.set_power(power, &self.tuning.player);
+                self.set_player_power(power);
                 self.player.invulnerable = self.tuning.player.invulnerable_frames;
                 self.events.push(Event::Hurt);
             }

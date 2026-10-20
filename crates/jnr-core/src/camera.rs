@@ -29,7 +29,10 @@
 //!   of the player ([`Autoscroll`] keeps the phase, the subpixel position
 //!   and the respawn hold). `Game` pushes the player at the left edge
 //!   (squeezing her against a solid tile kills) and stops her
-//!   `autoscroll_right_margin` px before the right edge.
+//!   `autoscroll_right_margin` px before the right edge. Vertically it is
+//!   the side camera's dead zone around a rest (D-086): it starts at the
+//!   level's bottom clamp, and while she stands or swims at the surface it
+//!   settles back there by at most `autoscroll_settle_speed` px per frame.
 
 use crate::fx::Fx;
 use crate::hash::Fnv;
@@ -149,6 +152,22 @@ impl Camera {
         }
     }
 
+    /// The auto-scroll camera's start (and respawn) framing (D-086):
+    /// horizontally like [`Camera::new`], vertically at its rest, the
+    /// level's bottom clamp, unless that leaves `focus` outside the dead
+    /// zone (then the dead zone's nearest edge).
+    pub fn new_autoscroll(
+        focus: (i32, i32),
+        level_w: i32,
+        level_h: i32,
+        t: &CameraTuning,
+    ) -> Camera {
+        let mut c = Camera::new(focus, level_w, level_h, t);
+        c.y = rest_y(level_h);
+        c.follow_y(focus.1, level_h, t);
+        c
+    }
+
     /// Follows `focus`: scrolls right once it passes `follow_x` on screen
     /// (never left), keeps it inside the vertical dead zone, and clamps to
     /// the level.
@@ -183,13 +202,21 @@ impl Camera {
     /// following would put x at or past `from`; then x is exactly `from`
     /// and the scroll starts (no hold). Scroll: after the hold, the
     /// position grows by `autoscroll_speed` subpixels; x is its whole-px
-    /// floor, and at `to` the lead-out starts. Lead-out: the side camera.
-    /// Vertically always the side camera's dead zone.
+    /// floor, and at `to` the lead-out starts. Lead-out: the side camera,
+    /// moving right at most `autoscroll_catch_up_speed` px per frame, so
+    /// the hand-over never snaps (D-086).
+    /// Vertically in every phase (D-086): with `rest` (she stands or swims
+    /// at the surface) y first settles towards the level's bottom clamp by
+    /// at most `autoscroll_settle_speed` px; then the side camera's dead
+    /// zone, which wins (on a perch high above the decks the camera stays
+    /// where the dead zone holds her).
+    #[allow(clippy::too_many_arguments)]
     pub fn follow_autoscroll(
         &mut self,
         s: &mut Autoscroll,
         zone: (i32, i32),
         focus: (i32, i32),
+        rest: bool,
         level_w: i32,
         level_h: i32,
         t: &CameraTuning,
@@ -219,7 +246,17 @@ impl Camera {
                     s.phase = ScrollPhase::LeadOut;
                 }
             }
-            ScrollPhase::LeadOut => self.follow_x(focus.0, level_w, t),
+            ScrollPhase::LeadOut => {
+                // From where the scroll ended, the side camera catches up
+                // with her at most `autoscroll_catch_up_speed` px a frame
+                // (faster than she runs), instead of snapping (D-086).
+                let x = self.x;
+                self.follow_x(focus.0, level_w, t);
+                self.x = self.x.min(x + t.autoscroll_catch_up_speed);
+            }
+        }
+        if rest {
+            self.settle_y_by(rest_y(level_h), t.autoscroll_settle_speed, level_h);
         }
         self.follow_y(focus.1, level_h, t);
     }
@@ -308,8 +345,13 @@ impl Camera {
     /// `climb_settle_speed` px; x stays. The climb camera's ground settle
     /// and its goal-sequence framing.
     pub fn settle_y(&mut self, target: i32, level_h: i32, t: &CameraTuning) {
+        self.settle_y_by(target, t.climb_settle_speed, level_h);
+    }
+
+    /// Moves y towards `target` (clamped to the level) by at most `step`
+    /// px; x stays.
+    fn settle_y_by(&mut self, target: i32, step: i32, level_h: i32) {
         let target = clamp_y(target, level_h);
-        let step = t.climb_settle_speed;
         self.y = clamp_y(self.y + (target - self.y).clamp(-step, step), level_h);
     }
 
@@ -343,6 +385,12 @@ impl Camera {
     }
 }
 
+/// The auto-scroll camera's vertical rest (D-086): the bottom clamp of a
+/// `level_h` px tall level.
+fn rest_y(level_h: i32) -> i32 {
+    clamp_y(level_h - SCREEN_H, level_h)
+}
+
 /// `y` clamped to the camera's range in a `level_h` px tall level.
 fn clamp_y(y: i32, level_h: i32) -> i32 {
     y.clamp(0, (level_h - SCREEN_H).max(0))
@@ -369,6 +417,8 @@ mod tests {
         autoscroll_speed: Fx(192),
         autoscroll_hold: 60,
         autoscroll_right_margin: 64,
+        autoscroll_settle_speed: 2,
+        autoscroll_catch_up_speed: 4,
     };
     /// An auto-scroll zone [8, 40) in columns, in px.
     const ZONE: (i32, i32) = (128, 640);
@@ -735,12 +785,12 @@ mod tests {
         let mut c = Camera { x: 0, y: 44 };
         let mut s = Autoscroll::default();
         // Lead-in: the side camera.
-        c.follow_autoscroll(&mut s, ZONE, (200, 150), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (200, 150), false, W, H, &T);
         assert_eq!((c.x, s.phase), (56, ScrollPhase::LeadIn));
-        c.follow_autoscroll(&mut s, ZONE, (150, 150), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (150, 150), false, W, H, &T);
         assert_eq!(c.x, 56, "never left");
         // Following would put x at 131: set to exactly 128, no hold.
-        c.follow_autoscroll(&mut s, ZONE, (275, 150), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (275, 150), false, W, H, &T);
         assert_eq!(c.x, 128);
         assert_eq!(
             s,
@@ -754,13 +804,13 @@ mod tests {
         // the floor of the subpixel position.
         let mut xs = Vec::new();
         for focus_x in [0, 900, 275, 275] {
-            c.follow_autoscroll(&mut s, ZONE, (focus_x, 150), W, H, &T);
+            c.follow_autoscroll(&mut s, ZONE, (focus_x, 150), false, W, H, &T);
             xs.push(c.x);
         }
         assert_eq!(xs, [128, 129, 130, 131]);
         assert_eq!(s.pos, Fx::from_px(131));
         assert_eq!(c.y, 44, "vertically the side camera");
-        c.follow_autoscroll(&mut s, ZONE, (275, 100), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (275, 100), false, W, H, &T);
         assert_eq!(c.y, 100 - T.deadzone_top);
     }
 
@@ -772,17 +822,25 @@ mod tests {
             pos: Fx::from_px(638) + Fx(128),
             hold: 0,
         };
-        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
         assert_eq!((c.x, s.phase), (639, ScrollPhase::Scroll));
-        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
         assert_eq!((c.x, s.phase), (640, ScrollPhase::LeadOut));
-        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
         assert_eq!(c.x, 640, "the side camera: no scroll, never left");
-        c.follow_autoscroll(&mut s, ZONE, (640 + 144 + 10, 90), W, H, &T);
-        assert_eq!((c.x, s.phase), (650, ScrollPhase::LeadOut));
+        c.follow_autoscroll(&mut s, ZONE, (640 + 144 + 3, 90), false, W, H, &T);
+        assert_eq!((c.x, s.phase), (643, ScrollPhase::LeadOut), "follows");
+        // Far right of the follow line (the right clamp allows up to 99
+        // px): no snap, it catches up at 4 px per frame (D-086).
+        let mut xs = Vec::new();
+        for _ in 0..4 {
+            c.follow_autoscroll(&mut s, ZONE, (643 + 144 + 10, 90), false, W, H, &T);
+            xs.push(c.x);
+        }
+        assert_eq!(xs, [647, 651, 653, 653]);
         // The lead-out never goes back to the scroll.
         c.x = 300;
-        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
         assert_eq!((c.x, s.phase), (300, ScrollPhase::LeadOut));
     }
 
@@ -804,12 +862,73 @@ mod tests {
         );
         let mut c = Camera { x: 300, y: 0 };
         for _ in 0..60 {
-            c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+            c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
             assert_eq!(c.x, 300);
         }
         assert_eq!(s.hold, 0);
-        c.follow_autoscroll(&mut s, ZONE, (0, 90), W, H, &T);
+        c.follow_autoscroll(&mut s, ZONE, (0, 90), false, W, H, &T);
         assert_eq!(s.pos, Fx::from_px(300) + Fx(192), "moves on frame 61");
+    }
+
+    #[test]
+    fn autoscroll_starts_at_its_rest_the_bottom_clamp() {
+        // D-086: H = 224 px, so the rest is y 44; the side camera centres
+        // the focus in the dead zone instead (120 - 92 = 28).
+        let c = Camera::new_autoscroll((40, 120), W, H, &T);
+        assert_eq!(c, Camera { x: 0, y: 44 });
+        assert_eq!(Camera::new((40, 120), W, H, &T).y, 28, "side: dead zone");
+        // A focus above the dead zone at the rest: the dead zone's top wins.
+        let c = Camera::new_autoscroll((40, 100), W, H, &T);
+        assert_eq!(c.y, 100 - T.deadzone_top);
+        // A level no taller than the screen: y 0.
+        assert_eq!(Camera::new_autoscroll((40, 60), W, 180, &T).y, 0);
+    }
+
+    #[test]
+    fn autoscroll_settles_back_to_its_rest_at_2_px_per_frame_only_at_rest() {
+        let mut s = Autoscroll::default();
+        // Up at y 30 after a jump, focus inside the dead zone throughout.
+        let mut c = Camera { x: 0, y: 30 };
+        c.follow_autoscroll(&mut s, ZONE, (40, 140), false, W, H, &T);
+        assert_eq!(c.y, 30, "in the air (no rest): the dead zone only");
+        let mut ys = Vec::new();
+        for _ in 0..9 {
+            c.follow_autoscroll(&mut s, ZONE, (40, 140), true, W, H, &T);
+            ys.push(c.y);
+        }
+        assert_eq!(
+            ys,
+            [32, 34, 36, 38, 40, 42, 44, 44, 44],
+            "settles, stops at 44"
+        );
+        // In every phase: the scroll and the lead-out settle too.
+        for phase in [ScrollPhase::Scroll, ScrollPhase::LeadOut] {
+            let mut s = Autoscroll {
+                phase,
+                pos: Fx::from_px(300),
+                hold: 0,
+            };
+            let mut c = Camera { x: 300, y: 30 };
+            c.follow_autoscroll(&mut s, ZONE, (340, 140), true, W, H, &T);
+            assert_eq!(c.y, 32, "{phase:?}");
+        }
+    }
+
+    #[test]
+    fn autoscroll_dead_zone_wins_over_the_rest_on_a_perch() {
+        // Standing high up (focus 80): the rest would put her centre at
+        // screen y 36, above the dead zone; the camera holds her at its top
+        // edge (y 16) every frame, no creeping, no jitter.
+        let mut s = Autoscroll::default();
+        let mut c = Camera { x: 0, y: 16 };
+        for _ in 0..10 {
+            c.follow_autoscroll(&mut s, ZONE, (40, 80), true, W, H, &T);
+            assert_eq!(c.y, 80 - T.deadzone_top);
+        }
+        // Below the dead zone (a dive), the camera follows down as before.
+        let mut c = Camera { x: 0, y: 0 };
+        c.follow_autoscroll(&mut s, ZONE, (40, 150), false, W, H, &T);
+        assert_eq!(c.y, 150 - T.deadzone_bottom);
     }
 
     #[test]

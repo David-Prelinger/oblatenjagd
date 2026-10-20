@@ -57,5 +57,6 @@ const FINISH_FRAME: u32 = 731;
 /// `enemies.reisebus_*` keys; M5 E28: `platforms.traundl_*`/`dampfer_*`;
 /// M5 E29: the `enemies.schwan_*`, `gelse_*` and `regattaboot_*` keys;
 /// M5 E26: `camera.autoscroll_*`; M5 E27: the `[swim]` keys and the hashed
-/// `swimming`/`leaving_water`/`swim_frames`; route and frame unchanged).
-const FINISH_HASH: u64 = 0x9322_40dc_c433_cc70;
+/// `swimming`/`leaving_water`/`swim_frames`; M5 E32:
+/// `camera.autoscroll_settle_speed`/`autoscroll_catch_up_speed`; route and frame unchanged).
+const FINISH_HASH: u64 = 0x7636_8fd6_6c2f_686e;

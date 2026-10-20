@@ -441,5 +441,6 @@ impl Game {
         }
         self.reset_run();
         self.mode = Mode::Title { frames: 0 };
+        self.frame_title();
     }
 }

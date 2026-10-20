@@ -2,18 +2,18 @@
 level  = m5_lake
 seed   = 1
 source = solver
-expect = complete frames=2462..2462 deaths=0
+expect = complete frames=2460..2460 deaths=0
 ---
-RB 844
-LBJ 12
-LB 2
-RB 3
-LB 8
-RB 3
-RBJ 34
-RB 1426
-- 16
-RBJ 20
-RB 2
+RB 816
+RBJ 33
+RB 5
 RBJ 36
-RB 56
+RB 1390
+RBJ 20
+RB 16
+LB 16
+RB 8
+RBJ 33
+RB 5
+RBJ 31
+RB 51
