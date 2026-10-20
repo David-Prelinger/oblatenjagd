@@ -55,6 +55,9 @@
 #                            with Fensterlaeden #4 (102, 12) phase 0 and #5
 #                            (106, 12) phase 120 (one of them always open),
 #                            Oblaten over both; Selfie-Tourist #3 at 108;
+#                            Stau 109 (between the Gasthof door and shelter
+#                            B; moved from 141 in the art-director's golden
+#                            round 1 to make room for Gruen blinkt);
 #                            shelter B 111-114 (3 Oblaten); Postbus 150
 #                            (reisebus, look postbus, stop 4) parked at 119:
 #                            it triggers once her centre passes col 111 (on
@@ -65,10 +68,15 @@
 #                            between bricks. From the checkpoint the parked
 #                            bus is 184 px away (no trigger) and its hitbox
 #                            ends left of the respawn screen's edge.
-#   4 Kreuzung     140-189   Stau 141; Gastgarten terrace (oneway_wood row
-#                            12) 147-154 on terrasse posts, 4 Oblaten; Gruen
-#                            blinkt 157; Ampel #1 (2 cars, period 400, range
-#                            12) in the einfahrt_bg mouth (162-163, rows
+#   4 Kreuzung     140-189   Gruen blinkt 141 (was 157, inside Ampel #1's
+#                            lane: the cars covered its face; at 141 its
+#                            board ends at x 2304 and a car is only drawn
+#                            right of the screen's left edge, which stays
+#                            >= 2288 once the Ampel counts: <= 16 px at the
+#                            edge in theory, none in any replay);
+#                            Gastgarten terrace (oneway_wood row 12)
+#                            147-154 on terrasse posts, 4 Oblaten; Ampel #1
+#                            (2 cars, period 400, range 12) in the einfahrt_bg mouth (162-163, rows
 #                            12-14): it counts once its cell is fully on
 #                            screen, i.e. with her centre right of col 152
 #                            (the terrace's right part), and its cars drive
@@ -210,7 +218,7 @@ grid = '''
 .............BMB..o...........o.....q..............&&&&&.....WWWWWWWWWWWFFFFFF#o....?............ooo..oo..oo....ooo.......................BMB........oooo....................ooo................:::::::{{::::::{::{::::::::{{::::::::......................o........IIIIII..............
 .................o.o.........o.o....3.........o..f...........WWWWWW!WWWWFFFFFF##................----..f...l....----................................++++++++.......EE........----..........EE....::::::{:::::::::::::{{::{{:::{:::::{{............7........o.o.....##IIIIII..............
 ........ooooo.....#...........#.....#..ooo....#..............WWWWWWWWWWWFFFFFF##.ooo..ooo......................................ooo.................(......).......EE...ooo................EE....::::::::://////::::////////::::::::::............##...............##IIIIII..............
-..P2.A............#...D..n....#.....#.....t...#H...4..L......WWWWWWWWWWWFFFFFF##........t..N.....5.......6..t...5......y............C..Q.....S.....(......)..T....$E.........5....t.......%E..U.::::*::::::::::::::::::::::::::::::::....X.....Y.##.e...........e.##IIIIII..............
+..P2.A............#...D..n....#.....#.....t...#H...4..L......WWWWWWWWWWWFFFFFF##........t..N.....5.......6..tS..5......y............C..Q.....T.....(......).......$E.........5....t.......%E..U.::::*::::::::::::::::::::::::::::::::....X.....Y.##.e...........e.##IIIIII..............
 KKKKKKKK=================================================================================================_____________________________________________________________________________________==jjjjjj~~~~~~~~~~~~~~~~~~~~~~~~jjjjj~~jjjjjjjjjjjkkkkkkkkkk<<<kkkkkkkIIIIII8...G..O......
 KKKKKKKK=================================================================================================_____________________________________________________________________________________==JwwJwJwwwwwwwwwwwwwwwwwwwwwwwwJwJwJwwJwwJwwJwwwJkkkkkkkkkk>>>kkkkkkkkkkkkk,,,,,,,,,,,,,,
 '''
