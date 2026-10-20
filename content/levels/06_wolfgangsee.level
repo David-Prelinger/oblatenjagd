@@ -1,12 +1,75 @@
 # Stage 6: Wolfgangsee (docs/game-design.md "Stage 6: Wolfgangsee",
-# D-074 ... D-083). 260 columns x 17 rows, camera = "autoscroll" with the
+# D-074 ... D-084). 260 columns x 17 rows, camera = "autoscroll" with the
 # zone [8, 208]: the side camera on the St. Wolfgang quay, the scroll
 # (0.75 px/frame) from the moment Resi's centre passes column 17 until the
 # camera's left edge reaches column 208, then the side camera again for
 # the Strobl landing and the Maibaum. Decks on row 11, swim water rows
 # 12-15 (see_wasser / see_wasser_tief), lake bed (seegrund) row 16, the
 # goal meadow row 16. No lethal tile in the stage.
-# (Section notes are filled in below the grid generator's output.)
+#   1 Schiffsstation  0-17   quay (kai, rows 11-16) 0-12 and 16-17, start
+#                            col 2, schiffsstation (back) over 0-5, Bus
+#                            150 / wasserscheu 5, M-box 9 (row 7, bricks 8
+#                            and 10), Baden heute 11, bollard 12 (row 10:
+#                            turns the Mozartkugel; Resi hops it). Bathing
+#                            notch 13-15: swim water rows 12-15, 3 Oblaten
+#                            on row 14 (dive), an arc of 3 over it.
+#                            Raddampfer / ohne Dampf 16. Side camera: the
+#                            scroll starts when her centre passes col 17.
+#   2 Raddampfer     18-75   Dampfer in (18, 11), to = [40, 0]: hull 18-27
+#                            flush with the quay, moored at 58-67 (frame
+#                            ~925 after an immediate boarding), its front
+#                            inside the right clamp ~115 frames later.
+#                            Three arcs of 3 Oblaten over the track (30-48,
+#                            rows 8-9). Swan #1 at 46 charges under the
+#                            deck. Gschwendt pier (steg) 68-75 with
+#                            steg_pfahl under its ends, ?-box 71 (row 7),
+#                            3 Oblaten, Baujahr 1873 69, Seit 1950 75
+#                            (signs 6 apart: the boards are ~5 tiles wide).
+#   3 Seebad         76-119  open water 76-111 (the required swim). Swan #2
+#                            at 90, 8 Oblaten on the bed (row 15, 85-92) in
+#                            its charge zone. Shallows 100-106 (bed row 14)
+#                            with reeds and Blutspende 101 (in the water).
+#                            Gelse #1 at 108 (row 8). Raft (steg) 112-115
+#                            with 4 Oblaten.
+#   4 Adventlaterne 120-139  pontoon (steg) 121-133, bollards 121 and 133
+#                            (row 10, 2 tiles above the water: D-084),
+#                            checkpoint 122, Bus 150 / im Stau. Ha! 126,
+#                            M-box 129 (row 7, bricks 128/130), lantern
+#                            (back) 131, 5 Oblaten. Respawn: camera x 1816,
+#                            60 frames of hold, no enemy on screen.
+#                            Wie Venedig 138 (in the water).
+#   5 Traundl-Faehre 140-179 a dalben at every track end. Traundl A 140
+#                            (to [6, 0]: 140-142 <-> 146-148), border raft
+#                            150-151 (Landesgrenze 150), B 153 (153-155 <->
+#                            159-161), C 164 (164-166 <-> 170-172). The
+#                            phases (A 182, B 181, C 226) are set from the
+#                            scroll: in a continuous run A reaches its far
+#                            end at ~2866, B its near end at the raft at
+#                            ~3018 (~2 s on the raft), B its far end at
+#                            ~3142 as C reaches its near end (~3146): every
+#                            hop is 1-2 tiles. After a respawn A wakes at
+#                            once (shifted); B and C wake by the scroll.
+#                            Gelse #2 at 160 (row 7) over B, #3 at 171
+#                            (row 6) over C's far end. Zaunerstollen perch
+#                            (steg, row 8) 173-177 with a bollard at 177
+#                            (row 7) and the Z-box at 175 (row 4), reached
+#                            from C's far end. Swan #3 at 184.
+#   6 Regatta       180-211  Regatta / Vorrang: wir 182 (in the water).
+#                            Traundl D 186 (to [5, 0], phase 214) between
+#                            dalben 185 and 194. Regatta boats at 198, 204
+#                            and 210 (a start buoy 2 columns right of
+#                            each), 2 columns right of the spec so that
+#                            Gelse #3's hunt (ends ~3713) is over before
+#                            the first boat shows (~3740). 8 Oblaten on the
+#                            bed (185-192), 3 over D's track.
+#   7 Strobl        212-259  shallows 212-221 (bed row 15, then 14) with
+#                            reeds; the scroll ends at camera col 208.
+#                            Quay (kai) 222-237 with Strobl: bitte halten
+#                            226 and 6 Oblaten; schiffsstation (back) over
+#                            invisible 238-243 (rows 10-15, the launch);
+#                            meadow row 16 from 238; Maibaum 250, Ortsende
+#                            253.
+# Oblaten: 68 + 1 in the ?-box. Replays: tests/replays/wolfgangsee_*.
 
 [meta]
 id = "wolfgangsee"
@@ -46,7 +109,7 @@ background = [
 # traundl B
 "U" = { entity = "traundl", to = [6, 0], phase = 181 }
 # traundl C
-"V" = { entity = "traundl", to = [6, 0], phase = 179 }
+"V" = { entity = "traundl", to = [6, 0], phase = 226 }
 # traundl D
 "X" = { entity = "traundl", to = [5, 0], phase = 214 }
 "S" = { entity = "schwan", tile = "see_wasser" }

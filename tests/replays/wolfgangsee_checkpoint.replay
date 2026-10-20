@@ -1,0 +1,39 @@
+# Stage 6 checkpoint on the lantern pontoon (D-075 hold; game-design.md
+# Stage 6 section 4). The solver route to frame 2240: she swims under the
+# pontoon past the checkpoint (col 122) with Gelse #1 still hunting above
+# her. Then she lets go of the controls and floats at the surface: the
+# Gelse, waiting at the water line, stings her as Normal (death 1). She
+# respawns on the pontoon at the checkpoint (x 1954, camera x 1816), the
+# scroll holds 60 frames (camera x 1816 until frame ~2399), the level is
+# reset (Traundl A back at its spawn phase, the M-box fresh, no enemy on
+# screen). She walks right under the M-box (col 129), bumps it and catches
+# the Mozartkugel, which the bollards keep on the pontoon, before the
+# edge reaches her.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = dies_at frames=2277..2277 deaths=1 lives=2 event=CheckpointReached event=Respawned event=PowerUp power=big player_x>=2090
+---
+# --- the first 2240 frames of wolfgangsee_solver.replay ---
+RB 64
+RBJ 36
+RB 953
+L 4
+RB 8
+- 4
+RB 4
+DJ 1
+- 3
+RB 404
+LBJ 12
+LB 2
+RB 6
+LB 8
+RB 3
+RBJ 31
+RB 697
+# --- handwritten ---
+- 158
+R 74
+RJ 12
+- 120
