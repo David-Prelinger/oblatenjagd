@@ -67,15 +67,24 @@
 //! item, another platform): the window asks whether a player can get on
 //! with the stage, not whether the score stays the same (D-034).
 //! Each shift starts from a snapshot of the original route at its earliest
-//! changed frame, and the jumps are measured on parallel threads (results
-//! in jump order, so independent of the thread count).
+//! changed frame. Every shift of every jump (of every level in `verify`) is
+//! one item of a shared work queue on all threads, smallest |d| first
+//! ([`measure_windows`], E35); the windows are grown from the results
+//! exactly as shift after shift, so they don't depend on the thread count.
+//!
+//! **Speed** (E35, D-091; none of it changes a route or a window): macros
+//! that start alike share their first frames ([`MacroTree`]); a node's rank
+//! and de-duplication key are computed on the expanding thread and a bucket
+//! is ranked by index ([`rank`]); the dropped nodes are freed on the
+//! expanding threads; complete solves are cached by a key over everything
+//! that decides them ([`cache`]).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
 use jnr_core::replay::{Expect, FrameRange, Shot, Source};
@@ -87,8 +96,10 @@ use serde_json::{Value, json};
 
 use crate::{content, replay};
 
+mod cache;
+
 pub const HELP: &str = "\
-cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S]
+cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S] [--no-cache]
     Beam search over the real simulation until the level is complete.
     Prints the result and writes the difficulty report
       -> reports/solver/<level>.{md,json}
@@ -101,6 +112,10 @@ cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit 
                      art-director APPROVED), so they are off by default
     --beam N         beam width (default 64)
     --time-limit S   wall-clock limit in seconds (default 60)
+    --no-cache       solve even if the solver cache has this level's result
+                     for the same level, tuning, code and options (D-091;
+                     $CARGO_TARGET_DIR/cache/solver); `cargo xtask verify
+                     --no-cache` does the same for the verify step
 
 Reports go to $CARGO_TARGET_DIR/reports/solver, images to
 $CARGO_TARGET_DIR/preview/solver (or ./target/...).
@@ -238,13 +253,29 @@ struct Trail {
 /// A search state.
 #[derive(Clone)]
 pub struct Node {
-    pub game: Game,
+    /// Boxed: nodes are moved around a lot while a bucket is ranked.
+    pub game: Box<Game>,
     /// `Jumped` events so far (fewer wins ties).
     jumps: u32,
     trail: Option<Arc<Trail>>,
+    /// [`search_progress`] and [`StateKey`] of `game`, computed once when
+    /// the node is made (on the expanding thread), so ranking a bucket
+    /// doesn't hash every node again on the calling thread.
+    progress: i32,
+    key: StateKey,
 }
 
 impl Node {
+    fn new(game: Game, jumps: u32, trail: Option<Arc<Trail>>) -> Node {
+        Node {
+            progress: search_progress(&game),
+            key: StateKey::of(&game),
+            game: Box::new(game),
+            jumps,
+            trail,
+        }
+    }
+
     /// The inputs from the start to this node, one per frame.
     pub fn inputs(&self) -> Vec<InputFrame> {
         let mut steps = Vec::new();
@@ -261,10 +292,6 @@ impl Node {
             out.extend(all.take(frames as usize));
         }
         out
-    }
-
-    fn progress(&self) -> i32 {
-        search_progress(&self.game)
     }
 }
 
@@ -301,7 +328,7 @@ pub fn search_progress(game: &Game) -> i32 {
 /// state), so states that differ in collected items, broken bricks or the
 /// power-up are kept apart. Of several nodes with the same key only the
 /// best-ranked one is kept.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct StateKey(i32, i32, i32, i32, bool, u64);
 
 impl StateKey {
@@ -362,11 +389,7 @@ impl Search {
 /// Runs the beam search on `level`.
 pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
     let started = Instant::now();
-    let root = Node {
-        game: Game::new(level, tuning, 1),
-        jumps: 0,
-        trail: None,
-    };
+    let root = Node::new(Game::new(level, tuning, 1), 0, None);
     let mut best = root.clone();
     let mut completed: Option<Node> = None;
     let mut buckets: BTreeMap<u32, Vec<Node>> = BTreeMap::new();
@@ -375,7 +398,7 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
     let mut hit_budget = false;
     let mut timed_out = false;
 
-    while let Some((frame, mut nodes)) = buckets.pop_first() {
+    while let Some((frame, nodes)) = buckets.pop_first() {
         if completed.as_ref().is_some_and(|c| c.game.frame() <= frame) {
             break;
         }
@@ -386,16 +409,10 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
             timed_out = true;
             break;
         }
-        // Furthest right (climb levels: furthest right + highest) first,
-        // then fewer jumps (no needless hops, so jump windows are not
-        // coupled); the stable sort keeps insertion order on ties.
-        nodes.sort_by_key(|n| (std::cmp::Reverse(n.progress()), n.jumps));
-        let mut seen = BTreeSet::new();
-        nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
-        let nodes = select_beam(nodes, opts.beam_width);
+        let (nodes, dropped) = rank(nodes, opts.beam_width);
         expanded += nodes.len() as u64;
 
-        for children in expand_all(&nodes, opts.threads) {
+        for children in expand_all(&nodes, dropped, opts.threads) {
             for child in children {
                 let Some(node) = child else {
                     search_deaths += 1;
@@ -412,8 +429,8 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
                     continue;
                 }
                 if node.game.player().on_ground
-                    && (node.progress() > best.progress()
-                        || (node.progress() == best.progress() && f < best.game.frame()))
+                    && (node.progress > best.progress
+                        || (node.progress == best.progress && f < best.game.frame()))
                 {
                     best = node.clone();
                 }
@@ -441,6 +458,42 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
     }
 }
 
+/// Ranks a frame bucket and cuts it to the beam: furthest right (climb
+/// levels: furthest right + highest) first, then fewer jumps (no needless
+/// hops, so jump windows are not coupled), ties in insertion order; of
+/// several nodes with the same [`StateKey`] only the best-ranked one is
+/// kept; then [`select_beam`]. Returns the beam (in rank order) and the
+/// other nodes (to be dropped, which [`expand_all`] does on its threads).
+/// The same as sorting, de-duplicating and cutting the nodes themselves,
+/// but only indices are sorted and the keys come cached with the nodes.
+fn rank(nodes: Vec<Node>, width: usize) -> (Vec<Node>, Vec<Node>) {
+    let mut order: Vec<usize> = (0..nodes.len()).collect();
+    // A stable sort: equal keys keep their insertion order.
+    order.sort_by_key(|&i| (std::cmp::Reverse(nodes[i].progress), nodes[i].jumps));
+    let mut seen = BTreeSet::new();
+    order.retain(|&i| seen.insert(nodes[i].key));
+    let ranked: Vec<&Node> = order.iter().map(|&i| &nodes[i]).collect();
+    // Beam position of every node index (`usize::MAX`: not in the beam).
+    let mut position = vec![usize::MAX; nodes.len()];
+    let kept = select_beam(&ranked, width);
+    for (p, &r) in kept.iter().enumerate() {
+        position[order[r]] = p;
+    }
+    let mut beam: Vec<Option<Node>> = kept.iter().map(|_| None).collect();
+    let mut rest = Vec::with_capacity(nodes.len() - kept.len());
+    for (i, n) in nodes.into_iter().enumerate() {
+        match beam.get_mut(position[i]) {
+            Some(slot) => *slot = Some(n),
+            None => rest.push(n),
+        }
+    }
+    let beam = beam
+        .into_iter()
+        .map(|n| n.expect("every beam position filled once"))
+        .collect();
+    (beam, rest)
+}
+
 /// The beam: the first `width` of the ranked `nodes`, plus, from the rest
 /// in rank order:
 /// - the best grounded nodes until at least a quarter of `width` is
@@ -450,12 +503,15 @@ pub fn search(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Search {
 ///   than every kept node's in its [`HEIGHT_COLUMN_PX`] column. Furthest
 ///   right alone drops a player waiting above a pit for a moving platform
 ///   (or riding it) in favour of nodes further right down in the pit.
-fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
+///
+/// Returns the positions in `ranked` of the kept nodes, in rank order.
+fn select_beam(ranked: &[&Node], width: usize) -> Vec<usize> {
     let width = width.max(1);
-    if nodes.len() <= width {
-        return nodes;
+    if ranked.len() <= width {
+        return (0..ranked.len()).collect();
     }
-    let rest = nodes.split_off(width);
+    let (nodes, rest) = ranked.split_at(width);
+    let mut kept: Vec<usize> = (0..width).collect();
     let grounded = nodes.iter().filter(|n| n.game.player().on_ground).count();
     let mut missing = (width / 4).saturating_sub(grounded);
     let mut high = width / 4;
@@ -466,36 +522,51 @@ fn select_beam(mut nodes: Vec<Node>, width: usize) -> Vec<Node> {
         let y = highest.entry(column(n)).or_insert(feet(n));
         *y = (*y).min(feet(n));
     };
-    for n in &nodes {
+    for n in nodes {
         keep(n, &mut highest);
     }
-    for n in rest {
+    for (i, &n) in rest.iter().enumerate() {
         if missing > 0 && n.game.player().on_ground {
             missing -= 1;
-        } else if high > 0 && highest.get(&column(&n)).is_none_or(|&y| feet(&n) < y) {
+        } else if high > 0 && highest.get(&column(n)).is_none_or(|&y| feet(n) < y) {
             high -= 1;
         } else {
             continue;
         }
-        keep(&n, &mut highest);
-        nodes.push(n);
+        keep(n, &mut highest);
+        kept.push(width + i);
     }
-    nodes
+    kept
 }
 
 /// Column width of the beam's "high node" reserve (see [`select_beam`]).
 const HEIGHT_COLUMN_PX: i32 = 16;
 
-/// Expands every node (on up to `threads` threads); the result is in node order.
-fn expand_all(nodes: &[Node], threads: usize) -> Vec<Vec<Option<Node>>> {
+/// Expands every node (on up to `threads` threads); the result is in node
+/// order. The threads also drop the `dropped` nodes of the bucket (each
+/// node owns a state with heap data, and ~1500 of them per bucket are a
+/// noticeable serial cost on the calling thread).
+fn expand_all(nodes: &[Node], dropped: Vec<Node>, threads: usize) -> Vec<Vec<Option<Node>>> {
     if threads <= 1 || nodes.len() < PARALLEL_MIN_NODES {
+        drop(dropped);
         return nodes.iter().map(expand).collect();
     }
     let chunk = nodes.len().div_ceil(threads);
+    let parts = nodes.len().div_ceil(chunk);
+    let mut garbage: Vec<Vec<Node>> = (0..parts).map(|_| Vec::new()).collect();
+    for (i, n) in dropped.into_iter().enumerate() {
+        garbage[i % parts].push(n);
+    }
     std::thread::scope(|s| {
         let handles: Vec<_> = nodes
             .chunks(chunk)
-            .map(|c| s.spawn(move || c.iter().map(expand).collect::<Vec<_>>()))
+            .zip(garbage)
+            .map(|(c, g)| {
+                s.spawn(move || {
+                    drop(g);
+                    c.iter().map(expand).collect::<Vec<_>>()
+                })
+            })
             .collect();
         handles
             .into_iter()
@@ -504,14 +575,155 @@ fn expand_all(nodes: &[Node], threads: usize) -> Vec<Vec<Option<Node>>> {
     })
 }
 
-fn expand(node: &Node) -> Vec<Option<Node>> {
-    (0..MACROS.len()).map(|a| run_macro(node, a)).collect()
+/// One frame of [`MACROS`] in a [`MacroTree`].
+struct MacroFrame {
+    input: InputFrame,
+    /// Macros (indices into [`MACROS`]) that end after this frame.
+    ends: Vec<usize>,
+    /// Every macro that runs through this frame (incl. `ends`).
+    through: Vec<usize>,
+    /// The next frames (indices into [`MacroTree::frames`]).
+    next: Vec<usize>,
 }
 
-/// Runs one macro-action from `node`: `None` if the player dies, else the
-/// node at its end (or at the goal).
+/// The macros as a tree of single frames: macros that start with the same
+/// frames share them, so [`expand`] simulates each shared frame once (e.g.
+/// `RB 4`, `RB 8` and `RB 16`, or the JUMP holds of the five running
+/// jumps). About a third fewer simulated frames per expansion than
+/// running every macro on its own.
+struct MacroTree {
+    first: Vec<usize>,
+    frames: Vec<MacroFrame>,
+}
+
+impl MacroTree {
+    fn of(macros: &[Macro]) -> MacroTree {
+        let mut tree = MacroTree {
+            first: Vec::new(),
+            frames: Vec::new(),
+        };
+        for (a, m) in macros.iter().enumerate() {
+            let mut at: Option<usize> = None;
+            let inputs = m
+                .iter()
+                .flat_map(|&(i, n)| std::iter::repeat_n(i, n as usize));
+            for input in inputs {
+                let siblings = match at {
+                    None => &tree.first,
+                    Some(p) => &tree.frames[p].next,
+                };
+                let f = match siblings.iter().find(|&&f| tree.frames[f].input == input) {
+                    Some(&f) => f,
+                    None => {
+                        let f = tree.frames.len();
+                        tree.frames.push(MacroFrame {
+                            input,
+                            ends: Vec::new(),
+                            through: Vec::new(),
+                            next: Vec::new(),
+                        });
+                        match at {
+                            None => tree.first.push(f),
+                            Some(p) => tree.frames[p].next.push(f),
+                        }
+                        f
+                    }
+                };
+                tree.frames[f].through.push(a);
+                at = Some(f);
+            }
+            let end = at.expect("every macro has a frame");
+            tree.frames[end].ends.push(a);
+        }
+        tree
+    }
+}
+
+fn macro_tree() -> &'static MacroTree {
+    static TREE: std::sync::OnceLock<MacroTree> = std::sync::OnceLock::new();
+    TREE.get_or_init(|| MacroTree::of(MACROS))
+}
+
+/// Runs every macro-action from `node`. Entry `a` is the result of
+/// `MACROS[a]`: `None` if the player dies, else the node at its end (or at
+/// the goal, if the level is completed inside the macro). The same as
+/// running each macro on its own copy of the state, but frames that
+/// several macros share are simulated once ([`MacroTree`]).
+fn expand(node: &Node) -> Vec<Option<Node>> {
+    let tree = macro_tree();
+    let mut out: Vec<Option<Node>> = (0..MACROS.len()).map(|_| None).collect();
+    grow(
+        node,
+        tree,
+        &tree.first,
+        Game::clone(&node.game),
+        node.jumps,
+        0,
+        &mut out,
+    );
+    out
+}
+
+/// [`expand`] on from `game`, `frames` frames after `parent` with `jumps`
+/// `Jumped` events so far, through each of the macro frames `next`.
+fn grow(
+    parent: &Node,
+    tree: &MacroTree,
+    next: &[usize],
+    game: Game,
+    jumps: u32,
+    frames: u32,
+    out: &mut [Option<Node>],
+) {
+    let mut game = Some(game);
+    for (k, &f) in next.iter().enumerate() {
+        // The last branch takes the state, the others a copy.
+        let mut g = if k + 1 == next.len() {
+            game.take().expect("taken by the last branch only")
+        } else {
+            game.clone().expect("not taken yet")
+        };
+        let frame = &tree.frames[f];
+        g.step(frame.input);
+        let jumps = jumps + g.events().contains(&Event::Jumped) as u32;
+        if g.events().contains(&Event::Died) {
+            continue; // every macro through this frame dies
+        }
+        let frames = frames + 1;
+        let node = |g: Game, action: usize| {
+            let trail = Trail {
+                parent: parent.trail.clone(),
+                action,
+                frames,
+            };
+            Some(Node::new(g, jumps, Some(Arc::new(trail))))
+        };
+        if g.mode() == Mode::StageClear {
+            // Every macro through this frame stops at the goal.
+            for &a in &frame.through {
+                out[a] = node(g.clone(), a);
+            }
+        } else if frame.next.is_empty() {
+            let (&last, rest) = frame.ends.split_last().expect("a leaf ends a macro");
+            for &a in rest {
+                out[a] = node(g.clone(), a);
+            }
+            out[last] = node(g, last);
+        } else {
+            for &a in &frame.ends {
+                out[a] = node(g.clone(), a);
+            }
+            grow(parent, tree, &frame.next, g, jumps, frames, out);
+        }
+    }
+}
+
+/// Runs one macro-action from `node` on its own: `None` if the player
+/// dies, else the node at its end (or at the goal). The reference for
+/// [`expand`].
+#[cfg(test)]
 fn run_macro(node: &Node, action: usize) -> Option<Node> {
-    let mut game = node.game.clone();
+    let mut game = Game::clone(&node.game);
     let mut frames = 0;
     let mut jumps = node.jumps;
     'outer: for &(input, n) in MACROS[action] {
@@ -527,15 +739,12 @@ fn run_macro(node: &Node, action: usize) -> Option<Node> {
             }
         }
     }
-    Some(Node {
-        game,
-        jumps,
-        trail: Some(Arc::new(Trail {
-            parent: node.trail.clone(),
-            action,
-            frames,
-        })),
-    })
+    let trail = Trail {
+        parent: node.trail.clone(),
+        action,
+        frames,
+    };
+    Some(Node::new(game, jumps, Some(Arc::new(trail))))
 }
 
 // --------------------------------------------------------------- difficulty
@@ -796,20 +1005,14 @@ pub fn recovers(game: Game, goal: Goal, deadline: u32, threads: usize) -> bool {
         return true;
     }
     let mut buckets: BTreeMap<u32, Vec<Node>> = BTreeMap::new();
-    buckets.insert(
-        game.frame(),
-        vec![Node {
-            game,
-            jumps: 0,
-            trail: None,
-        }],
-    );
-    while let Some((_, mut nodes)) = buckets.pop_first() {
-        nodes.sort_by_key(|n| (std::cmp::Reverse(n.progress()), n.jumps));
-        let mut seen = BTreeSet::new();
-        nodes.retain(|n| seen.insert(StateKey::of(&n.game)));
-        let nodes = select_beam(nodes, REPLAN_BEAM);
-        for node in expand_all(&nodes, threads).into_iter().flatten().flatten() {
+    buckets.insert(game.frame(), vec![Node::new(game, 0, None)]);
+    while let Some((_, nodes)) = buckets.pop_first() {
+        let (nodes, dropped) = rank(nodes, REPLAN_BEAM);
+        for node in expand_all(&nodes, dropped, threads)
+            .into_iter()
+            .flatten()
+            .flatten()
+        {
             let f = node.game.frame();
             if f > deadline {
                 continue;
@@ -894,25 +1097,33 @@ fn window_range(mut try_shift: impl FnMut(i32) -> Shifted) -> (i32, Bound, i32, 
     (lo, lo_bound, hi, hi_bound)
 }
 
-/// A jump of the route before measuring: its JUMP hold, checkpoint and the
-/// state every shift of it starts from.
+/// A jump of the route before measuring: its JUMP hold, checkpoint, goal
+/// and the state every shift of it starts from.
 struct JumpAt {
     hold: (usize, usize),
+    /// Player hitbox left edge (level px) just before the press.
+    x: i32,
     check: u32,
+    /// Where a shift must get back to (D-033) ...
+    goal: Goal,
+    /// ... by this frame when it re-plans.
+    deadline: u32,
     /// The original route run up to frame `hold.0 - MAX_SHIFT` (or 0), the
     /// last state no shift changes: `Err(true)` if it completed the level
     /// before, `Err(false)` if it died before.
     start: Result<Game, bool>,
 }
 
-/// The jump windows of a route (see the module docs). Jumps are measured on
-/// up to `threads` threads; the result does not depend on it.
-pub fn jump_windows(
-    level: &Level,
-    tuning: &Tuning,
-    inputs: &[InputFrame],
-    threads: usize,
-) -> Vec<JumpWindow> {
+/// A route prepared for measuring its jump windows ([`measure_windows`]).
+struct RouteJumps<'a> {
+    tuning: &'a Tuning,
+    inputs: &'a [InputFrame],
+    jumps: Vec<JumpAt>,
+}
+
+/// The jumps of the route `inputs` with their checkpoints, goals and start
+/// states (see the module docs).
+fn route_jumps<'a>(level: &Level, tuning: &'a Tuning, inputs: &'a [InputFrame]) -> RouteJumps<'a> {
     let orig = trace(level, tuning, inputs);
     let climb = level.meta.camera == CameraMode::Climb;
     let total = inputs.len() as u32;
@@ -927,7 +1138,7 @@ pub fn jump_windows(
     // after that `Jumped` + 2 s, capped at the end of the route. The start
     // states come from one run of the original route (holds are in order).
     let mut run: Result<Game, bool> = Ok(Game::new(level, tuning, 1));
-    let jumps: Vec<JumpAt> = jump_holds(inputs)
+    let jumps = jump_holds(inputs)
         .into_iter()
         .filter_map(|(s, e)| {
             let press = s as u32 + 1;
@@ -949,98 +1160,166 @@ pub fn jump_windows(
                     run = Err(true);
                 }
             }
+            let check = orig.checkpoint(landing, total);
             Some(JumpAt {
                 hold: (s, e),
-                check: orig.checkpoint(landing, total),
+                x: orig.x[s],
+                check,
+                goal: Goal {
+                    x: orig.x[check as usize] - PROGRESS_TOLERANCE_PX,
+                    feet: climb.then(|| orig.goal_feet(check as usize) + CLIMB_FEET_TOLERANCE_PX),
+                },
+                deadline: check
+                    + if climb {
+                        CLIMB_REPLAN_MARGIN
+                    } else {
+                        REPLAN_MARGIN
+                    },
                 start: run.clone(),
             })
         })
         .collect();
-
-    // The jumps are independent: a shared counter hands them to the
-    // threads, the results are put back in jump order.
-    let next = AtomicUsize::new(0);
-    let worker = || {
-        let mut measured = Vec::new();
-        loop {
-            let i = next.fetch_add(1, Ordering::Relaxed);
-            let Some(jump) = jumps.get(i) else {
-                return measured;
-            };
-            measured.push((i, window(tuning, climb, inputs, &orig, jump)));
-        }
-    };
-    let mut out: Vec<(usize, JumpWindow)> = if threads <= 1 || jumps.len() < 2 {
-        worker()
-    } else {
-        std::thread::scope(|s| {
-            let handles: Vec<_> = (0..threads.min(jumps.len()))
-                .map(|_| s.spawn(worker))
-                .collect();
-            handles
-                .into_iter()
-                .flat_map(|h| h.join().expect("jump window thread panicked"))
-                .collect()
-        })
-    };
-    out.sort_by_key(|&(i, _)| i);
-    out.into_iter().map(|(_, w)| w).collect()
+    RouteJumps {
+        tuning,
+        inputs,
+        jumps,
+    }
 }
 
-/// Measures the window of one jump of the route `inputs` (D-033).
-fn window(
+/// The jump windows of a route (see the module docs). Measured on up to
+/// `threads` threads; the result does not depend on it.
+#[cfg(test)]
+pub fn jump_windows(
+    level: &Level,
     tuning: &Tuning,
-    climb: bool,
     inputs: &[InputFrame],
-    orig: &Trace,
-    jump: &JumpAt,
-) -> JumpWindow {
-    let (s, e) = jump.hold;
-    let check = jump.check;
-    let goal = Goal {
-        x: orig.x[check as usize] - PROGRESS_TOLERANCE_PX,
-        feet: climb.then(|| orig.goal_feet(check as usize) + CLIMB_FEET_TOLERANCE_PX),
-    };
-    let deadline = check
-        + if climb {
-            CLIMB_REPLAN_MARGIN
-        } else {
-            REPLAN_MARGIN
-        };
-    let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
-        let Some(shifted) = shift_hold(inputs, s, e, d) else {
-            return Shifted::Route;
-        };
-        let start = match &jump.start {
-            Ok(g) => g,
-            Err(true) => return Shifted::Ok,
-            Err(false) => return Shifted::Fail,
-        };
-        // Fast path: the unchanged later inputs already get there and she
-        // stands on the ground (like the re-planning goal).
-        if let Some(p) = progress(start, &shifted, check)
-            && goal.reached_by(p)
-        {
-            return Shifted::Ok;
-        }
-        let press = (s as i64 + i64::from(d)) as u32 + 1;
-        let ok = match after_shifted_jump(start, tuning, &shifted, press, deadline) {
-            // A beam of REPLAN_BEAM nodes is too small to gain from threads;
-            // the jumps run in parallel instead.
-            Ok(game) => recovers(game, goal, deadline, 1),
-            Err(done) => done,
-        };
-        if ok { Shifted::Ok } else { Shifted::Fail }
-    });
-    JumpWindow {
-        index: s,
-        hold: (e - s) as u32,
-        x: orig.x[s],
-        lo,
-        hi,
-        lo_bound,
-        hi_bound,
+    threads: usize,
+) -> Vec<JumpWindow> {
+    let route = route_jumps(level, tuning, inputs);
+    measure_windows(&[route], threads)
+        .pop()
+        .expect("one route in, one out")
+}
+
+/// Shift results in [`measure_windows`]'s table.
+const UNKNOWN: u8 = 0;
+const SKIPPED: u8 = 4;
+
+fn shifted_code(s: Shifted) -> u8 {
+    match s {
+        Shifted::Ok => 1,
+        Shifted::Fail => 2,
+        Shifted::Route => 3,
     }
+}
+
+fn shifted_of(code: u8) -> Option<Shifted> {
+    match code {
+        1 => Some(Shifted::Ok),
+        2 => Some(Shifted::Fail),
+        3 => Some(Shifted::Route),
+        _ => None,
+    }
+}
+
+/// The jump windows of every route, on up to `threads` threads in all
+/// (E35, D-091). Every shift of every jump is one work item, handed out
+/// smallest |d| first (all routes' ±1, then ±2, ...), so one jump's slow
+/// re-plans (a long swim) spread over every core instead of running one
+/// after the other. A shift is skipped if a smaller shift on the same side
+/// of the same jump has already failed (the window ends there anyway); one
+/// whose smaller neighbour is still running is measured and may go unused.
+/// Each window is then grown from the table exactly as [`window_range`]
+/// does one shift at a time, so the windows are the same as measuring the
+/// jumps one by one, for any thread count.
+fn measure_windows(routes: &[RouteJumps], threads: usize) -> Vec<Vec<JumpWindow>> {
+    let shifts = (2 * MAX_SHIFT + 1) as usize;
+    let slot = |d: i32| (d + MAX_SHIFT) as usize;
+    let table: Vec<Vec<Vec<AtomicU8>>> = routes
+        .iter()
+        .map(|r| {
+            r.jumps
+                .iter()
+                .map(|_| (0..shifts).map(|_| AtomicU8::new(UNKNOWN)).collect())
+                .collect()
+        })
+        .collect();
+    let mut items: Vec<(usize, usize, i32)> = Vec::new();
+    for d in 1..=MAX_SHIFT {
+        for (r, route) in routes.iter().enumerate() {
+            for j in 0..route.jumps.len() {
+                items.extend([(r, j, -d), (r, j, d)]);
+            }
+        }
+    }
+    crate::par::map_ordered(&items, threads, |&(r, j, d)| {
+        let row = &table[r][j];
+        let ended = (1..d.abs()).any(|k| {
+            let code = row[slot(k * d.signum())].load(Ordering::Acquire);
+            shifted_of(code).is_some_and(|s| s != Shifted::Ok)
+        });
+        let code = if ended {
+            SKIPPED
+        } else {
+            shifted_code(try_shift(&routes[r], &routes[r].jumps[j], d))
+        };
+        row[slot(d)].store(code, Ordering::Release);
+    });
+    routes
+        .iter()
+        .zip(&table)
+        .map(|(route, rows)| {
+            route
+                .jumps
+                .iter()
+                .zip(rows)
+                .map(|(jump, row)| {
+                    let (lo, lo_bound, hi, hi_bound) = window_range(|d| {
+                        let code = row[slot(d)].load(Ordering::Acquire);
+                        shifted_of(code).expect("a shift is only skipped beyond the window")
+                    });
+                    let (s, e) = jump.hold;
+                    JumpWindow {
+                        index: s,
+                        hold: (e - s) as u32,
+                        x: jump.x,
+                        lo,
+                        hi,
+                        lo_bound,
+                        hi_bound,
+                    }
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// Tries one shift `d` of a jump of `route` (D-033).
+fn try_shift(route: &RouteJumps, jump: &JumpAt, d: i32) -> Shifted {
+    let (s, e) = jump.hold;
+    let Some(shifted) = shift_hold(route.inputs, s, e, d) else {
+        return Shifted::Route;
+    };
+    let start = match &jump.start {
+        Ok(g) => g,
+        Err(true) => return Shifted::Ok,
+        Err(false) => return Shifted::Fail,
+    };
+    // Fast path: the unchanged later inputs already get there and she
+    // stands on the ground (like the re-planning goal).
+    if let Some(p) = progress(start, &shifted, jump.check)
+        && jump.goal.reached_by(p)
+    {
+        return Shifted::Ok;
+    }
+    let press = (s as i64 + i64::from(d)) as u32 + 1;
+    let ok = match after_shifted_jump(start, route.tuning, &shifted, press, jump.deadline) {
+        // A beam of REPLAN_BEAM nodes is too small to gain from threads;
+        // the shifts run in parallel instead.
+        Ok(game) => recovers(game, jump.goal, jump.deadline, 1),
+        Err(done) => done,
+    };
+    if ok { Shifted::Ok } else { Shifted::Fail }
 }
 
 /// The narrowest window (earliest on ties) among the jumps whose window is
@@ -1061,6 +1340,8 @@ pub struct Solution {
     pub inputs: Vec<InputFrame>,
     /// Empty when the search failed.
     pub windows: Vec<JumpWindow>,
+    /// Read from the solver cache instead of solved ([`cache`]).
+    pub cached: bool,
 }
 
 impl Solution {
@@ -1265,19 +1546,54 @@ pub fn solve(level: &Level, tuning: &Tuning, opts: &SolveOptions) -> Solution {
 /// the route and measures the jump windows on `threads` threads. No clock
 /// runs here.
 pub fn measure(level: &Level, tuning: &Tuning, search: Search, threads: usize) -> Solution {
-    let mut inputs = search.best.inputs();
-    let windows = if search.complete() {
-        inputs = clean_route(level, tuning, &inputs);
-        jump_windows(level, tuning, &inputs, threads)
-    } else {
-        Vec::new()
-    };
-    Solution {
-        level: level.meta.id.clone(),
-        search,
-        inputs,
-        windows,
-    }
+    measure_all(&[level], tuning, vec![search], threads)
+        .pop()
+        .expect("one level in, one out")
+}
+
+/// [`measure`] for several levels at once (`searches[i]` is the search of
+/// `levels[i]`), on up to `threads` threads in all: the route clean-ups
+/// one level per thread, then every level's jump shifts in one work queue
+/// ([`measure_windows`]). The result does not depend on `threads`.
+fn measure_all(
+    levels: &[&Level],
+    tuning: &Tuning,
+    searches: Vec<Search>,
+    threads: usize,
+) -> Vec<Solution> {
+    let jobs: Vec<(&Level, &Search)> = levels.iter().copied().zip(&searches).collect();
+    let routes: Vec<Vec<InputFrame>> = crate::par::map_ordered(&jobs, threads, |(level, s)| {
+        let inputs = s.best.inputs();
+        if s.complete() {
+            clean_route(level, tuning, &inputs)
+        } else {
+            inputs
+        }
+    });
+    let complete: Vec<usize> = (0..jobs.len())
+        .filter(|&i| searches[i].complete())
+        .collect();
+    let prepared = crate::par::map_ordered(&complete, threads, |&i| {
+        route_jumps(levels[i], tuning, &routes[i])
+    });
+    let mut windows = measure_windows(&prepared, threads).into_iter();
+    let mut complete = complete.into_iter().peekable();
+    levels
+        .iter()
+        .zip(searches)
+        .zip(routes)
+        .enumerate()
+        .map(|(i, ((level, search), inputs))| Solution {
+            level: level.meta.id.clone(),
+            search,
+            inputs,
+            windows: match complete.next_if_eq(&i) {
+                Some(_) => windows.next().expect("one per complete route"),
+                None => Vec::new(),
+            },
+            cached: false,
+        })
+        .collect()
 }
 
 /// Player position (raw x, raw y) after every frame of `inputs`.
@@ -1298,16 +1614,31 @@ fn positions(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Vec<(i32,
 /// too). Macro-actions leave mid-air presses and over-long holds in the
 /// route; without them the replay reads better and jump windows are not
 /// cut short by a neighbouring no-op hold.
+///
+/// Each trial runs from the cleaned route's state at the hold's start (the
+/// frames before it are the same as in the accepted route, whose positions
+/// all match) and stops at its first differing position (E35).
 pub fn clean_route(level: &Level, tuning: &Tuning, inputs: &[InputFrame]) -> Vec<InputFrame> {
     let want = positions(level, tuning, inputs);
     let mut out = inputs.to_vec();
+    // `out` run up to frame `at`.
+    let (mut at, mut g) = (0, Game::new(level, tuning, 1));
     for (s, e) in jump_holds(inputs) {
+        while at < s {
+            g.step(out[at]);
+            at += 1;
+        }
         for end in s..e {
             let mut trial = out.clone();
             for f in &mut trial[end..e] {
                 *f = f.without(InputFrame::JUMP);
             }
-            if positions(level, tuning, &trial) == want {
+            let mut t = g.clone();
+            let same = trial[s..].iter().zip(&want[s..]).all(|(&i, &w)| {
+                t.step(i);
+                (t.player().x.raw(), t.player().y.raw()) == w
+            });
+            if same {
                 out = trial;
                 break;
             }
@@ -1340,23 +1671,33 @@ struct Args {
     /// Threads for one level's search and jump windows (default: up to
     /// `MAX_THREADS`); the result does not depend on it.
     threads: Option<usize>,
+    /// Solve even if the cache has the result ([`cache`]).
+    no_cache: bool,
 }
 
-/// `cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S]`.
+impl Args {
+    fn none() -> Args {
+        Args {
+            target: None,
+            write: false,
+            shots: false,
+            beam: None,
+            time_limit: None,
+            threads: None,
+            no_cache: false,
+        }
+    }
+}
+
+/// `cargo xtask solve <level-id|--all> [--write] [--shots] [--beam N] [--time-limit S] [--no-cache]`.
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
-    let mut a = Args {
-        target: None,
-        write: false,
-        shots: false,
-        beam: None,
-        time_limit: None,
-        threads: None,
-    };
+    let mut a = Args::none();
     let mut it = args.iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
             "--write" => a.write = true,
             "--shots" => a.shots = true,
+            "--no-cache" => a.no_cache = true,
             "--beam" => match it.next().and_then(|v| v.parse().ok()).filter(|&n| n >= 1) {
                 Some(n) => a.beam = Some(n),
                 None => return usage_err("--beam needs a whole number ≥ 1"),
@@ -1392,7 +1733,8 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
         }
     };
     let mut ok = true;
-    let out = OutDirs::of(root);
+    let mut out = OutDirs::of(root);
+    out.read_cache = !a.no_cache;
     for level in &levels {
         match solve_and_report(root, level, &a, &out) {
             Ok((sol, text)) => {
@@ -1426,15 +1768,28 @@ fn all_levels(root: &Path) -> Result<Vec<Level>, String> {
         .collect()
 }
 
-/// Where `solve` writes: images, reports, `--write` replays.
+/// Where `solve` writes: images, reports, `--write` replays, the cache.
 struct OutDirs {
     preview: PathBuf,
     reports: PathBuf,
     replays: PathBuf,
+    /// The solver cache ([`cache`]); `None`: none is read or written.
+    cache: Option<PathBuf>,
+    /// Use cached results (else solve, and overwrite the entries).
+    read_cache: bool,
+}
+
+/// Set by `cargo xtask verify --no-cache`: the verify step solves every
+/// level (and overwrites the cache entries).
+static VERIFY_NO_CACHE: AtomicBool = AtomicBool::new(false);
+
+/// Makes the `solver` verify step ignore the cache (`verify --no-cache`).
+pub fn verify_without_cache() {
+    VERIFY_NO_CACHE.store(true, Ordering::Relaxed);
 }
 
 impl OutDirs {
-    /// The real locations: `$CARGO_TARGET_DIR/{preview,reports}/solver`
+    /// The real locations: `$CARGO_TARGET_DIR/{preview,reports,cache}/solver`
     /// and `tests/replays`.
     fn of(root: &Path) -> OutDirs {
         let target = crate::target_dir(root);
@@ -1442,13 +1797,15 @@ impl OutDirs {
             preview: target.join("preview/solver"),
             reports: target.join("reports/solver"),
             replays: content::replays_dir(root),
+            cache: Some(cache::dir(root)),
+            read_cache: true,
         }
     }
 }
 
-/// Solves `level` with the real content (from `root`), writes report,
-/// image and (with `--write`) the replay into `out`; returns (solution,
-/// printable text).
+/// Solves `level` with the real content (from `root`), or takes the result
+/// from the cache, writes report, image and (with `--write`) the replay
+/// into `out`; returns (solution, printable text).
 fn solve_and_report(
     root: &Path,
     level: &Level,
@@ -1456,8 +1813,31 @@ fn solve_and_report(
     out: &OutDirs,
 ) -> Result<(Solution, String), String> {
     let tuning = content::tuning(root)?;
-    let sol = solve(level, &tuning, &options(level, &tuning, a));
+    let opts = options(level, &tuning, a);
+    let key = cache::key(level, &tuning, &opts);
+    let sol = match cached(out, level, &tuning, &key) {
+        Some(sol) => sol,
+        None => {
+            let sol = solve(level, &tuning, &opts);
+            store(out, &sol, &key)?;
+            sol
+        }
+    };
     report(root, level, &tuning, sol, a, out)
+}
+
+/// The cached solve of `level` under `key`, if `out` reads the cache.
+fn cached(out: &OutDirs, level: &Level, tuning: &Tuning, key: &str) -> Option<Solution> {
+    let dir = out.cache.as_ref().filter(|_| out.read_cache)?;
+    cache::load(dir, level, tuning, key)
+}
+
+/// Stores a fresh complete `sol` in the cache of `out` (if it has one).
+fn store(out: &OutDirs, sol: &Solution, key: &str) -> Result<(), String> {
+    match &out.cache {
+        Some(dir) if !sol.cached => cache::store(dir, sol, key),
+        _ => Ok(()),
+    }
 }
 
 /// [`SolveOptions::for_level`] with the overrides from `a`.
@@ -1525,6 +1905,11 @@ fn report(
 
     let (json_path, md_path) = write_report(&out.reports, &sol, &files)?;
     let mut text = format!("{}\n", sol.summary());
+    if sol.cached {
+        text.push_str(
+            "  from the solver cache (same level, tuning, code and options; --no-cache solves again)\n",
+        );
+    }
     for p in [&files.image, &files.replay].into_iter().flatten() {
         text.push_str(&format!("  {}\n", p.display()));
     }
@@ -1569,26 +1954,76 @@ pub fn window_problem(level: &Level, sol: &Solution) -> Option<String> {
     ))
 }
 
+/// Why the committed solver replay `path` of a level doesn't fit its
+/// solve `sol` (E35): missing, unreadable, or stale (its inputs are not the
+/// fresh route; the `replays` step checks the rest). `None` if it fits or
+/// the level wasn't solved (that fails on its own).
+fn replay_problem(path: &Path, sol: &Solution) -> Option<String> {
+    let id = &sol.level;
+    let fix = format!("`cargo xtask solve {id} --write`");
+    if !path.is_file() {
+        return Some(format!(
+            "FAIL {id}: missing solver replay {} (create it with {fix} and commit it)",
+            path.display()
+        ));
+    }
+    if !sol.search.complete() {
+        return None;
+    }
+    let committed = match fs::read_to_string(path)
+        .map_err(|e| e.to_string())
+        .and_then(|t| Replay::parse(&t).map_err(|e| e.to_string()))
+    {
+        Ok(r) => r,
+        Err(e) => return Some(format!("FAIL {id}: solver replay {}: {e}", path.display())),
+    };
+    let inputs: Vec<InputFrame> = committed
+        .inputs
+        .iter()
+        .flat_map(|&(i, n)| std::iter::repeat_n(i, n as usize))
+        .collect();
+    if inputs == sol.inputs {
+        return None;
+    }
+    let first = inputs
+        .iter()
+        .zip(&sol.inputs)
+        .position(|(a, b)| a != b)
+        .unwrap_or(inputs.len().min(sol.inputs.len()));
+    Some(format!(
+        "FAIL {id}: stale solver replay {}: the fresh route differs from the committed one \
+         (fresh {} frames, committed {}; first difference at input {first}). Re-create it with \
+         {fix} (re-accept its goldens if it has shots), explain why in the commit and commit it",
+        path.display(),
+        sol.inputs.len(),
+        inputs.len()
+    ))
+}
+
 /// The `solver` verify step: every level must be solved, have its
-/// committed `tests/replays/<id>_solver.replay`, and keep its narrowest
-/// jump window at least `min_jump_window` (if set, [`window_problem`]).
+/// committed `tests/replays/<id>_solver.replay` with the fresh route
+/// ([`replay_problem`]), and keep its narrowest jump window at least
+/// `min_jump_window` (if set, [`window_problem`]). Levels whose inputs are
+/// unchanged come from the solver cache (unless `verify --no-cache`).
 /// Returns (ok, output, note with the narrowest jump window per level).
 pub fn verify(root: &Path) -> (bool, String, String) {
+    let mut dirs = OutDirs::of(root);
+    dirs.read_cache = !VERIFY_NO_CACHE.load(Ordering::Relaxed);
     match all_levels(root) {
         Ok(l) if l.is_empty() => (false, "no levels in content/levels".into(), String::new()),
-        Ok(levels) => verify_into(root, &OutDirs::of(root), &levels, crate::par::threads()),
+        Ok(levels) => verify_into(root, &dirs, &levels, crate::par::threads()),
         Err(e) => (false, e, String::new()),
     }
 }
 
 /// [`verify`] for `levels`, writing into `dirs`, with `threads` threads in
-/// all. First every level's search (the only part with a clock) runs, in
-/// parallel and largest level first, with the threads split between the
-/// levels running at once and each search ([`split_threads`]), so no more
-/// threads are busy than there are cores. Only then do the route clean-ups
-/// and jump windows (no clock) run, every level at once with up to
-/// `threads` threads each. Neither changes a route
-/// (see the module doc), and the output is in `levels` order (D-082).
+/// all. Levels found in the cache are not solved again. First every other
+/// level's search (the only part with a clock) runs, in parallel and
+/// largest level first, with the threads split between the levels running
+/// at once and each search ([`split_threads`]), so no more threads are busy
+/// than there are cores. Only then do the route clean-ups and jump windows
+/// (no clock) run, on all threads ([`measure_all`]). Neither changes a
+/// route (see the module doc), and the output is in `levels` order (D-082).
 fn verify_into(
     root: &Path,
     dirs: &OutDirs,
@@ -1599,63 +2034,69 @@ fn verify_into(
         Ok(t) => t,
         Err(e) => return (false, e, String::new()),
     };
-    let (outer, inner) = split_threads(threads, levels.len());
+    let keys: Vec<String> = levels
+        .iter()
+        .map(|l| cache::key(l, &tuning, &options(l, &tuning, &Args::none())))
+        .collect();
+    let mut solutions: Vec<Option<Solution>> = levels
+        .iter()
+        .zip(&keys)
+        .map(|(l, k)| cached(dirs, l, &tuning, k))
+        .collect();
+    // Pass 1: every other level's timed search, `outer` levels at a time
+    // with `inner` threads each (about one thread per core), largest first.
+    let order: Vec<usize> = largest_first(levels)
+        .into_iter()
+        .filter(|&i| solutions[i].is_none())
+        .collect();
+    let (outer, inner) = split_threads(threads, order.len());
     let a = Args {
-        target: None,
-        write: false,
-        shots: false,
-        beam: None,
-        time_limit: None,
         threads: Some(inner),
+        ..Args::none()
     };
-    // Pass 1: every level's timed search, `outer` levels at a time with
-    // `inner` threads each (about one thread per core), largest first.
-    let order = largest_first(levels);
+    let started = Instant::now();
     let found = crate::par::map_ordered(&order, outer, |&i| {
-        Mutex::new(Some(search(
-            &levels[i],
-            &tuning,
-            &options(&levels[i], &tuning, &a),
-        )))
+        search(&levels[i], &tuning, &options(&levels[i], &tuning, &a))
     });
-    // Pass 2 (no clock): route clean-up and jump windows, every level at
-    // once with up to `threads` threads each (largest first again).
-    let threads = threads.max(1);
-    let jobs: Vec<(usize, Mutex<Option<Search>>)> = order.into_iter().zip(found).collect();
-    let measured = crate::par::map_ordered(&jobs, threads, |(i, s)| {
-        let s = s
-            .lock()
-            .expect("one job per level")
-            .take()
-            .expect("searched once");
-        (*i, measure(&levels[*i], &tuning, s, threads))
-    });
-    let mut solutions: Vec<Option<Solution>> = levels.iter().map(|_| None).collect();
-    for (i, sol) in measured {
-        solutions[i] = Some(sol);
-    }
-    // The reports and checks, in level order.
+    let searched = started.elapsed();
+    // Pass 2 (no clock): route clean-ups and jump windows of those levels
+    // on all threads (largest first again).
+    let started = Instant::now();
+    let in_order: Vec<&Level> = order.iter().map(|&i| &levels[i]).collect();
+    let measured = measure_all(&in_order, &tuning, found, threads.max(1));
     let (mut ok, mut out, mut notes) = (true, String::new(), Vec::new());
+    for (i, sol) in order.iter().zip(measured) {
+        if let Err(e) = store(dirs, &sol, &keys[*i]) {
+            ok = false;
+            out.push_str(&format!("FAIL {}: solver cache: {e}\n", sol.level));
+        }
+        solutions[*i] = Some(sol);
+    }
+    // Last in the output (the step report keeps its tail).
+    let summary = format!(
+        "solver: {} of {} levels from the cache; searches {:.1}s, jump windows {:.1}s\n",
+        levels.len() - order.len(),
+        levels.len(),
+        searched.as_secs_f64(),
+        started.elapsed().as_secs_f64()
+    );
+    // The reports and checks, in level order.
     for (level, sol) in levels.iter().zip(solutions) {
-        let sol = sol.expect("every level is measured once");
+        let sol = sol.expect("every level is solved or cached once");
         match report(root, level, &tuning, sol, &a, dirs) {
             Ok((sol, text)) => {
                 ok &= sol.search.complete();
                 out.push_str(&text);
                 notes.push(sol.note());
-                if let Some(p) = window_problem(level, &sol) {
+                let replay = dirs
+                    .replays
+                    .join(format!("{}_solver.replay", level.meta.id));
+                for p in [window_problem(level, &sol), replay_problem(&replay, &sol)]
+                    .into_iter()
+                    .flatten()
+                {
                     ok = false;
                     out.push_str(&format!("{p}\n"));
-                }
-                let id = &level.meta.id;
-                let replay = dirs.replays.join(format!("{id}_solver.replay"));
-                if !replay.is_file() {
-                    ok = false;
-                    out.push_str(&format!(
-                        "FAIL {id}: missing solver replay {} (create it with \
-                         `cargo xtask solve {id} --write` and commit it)\n",
-                        replay.display()
-                    ));
                 }
             }
             Err(e) => {
@@ -1664,6 +2105,7 @@ fn verify_into(
             }
         }
     }
+    out.push_str(&summary);
     (ok, out, notes.join("; "))
 }
 
@@ -1791,20 +2233,16 @@ mod tests {
             preview: base.join("preview"),
             reports: base.join("reports"),
             replays: base.join("replays"),
+            // Tests that use the cache set their own.
+            cache: None,
+            read_cache: true,
         };
         fs::create_dir_all(&dirs.replays).unwrap();
         dirs
     }
 
     fn no_args() -> Args {
-        Args {
-            target: None,
-            write: false,
-            shots: false,
-            beam: None,
-            time_limit: None,
-            threads: None,
-        }
+        Args::none()
     }
 
     #[test]
@@ -1873,48 +2311,54 @@ mod tests {
     fn select_beam_keeps_a_grounded_reserve() {
         let level = gap_level(0);
         let t = tuning();
-        let grounded = Node {
-            game: Game::new(&level, &t, 1),
-            jumps: 0,
-            trail: None,
-        };
-        let mut airborne = grounded.clone();
-        airborne.game.step(InputFrame::JUMP);
+        let grounded = Node::new(Game::new(&level, &t, 1), 0, None);
+        let mut game = Game::clone(&grounded.game);
+        game.step(InputFrame::JUMP);
+        let airborne = Node::new(game, 0, None);
         assert!(!airborne.game.player().on_ground && grounded.game.player().on_ground);
         let on_ground = |nodes: &[Node]| -> Vec<bool> {
             nodes.iter().map(|n| n.game.player().on_ground).collect()
+        };
+        // The kept nodes themselves.
+        let select = |nodes: Vec<Node>, width: usize| -> Vec<Node> {
+            let refs: Vec<&Node> = nodes.iter().collect();
+            select_beam(&refs, width)
+                .into_iter()
+                .map(|i| nodes[i].clone())
+                .collect()
         };
         let mut ranked = vec![airborne.clone(); 8];
         ranked.extend([grounded.clone(), grounded.clone()]);
 
         // Width 4: the 4 best plus 1 grounded (a quarter of 4).
-        let beam = select_beam(ranked.clone(), 4);
+        let beam = select(ranked.clone(), 4);
         assert_eq!(on_ground(&beam), [false, false, false, false, true]);
         // Width 8: a quarter is 2 grounded.
-        let beam = select_beam(ranked.clone(), 8);
+        let beam = select(ranked.clone(), 8);
         assert_eq!(beam.len(), 10);
         assert_eq!(on_ground(&beam[8..]), [true, true]);
         // Enough grounded nodes inside the width already: plain cut.
         let mut mixed = vec![grounded.clone(), airborne.clone()];
         mixed.extend(vec![airborne.clone(); 6]);
-        assert_eq!(select_beam(mixed, 4).len(), 4);
+        assert_eq!(select(mixed, 4).len(), 4);
         // Fewer nodes than the width: unchanged.
-        assert_eq!(select_beam(vec![airborne.clone(); 3], 4).len(), 3);
+        assert_eq!(select(vec![airborne.clone(); 3], 4).len(), 3);
 
         // High reserve: a node higher than every kept node in its column
         // survives the cut (one per quarter of the width), lower ones don't.
         let mut low_first = vec![grounded.clone(); 6];
         low_first.extend([airborne.clone(), airborne.clone(), grounded.clone()]);
-        let beam = select_beam(low_first, 4);
+        let beam = select(low_first, 4);
         assert_eq!(on_ground(&beam), [true, true, true, true, false]);
         // In another column it counts on its own.
-        let mut far = grounded.clone();
-        let centre = far.game.player().center_px().0;
-        far.game.teleport_player(centre + HEIGHT_COLUMN_PX);
-        far.game.step(InputFrame::JUMP);
+        let mut game = Game::clone(&grounded.game);
+        let centre = game.player().center_px().0;
+        game.teleport_player(centre + HEIGHT_COLUMN_PX);
+        game.step(InputFrame::JUMP);
+        let far = Node::new(game, 0, None);
         let mut ranked = vec![far; 4];
         ranked.extend([airborne.clone(), grounded]);
-        let beam = select_beam(ranked, 4);
+        let beam = select(ranked, 4);
         assert_eq!(
             beam.len(),
             6,
@@ -2507,6 +2951,58 @@ mod tests {
         assert_eq!(t(&[60, 100], &[n, n]).goal_feet(1), 100);
     }
 
+    /// The clean-up before E35: every trial run from frame 0 to the end.
+    fn clean_route_from_the_start(
+        level: &Level,
+        tuning: &Tuning,
+        inputs: &[InputFrame],
+    ) -> Vec<InputFrame> {
+        let want = positions(level, tuning, inputs);
+        let mut out = inputs.to_vec();
+        for (s, e) in jump_holds(inputs) {
+            for end in s..e {
+                let mut trial = out.clone();
+                for f in &mut trial[end..e] {
+                    *f = f.without(InputFrame::JUMP);
+                }
+                if positions(level, tuning, &trial) == want {
+                    out = trial;
+                    break;
+                }
+            }
+        }
+        out
+    }
+
+    /// E35: the clean-up from snapshots with an early exit cleans a real
+    /// search route (many holds, mid-air presses) exactly as before.
+    #[test]
+    fn clean_route_equals_cleaning_from_the_start() {
+        let t = tuning();
+        for level in [
+            three_pit_level(),
+            gap_level(4),
+            content::find_level(&root(), "testbed").unwrap(),
+        ] {
+            let s = search(&level, &t, &opts(&level, 4));
+            assert!(s.complete(), "{}", level.meta.id);
+            let raw = s.best.inputs();
+            let clean = clean_route(&level, &t, &raw);
+            assert_eq!(
+                clean,
+                clean_route_from_the_start(&level, &t, &raw),
+                "{}",
+                level.meta.id
+            );
+            assert_ne!(
+                jump_holds(&clean),
+                jump_holds(&raw),
+                "{}: something was cleaned",
+                level.meta.id
+            );
+        }
+    }
+
     #[test]
     fn clean_route_drops_mid_air_presses_and_trims_long_holds() {
         let level = gap_level(0);
@@ -2622,14 +3118,75 @@ mod tests {
             );
             assert!(note.contains(&format!("{id}: ")), "{note}");
         }
-        // With the replays present (any content: the `replays` step checks them).
-        for l in &levels {
-            let id = &l.meta.id;
-            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
-        }
+        // With the replays of the fresh routes: green.
+        write_solver_replays(&dirs, &levels);
         let (ok, out, _) = verify_into(&root(), &dirs, &levels, 4);
         assert!(ok, "{out}");
         assert!(!out.contains("FAIL "), "{out}");
+    }
+
+    /// Writes `<id>_solver.replay` with the fresh route of every level that
+    /// solves, as `solve <id> --write` does, and returns those replays.
+    fn write_solver_replays(dirs: &OutDirs, levels: &[Level]) -> Vec<Option<Replay>> {
+        let t = tuning();
+        levels
+            .iter()
+            .map(|l| {
+                let sol = solve(l, &t, &opts(l, 4));
+                let replay = sol.search.complete().then(|| sol.replay(false));
+                let text = replay.as_ref().map_or(String::new(), Replay::format);
+                let path = dirs.replays.join(format!("{}_solver.replay", l.meta.id));
+                fs::write(path, text).unwrap();
+                replay
+            })
+            .collect()
+    }
+
+    /// E35: a committed solver replay whose inputs are not the fresh route
+    /// (or that doesn't parse) fails the step, naming the fix.
+    #[test]
+    fn verify_fails_on_a_stale_or_broken_solver_replay() {
+        let dirs = tmp_dirs("verify_stale_replay");
+        let levels = verify_levels();
+        let replays = write_solver_replays(&dirs, &levels);
+        let path = |id: &str| dirs.replays.join(format!("{id}_solver.replay"));
+        // syn_large: one frame more at the end (an old, slower route).
+        let mut stale = replays[1].clone().unwrap();
+        let n = stale.inputs.iter().map(|&(_, n)| n as usize).sum::<usize>();
+        stale.inputs.push((NONE, 1));
+        fs::write(path("syn_large"), stale.format()).unwrap();
+        // syn_mid: not a replay at all.
+        fs::write(path("syn_mid"), "not a replay").unwrap();
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(!ok, "{out}");
+        assert!(
+            out.contains(&format!(
+                "FAIL syn_large: stale solver replay {}: the fresh route differs from the committed \
+                 one (fresh {n} frames, committed {}; first difference at input {n}). Re-create it \
+                 with `cargo xtask solve syn_large --write`",
+                path("syn_large").display(),
+                n + 1
+            )),
+            "{out}"
+        );
+        assert!(
+            out.contains(&format!(
+                "FAIL syn_mid: solver replay {}: ",
+                path("syn_mid").display()
+            )),
+            "{out}"
+        );
+        assert!(!out.contains("FAIL syn_small"), "{out}");
+        // A comment line (as `--write` adds) and shots don't matter.
+        let mut shots = replays[1].clone().unwrap();
+        shots.shots = vec![Shot {
+            frame: 5,
+            name: "start".into(),
+        }];
+        fs::write(path("syn_large"), format!("# comment\n{}", shots.format())).unwrap();
+        write_solver_replays(&dirs, &levels[2..]);
+        let (ok, out, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(ok, "{out}");
     }
 
     #[test]
@@ -2659,10 +3216,7 @@ mod tests {
         let mut broken = gap_level(14);
         broken.meta.id = "syn_broken".into();
         levels.insert(1, broken);
-        for l in &levels {
-            let id = &l.meta.id;
-            fs::write(dirs.replays.join(format!("{id}_solver.replay")), "").unwrap();
-        }
+        write_solver_replays(&dirs, &levels);
         let (ok, out, _) = verify_into(&root(), &dirs, &levels, 8);
         assert!(!ok, "{out}");
         let lines = result_lines(&out);
@@ -2759,5 +3313,305 @@ mod tests {
             window_range(|d| if d < -2 { Shifted::Route } else { Shifted::Ok }),
             (-2, Bound::Route, MAX_SHIFT, Bound::Max)
         );
+    }
+    // ------------------------------------------------------- E35 speed-ups
+
+    /// What makes two nodes equivalent for the search: the full state, the
+    /// jump count and the macro that made them.
+    fn fingerprint(n: &Node) -> (u64, u32, Option<(usize, u32)>, i32, StateKey) {
+        (
+            n.game.state_hash(),
+            n.jumps,
+            n.trail.as_ref().map(|t| (t.action, t.frames)),
+            n.progress,
+            n.key,
+        )
+    }
+
+    /// The shared-frame expansion gives exactly what running every macro on
+    /// its own copy gives: deaths (a pit), the goal inside a macro, jumps.
+    #[test]
+    fn expand_equals_running_each_macro_alone() {
+        let t = tuning();
+        let tree = macro_tree();
+        let own: usize = MACROS
+            .iter()
+            .map(|m| m.iter().map(|&(_, n)| n as usize).sum::<usize>())
+            .sum();
+        assert!(
+            tree.frames.len() * 10 < own * 7,
+            "shared frames: {} of {own}",
+            tree.frames.len()
+        );
+        let mut states = Vec::new();
+        // Standing at the start; running towards a pit; next to the goal.
+        let pit = gap_level(4);
+        let mut g = Game::new(&pit, &t, 1);
+        states.push(g.clone());
+        while g.player().on_ground {
+            g.step(RB);
+        }
+        states.push(g.clone()); // just off the edge (coyote time)
+        for _ in 0..t.player.coyote_frames + 2 {
+            g.step(RB);
+        }
+        states.push(g.clone()); // falling into the pit
+        let short = gap_level(0);
+        let mut g = Game::new(&short, &t, 1);
+        g.teleport_player(26 * 16);
+        states.push(g);
+        let (mut deaths, mut goals) = (0, 0);
+        for game in states {
+            let node = Node::new(game, 3, None);
+            let shared = expand(&node);
+            let alone: Vec<Option<Node>> = (0..MACROS.len()).map(|a| run_macro(&node, a)).collect();
+            assert_eq!(shared.len(), alone.len());
+            for (a, (s, o)) in shared.iter().zip(&alone).enumerate() {
+                assert_eq!(
+                    s.as_ref().map(fingerprint),
+                    o.as_ref().map(fingerprint),
+                    "macro {a}"
+                );
+                deaths += o.is_none() as u32;
+                goals += o
+                    .as_ref()
+                    .is_some_and(|n| n.game.mode() == Mode::StageClear)
+                    as u32;
+            }
+        }
+        assert!(deaths > 0 && goals > 0, "deaths {deaths}, goals {goals}");
+    }
+
+    /// `rank` keeps the nodes the old ranking kept (stable sort by progress
+    /// and jumps, first of each state key, then `select_beam`), in order,
+    /// and hands back every other node.
+    #[test]
+    fn rank_matches_sorting_the_nodes_themselves() {
+        let level = three_pit_level();
+        let t = tuning();
+        // A real bucket: every child of a few nodes, all at frame 8.
+        let root = Node::new(Game::new(&level, &t, 1), 0, None);
+        let mut bucket = Vec::new();
+        let mut frontier = vec![root];
+        for _ in 0..3 {
+            let mut next = Vec::new();
+            for n in &frontier {
+                next.extend(expand(n).into_iter().flatten());
+            }
+            bucket.extend(next.iter().filter(|n| n.game.frame() == 8).cloned());
+            frontier = next.into_iter().filter(|n| n.game.frame() < 8).collect();
+        }
+        bucket.extend(bucket.clone()); // duplicates to de-duplicate
+        assert!(bucket.len() > 30, "{}", bucket.len());
+        for width in [4, 12, 64] {
+            let mut old = bucket.clone();
+            old.sort_by_key(|n| (std::cmp::Reverse(n.progress), n.jumps));
+            let mut seen = BTreeSet::new();
+            old.retain(|n| seen.insert(n.key));
+            let refs: Vec<&Node> = old.iter().collect();
+            let want: Vec<_> = select_beam(&refs, width)
+                .into_iter()
+                .map(|i| fingerprint(&old[i]))
+                .collect();
+            let (beam, rest) = rank(bucket.clone(), width);
+            assert_eq!(
+                beam.iter().map(fingerprint).collect::<Vec<_>>(),
+                want,
+                "width {width}"
+            );
+            assert_eq!(beam.len() + rest.len(), bucket.len());
+        }
+    }
+
+    /// The old measurement: each jump on its own, shift after shift.
+    fn windows_one_by_one(route: &RouteJumps) -> Vec<JumpWindow> {
+        route
+            .jumps
+            .iter()
+            .map(|jump| {
+                let (lo, lo_bound, hi, hi_bound) = window_range(|d| try_shift(route, jump, d));
+                let (s, e) = jump.hold;
+                JumpWindow {
+                    index: s,
+                    hold: (e - s) as u32,
+                    x: jump.x,
+                    lo,
+                    hi,
+                    lo_bound,
+                    hi_bound,
+                }
+            })
+            .collect()
+    }
+
+    /// The shared work queue over every shift of every route measures the
+    /// same windows as one jump at a time, for any thread count, also with
+    /// windows that end in a failed shift (skipped shifts beyond them).
+    #[test]
+    fn measuring_all_shifts_at_once_equals_one_jump_at_a_time() {
+        let t = tuning();
+        let pits = three_pit_level();
+        let sol = solve(&pits, &t, &opts(&pits, 4));
+        assert!(sol.search.complete());
+        // Plus the coyote-limited jump of `window_limited_by_a_pit_...`.
+        let gap = gap_level(4);
+        let mut probe = Game::new(&gap, &t, 1);
+        let mut left_ground = 0;
+        while probe.player().on_ground {
+            probe.step(RB);
+            left_ground += 1;
+        }
+        let press = left_ground - 1 + t.player.coyote_frames as usize - 2;
+        let mut coyote = vec![RB; press];
+        coyote.extend([RBJ; 20]);
+        coyote.extend([RB; 150]);
+        let routes = [
+            route_jumps(&pits, &t, &sol.inputs),
+            route_jumps(&gap, &t, &coyote),
+        ];
+        let want: Vec<Vec<JumpWindow>> = routes.iter().map(windows_one_by_one).collect();
+        assert!(
+            want.iter()
+                .flatten()
+                .any(|w| w.lo_bound == Bound::Fail || w.hi_bound == Bound::Fail),
+            "a window ends in a failed shift: {want:?}"
+        );
+        for threads in [1, 2, 5, 16] {
+            assert_eq!(measure_windows(&routes, threads), want, "{threads} threads");
+        }
+    }
+
+    /// `measure_all` over several levels (one stuck) gives each level what
+    /// `measure` gives it alone.
+    #[test]
+    fn measure_all_equals_measuring_each_level() {
+        let t = tuning();
+        let levels = [gap_level(3), gap_level(14), three_pit_level()];
+        let refs: Vec<&Level> = levels.iter().collect();
+        let searches = || {
+            levels
+                .iter()
+                .map(|l| search(l, &t, &opts(l, 2)))
+                .collect::<Vec<_>>()
+        };
+        let all = measure_all(&refs, &t, searches(), 6);
+        for ((l, s), sol) in levels.iter().zip(searches()).zip(&all) {
+            let alone = measure(l, &t, s, 1);
+            assert_eq!(sol.inputs, alone.inputs, "{}", l.meta.id);
+            assert_eq!(sol.windows, alone.windows, "{}", l.meta.id);
+            assert_eq!(sol.search.complete(), alone.search.complete());
+            assert!(!sol.cached);
+        }
+        assert!(!all[1].search.complete() && all[1].windows.is_empty());
+    }
+
+    // ------------------------------------------------------------- cache
+
+    /// The cache key covers the level, the tuning and the options.
+    #[test]
+    fn cache_key_changes_with_level_tuning_and_options() {
+        let t = tuning();
+        let level = gap_level(3);
+        let o = opts(&level, 1);
+        let k = cache::key(&level, &t, &o);
+        assert_eq!(
+            k,
+            cache::key(&level, &t, &opts(&level, 7)),
+            "threads don't count"
+        );
+        let mut other = level.clone();
+        let last = other.tiles.len() - 1;
+        other.tiles[last] = other.tiles[0];
+        assert_ne!(other, level);
+        let mut slower = t;
+        slower.player.run_speed = jnr_core::Fx(slower.player.run_speed.raw() - 1);
+        let keys = [
+            cache::key(&other, &t, &o),
+            cache::key(&level, &slower, &o),
+            cache::key(
+                &level,
+                &t,
+                &SolveOptions {
+                    beam_width: 32,
+                    ..o
+                },
+            ),
+            cache::key(
+                &level,
+                &t,
+                &SolveOptions {
+                    frame_budget: 9,
+                    ..o
+                },
+            ),
+            cache::key(
+                &level,
+                &t,
+                &SolveOptions {
+                    time_limit: Duration::from_secs(5),
+                    ..o
+                },
+            ),
+        ];
+        for (i, other) in keys.iter().enumerate() {
+            assert_ne!(other, &k, "change {i}");
+        }
+    }
+
+    /// A second verify takes unchanged levels from the cache with the same
+    /// result; a changed level, a corrupt entry or `--no-cache` solve again.
+    #[test]
+    fn verify_reuses_cached_solves_with_the_same_result() {
+        let mut dirs = tmp_dirs("verify_cache");
+        let cache_dir = dirs.replays.join("../cache");
+        dirs.cache = Some(cache_dir.clone());
+        let mut levels = verify_levels();
+        write_solver_replays(&dirs, &levels);
+        let from_cache = |out: &str| {
+            out.lines()
+                .find_map(|l| l.strip_prefix("solver: "))
+                .and_then(|l| l.split(" of ").next())
+                .map(|n| n.parse::<usize>().unwrap())
+                .unwrap()
+        };
+        let (ok, fresh, note) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(ok, "{fresh}");
+        assert_eq!(from_cache(&fresh), 0, "{fresh}");
+        let report = |id: &str| {
+            let v: Value = serde_json::from_str(
+                &fs::read_to_string(dirs.reports.join(format!("{id}.json"))).unwrap(),
+            )
+            .unwrap();
+            (
+                v["frames"].clone(),
+                v["jumps"].clone(),
+                v["search_deaths"].clone(),
+                v["furthest_x"].clone(),
+            )
+        };
+        let before: Vec<_> = levels.iter().map(|l| report(&l.meta.id)).collect();
+
+        let (ok, again, note2) = verify_into(&root(), &dirs, &levels, 4);
+        assert!(ok, "{again}");
+        assert_eq!(from_cache(&again), 3, "{again}");
+        assert_eq!(result_lines(&again), result_lines(&fresh));
+        assert_eq!(note2, note);
+        assert_eq!(again.matches("from the solver cache").count(), 3, "{again}");
+        let after: Vec<_> = levels.iter().map(|l| report(&l.meta.id)).collect();
+        assert_eq!(after, before, "the reports are the same");
+
+        // A changed level is solved again (its replay is now stale).
+        levels[2].meta.time_limit += 1;
+        let (_, changed, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert_eq!(from_cache(&changed), 2, "{changed}");
+        // A corrupt entry is solved again, and so is everything without
+        // reading the cache.
+        fs::write(cache_dir.join("syn_small.json"), "{").unwrap();
+        let (_, corrupt, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert_eq!(from_cache(&corrupt), 2, "{corrupt}");
+        dirs.read_cache = false;
+        let (_, ignored, _) = verify_into(&root(), &dirs, &levels, 4);
+        assert_eq!(from_cache(&ignored), 0, "{ignored}");
+        assert_eq!(result_lines(&ignored), result_lines(&changed));
     }
 }
