@@ -16,6 +16,7 @@ mod m2;
 mod m3;
 mod m4;
 mod modes;
+mod offiziere;
 mod reisebus;
 mod route;
 mod schafbergbahn;

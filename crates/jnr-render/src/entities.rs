@@ -18,9 +18,11 @@
 //!    puffs, the Traundl boats and the Dampfer with the `gischt` spray of
 //!    its turning paddle wheel; then enemies and projectiles (animation by
 //!    `Entity::pose`, facing by `Entity::dir`, the swarm's shake by
-//!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`), falling
-//!    rocks, the Operettensänger's high-C column (`hohes_c` rings) and
-//!    snow globes, so a hazard never hides behind a hull or car
+//!    `Entity::shake_px`, a `lead` Pilger as `pilger_lead`, a `lead`
+//!    Offizier as `offizier_lead`), falling rocks, the Operettensänger's
+//!    high-C column (`hohes_c` rings), the Offizier's grey-box sabre (drawn
+//!    from `enemies::sabre_zone`) and snow globes, so a hazard never hides
+//!    behind a hull or car
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
 //!    popups on top (the last world pass, under the HUD)
@@ -160,6 +162,8 @@ pub struct EntityLooks<'a> {
     schwan: Option<&'a AtlasSprite>,
     gelse: Option<&'a AtlasSprite>,
     regattaboot: Option<&'a AtlasSprite>,
+    offizier: Option<&'a AtlasSprite>,
+    offizier_lead: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -210,6 +214,8 @@ impl<'a> EntityLooks<'a> {
             schwan: s(EnemyKind::Schwan.sprite()),
             gelse: s(EnemyKind::Gelse.sprite()),
             regattaboot: s(EnemyKind::Regattaboot.sprite()),
+            offizier: s(EnemyKind::Offizier.sprite()),
+            offizier_lead: s("offizier_lead"),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -256,6 +262,7 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Schwan => self.schwan,
                 EnemyKind::Gelse => self.gelse,
                 EnemyKind::Regattaboot => self.regattaboot,
+                EnemyKind::Offizier => self.offizier,
             },
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
@@ -303,6 +310,7 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Schwan => WHITE,
             EnemyKind::Gelse => OUTLINE,
             EnemyKind::Regattaboot => CREAM,
+            EnemyKind::Offizier => STONE_GREY,
         },
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
@@ -838,14 +846,19 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::Fotostopp { flash } => ("fotostopp", Some(usize::from(flash))),
         Pose::Wait => ("wait", None),
         Pose::Leave => ("leave", None),
+        Pose::March => ("march", None),
+        Pose::Habtacht => ("habtacht", None),
+        Pose::Praesentiert => ("praesentiert", None),
     }
 }
 
-/// True for a Pilger (or a defeated one) placed with `lead = true`.
-fn is_lead_pilger(game: &Game, e: &Entity) -> bool {
+/// True for a Pilger or an Offizier (or a defeated one) placed with
+/// `lead = true`.
+fn is_lead(game: &Game, e: &Entity) -> bool {
     matches!(
         e.kind,
-        EntityKind::Enemy(EnemyKind::Pilger) | EntityKind::Defeated(EnemyKind::Pilger)
+        EntityKind::Enemy(EnemyKind::Pilger | EnemyKind::Offizier)
+            | EntityKind::Defeated(EnemyKind::Pilger | EnemyKind::Offizier)
     ) && e
         .spawn
         .and_then(|i| game.level().entities.get(usize::from(i)))
@@ -918,8 +931,14 @@ fn draw_enemy(
     };
     let (x, y) = feet_on_screen(e, cam);
     let (x, y) = (x + sx, y + sy);
-    let lead = is_lead_pilger(game, e);
-    let sprite = match looks.pilger_lead {
+    let lead = is_lead(game, e);
+    let lead_sprite = match e.kind {
+        EntityKind::Enemy(EnemyKind::Offizier) | EntityKind::Defeated(EnemyKind::Offizier) => {
+            looks.offizier_lead
+        }
+        _ => looks.pilger_lead,
+    };
+    let sprite = match lead_sprite {
         Some(s) if lead => Some(s),
         _ => looks.sprite(e.kind),
     };
@@ -976,13 +995,65 @@ fn draw_enemy(
                 fb.fill_rect(bx + 1, by - 4, 3, 4, WHITE);
                 fb.fill_rect(bx + w - 4, by - 4, 3, 4, WHITE);
             }
-            if lead && pose != Pose::Squished {
+            let officer = e.kind == EntityKind::Enemy(EnemyKind::Offizier);
+            if officer {
+                draw_officer_marks(game, fb, cam, e, pose, lead);
+            } else if lead && pose != Pose::Squished {
                 // The leader's pennant: a 1 px stick above the box with a
                 // small red flag.
                 fb.fill_rect(bx + w - 2, by - 8, 1, 8, OUTLINE);
                 fb.fill_rect(bx + w - 1, by - 8, 3, 2, DIRNDL_RED);
             }
         }
+    }
+}
+
+/// Grey-box marks of an Offizier (no `offizier` sprite yet): in
+/// „Habt Acht!" a yellow hilt at his side (the telegraph); in
+/// „Präsentiert!" the sabre drawn from [`jnr_core::enemies::sabre_zone`]
+/// (a white blade with a silver outline, exactly the hurting pixels); the
+/// flag bearer (`lead`) carries a 1 px staff with a black-and-yellow flag
+/// at the box's far side, dipped in „Habt Acht!", which stays ≥ 2 px clear
+/// of the blade's column.
+fn draw_officer_marks(
+    game: &Game,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+    pose: Pose,
+    lead: bool,
+) {
+    let (bx, by) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+    let w = e.w.to_px();
+    let front = if e.facing_left() { bx - 1 } else { bx + w - 1 };
+    match pose {
+        Pose::Habtacht => fb.fill_rect(front, by + 10, 2, 2, MOZART_YELLOW),
+        Pose::Praesentiert => {
+            if let Some(z) = jnr_core::enemies::sabre_zone(e, game.tuning()) {
+                let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
+                let (zw, zh) = (z.w.to_px(), z.h.to_px());
+                fb.fill_rect(zx, zy, zw, zh, WHITE);
+                fb.outline_rect(zx, zy, zw, zh, SILVER_LIGHT);
+            }
+        }
+        _ => {}
+    }
+    if lead {
+        // The staff on the side away from his front, outside the box.
+        let staff = if e.facing_left() { bx + w + 1 } else { bx - 2 };
+        let flag_x = if e.facing_left() {
+            staff + 1
+        } else {
+            staff - 4
+        };
+        let top = if pose == Pose::Habtacht {
+            by - 2
+        } else {
+            by - 10
+        };
+        fb.fill_rect(staff, top, 1, by + 8 - top, OUTLINE);
+        fb.fill_rect(flag_x, top, 4, 2, OUTLINE);
+        fb.fill_rect(flag_x, top + 2, 4, 2, MOZART_YELLOW);
     }
 }
 
@@ -1609,6 +1680,9 @@ mod tests {
             Pose::Roll,
             Pose::Wait,
             Pose::Leave,
+            Pose::March,
+            Pose::Habtacht,
+            Pose::Praesentiert,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -1809,9 +1883,95 @@ mod tests {
             Popup::Checkpoint,
             Popup::Wurstkranz,
             Popup::Hoppala,
+            Popup::Abtreten,
         ] {
             let key = p.text_key().unwrap();
             assert!(texts.contains(key), "{key}");
+        }
+    }
+
+    /// Two grey-box officers on a 20-column strip (the lead one at column
+    /// 12, a plain one at 15), stepped `frames` frames.
+    fn officer_game(frames: u32) -> Game {
+        let text = "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"L\" = { entity = \"offizier\", lead = true }\n\"o\" = { entity = \"offizier\" }\n\
+             \"P\" = { entity = \"player_start\" }\n[map]\ngrid = '''\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n..P.........L..o....\n\
+             ####################\n'''\n";
+        let mut g = Game::new(&Level::parse(text).unwrap(), &tuning(), 1);
+        for _ in 0..frames {
+            g.step(InputFrame::NONE);
+        }
+        g
+    }
+
+    fn officers(g: &Game) -> Vec<Entity> {
+        g.entities()
+            .iter()
+            .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Offizier))
+            .copied()
+            .collect()
+    }
+
+    /// The grey-box officer: a hilt in „Habt Acht!", the sabre drawn
+    /// exactly over the hurt zone in „Präsentiert!", nothing above his head
+    /// in the march; the flag bearer's black-and-yellow flag up in the
+    /// march and dipped in „Habt Acht!", clear of the blade's column.
+    #[test]
+    fn the_grey_box_officer_shows_the_drill_and_the_flag() {
+        let t = tuning();
+        // March (frame 10).
+        let g = officer_game(10);
+        let fb = rendered(&g);
+        let cam = g.camera();
+        let o = officers(&g);
+        assert_eq!(o[0].pose(&t), Some(Pose::March));
+        let (cx, top) = (
+            (o[1].x + o[1].w.div_int(2)).to_px() - cam.x,
+            o[1].y.to_px() - cam.y,
+        );
+        assert_ne!(fb.get(cx, top - 8), Some(WHITE), "no blade in the march");
+        let flag_px = |fb: &Framebuffer, e: &Entity| {
+            let (l, r) = (e.x.to_px() - cam.x - 8, e.right().to_px() - cam.x + 8);
+            (e.y.to_px() - cam.y - 12..e.y.to_px() - cam.y + 2)
+                .flat_map(|y| (l..r).map(move |x| (x, y)))
+                .filter(|&(x, y)| fb.get(x, y) == Some(MOZART_YELLOW))
+                .map(|(_, y)| y)
+                .min()
+        };
+        let up = flag_px(&fb, &o[0]).expect("the lead officer's flag");
+        assert_eq!(flag_px(&fb, &o[1]), None, "a plain officer has none");
+        // „Habt Acht!" (frame 170): the hilt shows, the flag dips.
+        let g = officer_game(170);
+        let fb = rendered(&g);
+        let o = officers(&g);
+        assert_eq!(o[1].pose(&t), Some(Pose::Habtacht));
+        let dipped = flag_px(&fb, &o[0]).unwrap();
+        assert!(dipped > up, "dipped: {dipped} vs {up}");
+        let (x, y, r) = (
+            o[1].x.to_px() - cam.x,
+            o[1].y.to_px() - cam.y,
+            o[1].right().to_px() - cam.x,
+        );
+        let hilt = (x - 1..=r).any(|hx| fb.get(hx, y + 10) == Some(MOZART_YELLOW));
+        assert!(hilt, "the hilt");
+        // „Präsentiert!" (frame 200): the blade covers the zone exactly.
+        let g = officer_game(200);
+        let fb = rendered(&g);
+        for e in officers(&g) {
+            let z = jnr_core::enemies::sabre_zone(&e, &t).unwrap();
+            let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
+            for y in zy..zy + 16 {
+                for x in zx..zx + 8 {
+                    let c = fb.get(x, y);
+                    assert!(c == Some(WHITE) || c == Some(SILVER_LIGHT), "({x}, {y})");
+                }
+            }
+            for x in [zx - 2, zx - 1, zx + 8, zx + 9] {
+                assert_ne!(fb.get(x, zy + 1), Some(WHITE), "flag clear of the blade");
+            }
         }
     }
 
@@ -1842,6 +2002,7 @@ mod tests {
             EntityKind::Schafbergbahn,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Enemy(EnemyKind::Offizier),
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {

@@ -1,0 +1,25 @@
+# A 3-chain on file B in the march (D-096): Resi crosses the terrace,
+# jumps over file A (marching) and the wall at column 30, hops onto the
+# 2-high wall at column 36 and waits there for the next march; then she
+# steps off the wall onto the first officer as the file marches towards
+# it, and her straight bounces meet the next two as they march in under
+# her: 200, 400, 800.
+level  = m6_offiziere
+seed   = 1
+source = handwritten
+expect = deaths=0 score=1400 event=Stomped no_event=Hurt
+---
+R 30
+RJ 20
+R 17
+RJ 15
+R 110
+- 30
+RBJ 30
+RB 50
+RBJ 20
+R 35
+RJ 16
+- 90
+R 8
+- 80

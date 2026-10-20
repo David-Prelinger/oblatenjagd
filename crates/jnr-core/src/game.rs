@@ -260,6 +260,10 @@ pub struct Game {
     pub(crate) time: u16,
     /// Frames into the current second.
     time_frames: u8,
+    // E37: replace with E37's stage clock. A minimal stub with the same
+    // semantics: frames of play since the stage started or the last
+    // respawn (frozen, paused and dying frames don't count).
+    stage_clock: u32,
     /// Index into `Level::entities` of the furthest checkpoint passed.
     checkpoint: Option<u16>,
     death_cause: Option<DeathCause>,
@@ -356,6 +360,7 @@ impl Game {
             lives: tuning.game.lives_start,
             time: 0,
             time_frames: 0,
+            stage_clock: 0,
             checkpoint: None,
             death_cause: None,
             start_held: false,
@@ -680,6 +685,9 @@ impl Game {
 
     /// One frame of the countdown; at 0 the player dies.
     fn tick_timer(&mut self) {
+        // E37: the stub stage clock ticks only here (the frames the timer
+        // counts).
+        self.stage_clock = self.stage_clock.saturating_add(1);
         self.time_frames += 1;
         if u32::from(self.time_frames) < crate::TICKS_PER_SECOND {
             return;
@@ -719,6 +727,8 @@ impl Game {
             .collect();
         self.time = self.level.meta.time_limit.min(u32::from(u16::MAX)) as u16;
         self.time_frames = 0;
+        // E37: the stub stage clock restarts with the level.
+        self.stage_clock = 0;
     }
 
     /// Puts a Normal player at the checkpoint (or the start) and the camera
@@ -1046,6 +1056,7 @@ impl Game {
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
             globes: &globes,
+            stage_clock: self.stage_clock(),
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -1154,6 +1165,13 @@ impl Game {
             if crate::enemies::high_c_column(&e, &self.map, &self.tuning)
                 .is_some_and(|c| c.overlaps(&hitbox))
             {
+                hurt = true;
+                continue;
+            }
+            // A presented sabre hurts on any contact, before the stomp rule
+            // (falling onto a saluting Offizier hurts: the high-C rule,
+            // D-068, D-096).
+            if crate::enemies::sabre_zone(&e, &self.tuning).is_some_and(|z| z.overlaps(&hitbox)) {
                 hurt = true;
                 continue;
             }
@@ -1572,6 +1590,8 @@ impl Game {
         h.u8(self.lives);
         h.u16(self.time);
         h.u8(self.time_frames);
+        // E37: the stub stage clock (E37 hashes its own).
+        h.u32(self.stage_clock);
         h.u8(match self.death_cause {
             None => 0,
             Some(DeathCause::Hazard) => 1,
@@ -1724,6 +1744,15 @@ impl Game {
     /// Lives left (counting the current one).
     pub fn lives(&self) -> u8 {
         self.lives
+    }
+    /// E37: stub of E37's stage clock (replace on merge). Frames of play
+    /// since the stage started or the last respawn: the frames the ZEIT
+    /// timer counts (frozen, paused, dying and goal-sequence frames don't).
+    /// Read by entities through `UpdateCtx::stage_clock` at the start of a
+    /// frame, so the first frame of play sees 0. An Offizier's drill runs
+    /// on it (D-096).
+    pub fn stage_clock(&self) -> u32 {
+        self.stage_clock
     }
     /// Seconds left on the timer.
     pub fn time_left(&self) -> u16 {

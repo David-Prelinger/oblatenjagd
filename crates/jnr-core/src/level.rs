@@ -260,11 +260,14 @@ pub enum SpawnKind {
     Gelse,
     /// Enemy `regattaboot` (the Reisebus's machine on the water, D-080).
     Regattaboot,
+    /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
+    /// salute on the stage clock, D-096).
+    Offizier,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 30] = [
+    pub const ALL: [SpawnKind; 31] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -295,6 +298,7 @@ impl SpawnKind {
         SpawnKind::Schwan,
         SpawnKind::Gelse,
         SpawnKind::Regattaboot,
+        SpawnKind::Offizier,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -331,6 +335,7 @@ impl SpawnKind {
             SpawnKind::Schwan => "schwan",
             SpawnKind::Gelse => "gelse",
             SpawnKind::Regattaboot => "regattaboot",
+            SpawnKind::Offizier => "offizier",
         }
     }
 
@@ -424,8 +429,9 @@ pub struct EntitySpawn {
     /// cell bottom (within ±[`MAX_TAUBE_DY_PX`]), e.g. -8 to sit on a
     /// perch 40 px above the ground.
     pub dy: i32,
-    /// `lead = true` on a `pilger`: the group leader's sprite
-    /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
+    /// `lead = true` on a `pilger` or an `offizier`: the group leader's
+    /// sprite (`pilger_lead`, pennant on his stick; `offizier_lead`, the
+    /// flag bearer); behaviour is unchanged.
     pub lead: bool,
     /// A `steinschlag`'s or `souvenirstand`'s counter period in frames
     /// (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
@@ -467,6 +473,9 @@ pub const DEFAULT_SOUVENIRSTAND_RANGE: u8 = 8;
 /// `period`), so the first globe of an approach always follows the whole
 /// 30-frame telegraph (`enemies.souvenirstand_telegraph` < this, validated).
 pub const SOUVENIRSTAND_MIN_PHASE: u16 = 31;
+/// Largest `phase` of an `offizier` (D-096: 0..239, frames into the
+/// 240-frame drill; `enemies.offizier_cycle` is at most this + 1, validated).
+pub const OFFIZIER_MAX_PHASE: u16 = 239;
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -1003,6 +1012,7 @@ fn parse_legend_value(
                 (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
+                (_, Some("offizier")) => &["entity", "tile", "lead", "phase"],
                 (_, Some("steinschlag" | "souvenirstand")) => {
                     &["entity", "tile", "period", "phase", "range"]
                 }
@@ -1278,6 +1288,11 @@ fn parse_entity(
         return Err(ParseError::new(format!(
             "legend \"{key}\": a steinschlag's phase must be 0 or {STEINSCHLAG_MIN_PHASE}..={} (below its period {period}), so its first rock shows the whole telegraph",
             period - 1
+        )));
+    }
+    if kind == SpawnKind::Offizier && phase > OFFIZIER_MAX_PHASE {
+        return Err(ParseError::new(format!(
+            "legend \"{key}\": an offizier's phase must be 0..={OFFIZIER_MAX_PHASE} (frames into his drill)"
         )));
     }
     if kind == SpawnKind::Souvenirstand
@@ -2164,6 +2179,42 @@ P.sSC.tfG
                 e.contains(&format!("field \"{field}\" is not allowed")),
                 "{entity}: {e}"
             );
+        }
+    }
+
+    #[test]
+    fn the_offizier_takes_lead_and_phase() {
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"b\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pb--..")
+        };
+        let spawn = |fields: &str| {
+            let s = Level::parse(&with(&format!("{{ entity = \"offizier\"{fields} }}")))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.col == 2)
+                .unwrap();
+            assert_eq!(s.kind, SpawnKind::Offizier);
+            (s.lead, s.phase)
+        };
+        assert_eq!(spawn(""), (false, 0), "defaults (D-096)");
+        assert_eq!(spawn(", lead = true"), (true, 0));
+        assert_eq!(spawn(", phase = 239"), (false, 239));
+        assert_eq!(spawn(", lead = true, phase = 120"), (true, 120));
+        let e = err(&with("{ entity = \"offizier\", phase = 240 }"));
+        assert!(e.contains("phase must be 0..=239"), "{e}");
+        let e = err(&with("{ entity = \"offizier\", phase = -1 }"));
+        assert!(e.contains("field \"phase\" must be"), "{e}");
+        let e = err(&with("{ entity = \"offizier\", lead = 1 }"));
+        assert!(e.contains("field \"lead\" must be true or false"), "{e}");
+        for field in ["period = 100", "range = 5", "dir = 1", "still = true"] {
+            let e = err(&with(&format!("{{ entity = \"offizier\", {field} }}")));
+            assert!(e.contains("is not allowed"), "{field}: {e}");
         }
     }
 

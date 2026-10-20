@@ -207,6 +207,13 @@ regattaboot_mast = [8, 20]    # the masthead part (centred, from the top) is all
 regattaboot_trigger = 160     # px (< 161, 10 tiles) to its centre, and fully on screen: it telegraphs ...
 regattaboot_telegraph = 60    # ... for 60 frames (start flag, horn) ...
 regattaboot_speed = 384       # ... then races left at 1.5 px/frame through everything until it leaves the screen
+# M6 Offizier (D-096): a drill on the stage clock, f = (clock + level `phase`) mod offizier_cycle.
+offizier_hitbox = [12, 22]    # sprite 16x32 (`lead`: the flag bearer, same hitbox)
+offizier_speed = 128          # 0.5 px/frame while marching; faces the player at activation; Nordic-Walker turns (walls, enemies on foot, ledges)
+offizier_cycle = 240          # frames per drill: march f 0-167 ...
+offizier_march = 168          # ... halt for „Habt Acht!" (the telegraph) f 168-191 ...
+offizier_attention = 24       # ... and „Präsentiert!" f 192-239 (the rest of the cycle, 48 frames): the sabre zone is up
+offizier_sabre = [8, 16]      # px [w, h]: the sabre zone, centred on him, from his hitbox top up; hurts on any contact, checked before the stomp
 
 [platforms]
 festungsbahn_size = [48, 24]    # px [w, h]: the car is 3 tiles wide, its top surface carries the player

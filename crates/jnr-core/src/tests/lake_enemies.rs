@@ -468,6 +468,7 @@ fn gelse_update(e: &mut Entity, level: &Level, target: (i32, i32), screen: (i32,
         screen_left: Fx::from_px(screen.0),
         screen_top: Fx::from_px(screen.1),
         globes: &[],
+        stage_clock: 0,
     };
     e.update(&ctx);
 }

@@ -6,7 +6,8 @@
 //! spawner and its snow globes ([`EntityKind::Souvenirstand`],
 //! [`EnemyKind::Schneekugel`]), the Operettensänger's high-C column
 //! ([`high_c_column`]), the lake enemies of Stage 6 (Schwan, Gelse,
-//! Regattaboot) and defeated enemies ([`EntityKind::Defeated`]),
+//! Regattaboot), the Offizier's drill and sabre zone ([`sabre_zone`]) and
+//! defeated enemies ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -129,6 +130,13 @@ pub mod state {
     /// Gelse: leaving straight up, harmless (`satt`).
     pub const LEAVE: u8 = 2;
 
+    /// Offizier: halted for „Habt Acht!" (the telegraph). Marching is
+    /// `WALK`; `count` = the drill frame (D-096).
+    pub const ATTENTION: u8 = 1;
+    /// Offizier: halted for „Präsentiert!": the sabre zone is up
+    /// ([`super::sabre_zone`]).
+    pub const PRESENT: u8 = 2;
+
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
@@ -207,6 +215,12 @@ pub enum Pose {
     Wait,
     /// Gelse `leave` (full, flying away).
     Leave,
+    /// Offizier `march`.
+    March,
+    /// Offizier `habtacht` (halted, the telegraph).
+    Habtacht,
+    /// Offizier `praesentiert` (halted, sabre raised: the zone hurts).
+    Praesentiert,
 }
 
 impl Entity {
@@ -291,6 +305,11 @@ impl Entity {
                 state::HUNT => Pose::Fly,
                 state::LEAVE => Pose::Leave,
                 _ => Pose::Wait,
+            },
+            EntityKind::Enemy(EnemyKind::Offizier) => match self.state {
+                state::ATTENTION => Pose::Habtacht,
+                state::PRESENT => Pose::Praesentiert,
+                _ => Pose::March,
             },
             // The niche is empty from the drop until the refill.
             EntityKind::Steinschlag => steinschlag_pose(self, t)?,
@@ -419,6 +438,10 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_gelse(e, ctx);
             None
         }
+        EnemyKind::Offizier => {
+            update_offizier(e, ctx);
+            None
+        }
         EnemyKind::Bienenschwarm => {
             let len = e
                 .spawn
@@ -450,12 +473,20 @@ fn floor_at(map: &TileMap, x: Fx, feet: Fx) -> bool {
 /// other way in the same frame). It only falls when the floor under it
 /// disappears.
 fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
-    let (map, t) = (ctx.map, ctx.tuning);
     // At activation it starts towards the player (game-design.md).
     let cx = e.x + e.w.div_int(2);
     if e.timer == 1 && ctx.player_cx != cx {
         e.dir = (ctx.player_cx - cx).signum() as i8;
     }
+    e.state = state::STRIDE;
+    stride(e, ctx, ctx.tuning.enemies.walker_speed);
+}
+
+/// One frame of the Nordic-Walker's movement at `speed`: turn at a ledge
+/// ahead (while on a floor), walk with gravity, turn at a wall. A `speed`
+/// of 0 only falls (a halted Offizier).
+fn stride(e: &mut Entity, ctx: &UpdateCtx, speed: Fx) {
+    let (map, t) = (ctx.map, ctx.tuning);
     let feet = e.y + e.h;
     let last = e.right() - Fx(1);
     let standing = floor_at(map, e.x, feet) || floor_at(map, last, feet);
@@ -464,11 +495,10 @@ fn update_walker(e: &mut Entity, ctx: &UpdateCtx) {
     } else {
         last + Fx::ONE
     };
-    if e.dir != 0 && standing && !floor_at(map, ahead, feet) {
+    if speed != Fx::ZERO && e.dir != 0 && standing && !floor_at(map, ahead, feet) {
         e.dir = -e.dir;
     }
-    e.state = state::STRIDE;
-    e.vx = t.enemies.walker_speed.mul_int(i32::from(e.dir));
+    e.vx = speed.mul_int(i32::from(e.dir));
     e.vy = (e.vy + t.player.gravity).min(t.player.max_fall_speed);
     let mut b = e.hitbox();
     if map.move_x(&mut b, e.vx) {
@@ -1013,7 +1043,8 @@ fn on_foot(e: &Entity) -> bool {
         | EntityKind::Enemy(EnemyKind::NordicWalker)
         | EntityKind::Enemy(EnemyKind::Blasmusiker)
         | EntityKind::Enemy(EnemyKind::Pilger)
-        | EntityKind::Enemy(EnemyKind::Operettensaenger) => true,
+        | EntityKind::Enemy(EnemyKind::Operettensaenger)
+        | EntityKind::Enemy(EnemyKind::Offizier) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
         EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => e.state != state::DRIVE,
@@ -1023,7 +1054,7 @@ fn on_foot(e: &Entity) -> bool {
     }
 }
 
-/// Selfie-Tourists, Nordic-Walkers and Pilger that overlap another enemy on foot
+/// Selfie-Tourists, Nordic-Walkers, Pilger and Offiziere that overlap another enemy on foot
 /// turn away from it (after everything moved; the direction is set, not
 /// flipped, so two that overlap for several frames don't flip back and
 /// forth).
@@ -1033,7 +1064,10 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity]) {
         let walks = matches!(
             a.kind,
             EntityKind::Enemy(
-                EnemyKind::SelfieTourist | EnemyKind::NordicWalker | EnemyKind::Pilger
+                EnemyKind::SelfieTourist
+                    | EnemyKind::NordicWalker
+                    | EnemyKind::Pilger
+                    | EnemyKind::Offizier
             )
         );
         // `dir == 0`: a `still` tourist (test levels) never turns.
@@ -1513,12 +1547,14 @@ fn update_globe(e: &mut Entity, ctx: &UpdateCtx) {
 
 /// The text popup of a defeated enemy, stacked above the score popup
 /// whose top is `top` (centred on `x`): „Bravo!" for an Operettensänger
-/// (D-068), „Beleidigt!" for a Schwan (D-078, the same mechanism); `None`
-/// for every other kind. Every defeat shows it (stomp, axe, bumped block).
+/// (D-068), „Beleidigt!" for a Schwan (D-078, the same mechanism),
+/// „Abtreten!" for an Offizier (D-096); `None` for every other kind. Every
+/// defeat shows it (stomp, axe, bumped block).
 pub(crate) fn defeat_popup(kind: EnemyKind, x: Fx, top: Fx) -> Option<Entity> {
     let p = match kind {
         EnemyKind::Operettensaenger => Popup::Bravo,
         EnemyKind::Schwan => Popup::Beleidigt,
+        EnemyKind::Offizier => Popup::Abtreten,
         _ => return None,
     };
     Some(popup(
@@ -1740,6 +1776,66 @@ fn move_clear_of_water(e: &mut Entity, map: &TileMap) {
     }
     e.x = b.x;
     e.y = b.y;
+}
+
+// ------------------------------------------------------------ M6 (D-096)
+
+/// The Offizier's drill (D-096) on the stage clock: frame f = (stage
+/// clock plus his level `phase`) mod `offizier_cycle`, kept in `count`, so every
+/// officer with the same `phase` is at the same frame whenever he was
+/// activated (a file stays in step). f < `offizier_march`: he marches at
+/// `offizier_speed` with the Nordic-Walker turns ([`stride`]: walls,
+/// ledges; enemies on foot in [`turn_at_enemies`]); the next
+/// `offizier_attention` frames he halts for „Habt Acht!" (the telegraph);
+/// the rest of the cycle he halts for „Präsentiert!" with the sabre zone
+/// up ([`sabre_zone`]). At activation he faces the player. Halted, he
+/// still falls if his floor disappears.
+fn update_offizier(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    let phase = e
+        .spawn
+        .and_then(|i| ctx.level.entities.get(usize::from(i)))
+        .map_or(0, |s| u32::from(s.phase));
+    let cycle = u32::from(et.offizier_cycle.max(1));
+    let f = ((ctx.stage_clock % cycle + phase % cycle) % cycle) as u16;
+    e.count = f;
+    let cx = e.x + e.w.div_int(2);
+    if e.timer == 1 && ctx.player_cx != cx {
+        e.dir = (ctx.player_cx - cx).signum() as i8;
+    }
+    let (march, attention) = (et.offizier_march, et.offizier_attention);
+    e.state = if f < march {
+        state::WALK
+    } else if f < march + attention {
+        state::ATTENTION
+    } else {
+        state::PRESENT
+    };
+    let speed = if e.state == state::WALK {
+        et.offizier_speed
+    } else {
+        Fx::ZERO
+    };
+    stride(e, ctx, speed);
+}
+
+/// The sabre zone of a presenting Offizier (`None` for every other entity
+/// and in the march and „Habt Acht!"): `offizier_sabre` [w, h] px, centred
+/// on him, from his hitbox top straight up. Any contact hurts, checked in
+/// `Game::interact` before his hitbox and the stomp (the high-C rule,
+/// D-068); it is no entity, so axes pass it (D-097).
+pub fn sabre_zone(e: &Entity, t: &Tuning) -> Option<Aabb> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Offizier) || e.state != state::PRESENT {
+        return None;
+    }
+    let [w, h] = t.enemies.offizier_sabre;
+    let (w, h) = (Fx::from_px(w), Fx::from_px(h));
+    Some(Aabb {
+        x: e.x + e.w.div_int(2) - w.div_int(2),
+        y: e.y - h,
+        w,
+        h,
+    })
 }
 
 /// **Defeat by projectile** (the one path for the thrown Hackl, D-056,

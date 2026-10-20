@@ -1,0 +1,24 @@
+# A stomp during „Habt Acht!" (D-096: stompable outside the sabre zone in
+# every phase; the halt is only the telegraph). From the wall at column 36
+# Resi waits until file B halts, then a walking jump lands on the first
+# officer at frame 656 while the file stands at attention: 200 points
+# (chain start) and „Abtreten!".
+level  = m6_offiziere
+seed   = 1
+source = handwritten
+expect = deaths=0 score=200 event=Stomped no_event=Hurt
+---
+R 30
+RJ 20
+R 17
+RJ 15
+R 110
+- 30
+RBJ 30
+RB 50
+RBJ 20
+R 35
+RJ 16
+- 238
+RJ 16
+- 34

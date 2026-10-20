@@ -73,7 +73,8 @@ impl EnemyKind {
             | EnemyKind::Operettensaenger
             | EnemyKind::Schneekugel
             | EnemyKind::Schwan
-            | EnemyKind::Gelse => AxeHit::Defeat,
+            | EnemyKind::Gelse
+            | EnemyKind::Offizier => AxeHit::Defeat,
             EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }

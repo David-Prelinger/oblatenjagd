@@ -656,6 +656,20 @@ pub struct EnemyTuning {
     pub regattaboot_telegraph: u16,
     /// ... then races left at this speed, ignoring tiles.
     pub regattaboot_speed: Fx,
+    /// Offizier (D-096).
+    pub offizier_hitbox: [i32; 2],
+    /// Marching speed.
+    pub offizier_speed: Fx,
+    /// Frames of the drill; its frame is (stage clock + level `phase`)
+    /// mod this. March for the first `offizier_march` frames ...
+    pub offizier_cycle: u16,
+    /// ... frames 0..this march ...
+    pub offizier_march: u16,
+    /// ... then this many frames halt for „Habt Acht!" (the telegraph);
+    /// the rest of the cycle is „Präsentiert!" with the sabre zone up.
+    pub offizier_attention: u16,
+    /// The sabre zone `[w, h]` px: centred on him, from his hitbox top up.
+    pub offizier_sabre: [i32; 2],
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -926,6 +940,42 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The Offizier's keys (D-096): a hitbox and sabre that fit his 16×32
+    /// sprite, a positive speed, and a drill with a march, a „Habt Acht!"
+    /// and at least one „Präsentiert!" frame, at most 240 frames long (the
+    /// level's `phase` is 0..=239).
+    fn validate_offizier(&self) -> Result<(), ParseError> {
+        let [w, h] = self.offizier_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        let [sw, sh] = self.offizier_sabre;
+        if !(1..=TILE_PX).contains(&sw) || !(1..=32).contains(&sh) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_sabre must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        if self.offizier_speed <= Fx::ZERO || self.offizier_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        let max_cycle = crate::level::OFFIZIER_MAX_PHASE + 1;
+        if self.offizier_march == 0
+            || self.offizier_attention == 0
+            || u32::from(self.offizier_march) + u32::from(self.offizier_attention)
+                >= u32::from(self.offizier_cycle)
+            || self.offizier_cycle > max_cycle
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need enemies.offizier_march >= 1, offizier_attention >= 1, march + attention < offizier_cycle <= {max_cycle}"
+            )));
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1106,6 +1156,7 @@ impl Tuning {
         self.enemies.validate_singer_and_stand()?;
         self.enemies.validate_reisebus()?;
         self.enemies.validate_lake()?;
+        self.enemies.validate_offizier()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -2104,6 +2155,41 @@ mod tests {
             ("regattaboot_telegraph", "0", "regattaboot_telegraph"),
             ("regattaboot_speed", "0", "regattaboot_speed"),
             ("regattaboot_speed", "3072", "regattaboot_speed"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(named), "{field} = {bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn offizier_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-096: 12×22, 0.5 px/frame, march 168 + attention 24 + present
+        // 48 = 240, an 8×16 sabre.
+        assert_eq!((t.offizier_hitbox, t.offizier_speed), ([12, 22], Fx(128)));
+        assert_eq!(
+            (t.offizier_cycle, t.offizier_march, t.offizier_attention),
+            (240, 168, 24)
+        );
+        assert_eq!(
+            t.offizier_cycle - t.offizier_march - t.offizier_attention,
+            48
+        );
+        assert_eq!(t.offizier_sabre, [8, 16]);
+        for (field, bad, named) in [
+            ("offizier_hitbox", "[17, 22]", "offizier_hitbox"),
+            ("offizier_hitbox", "[12, 0]", "offizier_hitbox"),
+            ("offizier_sabre", "[0, 16]", "offizier_sabre"),
+            ("offizier_sabre", "[8, 33]", "offizier_sabre"),
+            ("offizier_speed", "0", "offizier_speed"),
+            ("offizier_speed", "3072", "offizier_speed"),
+            ("offizier_march", "0", "offizier_march"),
+            ("offizier_attention", "0", "offizier_attention"),
+            // No „Präsentiert!" frame left.
+            ("offizier_march", "216", "offizier_cycle"),
+            // Longer than the level's phase range (0..=239).
+            ("offizier_cycle", "241", "offizier_cycle"),
         ] {
             let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             let err = Tuning::parse(&text).unwrap_err().to_string();

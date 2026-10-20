@@ -50,6 +50,8 @@ pub enum Popup {
     Bravo,
     /// `popup.beleidigt` („Beleidigt!"), a defeated Schwan (D-078).
     Beleidigt,
+    /// `popup.abtreten` („Abtreten!"), a defeated Offizier (D-096).
+    Abtreten,
 }
 
 impl Popup {
@@ -65,11 +67,12 @@ impl Popup {
             Popup::Ballast => Some("popup.ballast"),
             Popup::Bravo => Some("popup.bravo"),
             Popup::Beleidigt => Some("popup.beleidigt"),
+            Popup::Abtreten => Some("popup.abtreten"),
         }
     }
 }
 
-/// The enemy types of Stages 1–6.
+/// The enemy types of Stages 1–8.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -112,6 +115,9 @@ pub enum EnemyKind {
     /// `regattaboot`: the Reisebus's machine on the water: parked, then
     /// races left; not stompable, its masthead only bounces (D-080).
     Regattaboot,
+    /// `offizier`: marches, halts and presents sabres on the stage clock;
+    /// the sabre zone ([`crate::enemies::sabre_zone`]) hurts (D-096).
+    Offizier,
 }
 
 impl EnemyKind {
@@ -149,7 +155,9 @@ impl EnemyKind {
             | EnemyKind::Pilger
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schneekugel => true,
+            | EnemyKind::Schneekugel
+            // D-097: an officer sinks like a walker.
+            | EnemyKind::Offizier => true,
             EnemyKind::Taube
             | EnemyKind::TaubeSitting
             | EnemyKind::Fiaker
@@ -166,8 +174,8 @@ impl EnemyKind {
 
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan; D-046, D-058,
-    /// D-068, D-078),
+    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan, Offizier; D-046,
+    /// D-058, D-068, D-078, D-096),
     /// else 0. Also the index of
     /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
@@ -177,7 +185,8 @@ impl EnemyKind {
             | EnemyKind::EBiker
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schwan => 1,
+            | EnemyKind::Schwan
+            | EnemyKind::Offizier => 1,
             _ => 0,
         }
     }
@@ -201,6 +210,7 @@ impl EnemyKind {
             EnemyKind::Schwan => "schwan",
             EnemyKind::Gelse => "gelse",
             EnemyKind::Regattaboot => "regattaboot",
+            EnemyKind::Offizier => "offizier",
         }
     }
 
@@ -223,6 +233,8 @@ impl EnemyKind {
             EnemyKind::Schwan => 14,
             EnemyKind::Gelse => 15,
             EnemyKind::Regattaboot => 16,
+            // M6: 21–22 are reserved for the Offizier (E39).
+            EnemyKind::Offizier => 21,
         }
     }
 }
@@ -396,6 +408,7 @@ impl EntityKind {
                 Popup::Ballast => h.u8(6),
                 Popup::Bravo => h.u8(7),
                 Popup::Beleidigt => h.u8(8),
+                Popup::Abtreten => h.u8(10),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -702,6 +715,12 @@ impl Entity {
                 tile.mul_int(s.row) + Fx::from_px(e.regattaboot_keel_px),
                 e.regattaboot_hitbox,
             ),
+            SpawnKind::Offizier => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Offizier),
+                feet_x,
+                feet_y,
+                e.offizier_hitbox,
+            ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -936,6 +955,10 @@ pub(crate) struct UpdateCtx<'a> {
     /// (`base_x`, `base_y`): a Souvenirstand counts its own by its spawn
     /// point (D-069: at most `souvenirstand_max_alive`).
     pub globes: &'a [(Fx, Fx)],
+    /// The stage clock ([`crate::Game::stage_clock`]) at the start of this
+    /// frame: frames of play since the stage started or the last respawn.
+    /// An Offizier's drill runs on it (D-096).
+    pub stage_clock: u32,
 }
 
 impl UpdateCtx<'_> {
@@ -1079,6 +1102,7 @@ mod tests {
                 EnemyKind::Schwan => 14,
                 EnemyKind::Gelse => 15,
                 EnemyKind::Regattaboot => 16,
+                EnemyKind::Offizier => 17,
             }
         }
         let enemies = [
@@ -1099,6 +1123,7 @@ mod tests {
             EnemyKind::Schwan,
             EnemyKind::Gelse,
             EnemyKind::Regattaboot,
+            EnemyKind::Offizier,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1162,6 +1187,7 @@ mod tests {
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
             globes: &[],
+            stage_clock: 0,
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());

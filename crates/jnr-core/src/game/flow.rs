@@ -309,6 +309,7 @@ impl Game {
             screen_left: Fx::from_px(self.camera.x),
             screen_top: Fx::from_px(self.camera.y),
             globes: &[],
+            stage_clock: self.stage_clock(),
         };
         for e in &mut self.entities {
             let cosmetic = matches!(
