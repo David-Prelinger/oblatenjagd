@@ -1,0 +1,65 @@
+# Kaiser Jagdstandbild (Bad Ischl, 1910): the old emperor in hunting dress
+# (hat with a chamois-beard tuft t, patinated Joppe t/T, Lederhosen O/l,
+# knee socks t/T, boots l), a rifle l slung over his shoulder, all bronze
+# O/l with t patina, k outline (front layer). He stands on a rough-hewn
+# stone block (i lit left face, m mid face, d shadowed right face, d chisel
+# cracks, a blank bronze plaque O/o/l: no text). Drawn = solid (D-038):
+# the block is sprite rows 16..47 = the 2x2 stone tiles (rows 13-14); its k
+# top edge is row 16, 32 px above the street, an i lip on row 17.
+# Pigeon seat: the hat crown's top, pixels (14..18, 0), centred on the
+# origin column x 16, 48 px above the street (16 px above the block).
+# Drawn by the pixel-artist with a throwaway script; the grid is the source.
+sprite = kaiser_jagdstandbild
+size   = 32x48
+origin = 16,48
+anim   = idle frames=1
+---
+frame idle 0
+..............kkkkk.............
+............k.kOOOlk...kk.......
+...........ktkOOOOlk..klk.......
+...........kOOOOOOOOk.klk.......
+............kkkOOlkkkklk........
+..............kOOtkklkk.........
+..............ktttkOlk..........
+.............ktOtttlOk..........
+............ktOttttTkk..........
+............ktOttttTk...........
+............kOktttTTk...........
+.............kOOOOlk............
+.............kOOkOlk............
+.............kttktTk............
+.............kttkTTk............
+.............kllkllk............
+kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kiiiiiiiiiiiiiiiiiiiiiiiiiiiiiik
+kiiiiiiiiiiiiiiiiiiiiiiddddddddk
+kiiiiiiiiiiiiiiiiiiiiiiddddddddk
+kiiiiiiiiiiiimmiiiiiiiimdddddddk
+kiiiiiiiiiiiimmiiiiiiimmdddddddk
+kiiiiiiiiiiimmmiiiiiimmmdddddddk
+kiiiiiiiiiimmmmmiiimmmmmmddddddk
+kiiiiiiiiiimmmmmddmmmmmmmddddddk
+kiiiiiiiiimdmmmmmmmmmmmmmddddddk
+kiiiiiiiiidmmmmmmmmmmmmmmddddddk
+kiiiiiiiimmmmmmmmmmmmmmmdddddddk
+kiiiiiiimmmOOOOOOOOOlmmmdddddddk
+kiiiiiidmmmOOOOOOOOOlmmmdddddddk
+kiiiimdmmmmOoooooooOlmmddddddddk
+kimmmmmmmmmOOOOOOOOOlmmddddddddk
+kmmmmmmmmmmOlllllllOlmmddddddddk
+kmmmidmmmmmOOOOOOOOOlmmmdddddddk
+kmiidimmmmmllllllllllmmmdddddddk
+kiiiiiimmmmmmmmmmmmmmmmmdddddddk
+kiiiiiiimmmiiiimmmmmmmmmmddddddk
+kiiiiiiiddiiiiiimmmmmmmmmddddddk
+kiiiiiimiiiiiiiiimmmmmmmmmdddddk
+kiiiiimiiiiiiiiiiidmmmmmmmdddddk
+kiiiiimiiiiiiiiiidmmmmmmmmdddddk
+kiiiimmiiiiiiiiiimmmmmmmmddddddk
+kiiimmmiiiiiiiiiimmmmmmmmddddddk
+kiimmmiiiiiiiiiiimmmmmmmmddddddk
+kmmmmmiiiiiiiiiimmmmmmmmdddddddk
+kmmmmmmmmmdddddddddddddddddddddk
+kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk

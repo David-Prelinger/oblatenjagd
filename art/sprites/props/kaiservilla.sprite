@@ -1,0 +1,133 @@
+# Kaiservilla (Bad Ischl; the E-plan front: three projecting parts), back
+# layer, no k: Schonbrunn-yellow Y walls (o for the recessed connectors and
+# the portico wall, o right returns), w cornices, string courses and corner
+# pilasters (i shadow), w-framed windows with b glass (s pane glint, no w
+# glint) and green G shutters (j slats), low hipped m roofs (d right hip, no
+# light ridge lip), the central wing's portico: six w/i columns with i
+# bases (darker feet: nothing reads as a step) under a pointed w pediment
+# with a Y tympanum, a dark l/O double door at the top of the front steps (sill on row 64 =
+# 48 px above the street: the level's 3-high stone steps) over an i/m stair
+# base hidden behind the step tiles. In front, park hedges G/j
+# with rounded tops (no flat ledge) and, in the centre, the forecourt
+# behind the level's stone steps (i with m stair lines).
+# Placement: 192x112, origin 96,112; the portico/door is centred on the
+# origin (x 89..102): place it over the steps, e.g. col 86, row 14, dx 0.
+# Drawn by the pixel-artist with a throwaway script; the grid is the source.
+sprite = kaiservilla
+size   = 192x112
+origin = 96,112
+anim   = idle frames=1
+---
+frame idle 0
+................................................................................................................................................................................................
+................................................................................................................................................................................................
+...............................................................................................ww...............................................................................................
+..............................................................................................wwww..............................................................................................
+.............................................................................................wwwwww.............................................................................................
+............................................................................................wwwwwwww............................................................................................
+............mmmmmmmmmmmmmmmmmmmmmmmmmmdd...................................................wwwwYYwwww...................................................mmmmmmmmmmmmmmmmmmmmmmmmmmdd............
+...........mmmmmmmmmmmmmmmmmmmmmmmmmmmmdd................................................wwwwwYYYYwwwww................................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmdd...........
+..........mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..............................................wwwwwYYYYYYwwwww..............................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..........
+.........mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd............................................wwwwYYYYYYYYYYwwww............................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd.........
+........mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd....................................mmmmmmwwwwYYYYYYYYYYYYwwwwmmmmdd....................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd........
+.......mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..................................mmmmmmwwwwYYYYYYYYYYYYYYwwwwmmmmdd..................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd.......
+......mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd................................mmmmmwwwwYYYYYYYYYYYYYYYYYYwwwwmmmdd................................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd......
+.....mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..............................mmmmmwwwwYYYYYYYYYYYYYYYYYYYYwwwwmmmdd..............................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd.....
+....mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd............................mmmmmwwwwYYYYYYYYYYYYYYYYYYYYYYwwwwmmmdd............................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd....
+...mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..........................mmmmmwwwYYYYYYYYYYYYYYYYYYYYYYYYYYwwwmmmdd..........................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd...
+..mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd........................mmmmmwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwwmmmdd........................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd..
+.mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd......................mmmmmwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwwmmmdd......................mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmdd.
+ddwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwdd....................mmmmwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwwmmdd....................ddwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwdd
+..iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii.....................mmmmwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwwmmdd.....................iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo....................ddwwwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwwwwdd....................wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo......................iwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwi......................wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo....mmmmmmmmmmmmmdd..wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww..mmmmmmmmmmmmmdd....wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo...mmmmmmmmmmmmmmmdd.iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii.mmmmmmmmmmmmmmmdd...wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..mmmmmmmmmmmmmmmmmdd.wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww.mmmmmmmmmmmmmmmmmdd..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo.mmmmmmmmmmmmmmmmmmmddwwwwwwwwoowwwwwwwoowwwwwwwoowwwwwwwoowwwwwwwiooommmmmmmmmmmmmmmmmmmdd.wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooommmmmmmmmmmmmmmmmmmmmdwwwwwwwwoowwwwwwwoowwwwwwwoowwwwwwwoowwwwwwwiooommmmmmmmmmmmmmmmmmmmddwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooommmmmmmmmmmmmmmmmmmmmmwwwwwiioooowwwiioooowwwiioooowwwiioooowwwiioiooommmmmmmmmmmmmmmmmmmmmdwwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooommmmmmmmmmmmmmmmmmmmmmwwwwwiioooowwwiioooowwwiioooowwwiioooowwwiioiooommmmmmmmmmmmmmmmmmmmmmwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooo..
+..wwwYYGGGwssbwbbwGGGGGwssbwbbwGGGGGwssbwbbwGGGooommmmmmmmmmmmmmmmmmmmmmwwwwwiioooowwwiioooowwwiioooowwwiioooowwwiioiooommmmmmmmmmmmmmmmmmmmmmwwwYYGGGwssbwbbwGGGGGwssbwbbwGGGGGwssbwbbwGGGooo..
+..wwwYYjjjwssbwbbwjjjjjwssbwbbwjjjjjwssbwbbwjjjooowwwwwwwwwwwwwwwwwwwwwwwwwwwiiowwwwwwiioooowwwiioooowwwiiwwwwwwwiioiooowwwwwwwwwwwwwwwwwwwwwwwwwYYjjjwssbwbbwjjjjjwssbwbbwjjjjjwssbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooooooooooooooooooooooooowwwwwiiowsswwwiioooowwwiioooowwwiisbwbwwwiioiooooooooooooooooooooooooowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooooooooooooooooooooooooowwwwwiiowsswwwiioooowwwiioooowwwiisbwbwwwiioiooooooooooooooooooooooooowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooooooooooooooooooooooooowwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooooooooooooooooooooooooowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooooooooooooooooooooooooowwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooooooooooooooooooooooooowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwwwwwwwwGGGGGwwwwwwwwGGGGGwwwwwwwwGGGoooowwwwwwwoooowwwwwwwooowwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowwwwwwwoooowwwwwwwoooowwwYYGGGwwwwwwwwGGGGGwwwwwwwwGGGGGwwwwwwwwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjoooGwsswbbwGGGGwsswbbwGGGwwwwwiiowwwwwwiioooowwwiioooowwwiiwwwwwwwiioiooowsswbbwGGGGwsswbbwGGGowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooojwsswbbwjjjjwsswbbwjjjwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowsswbbwjjjjwsswbbwjjjowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowbbwbbwGGGGwbbwbbwGGGowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowbbwbbwjjjjwbbwbbwjjjowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjoooGwwwwwwwGGGGwwwwwwwGGGwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowwwwwwwGGGGwwwwwwwGGGowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowbbwbbwjjjjwbbwbbwjjjowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiowbbwwwiioooowwwiioooowwwiibbwbwwwiioiooowbbwbbwGGGGwbbwbbwGGGowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiowwwwwwiiiiiiwwwiiiiiiwwwiiwwwwwwwiioiooowbbwbbwjjjjwbbwbbwjjjowwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooo..
+..wwwYYYYwwwwwwwwwwYYYwwwwwwwwwwYYYwwwwwwwwwwiioooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiwwwwwwwiiwwwwwwwiiwwwwwwwiiwwwwwwwiioiooowbbwbbwGGGGwbbwbbwGGGowwwYYYYwwwwwwwwwwYYYwwwwwwwwwwYYYwwwwwwwwwwiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooojwbbwbbwjjjjwbbwbbwjjjwwwwwiioooowwwiiwwwwwwwiiwwwwwwwiioooowwwiioiooowbbwbbwjjjjwbbwbbwjjjowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiioooGwbbwbbwGGGGwbbwbbwGGGwwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooowbbwbbwGGGGwbbwbbwGGGowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiioooowwwwwwwoooowwwwwwwooowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooowwwwwwwoooowwwwwwwoooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooowwwwwwwwwoowwwwwwwwwoowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooowwwwwwwwoowwwwwwwwwooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlOOwwwiilOOOwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiwwwccccccccccccccccccccccwwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiwwwccccccccccccccccccccccwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwiiwww..
+..wwwiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiioooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiiiioooooooooooooooooooooowwwiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiioooowwwiiwlllwwwiillllwwwiioooowwwiioiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiioooowwwwwwwoooowwwwwwwooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowwwwwwwoooowwwwwwwoooowwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooo..
+..wwwYYGGGwssbwbbwGGGGGwssbwbbwGGGGGwssbwbbwGGGoooGwsswbbwGGGGwsswbbwGGGwwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooowsswbbwGGGGwsswbbwGGGowwwYYGGGwssbwbbwGGGGGwssbwbbwGGGGGwssbwbbwGGGooo..
+..wwwYYjjjwssbwbbwjjjjjwssbwbbwjjjjjwssbwbbwjjjooojwsswbbwjjjjwsswbbwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowsswbbwjjjjwsswbbwjjjowwwYYjjjwssbwbbwjjjjjwssbwbbwjjjjjwssbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwjjjjwbbwbbwjjjowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooojwwwwwwwjjjjwwwwwwwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowwwwwwwjjjjwwwwwwwjjjowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwwwwwwwwjjjjjwwwwwwwwjjjjjwwwwwwwwjjjooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwjjjjwbbwbbwjjjowwwYYjjjwwwwwwwwjjjjjwwwwwwwwjjjjjwwwwwwwwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwjjjjwbbwbbwjjjowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooojwbbwbbwjjjjwbbwbbwjjjwwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowbbwbbwjjjjwbbwbbwjjjowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGoooGwbbwbbwGGGGwbbwbbwGGGwwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooowbbwbbwGGGGwbbwbbwGGGowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjoooowwwwwwwoooowwwwwwwooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowwwwwwwoooowwwwwwwoooowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooowwwwwwwwwoowwwwwwwwwoowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooowwwwwwwwoowwwwwwwwwooowwwYYGGGwbbbwbbwGGGGGwbbbwbbwGGGGGwbbbwbbwGGGooo..
+..wwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYjjjwbbbwbbwjjjjjwbbbwbbwjjjjjwbbbwbbwjjjooo..
+..wwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooooooooooooooooooooooooowwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooooooooooooooooooooooooowwwYYYYYwwwwwwwwYYYYYwwwwwwwwYYYYYwwwwwwwwYiiooo..
+..wwwYYYYwwwwwwwwwwYYYwwwwwwwwwwYYYwwwwwwwwwwiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYwwwwwwwwwwYYYwwwwwwwwwwYYYwwwwwwwwwwiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiimmmmwwwiimmmmwwwiimmmmwwwiimmmmwwwiimiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowwwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiiiwwwiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooooooooooooooooooooooooowiiiiiiimmiiiiiiimmiiiiiiimmiiiiiiimmiiiiiiiiooooooooooooooooooooooooowwwYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYiiooo..
+..wwwYGYYYYYYYYYYYGYYYYYYYYYYYGYYYYYYYYYYYGYYiioooooooGoooooooooooGooooowiiiiiGiiiiiiiiiiiGiiiiiiiiiiiGiiiiiiiiiiiGiioooooooooGoooooooooooGooowwwYYYYYGYYYYYYYYYYYGYYYYYYYYYYYGYYYYYYYYYYiGooo..
+..GGGGGGGGGYYYGGGGGGGGGYYYGGGGGGGGGYYYGGGGGGGGGoooGGGGGGGGGoooGGGGGGGGGowiGGGGGGGGGiiiGGGGGGGGGiiiGGGGGGGGGiiiGGGGGGGGGoooGGGGGGGGGoooGGGGGGGGGwwYGGGGGGGGGYYYGGGGGGGGGYYYGGGGGGGGGYYYGGGGGGGGG.
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGiiiiiiiiiiiiiiiiiiiimmmmGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
+GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGiiiiiiiiiiiiiiiiiiiimmmmGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG
+GGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGmmmmmmmmmmmmmmmmmmmmmmmmGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGGGGyGGGGGjGGG
+GGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGiiiiiiiiiiiiiiiiiiiimmmmGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjG
+GGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjj
+GGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjjjGGGjjjjjjjj
+GGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjmmmmmmmmmmmmmmmmmmmmmmmmGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjjGGGGGjjjjjjj
+GGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGiiiiiiiiiiiiiiiiiiiimmmmGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjGGGGGGGjjjjjG
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjmmmmmmmmmmmmmmmmmmmmmmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjmmmmmmmmmmmmmmmmmmmmmmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
+jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjiiiiiiiiiiiiiiiiiiiimmmmjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj

@@ -1,0 +1,286 @@
+# Gravel path (the cycle path on the old Ischlerbahn trackbed, the Kaiserpark
+# avenues): pale i gravel with grey m pebbles (d shadow pixel) and warm o/O
+# pebbles; an open top gets a light i lip (the walkable surface) over a
+# darker m edge line. Open left/right: a rounded gravel shoulder (lit m/i
+# left, d right); open bottom: a d base line. No roots, no G (forest_path),
+# no cobbles (ground). No k (static solid tile).
+# Drawn by the pixel-artist with a throwaway script; the grids are the source.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_kies
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+..iiiiiiiiiiii..
+.immmmmmmmmmmmm.
+moOiimmiiiiiiiid
+miiimdiiimmimmmd
+miiiiiiiiiiimdid
+miiiiiimmiiiiiid
+miiimmiimdiimmid
+miiiimdiiiiiiimd
+miiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+miiiiiiiimmimmid
+miiiiiimmiiiiimd
+miiiimmiiimmimmd
+midiiiiiiiiiiiid
+miiiiimmiiimmiid
+mddddddddddddddd
+frame auto 1
+miiiiiiiiiiiiiid
+miiiiiimmiiiiimd
+moOiimmiiiiiiiid
+miiimdiiimmimmmd
+miiiiiiiiiiimdid
+miiiiiimmiiiiiid
+miiimmiimdiimmid
+miiiimdiiiiiiimd
+miiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+miiiiiiiimmimmid
+miiiiiimmiiiiimd
+miiiimmiiimmimmd
+midiiiiiiiiiiiid
+miiiiimmiiimmiid
+mddddddddddddddd
+frame auto 2
+..iiiiiiiiiiiiii
+.immmmmmmmmmmmmm
+moOiimmiiiiiiiii
+miiimdiiimmimmii
+miiiiiiiiiiimdii
+miiiiiimmiiiiiii
+miiimmiimdiimmii
+miiiimdiiiiiiiii
+miiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+miiiiiiiimmimmii
+miiiiiimmiiiiiii
+miiiimmiiimmimmi
+midiiiiiiiiiiiii
+miiiiimmiiimmiii
+mddddddddddddddd
+frame auto 3
+miiiiiiiiiiiiiii
+miiiiiimmiiiiimm
+moOiimmiiiiiiiii
+miiimdiiimmimmii
+miiiiiiiiiiimdii
+miiiiiimmiiiiiii
+miiimmiimdiimmii
+miiiimdiiiiiiiii
+miiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+miiiiiiiimmimmii
+miiiiiimmiiiiiii
+miiiimmiiimmimmi
+midiiiiiiiiiiiii
+miiiiimmiiimmiii
+mddddddddddddddd
+frame auto 4
+..iiiiiiiiiiii..
+.immmmmmmmmmmmm.
+moOiimmiiiiiiiid
+miiimdiiimmimmmd
+miiiiiiiiiiimdid
+miiiiiimmiiiiiid
+miiimmiimdiimmid
+miiiimdiiiiiiimd
+miiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+miiiiiiiimmimmid
+miiiiiimmiiiiimd
+miiiimmiiimmimmd
+midiiiiiiiiiiiid
+miiiiimmiiimmiid
+mimmiiiiiiimdimd
+frame auto 5
+miiiiiiiiiiiiiid
+miiiiiimmiiiiimd
+moOiimmiiiiiiiid
+miiimdiiimmimmmd
+miiiiiiiiiiimdid
+miiiiiimmiiiiiid
+miiimmiimdiimmid
+miiiimdiiiiiiimd
+miiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+miiiiiiiimmimmid
+miiiiiimmiiiiimd
+miiiimmiiimmimmd
+midiiiiiiiiiiiid
+miiiiimmiiimmiid
+mimmiiiiiiimdimd
+frame auto 6
+..iiiiiiiiiiiiii
+.immmmmmmmmmmmmm
+moOiimmiiiiiiiii
+miiimdiiimmimmii
+miiiiiiiiiiimdii
+miiiiiimmiiiiiii
+miiimmiimdiimmii
+miiiimdiiiiiiiii
+miiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+miiiiiiiimmimmii
+miiiiiimmiiiiiii
+miiiimmiiimmimmi
+midiiiiiiiiiiiii
+miiiiimmiiimmiii
+mimmiiiiiiimdiim
+frame auto 7
+miiiiiiiiiiiiiii
+miiiiiimmiiiiimm
+moOiimmiiiiiiiii
+miiimdiiimmimmii
+miiiiiiiiiiimdii
+miiiiiimmiiiiiii
+miiimmiimdiimmii
+miiiimdiiiiiiiii
+miiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+miiiiiiiimmimmii
+miiiiiimmiiiiiii
+miiiimmiiimmimmi
+midiiiiiiiiiiiii
+miiiiimmiiimmiii
+mimmiiiiiiimdiim
+frame auto 8
+iiiiiiiiiiiiii..
+mmmmmmmmmmmmmmm.
+ioOiimmiiiiiiiid
+iiiimdiiimmimmmd
+mmiiiiiiiiiimdid
+iiiiiiimmiiiiiid
+iiiimmiimdiimmid
+iiiiimdiiiiiiimd
+iiiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+iiiiiiiiimmimmid
+iiiiiiimmiiiiimd
+mmiiimmiiimmimmd
+imdiiiiiiiiiiiid
+iiiiiimmiiimmiid
+dddddddddddddddd
+frame auto 9
+iiiiiiiiiiiiiiid
+iiiiiiimmiiiiimd
+ioOiimmiiiiiiiid
+iiiimdiiimmimmmd
+mmiiiiiiiiiimdid
+iiiiiiimmiiiiiid
+iiiimmiimdiimmid
+iiiiimdiiiiiiimd
+iiiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+iiiiiiiiimmimmid
+iiiiiiimmiiiiimd
+mmiiimmiiimmimmd
+imdiiiiiiiiiiiid
+iiiiiimmiiimmiid
+dddddddddddddddd
+frame auto 10
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+ioOiimmiiiiiiiii
+iiiimdiiimmimmii
+mmiiiiiiiiiimdii
+iiiiiiimmiiiiiii
+iiiimmiimdiimmii
+iiiiimdiiiiiiiii
+iiiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+iiiiiiiiimmimmii
+iiiiiiimmiiiiiii
+mmiiimmiiimmimmi
+imdiiiiiiiiiiiii
+iiiiiimmiiimmiii
+dddddddddddddddd
+frame auto 11
+iiiiiiiiiiiiiiii
+iiiiiiimmiiiiimm
+ioOiimmiiiiiiiii
+iiiimdiiimmimmii
+mmiiiiiiiiiimdii
+iiiiiiimmiiiiiii
+iiiimmiimdiimmii
+iiiiimdiiiiiiiii
+iiiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+iiiiiiiiimmimmii
+iiiiiiimmiiiiiii
+mmiiimmiiimmimmi
+imdiiiiiiiiiiiii
+iiiiiimmiiimmiii
+dddddddddddddddd
+frame auto 12
+iiiiiiiiiiiiii..
+mmmmmmmmmmmmmmm.
+ioOiimmiiiiiiiid
+iiiimdiiimmimmmd
+mmiiiiiiiiiimdid
+iiiiiiimmiiiiiid
+iiiimmiimdiimmid
+iiiiimdiiiiiiimd
+iiiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+iiiiiiiiimmimmid
+iiiiiiimmiiiiimd
+mmiiimmiiimmimmd
+imdiiiiiiiiiiiid
+iiiiiimmiiimmiid
+mimmiiiiiiimdimd
+frame auto 13
+iiiiiiiiiiiiiiid
+iiiiiiimmiiiiimd
+ioOiimmiiiiiiiid
+iiiimdiiimmimmmd
+mmiiiiiiiiiimdid
+iiiiiiimmiiiiiid
+iiiimmiimdiimmid
+iiiiimdiiiiiiimd
+iiiiiiiiiiiiiiid
+miOOiimmiiiiiiid
+iiiiiiiiimmimmid
+iiiiiiimmiiiiimd
+mmiiimmiiimmimmd
+imdiiiiiiiiiiiid
+iiiiiimmiiimmiid
+mimmiiiiiiimdimd
+frame auto 14
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+ioOiimmiiiiiiiii
+iiiimdiiimmimmii
+mmiiiiiiiiiimdii
+iiiiiiimmiiiiiii
+iiiimmiimdiimmii
+iiiiimdiiiiiiiii
+iiiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+iiiiiiiiimmimmii
+iiiiiiimmiiiiiii
+mmiiimmiiimmimmi
+imdiiiiiiiiiiiii
+iiiiiimmiiimmiii
+mimmiiiiiiimdiim
+frame auto 15
+iiiiiiiiiiiiiiii
+iiiiiiimmiiiiimm
+ioOiimmiiiiiiiii
+iiiimdiiimmimmii
+mmiiiiiiiiiimdii
+iiiiiiimmiiiiiii
+iiiimmiimdiimmii
+iiiiimdiiiiiiiii
+iiiiiiiiiiiiiiii
+miOOiimmiiiiiiim
+iiiiiiiiimmimmii
+iiiiiiimmiiiiiii
+mmiiimmiiimmimmi
+imdiiiiiiiiiiiii
+iiiiiimmiiimmiii
+mimmiiiiiiimdiim
