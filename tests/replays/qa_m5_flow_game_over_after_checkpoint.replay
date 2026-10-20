@@ -1,0 +1,58 @@
+# QA M5 flow (D-017, D-075): game over after the lantern checkpoint, then
+# continue restarts the Wolfgangsee from its start with the scroll reset.
+# Title flow (play from 171). wolfgangsee_checkpoint's first 2300 frames:
+# the solver route under the pontoon (checkpoint 2389), Gelse #1 stings
+# her (death 1 at 2448). Twice: respawn on the pontoon (intro, 60-frame
+# hold), walk to its end, hop the bollard into the lake and float at the
+# surface, pushed by the edge, until Gelse #2 stings her (deaths 2 and 3
+# at 3409 and 4370). Game over at 4430; START at 5042 continues: the stage
+# intro, then play at the St. Wolfgang quay (x 34, camera x 0 in the
+# lead-in, 3 lives, score and Oblaten 0, the checkpoint cleared). The
+# solver's notch hop then starts the scroll again and she rides the
+# Dampfer (x >= 400).
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=CheckpointReached event=GameOver dies_at frames=4370..4370
+expect = state=playing lives=3 score=400 oblaten=2 power=normal player_x>=400 player_y>=154 player_y<=154
+---
+# title -> intro
+- 20
+S 1
+- 150
+# --- wolfgangsee_checkpoint.replay frames 0-2299 ---
+RB 64
+RBJ 36
+RB 953
+L 4
+RB 8
+- 4
+RB 4
+DJ 1
+- 3
+RB 389
+RBJ 20
+RB 18
+RBJ 31
+RB 705
+- 60
+# --- dying, intro, respawn on the pontoon; to the bollard, into the lake, float ---
+- 230
+R 110
+RJ 20
+R 40
+- 900
+# --- again: Gelse #2 stings her, game over ---
+R 110
+RJ 20
+R 40
+- 900
+# --- game over screen, START: continue ---
+- 200
+S 1
+- 200
+# --- the scroll starts again from the quay ---
+RB 64
+RBJ 36
+RB 100

@@ -1,0 +1,47 @@
+# QA M5 (D-075 respawn hold, D-085 "a Gelse first reaches Resi where she
+# stands still or swims"): the boat route after a checkpoint respawn. As
+# wolfgangsee_checkpoint to the respawn on the lantern pontoon (2337,
+# hold until 2397). Traundl A is inside the activation range at the
+# respawn, so it wakes at once and runs ~125 frames ahead of its
+# continuous-run phase, while B, C and Gelse #2 wake by the scroll as
+# before. Resi walks to the pontoon's end, hops the bollard (133) and
+# drops into the water, waits for A at its near end and boards it with a
+# held jump-out (press 2932, lands 2968; the earlier A cycle reaches its
+# far end with the raft beyond the right clamp). Gelse #2 (hunting from
+# ~2925) closes in during the ride and first reaches her ~13 frames after
+# A docks at its far end (3038): standing still she is stung at 3051. A
+# standing jump pressed 3028-3042 stomps it (15-frame window, measured by
+# shifting the press); this replay presses at 3036 (stomp 3072).
+# Compare the continuous run (wolfgangsee_traundl): there it reaches her
+# on the border raft with a >= 41-frame stomp window.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=2277..2277 event=Stomped state=playing
+---
+# --- the first 2337 frames of wolfgangsee_checkpoint.replay ---
+RB 64
+RBJ 36
+RB 953
+L 4
+RB 8
+- 4
+RB 4
+DJ 1
+- 3
+RB 389
+RBJ 20
+RB 18
+RBJ 31
+RB 705
+- 97
+# --- handwritten ---
+R 104
+RJ 20
+R 60
+- 390
+R 20
+RJ 20
+- 84
+J 24
+- 60

@@ -1,0 +1,29 @@
+# QA M5 BUG (D-085 flat lake bed, D-075 squeeze): the bathing notch
+# (cols 13-15) is inside the left edge's reach, and its right side is the
+# quay piece 16-17, a solid face from the lake bed to the deck. Resi falls
+# into the notch, jumps out onto the quay 16-17 (her centre passes col 17:
+# the scroll starts in step 216 with the camera at x 128) and goes back
+# for the three Oblaten on the notch's bed (the swim lesson): DOWN, she
+# rests on the bed at x 241. The edge reaches the notch at frame ~325
+# and pushes her into the quay face: squeezed at 370 (x 244 + 12 = 256).
+# D-085: "Shallows and beaches only where the edge never pushes (... the
+# bathing notch before the scroll)" and "a diver resting on the bed would
+# be squeezed against a step" - here the notch is not before the scroll.
+# The E31 lint misses it because the quay's top front cell is air (the
+# quay counts as rising above the water, D-084's 2-tile rule).
+# Expected (correct): no death; the diver in the notch is not squeezed.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died
+---
+R 105
+RJ 20
+R 20
+- 20
+J 14
+RJ 10
+R 4
+- 30
+L 14
+D 200
