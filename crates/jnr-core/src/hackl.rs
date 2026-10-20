@@ -73,7 +73,10 @@ impl EnemyKind {
             | EnemyKind::Operettensaenger
             | EnemyKind::Schneekugel
             | EnemyKind::Schwan
-            | EnemyKind::Gelse => AxeHit::Defeat,
+            | EnemyKind::Gelse
+            // Walking; lying in his deck chair he is harmless, so the axe
+            // passes (`Entity::axe_hit`, D-095).
+            | EnemyKind::Kurgast => AxeHit::Defeat,
             EnemyKind::Fiaker | EnemyKind::Reisebus | EnemyKind::Regattaboot => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }

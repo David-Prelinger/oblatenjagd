@@ -403,7 +403,7 @@ pub(crate) fn update_car(e: &mut Entity, ctx: &UpdateCtx) {
 
 /// A grounded player with hitbox `p` stands on the car with hitbox `c`:
 /// feet exactly on its top, overlapping it horizontally.
-fn stands_on(p: &Aabb, c: &Aabb) -> bool {
+pub(crate) fn stands_on(p: &Aabb, c: &Aabb) -> bool {
     p.bottom() == c.y && overlaps_x(p, c)
 }
 
@@ -430,6 +430,14 @@ fn stand(p: &mut Player, top: Fx, was_on_ground: bool, t: &PlayerTuning, events:
 /// `prev_bottom` is the feet height before the player's movement,
 /// `was_on_ground` the grounded flag before it. The first car in entity
 /// order wins.
+///
+/// "Car" is anything with a one-way top: the moving platforms
+/// ([`EntityKind::is_platform`]) and, through the **enemy-as-platform
+/// hook** [`crate::enemies::is_platform_now`], an enemy that is a platform
+/// right now (a Kurgast in his deck chair, D-095). Standing on a still
+/// platform is this landing every frame (gravity pulls her 1 step down,
+/// the top catches her), so an enemy platform, which never moves, needs
+/// no [`carry`].
 pub(crate) fn land(
     p: &mut Player,
     entities: &[Entity],
@@ -443,7 +451,7 @@ pub(crate) fn land(
     }
     let hb = p.hitbox();
     let car = entities.iter().find(|c| {
-        c.kind.is_platform()
+        (c.kind.is_platform() || crate::enemies::is_platform_now(c))
             && c.active
             && !c.removed
             && prev_bottom <= c.y

@@ -1,0 +1,19 @@
+# Hurt by a waking Kurgast (D-095): Resi takes the Mozartkugel from the
+# box at 4 (it rolls back from the wall at 9), hops the wall as
+# Zuckerschock, stomps Kurgast #1 against it (100) and waits on the floor
+# inside his chair's width, not on it: the rest runs, and when he stands up
+# 340 frames after the stomp he is beside her again: hurt, back to Normal.
+level  = m6_kurgast
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Hurt power=normal score=1100
+---
+R 20
+RJ 10
+- 30
+R 40
+- 66
+J 30
+RJ 40
+L 60
+- 300
