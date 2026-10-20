@@ -1662,6 +1662,11 @@ impl Game {
     /// pattern). Cosmetic entities (popups, debris, bumps, defeated
     /// enemies) and item timers are left out, so states that only differ
     /// in those count as the same. `state_hash` covers everything exactly.
+    /// While an Offizier is in the entity list, also the stage clock (E41,
+    /// D-099): an officer not yet woken starts his drill at the clock, and
+    /// two nodes of one frame can differ in it (a power-up freeze), so they
+    /// are different states. Shutters need no clock (their frame is their
+    /// `count`); other levels hash as before.
     pub fn world_hash(&self) -> u64 {
         let mut h = Fnv::new();
         self.hash_tiles(&mut h);
@@ -1676,7 +1681,9 @@ impl Game {
         // The entities (most of the work) a word at a time (E35): the same
         // fields as before, packed into words, through `WordHash`.
         let mut w = WordHash::new();
+        let mut on_the_clock = false;
         for e in &self.entities {
+            on_the_clock |= e.kind == EntityKind::Enemy(EnemyKind::Offizier);
             if matches!(
                 e.kind,
                 EntityKind::Popup(_)
@@ -1719,6 +1726,9 @@ impl Game {
                         | u64::from(e.count) << 32,
                 );
             }
+        }
+        if on_the_clock {
+            w.word(u64::from(self.stage_clock));
         }
         h.u64(w.finish());
         h.finish()
