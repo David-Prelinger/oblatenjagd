@@ -1,0 +1,55 @@
+# M6 route map in Hackl form (D-098): Strobl -> Bad Ischl in Wait with
+# Hackl Resi on the Bad Ischl dot (her box 8 px taller: both alternate
+# label slots, Bad Ischl left of its dot and Café Zauner raised, must clear
+# her), then the Bad Ischl intro drawing `player_hackl`. A test route puts
+# the `hackl` level in Strobl's slot (station 7 of 9; the D-047 `route`
+# header, as flow_hackl_carry_over and bad_ischl_hackl_axes do), so the
+# map screen is the real Strobl -> Bad Ischl one without a Hackl route
+# through Stages 4-7: the first 1343 frames of bad_ischl_hackl_axes (title,
+# the hackl run, H-box, three axes, its Maibaum at 1343), then idle: the
+# tally, the route map (1652; Wait from 1736), no START: the Bad Ischl
+# intro at 2036, play from 2186 as Hackl, 30 frames. Shots: the map in
+# Wait as Hackl (1794, prompt on; the Normal form is strobl_tour's
+# `route_map`) and the Bad Ischl intro as Hackl (2056).
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee hackl bad_ischl
+expect = complete frames=1343..1343 deaths=0 no_event=Hurt
+expect = state=playing stage=bad_ischl power=hackl score=5450 lives=3
+shots  = 1794:route_map 2056:intro
+---
+# --- the first 1343 frames of bad_ischl_hackl_axes ---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 209
+# --- tally, route map (Wait), Bad Ischl intro, 30 frames of play ---
+- 873

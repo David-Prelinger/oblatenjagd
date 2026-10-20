@@ -5,20 +5,23 @@
 # the map starts the Wolfgangsee intro after its wait (19971) and play
 # begins at 20121 as Hackl Resi with the run carried over (lives 6, score
 # 99650, 3 Oblaten). From there the Wolfgangsee inputs of
-# qa_m5_flow_hackl_wolfgangsee_teaser_title (its 6470-11786, a route that
+# qa_m5_flow_hackl_wolfgangsee_to_strobl (its 6470-11786, a route that
 # keeps the Hackl, never hurt): the steamer, swans, Gelsen, the lantern
 # pontoon checkpoint, the Traundl chain, the regatta and the Strobl quay.
 # Wolfgangsee LevelComplete at 24536 (frame 4415 of the stage, as in the
 # source replay) still as Hackl, the tally, the route map Wolfgangsee ->
-# Strobl (25042) and its teaser („Fortsetzung folgt …"), then the title
-# (25298) with the run reset: Normal, score 0, lives 3, Salzburg's 300 s.
+# Strobl (25052; Wait from 25128) and, re-cut in M6 since Strobl is
+# playable (it used to end in the teaser and the title with the run
+# reset), no START: the map's wait starts the Strobl intro (25428) and
+# play begins at 25578 as Hackl Resi with the run carried over (lives 6,
+# score 115800, 30 Oblaten); the replay ends 30 frames into Strobl.
 # Six LevelCompletes, six checkpoints, no death, no hurt, all deterministic.
 level  = salzburg
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt no_event=GameOver event=AxeHit event=ExtraLife event=CheckpointReached event=Stroke
-expect = state=title stage=salzburg power=normal score=0 lives=3 oblaten=0
+expect = state=playing stage=strobl power=hackl score=115800 lives=6 oblaten=30
 ---
 - 20
 S 1         # title -> Salzburg intro
@@ -449,7 +452,7 @@ RJ 16
 R 200
 - 511     # goal sequence, tally, route map St. Wolfgang -> Wolfgangsee, Wait (19565..)
 - 378       # map in Wait -> Wolfgangsee intro (19971) -> play (20121) as Hackl
-# --- the Wolfgangsee as Hackl: qa_m5_flow_hackl_wolfgangsee_teaser_title 6470.. ---
+# --- the Wolfgangsee as Hackl: qa_m5_flow_hackl_wolfgangsee_to_strobl 6470.. ---
 R 8
 RB 16
 RBJ 24
@@ -867,4 +870,4 @@ RJ 8
 - 8
 RJ 8
 L 8
-- 900     # tally, map, teaser, title
+- 1071    # tally, map (Wait), Strobl intro, 30 frames of play

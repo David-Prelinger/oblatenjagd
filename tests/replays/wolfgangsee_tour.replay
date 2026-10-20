@@ -3,11 +3,12 @@
 # at frame 21, stage intro 21..170, then the inputs of
 # wolfgangsee_solver.replay unchanged from frame 171 (re-copy them after
 # `cargo xtask solve wolfgangsee --write`; the xtask tour coupling test
-# checks it), then 800 idle frames: the Maibaum sequence, the tally, the
-# route map Wolfgangsee -> Strobl, which has no level yet, so the teaser
-# („Fortsetzung folgt …", D-072) and the title (5250; 5240 with the
-# 260 s limit: the 270 s limit adds 10 s of Zeitbonus, 10 tally frames)
-# with the run reset.
+# checks it), then 800 idle frames: the Maibaum sequence, the tally and
+# the route map Wolfgangsee -> Strobl (5070; Wait from 5146), where the
+# tour ends (5381). Re-cut in M6: Strobl is playable, so the map waits
+# for START (or its 300 frames) instead of playing the teaser and the
+# title (the old `teaser` shot at 5199 is now the map in Wait, Normal
+# form, St. Wolfgang's raised label, D-072: `route_map`).
 # The solver route hops the bathing notch, rides the Dampfer from the quay
 # (the scroll starts), sees swan #1 hiss and charge under the deck, swims
 # the Seebad with Gelse #1 waiting at the water line behind her, passes
@@ -23,8 +24,8 @@ level  = wolfgangsee
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=4581..4581 deaths=0 state=title score=0 lives=3
-shots  = 0:title 60:intro 245:notch 450:dampfer 1514:schwan_hiss 2169:gelse 2429:laterne 2869:traundl 3840:regatta_start 4459:strobl 4581:maibaum 4870:tally 5199:teaser
+expect = complete frames=4581..4581 deaths=0 state=route_map stage=wolfgangsee score=13150 lives=3 oblaten=15
+shots  = 0:title 60:intro 245:notch 450:dampfer 1514:schwan_hiss 2169:gelse 2429:laterne 2869:traundl 3840:regatta_start 4459:strobl 4581:maibaum 4870:tally 5199:route_map
 ---
 - 20
 S 1       # START: stage intro

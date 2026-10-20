@@ -1,0 +1,82 @@
+# M6 flow (D-017, D-047): game over in Strobl -> continue restarts Strobl,
+# not the run's first stage. Title flow with the run started at the
+# Wolfgangsee: wolfgangsee_tour's inputs (Wolfgangsee clear at 4581, the
+# route map Wolfgangsee -> Strobl in Wait from 5146), idle: the Strobl
+# intro at 5446, play at 5596 (score 13150, 3 lives, 15 Oblaten). Then
+# three tries of the first 140 frames of strobl_solver.replay (over the
+# garden wall into Nordic-Walker #1's pen) and standing: the walker
+# reaches her (deaths at 5900, 6414, 6928, each try 514 frames: 60 dying
+# + 150 intro + 304 of play); game over at 6988; START at 7068 -> the
+# Strobl intro (7069) and play at the Anlegestelle (7219): 3 lives, score
+# 0, 0 Oblaten, Normal.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver dies_at frames=6928..6928
+expect = state=playing stage=strobl lives=3 score=0 oblaten=0 power=normal player_x>=34 player_y>=218 player_y<=218
+---
+# --- wolfgangsee_tour's inputs (5381 frames), then idle to the start of Strobl play (5596) ---
+- 20
+S 1
+- 150
+RB 64
+RBJ 12
+RB 90
+R 8
+LB 8
+- 4
+L 4
+- 392
+RB 742
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1942
+RBJ 20
+RB 315
+RBJ 20
+RB 5
+RBJ 31
+RB 67
+RBJ 20
+RB 2
+RBJ 36
+RB 62
+RBJ 33
+RB 5
+RBJ 31
+RB 29
+LB 14
+- 48
+RBJ 33
+RB 5
+LB 8
+- 32
+L 4
+- 32
+RBJ 20
+RB 104
+RBJ 36
+RB 54
+- 1015
+# try 1: the first 140 frames of strobl_solver.replay, then stand
+RB 96
+RBJ 36
+RB 8
+- 374
+# try 2: the first 140 frames of strobl_solver.replay, then stand
+RB 96
+RBJ 36
+RB 8
+- 374
+# try 3: the same, then the game over screen
+RB 96
+RBJ 36
+RB 8
+- 304
+# START: continue -> the stage intro, then 30 frames of play
+S 1
+- 180

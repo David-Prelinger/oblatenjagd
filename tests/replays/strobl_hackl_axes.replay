@@ -1,6 +1,6 @@
 # Stage 7 Hackl (D-097, D-081): the Hackl carried into Strobl, axes on the
 # Postbus and on a car (both Bounce). Title flow with the run started at St.
-# Wolfgang: qa_m5_flow_hackl_wolfgangsee_teaser_title's inputs (St. Wolfgang
+# Wolfgang: qa_m5_flow_hackl_wolfgangsee_to_strobl's inputs (St. Wolfgang
 # and the Wolfgangsee as Hackl, Wolfgangsee clear at 10885), then idle: the
 # tally, the route map Wolfgangsee -> Strobl in Wait (from ~11391) and the
 # Strobl intro (~11777, `player_hackl`); play starts at 11928 as Hackl.
@@ -18,7 +18,7 @@ source = handwritten
 start  = title
 expect = deaths=0 no_event=Hurt event=AxeHit state=playing stage=strobl power=hackl
 ---
-# --- qa_m5_flow_hackl_wolfgangsee_teaser_title's inputs to the Wolfgangsee clear ---
+# --- qa_m5_flow_hackl_wolfgangsee_to_strobl's inputs to the Wolfgangsee clear ---
 # --- the first 6470 frames of qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee ---
 - 20
 S 1

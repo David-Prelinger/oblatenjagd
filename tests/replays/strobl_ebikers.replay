@@ -7,10 +7,13 @@
 # climbs the step and the Lokalbahn halt's roof (row 10, 6 tiles above the
 # meadow) and walks off its right edge: the Maibaum catches her low, 100
 # points (score 10200 -> 10300; the Wurstkranz is strobl_wurstkranz).
+# Shot (M6 flow task): `ache` (3110), E-Biker #2 riding into the
+# Ischler Ache.
 level  = strobl
 seed   = 1
 source = handwritten
 expect = complete frames=3419..3419 score=10300 deaths=0 no_event=Hurt state=stage_clear
+shots  = 3110:ache
 ---
 RB 96
 RBJ 36

@@ -6,10 +6,13 @@
 # beneath her (car roofs 14 px above the road, her feet 48). After the
 # blinks and the amber it is red (from 1653, 196 frames); she drops down
 # and walks past the mouth in red, and stomps Selfie-Tourist #4 there.
+# Shot (M6 flow task): `car_stream` (1560), Ampel #1's two cars under
+# the terrace with Resi on it (the tour's route walks the street).
 level  = strobl
 seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt event=Stomped player_x>=2620 state=playing
+shots  = 1560:car_stream
 ---
 RB 96
 RBJ 36
