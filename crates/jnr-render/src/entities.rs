@@ -16,7 +16,8 @@
 //!    Steinschlag niches (resting/wobbling rock and the `kiesel` trickle),
 //!    falling rocks, the Operettensänger's high-C column (`hohes_c` rings),
 //!    the Souvenirstand vendors, snow globes, the Festungsbahn, the Gondel
-//!    cabins and the Schafbergbahn with its steam puffs
+//!    cabins, the Schafbergbahn with its steam puffs, the Traundl boats and
+//!    the Dampfer with the `gischt` spray of its turning paddle wheel
 //! 4. player (scene)
 //! 5. [`draw_front`]: debris (bricks, rocks, snow-globe shards), then all
 //!    popups on top (the last world pass, under the HUD)
@@ -118,6 +119,17 @@ pub const FUNNEL_W: i32 = 6;
 /// the first puff touches the cap (art-director, M4).
 pub const DAMPF_CHIMNEY: (i32, i32) = (FUNNEL_W / 2, -FUNNEL_PX + 2);
 
+/// The Traundl's grey-box rower (until the `traundl` art lands): a
+/// `[w, h]` stub standing on the deck at this x from the hull's left edge
+/// (the sprite keeps him within x 34–47, at the stern).
+pub const TRAUNDL_ROWER: (i32, [i32; 2]) = (38, [6, 14]);
+/// The Dampfer's grey-box funnel (until the `dampfer` art lands): `[w, h]`
+/// above the deck at this x from the hull's left edge (sprite: x ~70–77).
+pub const DAMPFER_FUNNEL: (i32, [i32; 2]) = (70, [8, 20]);
+/// The two `gischt` sprites stand on the water line this many px left and
+/// right of the paddle wheel's centre.
+pub const GISCHT_SPREAD_PX: i32 = 8;
+
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
 pub struct EntityLooks<'a> {
@@ -157,6 +169,9 @@ pub struct EntityLooks<'a> {
     schneekugel_scherben: Option<&'a AtlasSprite>,
     schafbergbahn: Option<&'a AtlasSprite>,
     dampf: Option<&'a AtlasSprite>,
+    traundl: Option<&'a AtlasSprite>,
+    dampfer: Option<&'a AtlasSprite>,
+    gischt: Option<&'a AtlasSprite>,
     /// Sign boards by style (`signs::SIGN_SPRITES`).
     pub(crate) signs: [Option<&'a AtlasSprite>; 3],
     /// `sign_ortsende_bar`.
@@ -204,6 +219,9 @@ impl<'a> EntityLooks<'a> {
             schneekugel_scherben: s("schneekugel_scherben"),
             schafbergbahn: s("schafbergbahn"),
             dampf: s("dampf"),
+            traundl: s("traundl"),
+            dampfer: s("dampfer"),
+            gischt: s("gischt"),
             signs: signs::SIGN_SPRITES.map(s),
             ortsende_bar: s(signs::ORTSENDE_BAR_SPRITE),
         }
@@ -246,6 +264,8 @@ impl<'a> EntityLooks<'a> {
             EntityKind::Souvenirstand => self.souvenirstand,
             EntityKind::SchneekugelScherben => self.schneekugel_scherben,
             EntityKind::Schafbergbahn => self.schafbergbahn,
+            EntityKind::Traundl => self.traundl,
+            EntityKind::Dampfer => self.dampfer,
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -292,6 +312,8 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
         EntityKind::Souvenirstand => SKY_BLUE,
         EntityKind::SchneekugelScherben => WHITE,
         EntityKind::Schafbergbahn => OUTLINE,
+        EntityKind::Traundl => LEATHER_DARK,
+        EntityKind::Dampfer => WHITE,
         EntityKind::Popup(_) | EntityKind::Bump | EntityKind::Durchkriechstein => WHITE,
     }
 }
@@ -365,6 +387,8 @@ pub fn draw_entities(
             EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
             EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
             EntityKind::Schafbergbahn => draw_schafbergbahn(game, looks, atlas, fb, cam, e),
+            EntityKind::Traundl => draw_traundl(game, looks, atlas, fb, cam, e),
+            EntityKind::Dampfer => draw_dampfer(game, looks, atlas, fb, cam, e),
             _ if e.rising(game.tuning()) => {}
             _ => draw_body(game, looks, atlas, fb, cam, e),
         }
@@ -519,6 +543,94 @@ fn draw_schafbergbahn(
                 draw_sprite(fb, atlas, s, anim, u32::from(age), x, y, false);
             }
             None => fb.fill_rect(x - 3, y - 6, 6, 6, WHITE),
+        }
+    }
+}
+
+/// A Traundl: sprite `traundl` at its feet, never mirrored (it rows bow
+/// first both ways, sprite-catalog), anim `ride` while it moves and `idle`
+/// while it waits at an end (falling back to the first anim); else the
+/// hull as a grey box with a stub for the standing rower.
+fn draw_traundl(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    match looks.traundl {
+        Some(s) => {
+            let (x, y) = feet_on_screen(e, cam);
+            let name = if e.vx != jnr_core::Fx::ZERO {
+                "ride"
+            } else {
+                "idle"
+            };
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+            let (dx, [w, h]) = TRAUNDL_ROWER;
+            fb.fill_rect(left + dx, top - h, w, h, PINE_DARK);
+            draw_body(game, looks, atlas, fb, cam, e);
+        }
+    }
+}
+
+/// The Dampfer: sprite `dampfer` at its feet, never mirrored, anim `ride`
+/// while it travels and `idle` while it waits or is moored; else the hull as
+/// a grey box with a funnel stub (no smoke: diesel since 1954). While it
+/// travels, the paddle wheel's hurt zone (`platform::paddle_wheel`) gets
+/// two `gischt` `spray` sprites on the water line (else white spray boxes
+/// just under it), and in the grey box also the zone's outline.
+fn draw_dampfer(
+    game: &Game,
+    looks: &EntityLooks,
+    atlas: &Atlas,
+    fb: &mut Framebuffer,
+    cam: Camera,
+    e: &Entity,
+) {
+    let wheel = jnr_core::platform::paddle_wheel(e, game.tuning());
+    match looks.dampfer {
+        Some(s) => {
+            let (x, y) = feet_on_screen(e, cam);
+            let name = if wheel.is_some() { "ride" } else { "idle" };
+            let anim = s.anim(name).unwrap_or(&s.anims[0]);
+            draw_sprite(fb, atlas, s, anim, game.frame(), x, y, false);
+        }
+        None => {
+            let (left, top) = (e.x.to_px() - cam.x, e.y.to_px() - cam.y);
+            let (dx, [w, h]) = DAMPFER_FUNNEL;
+            fb.fill_rect(left + dx, top - h, w, h, OBLATE_GOLD);
+            draw_body(game, looks, atlas, fb, cam, e);
+            if let Some(z) = wheel {
+                let (zx, zy) = (z.x.to_px() - cam.x, z.y.to_px() - cam.y);
+                fb.outline_rect(zx, zy, z.w.to_px(), z.h.to_px(), SLATE_DARK);
+            }
+        }
+    }
+    let Some(z) = wheel else {
+        return;
+    };
+    let (cx, water) = (
+        (z.x + z.w.div_int(2)).to_px() - cam.x,
+        e.feet().1.to_px() - cam.y,
+    );
+    for x in [cx - GISCHT_SPREAD_PX, cx + GISCHT_SPREAD_PX] {
+        match looks.gischt {
+            Some(s) => {
+                let anim = s.anim("spray").unwrap_or(&s.anims[0]);
+                draw_sprite(fb, atlas, s, anim, u32::from(e.count), x, water, false);
+            }
+            None => {
+                // Droplets just under the water line (the grey hull covers
+                // the rows above it), bobbing 0–2 px with the wheel.
+                let down = i32::from(e.count / 4 % 3);
+                fb.fill_rect(x - 2, water + 1 + down, 4, 3, WHITE);
+            }
         }
     }
 }
@@ -1678,6 +1790,8 @@ mod tests {
             EntityKind::Stein,
             EntityKind::SteinDebris,
             EntityKind::Schafbergbahn,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
@@ -1807,6 +1921,151 @@ mod tests {
         let t = the_train(&g);
         assert_eq!(t.state, jnr_core::platform::car::WAIT_LOWER);
         assert!(puffs(&g, &t).is_empty());
+    }
+
+    /// A 30×10 grey-box level, ground in row 9, with `boat` (a legend
+    /// entry) in cell (2, 7): hull bottom (the water line) y 128, deck
+    /// y 112. The player starts at (4, 4) and falls onto a Dampfer's deck.
+    fn boat_game(boat: &str) -> Game {
+        let mut rows: Vec<Vec<char>> = (0..10)
+            .map(|r| vec![if r == 9 { '#' } else { '.' }; 30])
+            .collect();
+        rows[4][4] = 'P';
+        rows[7][2] = 'b';
+        let grid: String = rows
+            .into_iter()
+            .map(|r| r.into_iter().collect::<String>() + "\n")
+            .collect();
+        let text = format!(
+            "[meta]\nid = \"t\"\ntime_limit = 300\n[legend]\n\"#\" = \"solid\"\n\
+             \"b\" = {boat}\n\
+             \"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\n{grid}'''\n"
+        );
+        Game::new(&Level::parse(&text).unwrap(), &tuning(), 1)
+    }
+
+    fn the_boat(g: &Game, kind: EntityKind) -> Entity {
+        *g.entities().iter().find(|e| e.kind == kind).unwrap()
+    }
+
+    /// Grey box: a white hull with a gold funnel stub; while it travels the
+    /// paddle wheel's zone is outlined and white spray shows under the water
+    /// line on both sides of the wheel; waiting and moored: neither.
+    #[test]
+    fn the_grey_box_dampfer_shows_its_wheel_and_spray_only_while_travelling() {
+        use jnr_core::platform::{car, paddle_wheel};
+        let mut g = boat_game("{ entity = \"dampfer\", to = [8, 0] }");
+        let spray = |g: &Game| {
+            let fb = rendered(g);
+            let e = the_boat(g, EntityKind::Dampfer);
+            let (cx, water) = feet_on_screen(&e, g.camera());
+            let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+            assert_eq!(fb.get(left + 74, top - 10), Some(OBLATE_GOLD), "funnel");
+            assert_eq!(fb.get(cx, top + 8), Some(WHITE), "hull");
+            let zone = paddle_wheel(&e, g.tuning()).map(|z| {
+                let (zx, zy) = (z.x.to_px() - g.camera().x, z.y.to_px() - g.camera().y);
+                fb.get(zx, zy + 10) == Some(SLATE_DARK)
+            });
+            let both = [cx - GISCHT_SPREAD_PX, cx + GISCHT_SPREAD_PX]
+                .map(|x| fb.get(x, water + 3) == Some(WHITE));
+            (zone, both)
+        };
+        assert_eq!(spray(&g), (None, [false, false]), "waiting");
+        until_state(&mut g, car::UP);
+        for _ in 0..12 {
+            assert_eq!(spray(&g), (Some(true), [true, true]), "travelling");
+            g.step(InputFrame::NONE);
+        }
+        until_state(&mut g, car::MOORED);
+        assert_eq!(spray(&g), (None, [false, false]), "moored");
+    }
+
+    fn until_state(g: &mut Game, state: u8) {
+        for _ in 0..400 {
+            if the_boat(g, EntityKind::Dampfer).state == state {
+                return;
+            }
+            g.step(InputFrame::NONE);
+        }
+        panic!("the Dampfer never reached state {state}");
+    }
+
+    /// With its sprites: `dampfer` `ride` while it travels, `idle` while it
+    /// waits and once moored, never mirrored; `gischt` `spray` on the water
+    /// line beside the wheel's centre only while it travels.
+    #[test]
+    fn the_dampfer_and_its_spray_use_their_sprites() {
+        use crate::testutil::{A, B, C, atlas, image, sprite};
+        use jnr_core::platform::car;
+        let frame = |c: &str, w: usize, h: usize| image(&vec![c.repeat(w).as_str(); h]);
+        let ship = sprite(
+            "dampfer",
+            (80, 48),
+            false,
+            vec![
+                ("idle", 0, vec![frame("a", 160, 48)]),
+                ("ride", 0, vec![frame("b", 160, 48)]),
+            ],
+        );
+        let gischt = sprite(
+            "gischt",
+            (8, 16),
+            false,
+            vec![("spray", 4, vec![frame("c", 16, 16)])],
+        );
+        let atlas = atlas(&[ship, gischt]);
+        let texts = Texts::default();
+        let mut g = boat_game("{ entity = \"dampfer\", to = [8, 0] }");
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let (x, y) = feet_on_screen(&the_boat(g, EntityKind::Dampfer), g.camera());
+            (fb.get(x + 40, y - 30), fb.get(x - GISCHT_SPREAD_PX, y - 8))
+        };
+        assert_eq!(shown(&g), (Some(A), Some(A)), "waiting");
+        until_state(&mut g, car::UP);
+        assert_eq!(shown(&g), (Some(B), Some(C)), "travelling");
+        until_state(&mut g, car::MOORED);
+        assert_eq!(shown(&g), (Some(A), Some(A)), "moored");
+    }
+
+    /// The Traundl: grey box with the rower stub at the stern; with its
+    /// sprite `idle` while it waits at an end and `ride` while it moves.
+    #[test]
+    fn the_traundl_waits_idle_and_rows_with_ride() {
+        use crate::testutil::{A, B, atlas, image, sprite};
+        let mut g = boat_game("{ entity = \"traundl\", to = [4, 0] }");
+        let fb = rendered(&g);
+        let e = the_boat(&g, EntityKind::Traundl);
+        let (left, top) = (e.x.to_px() - g.camera().x, e.y.to_px() - g.camera().y);
+        assert_eq!(fb.get(left + 5, top + 8), Some(LEATHER_DARK), "hull");
+        let (rx, [_, rh]) = TRAUNDL_ROWER;
+        assert_eq!(fb.get(left + rx + 1, top - rh), Some(PINE_DARK), "rower");
+        let frame = |c: &str| image(&vec![c.repeat(48).as_str(); 32]);
+        let boat = sprite(
+            "traundl",
+            (24, 32),
+            false,
+            vec![("idle", 0, vec![frame("a")]), ("ride", 0, vec![frame("b")])],
+        );
+        let atlas = atlas(&[boat]);
+        let texts = Texts::default();
+        let shown = |g: &Game| {
+            let ctx = RenderContext::new(&atlas, &texts, g.level());
+            let mut fb = Framebuffer::new();
+            render(g, &ctx, &mut fb);
+            let (x, y) = feet_on_screen(&the_boat(g, EntityKind::Traundl), g.camera());
+            fb.get(x, y - 8)
+        };
+        // Wait 30 frames at the spawn end, then 64 frames of travel.
+        let mut seen = Vec::new();
+        for _ in 0..40 {
+            g.step(InputFrame::NONE);
+            seen.push(shown(&g));
+        }
+        assert!(seen[..29].iter().all(|&c| c == Some(A)), "{seen:?}");
+        assert!(seen[31..].iter().all(|&c| c == Some(B)), "{seen:?}");
     }
 
     /// With its sprite: `ride` while it travels, `idle` while it stands,

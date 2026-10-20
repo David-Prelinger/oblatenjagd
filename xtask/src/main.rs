@@ -10,6 +10,7 @@ mod climblint;
 mod content;
 mod golden;
 mod levels;
+mod par;
 mod replay;
 mod report;
 mod solver;

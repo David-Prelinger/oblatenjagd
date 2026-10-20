@@ -1,0 +1,288 @@
+# Pier pile in swim water (TileKind::Swim, D-076): a 4 px O/l wooden pile
+# (cols 6-9, lit left) going down through the clear swim water; used
+# under the ends of `steg` decks, whose end tiles carry the same pile.
+# Vertical autotile, only N and S matter: with an open top the tile shows
+# the tile_see_wasser surface (frame 0) and a w ripple where the pile
+# breaks the skin; with swim-pile above it shows tile_see_wasser_tief
+# (frame 0); with an open bottom the pile ends in a small i/m gravel heap
+# on the lake bed. Static (an autotile has one anim), so it shows the
+# water's frame 0.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_steg_pfahl
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 1
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 2
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 3
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 4
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 5
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 6
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 7
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 8
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 9
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 10
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 11
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTiiOOllmmTTTT
+TTTiiiOOllmmmTTT
+frame auto 12
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 13
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 14
+ssswwwOOllwwssss
+ttttttOOlltttttt
+ttttttOOllttssst
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttttttOOlltttttt
+ttssstOOlltttttt
+ttstttOOlltttttt
+ttttttOOllTtTTtt
+tsttttOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+frame auto 15
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTt
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTtttTOOllTTTTTT
+TTtTTTOOllTTTTTT
+TTTTTTOOllTtTTTT
+TtTTTTOOllTTtTTT
+ttTTTTOOllTTTtTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT
+TTTTTTOOllTTTTTT

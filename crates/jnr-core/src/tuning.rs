@@ -160,7 +160,35 @@ pub struct PlatformTuning {
     /// Frames standing at the upper end (at the lower end the train waits
     /// for its rider, like the Festungsbahn).
     pub schafbergbahn_wait: u16,
+    /// Traundl hull `[w, h]` in whole pixels: its top is the deck
+    /// (left-aligned in its spawn cell, bottom on the cell's bottom edge =
+    /// the water line, like the Gondel; D-077).
+    pub traundl_size: [i32; 2],
+    /// Frames a Traundl waits at each end of its track (it never waits for
+    /// a rider: the Gondel's free-running machine, D-077).
+    pub traundl_wait: u16,
+    /// Traundl travel frames per tile: travel = |dx| × this (16 = 1 px per
+    /// frame).
+    pub traundl_frames_per_tile: u16,
+    /// Dampfer hull `[w, h]` in whole pixels, whole tiles (the deck flush
+    /// with the quays; left-aligned in its spawn cell, bottom on the cell's
+    /// bottom edge = the water line; D-077). Up to a screen wide.
+    pub dampfer_size: [i32; 2],
+    /// Dampfer travel frames per tile: travel = dx × this (20: 0.8 px per
+    /// frame). It waits for its rider, travels once and stays moored.
+    pub dampfer_frames_per_tile: u16,
+    /// The paddle wheel's hurt zone `[w, h]` in px while the Dampfer
+    /// travels, centred on the hull's centre x (D-077).
+    pub dampfer_wheel_zone: [i32; 2],
+    /// Px the wheel zone's top lies above the hull's bottom (the water
+    /// line); the rest of its height is below it.
+    pub dampfer_wheel_rise: i32,
 }
+
+/// The auto-scroll speed the Dampfer must keep up with, in subpixels per
+/// frame (0.75 px/frame, game-design.md → "Auto-scroll camera").
+// E26: compare against `camera.autoscroll_speed` once that key lands.
+pub const AUTOSCROLL_SPEED_STUB: i32 = 192;
 
 /// Player movement constants (SMB-style).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -600,6 +628,55 @@ pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
     None
 }
 
+impl PlatformTuning {
+    /// The M5 boat keys (Traundl, Dampfer; D-077).
+    fn validate_boats(&self) -> Result<(), ParseError> {
+        // A Traundl's whole cycle fits the u16 frame counter (as the
+        // Gondel's; `frames_per_tile` <= 64 keeps the position product in
+        // i32).
+        let period = 2
+            * (u32::from(self.traundl_wait)
+                + u32::from(self.traundl_frames_per_tile) * crate::level::MAX_TRACK_TILES as u32);
+        if period > u32::from(u16::MAX) || self.traundl_frames_per_tile > 64 {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.traundl_frames_per_tile <= 64 and 2 × (traundl_wait + 64 × traundl_frames_per_tile) <= 65535 frames",
+            ));
+        }
+        // The steamer's hull is whole tiles (its deck on the tile grid,
+        // flush with the quays) and at most a screen wide.
+        let [w, h] = self.dampfer_size;
+        if !(TILE_PX..=crate::camera::SCREEN_W).contains(&w)
+            || !(TILE_PX..=64).contains(&h)
+            || w % TILE_PX != 0
+            || h % TILE_PX != 0
+        {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.dampfer_size must be whole tiles, 16..=320 px wide and 16..=64 px high",
+            ));
+        }
+        // At least as fast as the auto-scroll (a standing rider is never
+        // pushed, D-077): 16 px × 256 / frames per tile >= the scroll speed.
+        // <= 64 frames per tile keeps the travel (64 tiles) in the counter
+        // and the position product in i32.
+        let speed = TILE_PX * 256 / i32::from(self.dampfer_frames_per_tile.max(1));
+        if self.dampfer_frames_per_tile > 64 || speed < AUTOSCROLL_SPEED_STUB {
+            return Err(ParseError::new(format!(
+                "tuning.toml: platforms.dampfer_frames_per_tile must be 1..=64 and keep the Dampfer at least as fast as the auto-scroll ({AUTOSCROLL_SPEED_STUB} subpx/frame: at most 21 frames per tile)"
+            )));
+        }
+        let [zw, zh] = self.dampfer_wheel_zone;
+        if !(1..=w).contains(&zw)
+            || !(1..=64).contains(&zh)
+            || !(0..=zh).contains(&self.dampfer_wheel_rise)
+        {
+            return Err(ParseError::new(
+                "tuning.toml: need platforms.dampfer_wheel_zone 1..=dampfer width × 1..=64 px and 0 <= dampfer_wheel_rise <= its height",
+            ));
+        }
+        Ok(())
+    }
+}
+
 impl EnemyTuning {
     /// The M3 enemy keys (Pilger, Gams, Steinschlag; D-058).
     /// `max_fall` is the player's max fall speed (the Gams falls with it).
@@ -1008,6 +1085,7 @@ impl Tuning {
                 "platforms.schafbergbahn_size",
                 self.platforms.schafbergbahn_size,
             ),
+            ("platforms.traundl_size", self.platforms.traundl_size),
         ] {
             if !(1..=64).contains(&w) || !(1..=64).contains(&h) {
                 return Err(ParseError::new(format!(
@@ -1079,6 +1157,14 @@ impl Tuning {
             (
                 "platforms.schafbergbahn_frames_per_tile",
                 self.platforms.schafbergbahn_frames_per_tile,
+            ),
+            (
+                "platforms.traundl_frames_per_tile",
+                self.platforms.traundl_frames_per_tile,
+            ),
+            (
+                "platforms.dampfer_frames_per_tile",
+                self.platforms.dampfer_frames_per_tile,
             ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
@@ -1161,6 +1247,7 @@ impl Tuning {
                 "tuning.toml: need platforms.schafbergbahn_frames_per_tile <= 64 and schafbergbahn_wait + 64 × schafbergbahn_frames_per_tile <= 32767 frames",
             ));
         }
+        self.platforms.validate_boats()?;
         let n = e.blasmusiker_notes;
         if n[0] < e.blasmusiker_inhale
             || n.windows(2).any(|w| w[0] >= w[1])
@@ -1440,6 +1527,68 @@ mod tests {
         assert!(wait(0).is_ok());
         assert!(wait(32_767 - 1536).is_ok());
         assert!(wait(32_767 - 1535).is_err());
+    }
+
+    #[test]
+    fn boat_numbers_are_validated() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.traundl_size, [48, 16]);
+        assert_eq!((pl.traundl_wait, pl.traundl_frames_per_tile), (30, 16));
+        assert_eq!(pl.dampfer_size, [160, 16]);
+        assert_eq!(pl.dampfer_frames_per_tile, 20);
+        assert_eq!(pl.dampfer_wheel_zone, [32, 20]);
+        assert_eq!(pl.dampfer_wheel_rise, 4);
+        let with = |old: &str, new: &str| {
+            assert!(REAL.contains(old), "{old}");
+            Tuning::parse(&REAL.replace(old, new))
+        };
+        // The Dampfer at least as fast as the scroll: 21 frames per tile
+        // (195 subpx/frame) is still >= 192, 22 (186) is not.
+        let fpt = "dampfer_frames_per_tile = 20";
+        assert!(with(fpt, "dampfer_frames_per_tile = 21").is_ok());
+        let e = with(fpt, "dampfer_frames_per_tile = 22")
+            .unwrap_err()
+            .to_string();
+        assert!(e.contains("at least as fast as the auto-scroll"), "{e}");
+        assert!(with(fpt, "dampfer_frames_per_tile = 0").is_err());
+        assert!(with(fpt, "dampfer_frames_per_tile = 1").is_ok());
+        let size = "dampfer_size = [160, 16]";
+        assert!(with(size, "dampfer_size = [320, 32]").is_ok());
+        for bad in [
+            "[336, 16]",
+            "[150, 16]",
+            "[160, 20]",
+            "[0, 16]",
+            "[160, 80]",
+        ] {
+            assert!(
+                with(size, &format!("dampfer_size = {bad}")).is_err(),
+                "{bad}"
+            );
+        }
+        let zone = "dampfer_wheel_zone = [32, 20]";
+        assert!(with(zone, "dampfer_wheel_zone = [160, 64]").is_ok());
+        for bad in ["[161, 20]", "[0, 20]", "[32, 0]", "[32, 65]"] {
+            assert!(
+                with(zone, &format!("dampfer_wheel_zone = {bad}")).is_err(),
+                "{bad}"
+            );
+        }
+        let rise = "dampfer_wheel_rise = 4";
+        assert!(with(rise, "dampfer_wheel_rise = 20").is_ok());
+        assert!(with(rise, "dampfer_wheel_rise = 21").is_err());
+        assert!(with(rise, "dampfer_wheel_rise = -1").is_err());
+        let size = "traundl_size = [48, 16]";
+        assert!(with(size, "traundl_size = [64, 16]").is_ok());
+        assert!(with(size, "traundl_size = [65, 16]").is_err());
+        let tf = "traundl_frames_per_tile = 16";
+        assert!(with(tf, "traundl_frames_per_tile = 0").is_err());
+        assert!(with(tf, "traundl_frames_per_tile = 65").is_err());
+        // 2 × (wait + 64 × 16) <= 65535.
+        let wait = "traundl_wait = 30";
+        assert!(with(wait, "traundl_wait = 31743").is_ok());
+        assert!(with(wait, "traundl_wait = 31744").is_err());
     }
 
     #[test]

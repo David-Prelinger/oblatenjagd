@@ -106,6 +106,8 @@ impl Entity {
             | EntityKind::Festungsbahn
             | EntityKind::Gondel
             | EntityKind::Schafbergbahn
+            | EntityKind::Traundl
+            | EntityKind::Dampfer
             | EntityKind::Durchkriechstein
             | EntityKind::Steinschlag
             | EntityKind::SteinDebris
@@ -219,6 +221,8 @@ mod tests {
             EntityKind::Defeated(SelfieTourist),
             EntityKind::Gondel,
             EntityKind::Schafbergbahn,
+            EntityKind::Traundl,
+            EntityKind::Dampfer,
         ] {
             assert_eq!(e(kind).axe_hit(), AxeHit::Pass, "{kind:?}");
         }

@@ -1,0 +1,289 @@
+# Stone quay wall of the landings (solid): dressed limestone blocks i/m
+# with d joints under a w/i coping (the walkable light lip, m/d
+# underside). The top tile stands on deck row 11, its bottom on the water
+# line: a lower m course and a d course joint, no water colours. Tiles
+# with kai above are the submerged wall: m blocks with d joints and a T
+# wet row under each horizontal joint (levels stack kai only from the
+# deck row down into the water). Open left: w (top) / i (submerged) lit
+# edge; open right: d edge; a small iron mooring ring d near each open
+# end of the top tile.
+# Drawn by the pixel-artist with a throwaway script; the grids are the source.
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_kai
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+wwwwwwwwwwwwwwwi
+wiiiiiiiiiiiiiid
+wmmmmmmmmmmmmmmd
+dddddddddddddddd
+wiiiidiiiiiimdid
+wiiiidiiidiimdid
+wiiiidiididimdid
+wiiiidiiidiimdid
+wiiiidiiiiiimdid
+dddddddddddddddd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+dddddddddddddddd
+frame auto 1
+TTTTTTTTTTTTTTTd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+dddddddddddddddd
+TTTTTTTTTTTTTTTd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+dddddddddddddddd
+frame auto 2
+wwwwwwwwwwwwwwww
+wiiiiiiiiiiiiiii
+wmmmmmmmmmmmmmmm
+dddddddddddddddd
+wiiiidiiiiiimdii
+wiiiidiiidiimdii
+wiiiidiididimdii
+wiiiidiiidiimdii
+wiiiidiiiiiimdii
+dddddddddddddddd
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+dddddddddddddddd
+frame auto 3
+TTTTTTTTTTTTTTTT
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+dddddddddddddddd
+TTTTTTTTTTTTTTTT
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 4
+wwwwwwwwwwwwwwwi
+wiiiiiiiiiiiiiid
+wmmmmmmmmmmmmmmd
+dddddddddddddddd
+wiiiidiiiiiimdid
+wiiiidiiidiimdid
+wiiiidiididimdid
+wiiiidiiidiimdid
+wiiiidiiiiiimdid
+dddddddddddddddd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+dddddddddddddddd
+frame auto 5
+TTTTTTTTTTTTTTTd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+immmmmmmmmdmmmmd
+dddddddddddddddd
+TTTTTTTTTTTTTTTd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+immdmmmmmmmmmmmd
+dddddddddddddddd
+frame auto 6
+wwwwwwwwwwwwwwww
+wiiiiiiiiiiiiiii
+wmmmmmmmmmmmmmmm
+dddddddddddddddd
+wiiiidiiiiiimdii
+wiiiidiiidiimdii
+wiiiidiididimdii
+wiiiidiiidiimdii
+wiiiidiiiiiimdii
+dddddddddddddddd
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+dddddddddddddddd
+frame auto 7
+TTTTTTTTTTTTTTTT
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+immmmmmmmmdmmmmm
+dddddddddddddddd
+TTTTTTTTTTTTTTTT
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+immdmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 8
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiid
+mmmmmmmmmmmmmmmd
+dddddddddddddddd
+iiiiidiiiiiimdid
+iiiiididiiiimdid
+iiiiiddidiiimdid
+iiiiididiiiimdid
+iiiiidiiiiiimdid
+dddddddddddddddd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+dddddddddddddddd
+frame auto 9
+TTTTTTTTTTTTTTTd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+dddddddddddddddd
+TTTTTTTTTTTTTTTd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+dddddddddddddddd
+frame auto 10
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+dddddddddddddddd
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+dddddddddddddddd
+frame auto 11
+TTTTTTTTTTTTTTTT
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+dddddddddddddddd
+TTTTTTTTTTTTTTTT
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+dddddddddddddddd
+frame auto 12
+wwwwwwwwwwwwwwwi
+iiiiiiiiiiiiiiid
+mmmmmmmmmmmmmmmd
+dddddddddddddddd
+iiiiidiiiiiimdid
+iiiiididiiiimdid
+iiiiiddidiiimdid
+iiiiididiiiimdid
+iiiiidiiiiiimdid
+dddddddddddddddd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+mdmmmmmmmdmmmmmd
+dddddddddddddddd
+frame auto 13
+TTTTTTTTTTTTTTTd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+mmmmmmmmmmdmmmmd
+dddddddddddddddd
+TTTTTTTTTTTTTTTd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+mmmdmmmmmmmmmmmd
+dddddddddddddddd
+frame auto 14
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+mmmmmmmmmmmmmmmm
+dddddddddddddddd
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+iiiiidiiiiiimdii
+dddddddddddddddd
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+mdmmmmmmmdmmmmmm
+dddddddddddddddd
+frame auto 15
+TTTTTTTTTTTTTTTT
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+mmmmmmmmmmdmmmmm
+dddddddddddddddd
+TTTTTTTTTTTTTTTT
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+mmmdmmmmmmmmmmmm
+dddddddddddddddd
