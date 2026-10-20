@@ -28,8 +28,8 @@ R 8
 LB 8
 - 4
 L 4
-- 384
-RB 626
+- 392
+RB 618
 # --- pause for 300 frames while swimming in the scroll ---
 S 1
 - 300

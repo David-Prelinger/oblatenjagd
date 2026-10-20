@@ -26,8 +26,8 @@ R 8
 LB 8
 - 4
 L 4
-- 384
-RB 725
+- 392
+RB 717
 - 300
 # death 2: the solver route to the Seebad (1299 play frames), then float
 RB 64
@@ -37,8 +37,8 @@ R 8
 LB 8
 - 4
 L 4
-- 384
-RB 725
+- 392
+RB 717
 - 300
 # death 3, game over
 RB 64
@@ -48,8 +48,8 @@ R 8
 LB 8
 - 4
 L 4
-- 384
-RB 725
+- 392
+RB 717
 - 90
 # START -> intro -> play
 - 160
