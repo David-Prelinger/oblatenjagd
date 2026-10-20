@@ -1,0 +1,80 @@
+# QA M6 BUG (fails on purpose until fixed): file C's sabre hurts Resi standing
+# still on the bench (cols 249-250), the 2-high pen wall the file turns at
+# and the stage's designed perch between singer #2 and the file
+# (game-design Stage 8 section 5). The solver's route to the theatre street
+# (bad_ischl_file_c_singer's first 1340 frames), 136 idle frames (a later
+# arrival, so the file wakes later and turns at the bench in another drill
+# phase), then a QA beam search onto the bench: from 1880 she stands still
+# on it, hitbox x 4011-4023 (the bench ends at 4016), feet on its top (208).
+# File C marches left to the bench, the front officer halts 3 px from it
+# (x 4019, Habt Acht 2089) and presents at 2113 (drill f 192): his 8x16
+# sabre zone (x 4021-4029, y 202-218) reaches 6 px above the bench top
+# into her feet, and she dies (Normal) without moving. The sabre reaches
+# 38 px above the street, a 2-high wall is 32 px: the M4 pen-wall rule
+# (walls >= 2 high) does not cover officers; the same holds at the lawn
+# wall (204, file B) and the fountain basin (67, file A).
+# Expected: a player standing on a pen wall is never hurt by an officer in
+# the pen below (deaths=0, still on the bench at the end).
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing player_y<=186 player_x>=4011
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 49
+- 136
+RB 20
+RBJ 36
+RB 44
+RBJ 36
+RB 16
+RBJ 4
+L 4
+LJ 4
+RB 28
+- 4
+L 12
+RB 4
+- 40
+RB 8
+RBJ 24
+RB 40
+RBJ 8
+RB 20
+L 8
+RB 20
+R 4
+L 16
+RB 4
+- 260

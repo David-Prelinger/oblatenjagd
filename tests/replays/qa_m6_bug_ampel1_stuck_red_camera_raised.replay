@@ -1,0 +1,125 @@
+# QA M6 BUG (fails on purpose until fixed): Ampel #1's intro never runs if
+# Resi jumps for the terrace's own Oblaten, and its first car then hits her
+# when she drops into the lane. qa_m6_strobl_relaxed's inputs (walking,
+# Zuckerschock) to the Gastgarten terrace: she lands on it (2680, camera y
+# 92), hops for the Oblaten over it (row 11; the camera rises to 48) and
+# stands on its right part (2752, x 2448, centre right of col 152, within
+# 12 tiles of the spawner): the camera rests at y 57, so the spawner cell
+# (row 14, y 224-240) ends 3 px below the screen and the light is not
+# "fully on screen" (D-093): no telegraph, no cars, the light stays red for
+# the 230 frames she watches. She walks off the terrace's right end; the
+# camera drops back to 92 (3026), Ampel #1 starts its cycle at f 0 while
+# she is in its lane (3018), the first car leaves the mouth at 3050 and
+# hits her (Hurt, Zuckerschock -> Normal) before she reaches the mouth.
+# Expected (game-design Stage 7 section 4): standing on the terrace's right
+# part the counter runs and both cars drive beneath her; after their red
+# phase she walks past the mouth untouched (no Hurt, still big, x >= 2620).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt power=big player_x>=2620 state=playing
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 8
+R 16
+RJ 4
+R 32
+RJ 24
+R 44
+RJ 12
+R 16
+L 8
+R 12
+L 12
+- 30
+R 20
+RJ 8
+R 16
+RJ 24
+R 28
+L 8
+LJ 12
+RJ 20
+R 16
+RJ 24
+R 36
+L 4
+- 4
+L 4
+- 120
+RJ 16
+R 12
+RJ 8
+R 24
+- 8
+R 8
+- 4
+R 4
+- 12
+J 14
+- 80
+R 24
+RJ 16
+R 60
+J 4
+RJ 4
+R 40
+- 4
+L 8
+- 4
+R 12
+RJ 36
+R 4
+RJ 16
+R 8
+L 4
+J 4
+RJ 12
+R 24
+L 4
+- 4
+L 4
+- 30
+R 52
+RJ 8
+R 64
+RJ 4
+R 28
+RJ 24
+R 100
+RJ 4
+R 16
+RJ 8
+R 28
+RJ 16
+R 20
+RJ 4
+R 40
+- 4
+L 8
+J 12
+RJ 4
+L 8
+R 4
+- 330
+R 56
+RJ 36
+R 164
+RJ 28
+R 16
+RJ 24
+R 40
+RJ 20
+R 12
+RJ 28
+R 32
+L 4
+- 4
+L 4
+- 230
+R 160

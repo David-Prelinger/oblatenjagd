@@ -1,0 +1,65 @@
+# QA M6: pausing in the middle of the shutter staircase changes nothing
+# (D-094: paused frames don't advance the stage clock). strobl_tour's inputs
+# (title, START at 20, play from 171) to tour frame 595: Resi has just
+# jumped off shutter #2 (press at 593, LEFT+JUMP held, clock 424) towards
+# #3; START pauses the game in mid-air for 600 frames (the shutters, the
+# clock and her jump frozen; JUMP released during the pause), START again
+# resumes and the tour's inputs continue unchanged from 595. She lands on
+# #3, hops onto the annex roof and finishes exactly 602 frames later than
+# the tour (LevelComplete 2502 = 1900 + 602), never hurt.
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2502..2502 deaths=0 no_event=Hurt state=stage_clear
+---
+- 20
+S 1
+- 150
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 2
+S 1
+- 600
+S 1
+LBJ 10
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+- 58

@@ -1,0 +1,43 @@
+# QA M6: time-up while standing on the Gastgarten terrace over Ampel #1's
+# lane (time_limit 240: re-cut this replay if D-045 changes it). As
+# strobl_ampel_watch to the terrace's right part (1450: Ampel #1 counts),
+# then she stands there for the rest of the clock: 32 cycles of red-amber,
+# two cars, blinks, amber and red pass beneath her (never more than 2 of its
+# cars alive, none ever touches her feet 48 px above the road). The clock
+# runs out at 14400 (death, time-up), and she respawns at the Dorfplatz
+# checkpoint (14460, clock 0) as Normal with the Ampeln reset: standing
+# there 90 frames nothing reaches her (Ampel #1 is 30 tiles away and off
+# screen, the parked Postbus 184 px behind her does not trigger).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = dies_at frames=14400..14400 deaths=1 no_event=Hurt event=CheckpointReached event=Respawned lives=2 state=playing player_x>=2114 player_y>=218 player_y<=218
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 3
+- 13100

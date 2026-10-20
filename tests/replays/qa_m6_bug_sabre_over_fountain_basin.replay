@@ -1,0 +1,50 @@
+# QA M6 BUG (fails on purpose until fixed; same bug as
+# qa_m6_bug_sabre_over_bench, at the Kaiserpark): file A's sabre hurts Resi
+# standing still on the park fountain's 2-high basin (cols 67-71), the pen
+# wall file A turns at. The first 150 frames of bad_ischl_solver (to the
+# Katrin canopy), 112 idle frames, then a QA beam search over the terrace,
+# past file A and onto the basin's left end: from 582 she stands still at
+# x 1068 (hitbox 1068-1080, the basin starts at 1072: 8 of 12 px on it),
+# feet on its top (208). File A marches back to the basin; the rear
+# officer halts 1 px from it (x 1059, Habt Acht from 889) and presents at
+# 913: his sabre zone (x 1061-1069, y 202-218) reaches 6 px above the
+# basin into her feet and she dies (Normal). In a sweep of 20 arrival
+# times (0-456 idle frames) the sabre hit her standing there in 12.
+# Expected: standing on a pen wall is safe from the officers in the pen
+# (deaths 0, still on the basin at the end).
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing player_y<=186 player_x>=1068
+---
+RB 96
+RBJ 20
+RB 34
+- 112
+RB 12
+RBJ 12
+LJ 4
+RJ 4
+RBJ 4
+RB 32
+RBJ 4
+RB 28
+RBJ 4
+RB 16
+RBJ 28
+RB 32
+RBJ 40
+RB 32
+RBJ 12
+RB 12
+L 4
+- 4
+L 4
+- 4
+RB 4
+- 4
+L 8
+- 4
+RB 4
+- 4
+- 358
