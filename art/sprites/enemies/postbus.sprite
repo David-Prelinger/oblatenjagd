@@ -1,0 +1,284 @@
+# Postbus 150: the Reisebus's machine (D-070, D-097) in the Austrian
+# Postbus look. Yellow Y/o/O body, a dark d window band with thin m
+# pillars, a blank w destination panel above the windscreen (no digits, no
+# logos: the sign boards carry the text), k/d bumper, two k/d wheels with i
+# hubs, hazard lamps O off / w on, R tail lamps. Faces LEFT, no mirror.
+# The roof line is flat over the whole length (the roof bounce covers it).
+# idle = door open, engine running (1 px body shake, exhaust puff i/w).
+# telegraph = door closed, hazard lamps blink. drive = hubs turn, 1 px bounce.
+# halt = stopped at its halt, doors shut, faces E (noses c) and hands c
+# pressed to the windows; frame 1 the passenger in the 4th window shrugs.
+# Derived from reisebus.sprite with a scratch remap script, frozen here.
+sprite = postbus
+size   = 64x32
+origin = 32,32
+hitbox = 2,4,60,28
+anim   = idle      frames=2 ticks=30 loop
+anim   = telegraph frames=2 ticks=6 loop
+anim   = drive     frames=2 ticks=4 loop
+anim   = halt      frames=2 ticks=16 loop
+---
+frame idle 0
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmdddddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmdddddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYmmmmmYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooodddddookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOdddddOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOdddddkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.wi..
+..............kddiimiiddk....................kddiimiiddk....ii..
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame idle 1
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmdddddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmdddddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmdddddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYdddddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYmmmmmYYkkkkkYYYYYYYYYYYYYYYYYYYYYYYYYYkkkkkYYYYYYoRk..
+..kooooooodddddokkdddkkooooooooooooooooooooooookkdddkkooooooRk..
+..kddddddOdddddkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+..kddddddOddddkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOkww
+...kdddddOOOOOkddiimiiddkOOOOOOOOOOOOOOOOOOOOkddiimiiddkOOOOOkii
+....kkkkkkkkkkkddimmmiddkkkkkkkkkkkkkkkkkkkkkkddimmmiddkkddkk..i
+..............kddiimiiddk....................kddiimiiddk.kk.....
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame telegraph 0
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYwwk..
+..kwwYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooooooooookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOOOOOOOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.....
+..............kddiimiiddk....................kddiimiiddk........
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame telegraph 1
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooooooooookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOOOOOOOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.....
+..............kddiimiiddk....................kddiimiiddk........
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame drive 0
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooooooooookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOOOOOOOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.....
+..............kddiimiiddk....................kddiimiiddk........
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame drive 1
+................................................................
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+.kkdddEEdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kdddEEdmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmddEEdddmdddEEddmdddddddmddEEdddmddEEdddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYkkkkkYYYYYYYYYYYYYYYYYYYYYYYYYYkkkkkYYYYYYoRk..
+..koooooooooooookkdddkkooooooooooooooooooooooookkdddkkooooooRk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+..kddddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+...kdddddOOOOOkddimimiddkOOOOOOOOOOOOOOOOOOOOkddimimiddkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimimiddk....................kddimimiddk.kk.....
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame halt 0
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmEEEddddmddddEEEmEEEdEEEmddEEEddmddddEEEYYYYook..
+.kkdddEEdmddmddmEcEdEEEmEEEdEcEmEcEdEcEmddEEEddmEEEdEcEYYYYook..
+..kdddEEdmddmddmEEEdEcEmEcEdEEEmEEEdEEEmddEEEddmEcEdEEEYYYYook..
+..kddddddmddmddmddddEEEmEEEddddmdddddddmdmmmmmdmEEEddddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdmmmmmdmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooooooooookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOOOOOOOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.....
+..............kddiimiiddk....................kddiimiiddk........
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
+frame halt 1
+................................................................
+................................................................
+................................................................
+................................................................
+....kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk...
+...kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+..kdwwwwdYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYk..
+.kmdwwwwdmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkdmmdddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+kmkddddddmddmddmdddddddmdddddddmdddddddmddEEEddmdddddddYYYYook..
+kmkddddddmddmddmEEEddddmddddEEEmEEEdEEEmcdEEEdcmddddEEEYYYYook..
+.kkdddEEdmddmddmEcEdEEEmEEEdEcEmEcEdEcEmmmEEEmmmEEEdEcEYYYYook..
+..kdddEEdmddmddmEEEdEcEmEcEdEEEmEEEdEEEmdmmmmmdmEcEdEEEYYYYook..
+..kddddddmddmddmddddEEEmEEEddddmdddddddmdddddddmEEEddddYYYYook..
+..kddddddmddmddmdddddddmdddddddmdddddddmdddddddmdddddddYYYYook..
+..kddddddYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kddddYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYOOk..
+..kOOYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYook..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYddmddYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYoRk..
+..kooooooooooooookkkkkooooooooooooooooooooooooookkkkkoooooooRk..
+..kddddddOOOOOOOkkdddkkOOOOOOOOOOOOOOOOOOOOOOOOkkdddkkOOOOOOOk..
+..kddddddOOOOOOkdddddddkOOOOOOOOOOOOOOOOOOOOOOkdddddddkOOOOOOk..
+...kdddddOOOOOkkddiiiddkkOOOOOOOOOOOOOOOOOOOOkkddiiiddkkOOOOOk..
+....kkkkkkkkkkkddiimiiddkkkkkkkkkkkkkkkkkkkkkkddiimiiddkkddkk...
+..............kddimmmiddk....................kddimmmiddk.kk.....
+..............kddiimiiddk....................kddiimiiddk........
+...............kddiiiddk......................kddiiiddk.........
+...............kdddddddk......................kdddddddk.........
+................kkdddkk........................kkdddkk..........
