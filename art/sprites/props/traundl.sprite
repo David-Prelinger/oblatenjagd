@@ -3,8 +3,9 @@
 # wooden hull o/O/l with a k outline: the raised, upturned bow on the LEFT
 # (the real boat's landing ramp; pointed, rising 4 px above the deck only in
 # x 0-4), the raked stern on the right with the oar blade and w ripples in
-# the corner. The rower stands at the stern (x 34-45, rows 0-15): a local in
-# shirt sleeves w/i, a green G/j hat, d breeches, with the long oar O.
+# the corner. The rower stands at the stern (x 34-47, rows 0-15): a local in
+# shirt sleeves w/i with G braces, Lederhosen O/l, i stockings and a green
+# G/j hat, with the long oar (o shaft, o/O blade).
 #
 # Walking surface: row 16 (k edge, o gunwale lip at row 17) across all
 # 48 px; the hitbox is the 48x16 body (rows 16-31). Nothing below row 31.
