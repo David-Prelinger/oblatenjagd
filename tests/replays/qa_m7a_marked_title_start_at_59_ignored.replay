@@ -1,0 +1,47 @@
+# QA M7 acceptance (E50 / D-111 observation 1, regression): on the marked
+# title entered from the ending, a START on its 59th frame is ignored.
+# flow_m7_finale_ending_skip's inputs (START through every phase at its
+# first allowed frame; the marked title appears at 1154, Title frames 0),
+# then a new START press on step 1213 (Title frames 59): nothing happens,
+# the run stays on the marked title with the reset run (back at its
+# first stage, m7_finale on station 9 of this test route). Its pair
+# qa_m7a_marked_title_start_at_60_starts presses one frame later.
+level  = m7_finale
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl bad_ischl m7_finale
+expect = complete frames=464..464 deaths=0
+expect = state=title cleared=true stage=cafe_zauner score=0 lives=3 oblaten=0 power=normal
+---
+- 20
+S 1       # frame 21: START → intro
+- 150     # play from 171
+R 260
+RJ 20     # onto the counter
+R 30      # goal_stollen at 464
+- 318     # to 799; the ending's Map from 794
+S 1       # 800: ignored (6 frames into the Map)
+- 23
+S 1       # 824: Map → Scene
+- 29
+S 1       # 854: Scene → Bill
+- 59
+S 1       # 914: Bill → Credits page 1
+- 29
+S 1       # 944: page 2
+- 29
+S 1       # 974: page 3
+- 29
+S 1       # 1004: page 4
+- 29
+S 1       # 1034: page 5
+- 29
+S 1       # 1064: page 6
+- 29
+S 1       # 1094: Ende
+- 59
+S 1       # 1154: the title with the mark
+- 58      # the marked title, frames 1..58
+S 1       # 1213: frames 59, ignored
+- 10

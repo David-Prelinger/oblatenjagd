@@ -11,6 +11,8 @@ mod content;
 mod golden;
 mod levels;
 mod par;
+#[cfg(test)]
+mod popup_clearance;
 mod replay;
 mod report;
 mod scrolllint;

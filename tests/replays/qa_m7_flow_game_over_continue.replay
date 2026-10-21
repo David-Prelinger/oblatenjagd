@@ -1,10 +1,13 @@
-# QA M7 (game over in the café): the relaxed run to the lock in the title
-# flow, then she stands on the arena floor: the first dash kills her
-# (2149), and twice more she walks from the checkpoint into the arena and
-# stands inside the waiting/intro Oberkellner when his telegraph starts
-# (2765, 3440): game over (3500). START at 3562 continues: Café Zauner from
-# its start (the checkpoint is cleared), 3 lives, score 0, Oblaten 0, the
-# boss reset; she walks right.
+# QA M7 (game over in the café, title flow). NOTE (QA M7 acceptance):
+# since the D-111 box move (?-box 17 -> 8) these inputs no longer follow
+# the relaxed run: she now dies to Kellner #1 (523), in the salon (1339)
+# and at x 398 (1952): game over at 2012. The replay still proves a game
+# over in Stage 9 and the continue (START continues, intro at 3603: Café Zauner
+# from its start, 3 lives, score 0, Oblaten 0, the boss reset; she walks
+# right), but not in the fight: qa_m7a_game_over_in_arena_continue has
+# the game over in the arena. Original intent (pre-D-111 frames): the
+# relaxed run to the lock, the first dash kills her (2149), twice more she
+# walks from the checkpoint into the arena (2765, 3440), game over (3500).
 level  = cafe_zauner
 seed   = 1
 source = handwritten

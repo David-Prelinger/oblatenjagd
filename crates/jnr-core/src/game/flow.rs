@@ -247,11 +247,20 @@ impl Game {
     fn serve_popups(&mut self) {
         let (fx, _) = self.player.feet();
         let bottom = self.player.y - Fx::from_px(STOLLEN_POPUP_ABOVE_TOP_PX);
-        self.entities.extend(stacked_popups(
-            &[Popup::Score(self.tuning.score.stollen), Popup::Stollen],
-            fx,
-            bottom,
-        ));
+        // E53: their rise stops under the HUD (`Game::place_popups`): a
+        // Big or Hackl Resi holds the plate 8 px higher.
+        self.entities.extend(
+            stacked_popups(
+                &[Popup::Score(self.tuning.score.stollen), Popup::Stollen],
+                fx,
+                bottom,
+            )
+            .into_iter()
+            .map(|mut p| {
+                p.state = super::PopupPlace::ClearOfHud as u8;
+                p
+            }),
+        );
     }
 
     /// One frame of falling in the Serve (player gravity, stopped by solid

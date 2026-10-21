@@ -17,10 +17,15 @@
 
 mod ending;
 mod flow;
+mod popups;
 mod power;
 
 pub use ending::{BILL_LINES, Ending, EndingPhase};
 pub use flow::{ClearPhase, STOLLEN_POPUP_ABOVE_TOP_PX, StageClear, Start, maibaum_points};
+pub use popups::{
+    DODGE_MARGIN_X_PX, DODGE_MARGIN_Y_PX, DODGE_SPEED_PX, HUD_CLEAR_Y, LABEL_HALF_W_PX,
+    POPUP_DRAWN_H_PX, PopupPlace,
+};
 
 use std::sync::Arc;
 
@@ -492,6 +497,7 @@ impl Game {
                 }
             }
         }
+        self.place_popups();
         self.start_held = input.contains(InputFrame::START);
         // In every mode, so RUN held across screens is not a new press.
         self.player.run_held = input.run();
@@ -1508,9 +1514,11 @@ impl Game {
     /// Where (E51): beside his head, on the room's side. The text's drawn
     /// top (its outline) is on the breather's hitbox top, where her feet
     /// are on a stomp, with the score below it, so the labels start under
-    /// her as she bounces off and never cover her; they are centred
+    /// her as she bounces off; they are centred
     /// [`OBERKELLNER_POPUP_SIDE_PX`] from his centre away from the wall he
     /// breathes at (his `dir` faces it), so they don't cover him either.
+    /// From there (E53) they keep clear of her as she moves
+    /// ([`PopupPlace::ClearOfResi`], `Game::place_popups`).
     pub(crate) fn hit_oberkellner(&mut self, i: usize) -> Vec<Entity> {
         let Some(e) = self.entities.get_mut(i) else {
             return Vec::new();
@@ -1538,7 +1546,8 @@ impl Game {
         let (cx, _) = e.feet();
         let fx = cx - Fx::from_px(OBERKELLNER_POPUP_SIDE_PX * i32::from(e.dir));
         let text_top = head + Fx::ONE;
-        vec![
+        let room = -e.dir;
+        [
             popup(
                 Popup::Score(points),
                 fx,
@@ -1546,6 +1555,13 @@ impl Game {
             ),
             popup(text, fx, text_top),
         ]
+        .into_iter()
+        .map(|mut p| {
+            p.state = PopupPlace::ClearOfResi as u8;
+            p.dir = room;
+            p
+        })
+        .collect()
     }
 
     /// A projectile (the thrown Hackl, D-056) hit entity `i`: the outcome
