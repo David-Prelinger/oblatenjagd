@@ -378,6 +378,38 @@ impl Music {
     }
 }
 
+/// Music cues not authored yet (S2): the only place where a cue id or a
+/// level's `music` may lack its `audio/music/<id>.song` (or
+/// `audio/jingles/<id>.sfx`). The bank tests fail for an entry that
+/// exists, so the list only shrinks; MA's acceptance needs it empty.
+pub const PENDING_MUSIC: &[Music] = &[
+    Music::Title,
+    Music::RouteMap,
+    Music::Salzburg,
+    Music::StGilgen,
+    Music::Brunnwinkl,
+    Music::Falkenstein,
+    Music::StWolfgang,
+    Music::Wolfgangsee,
+    Music::Unterwasser,
+    Music::Strobl,
+    Music::BadIschl,
+    Music::CafeZauner,
+    Music::BossIntro,
+    Music::BossSurprise,
+    Music::Boss,
+    Music::BossDefeat,
+    Music::FanfareClear,
+    Music::FanfareFinale,
+    Music::Death,
+    Music::GameOver,
+    Music::Hurry,
+    Music::EndingMap,
+    Music::Kaffeehaus,
+    Music::Credits,
+    Music::Ende,
+];
+
 /// Which voices a [`Cue::CutSfx`] stops.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Cut {

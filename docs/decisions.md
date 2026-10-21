@@ -1047,3 +1047,4 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - **Cut is a cue**: `StopSfx(id)` (the boss telegraph at the dash, the high C when the singer is defeated) and `CutSfx(All | KeepItems)`.
 - **Cue-log goldens** (`tests/golden/cues/*.cues`) change through `cargo xtask cues --accept` without a reviewer verdict: they are text whose diff is the review, unlike images and PCM hashes. The commit message names the changed logs.
 - **Level music** is `[meta] music` (not hashed); journey levels must have it.
+- **(E58b) Embedded bank, one pending list**: `audio/` is embedded by `jnr-assets` and checked at build time with `jnr_audio::bank::Bank::load` (a music-lint error is a build error, warnings are not). Music cues without a source are allowed only through `jnr_audio::cues::PENDING_MUSIC`; tests make it shrink-only, and MA's acceptance needs it empty. SFX have no pending list: all 25 must exist.

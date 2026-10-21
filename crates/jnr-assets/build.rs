@@ -7,6 +7,10 @@
 //! - `atlas.rs`: `fn generated_atlas(pixels) -> Atlas` (metadata)
 //! - `assets.rs`: small constants
 //!
+//! - `audio.rs`: `AUDIO_SOURCES`, every `audio/` sound source as
+//!   `(path, include_str!(…))` (E58b), after `jnr_audio::bank::Bank::load`
+//!   accepted them (parse, ids, music lint errors)
+//!
 //! Any lint error or syntax error fails the build with `file:line:col`.
 
 use std::path::{Path, PathBuf};
@@ -48,6 +52,77 @@ fn main() {
          pub const COMPILED_EXTENSIONS: &[&str] = &[{exts}];\n"
     );
     write(&out.join("assets.rs"), generated.as_bytes());
+
+    println!("cargo:rerun-if-changed={}", root.join("audio").display());
+    write(&out.join("audio.rs"), audio_sources(&root).as_bytes());
+}
+
+/// Audio source extensions (`README.md`, `targets.toml` are not sources).
+const AUDIO_EXTENSIONS: [&str; 4] = ["sfx", "inst", "song", "quote"];
+
+/// Every audio source under `audio/` (sorted), checked with
+/// `Bank::load`; returns the generated `AUDIO_SOURCES` table.
+fn audio_sources(root: &Path) -> String {
+    let dir = root.join("audio");
+    let mut files = Vec::new();
+    let mut stack = vec![dir.clone()];
+    while let Some(d) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&d) else {
+            continue;
+        };
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else if p
+                .extension()
+                .and_then(|x| x.to_str())
+                .is_some_and(|x| AUDIO_EXTENSIONS.contains(&x))
+            {
+                files.push(p);
+            }
+        }
+    }
+    files.sort();
+    let texts: Vec<(String, String)> = files
+        .iter()
+        .map(|p| {
+            let name = p
+                .strip_prefix(root)
+                .unwrap_or(p)
+                .to_string_lossy()
+                .replace('\\', "/");
+            let text =
+                fs::read_to_string(p).unwrap_or_else(|e| panic!("read {}: {e}", p.display()));
+            (name, text)
+        })
+        .collect();
+    let refs: Vec<(&str, &str)> = texts
+        .iter()
+        .map(|(n, t)| (n.as_str(), t.as_str()))
+        .collect();
+    if let Err(errors) = jnr_audio::bank::Bank::load(&refs) {
+        eprintln!("jnr-assets: the audio sources have errors:");
+        for e in &errors {
+            eprintln!("{e}");
+        }
+        eprintln!("(run `cargo xtask audio lint` for all findings)");
+        process::exit(1);
+    }
+    let mut code = String::from(
+        "/// Every sound source under `audio/` as (path from the workspace root,\n\
+         /// text), sorted by path.\n\
+         pub static AUDIO_SOURCES: &[(&str, &str)] = &[\n",
+    );
+    for (p, (name, _)) in files.iter().zip(&texts) {
+        let abs = p.canonicalize().unwrap_or_else(|_| p.clone());
+        code.push_str(&format!(
+            "    ({name:?}, include_str!({:?})),\n",
+            abs.display().to_string()
+        ));
+    }
+    code.push_str("];\n");
+    code
 }
 
 fn fail(errors: &[jnr_artkit::Diagnostic]) -> ! {

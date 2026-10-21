@@ -188,6 +188,7 @@ Implemented (MA, E54): audio platform (`src/audio.rs`, the only code that touche
 - `jnr-artkit` is a library: parses `.palette` and `.sprite`, runs procedural generators, packs atlases, runs art lints. Details in `art-pipeline.md`.
 - `jnr-assets/build.rs` calls `jnr-artkit` to compile all art into one packed RGBA atlas: raw pixels (`include_bytes!`, borrowed without copying) plus generated Rust code for the metadata. At runtime `jnr_assets::atlas()` builds the `jnr_artkit::atlas::Atlas` once via `OnceLock` (D-010), so `jnr-assets` depends on `jnr-artkit` at runtime for these data types. A broken sprite = a **build error** with file:line:col.
 - Levels and text are embedded as strings and parsed by `jnr-core` (`Level::parse(&str)`), so tests and tools can load them directly.
+- Audio (E58b): `build.rs` also reads every `audio/**/*.{sfx,inst,song,quote}` (not `README.md`, `targets.toml`), checks them with `jnr_audio::bank::Bank::load` (parse errors, duplicate ids, music-lint errors: a **build error** with `file:line:col`) and embeds them as `AUDIO_SOURCES` (`include_str!`, sorted by path). `jnr_assets::audio_sources()` returns them, `jnr_assets::audio_bank()` the parsed `Bank` (once, `OnceLock`, ~0.2 ms release). `jnr-assets` therefore depends on `jnr-audio` (normal and build); `jnr-render` reaches it only as a dev-dependency.
 - Generated files are **not committed**; sources are the single truth. Previews go to `target/preview/`.
 
 ## jnr-audio: integer synth (MA, D-114, D-117)
@@ -361,6 +362,19 @@ Test fixtures for both formats are in `crates/jnr-audio/tests/fixtures/music/` (
 
 `xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`, `Song` = `audio/music/*.song`, rendered and drawn by `xtask/src/audio_song.rs`); a new kind adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
 
+
+### Bank (`jnr_audio::bank`, E58b, D-114)
+
+```rust
+let bank = jnr_assets::audio_bank();                       // every source, checked at build time
+let sfx: Vec<(Play, Pcm)> = bank.startup_sfx();            // Sfx::ALL + cues::PITCHED, rendered (~1.5 ms release)
+let song: Option<MusicRender> = bank.render_music(Music::Salzburg, Variant::Normal)?;  // on demand; None = not authored yet
+// MusicRender { pcm, looped, clamped }; Variant::Hurry = a loop at 112 % (the ZEIT-60 render)
+let wav = jnr_audio::wav::write(&song.pcm);                // bytes for load_sound_from_bytes
+```
+
+- `Bank { sfx, jingles, instruments, songs, quotes }` by id; `has_music(Music)` is a `.song` or a `jingles/*.sfx`. A song renders through `song_render::render_in`, so an underwater twin (`length_of`) gets its stage piece's length. `bank::transpose(&Sfx, semitones)` moves every fixed oscillator pitch (filters and timing stay) for the pitched variants.
+- `jnr_audio::cues::PENDING_MUSIC` lists the music cues without a source yet (all 25 at E58b); tests in `jnr-assets` fail for a missing cue that isn't pending and for a pending one that exists, and `levels lint` accepts a level `music` only if it is embedded or pending. The list must be empty for MA's acceptance.
 
 ### Cues (`jnr_audio::cues`, E58a, D-113/D-114)
 
