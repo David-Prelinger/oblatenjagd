@@ -277,7 +277,7 @@ Engine (parallel worktrees, D-009; E44–E48 can run in parallel, E49 integrates
 Art (pixel-artist, art-director APPROVED)
 - [ ] Café enemies package: `kellner`, `wartender` (three looks), `oberkellner` (all anims), `rechnung`
 - [ ] Café package: tiles `marmor`, `marmor_punkt`, `stuck`, `vitrine`, `theke`, `luster`; props `zauner_tuer`, `garderobe`, `kuchentheke`, `luster_deko`, `stollen_glocke`, `stollen_teller`; layer `bg_zauner_salon`. The HUD must read over the `stuck` band (one shot)
-- [ ] Ending package: `ending_cafe`, `ending_zettel`
+- [x] Ending package: `ending_cafe`, `ending_zettel` (art-director APPROVED round 2)
 - [ ] The full contact sheet (E44's pages) reviewed once with every M1–M7 sprite
 
 Levels (level-designer)
