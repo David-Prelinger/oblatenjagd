@@ -1,0 +1,293 @@
+# M7 flow (D-107; Stage 9 "Finale and ending"): the end of the journey on
+# the real route with no input after the last jump. Title flow with the
+# run started in Strobl: flow_m6_bad_ischl_to_cafe_zauner's 5703 frames
+# (Strobl and Bad Ischl cleared, the route map Bad Ischl -> Café Zauner
+# in Wait, the Café Zauner intro from 5643 with the run carried over:
+# Normal, score 35600, lives 3, 75 Oblaten), 90 more idle frames of the
+# intro, then cafe_zauner_solver.replay unchanged from 5793 (play frame
+# = frame - 5793): the boss beaten, the goal_stollen touched in the air
+# (8063, 10 000 + „Zaunerstollen!"), the Serve after she lands, the tally
+# and the clear panel; then, since Café Zauner is the route's last
+# station, the ending, every phase run out without START: Map 8501,
+# Scene 8741, Bill 9101 (the run's totals across three stages), Credits
+# 9701 (6 pages of 180), Ende 10781 (its 600 frames), and the title
+# (11381) with the run reset to its first stage (Strobl: score 0, 3
+# lives, 0 Oblaten, Normal) and the „durchgespielt" mark; the replay
+# ends on it (11411). A new time_limit for Café Zauner changes the tally
+# and moves every frame after it.
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=1900..1900 deaths=0 no_event=Hurt no_event=Died
+expect = state=title cleared=true stage=strobl score=0 lives=3 oblaten=0 power=normal
+---
+- 20
+S 1       # START: Strobl intro
+- 150     # play from 171
+# --- strobl_solver.replay (1729 frames) ---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+# --- tally, route map (Wait), Bad Ischl intro: play from 2942 ---
+- 1042
+# --- bad_ischl_solver.replay (1851 frames) ---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56
+# --- tally, route map (Wait), the Café Zauner intro ---
+- 910
+# --- 90 more frames of the Café Zauner intro: play from 5793 ---
+- 90
+# --- cafe_zauner_solver.replay inputs, unchanged ---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 108
+LBJ 12
+LB 2
+- 4
+RB 16
+- 180
+LBJ 12
+LB 2
+RB 4
+LB 8
+RBJ 36
+RB 21
+L 4
+LB 8
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 2
+RB 3
+LB 22
+RBJ 12
+RB 2
+RBJ 36
+RB 8
+R 3
+RB 8
+LB 8
+LBJ 21
+LB 17
+RBJ 25
+RB 13
+LB 14
+RB 4
+- 288
+LBJ 12
+LB 10
+RBJ 36
+RB 12
+# --- end of cafe_zauner_solver.replay ---
+- 3348    # Serve, tally, clear, the whole ending, the marked title (11381)

@@ -1,0 +1,210 @@
+# Stage 9 golden tour (M7, D-036 style): the real game from the title with
+# the run started in Café Zauner (`level = cafe_zauner`, the route's last
+# station, D-047): START at frame 21, stage intro 21..170, then the inputs
+# of cafe_zauner_solver.replay unchanged from frame 171 (re-copy them after
+# `cargo xtask solve cafe_zauner --write`; the xtask tour coupling test
+# checks it), then 3348 idle frames: the finale, the whole ending and the
+# title with the „durchgespielt" mark (the replay ends there, 5789).
+# Play frame = tour frame - 171 (stage clock likewise until the goal).
+# The finale: the goal_stollen touched in the air (2441), the Serve after
+# she lands, the tally (2536; its length follows the time left), the
+# clear panel (2699), then the ending: Map 2879, Scene 3119, Bill 3479,
+# Credits 4079 (6 pages of 180), Ende 5159, the marked title 5759. No
+# shot of the title: this run starts in the café, so the title draws the
+# café's backdrop, a debug-only view (D-111 observation 2); the marked
+# title's shot is qa_m7_accept_full_route's (Salzburg).
+# Shots, per section:
+#   intro               60 „Etappe 9: Café Zauner"
+#   1 Windfang          181 the glass door with the queue outside and the
+#                       „Bus 150? / Wurscht!" board, 304 the tray bounce
+#                       off Kellner #1 („Komm' gleich!")
+#   2 Salon             475 chandeliers L1 and L2 over pens B and C
+#   3 Die Schlange      686 the queue on its dots, mid-chain
+#   4 Vor der Theke     892 the checkpoint („Zwischenstopp") beside
+#                       „Reserviert / seit 1832"
+#   5 Die Kuchentheke   1000 the arena lock, „Hinten anstellen!"; 1170 a
+#                       dash (round 1, to the left wall); 1452 a breather
+#                       stomp from the counter (hit 1, „Unerhört!"); 1755
+#                       a volley (round 2, three bills); 2414 the third
+#                       hit, the bell lifted („Bitte sehr!"); 2432 the bow
+#   finale              2456 the Serve (the plate held up on the counter,
+#                       „Zaunerstollen!"/10000 above it, E51: the pair
+#                       appears as she lands at 2448), 2760 the
+#                       clear panel („Mahlzeit, Resi!", E51)
+#   ending              2999 Map, 3319 Scene, 3692 Bill, 4349 Credits
+#                       page 2 (the cast), 5279 Ende
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2441..2441 deaths=0 no_event=Hurt
+expect = state=title cleared=true score=0 lives=3 oblaten=0 power=normal
+shots  = 60:intro 181:door 304:tray_bounce 475:salon 686:queue 892:checkpoint 1000:anstellen 1170:dash 1452:breather_stomp 1755:volley 2414:bell 2432:bow 2456:serve 2760:clear 2999:ending_map 3319:ending_scene 3692:ending_bill 4349:credits 5279:ende
+---
+- 20
+S 1
+- 150
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 108
+LBJ 12
+LB 2
+- 4
+RB 16
+- 180
+LBJ 12
+LB 2
+RB 4
+LB 8
+RBJ 36
+RB 21
+L 4
+LB 8
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 2
+RB 3
+LB 22
+RBJ 12
+RB 2
+RBJ 36
+RB 8
+R 3
+RB 8
+LB 8
+LBJ 21
+LB 17
+RBJ 25
+RB 13
+LB 14
+RB 4
+- 288
+LBJ 12
+LB 10
+RBJ 36
+RB 12
+- 3348

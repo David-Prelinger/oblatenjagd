@@ -1,0 +1,64 @@
+# A volley dodged on the floor in the real stage (D-106: bills only from
+# round 2, over the floor, >= 4 columns apart, lanes >= 2 tiles wide).
+# As cafe_zauner_boss_win_normal up to hit 1 (frame 1214, 1000) and back
+# on the left refuge (1268); in round 2 he breathes at the right wall
+# (missed), so the volley comes (1459): three bills hang at arena columns
+# 4, 9, 14 (cols 124, 129, 134) for 30 frames, then flutter down. Resi
+# has stepped off the refuge and stands in the lane between the first two
+# (x 2038); they sway past her to the floor and are gone (1593), no hurt.
+# Then she walks back to the refuge's face and jumps onto it before his
+# dash left arrives (dash from 1630, breather at 1719). The fight is
+# m7_boss_volley_dodge's + 635 frames.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt boss_hits=1 score=8200 player_y<=170 state=playing
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 113
+R 75
+- 100
+L 60
+LJ 20
+L 40

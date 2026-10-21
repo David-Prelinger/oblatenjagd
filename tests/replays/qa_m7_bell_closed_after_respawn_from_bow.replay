@@ -1,0 +1,71 @@
+# QA M7 (bell arming): the boss beaten (cafe_zauner_boss_win_normal to 2328,
+# the bow at 2226), then she idles on the refuge until time-up (12000). The
+# respawn brings him back unbeaten, so the bell is closed again: she walks
+# from the checkpoint through the waiting/intro boss onto the counter and
+# across the goal_stollen cell (12480-12510): no LevelComplete.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=1 no_event=LevelComplete boss_hits=0 player_x>=2210 state=playing
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 9732
+R 60
+RJ 10
+R 30
+RJ 25
+R 260
+RJ 20
+R 40
+- 100

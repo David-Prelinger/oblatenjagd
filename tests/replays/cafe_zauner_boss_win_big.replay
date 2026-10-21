@@ -1,0 +1,76 @@
+# The Oberkellner beaten as Zuckerschock with one hurt (D-106: "she may
+# take a hit") in the real stage. cafe_zauner_mozartkugel_step to the
+# Mozartkugel from the M-box at 115 (PowerUp 844, big), then as big: a
+# step right and a held jump onto the 1-high step at 118 (931), onto the
+# Tortenvitrine (967), right until the arena locks (1054, „Hinten
+# anstellen!"), back left to the refuge face on the floor (x 1952). His
+# first dash left hits her there (1274: Big -> Normal, 120 frames of
+# blinking, no death). Still blinking she jumps up out of him in his
+# breather (1311) and comes down on his head (hit 1 at 1348), lands beside
+# the stunned waiter and hops onto the refuge (1404). Hits 2 and 3 from
+# the refuge as in cafe_zauner_boss_win_normal (1884, 2362), the volleys
+# fall while she waits on it, then the counter: the armed goal_stollen
+# (2722, 10 000). The fight is m7_boss_win_big's from the hurt on.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = complete frames=2722..2722 deaths=0 event=PowerUp event=Hurt boss_hits=3 power=normal score=25200
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 65
+- 20
+J 6
+- 20
+L 24
+- 80
+R 20
+RJ 20
+R 20
+RJ 20
+R 104
+L 130
+- 126
+J 20
+- 42
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30

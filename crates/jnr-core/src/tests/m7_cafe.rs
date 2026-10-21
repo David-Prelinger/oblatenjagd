@@ -750,3 +750,36 @@ fn kellner_wartender_and_oberkellner_are_lost_in_swim_water() {
         "all lost"
     );
 }
+
+/// E51: in Stage 9's arena (camera y 92) the Serve's popups, spawned over
+/// the plate as she stands at the bell on the counter, stay ≥ 2 px below
+/// the HUD even fully risen: the HUD's value row (top 13, glyphs and
+/// outline) ends at screen row 21, so their highest drawn row (the text's
+/// outline, top − 1) must be ≥ 24.
+#[test]
+fn the_stollen_popups_stay_clear_of_the_hud_in_the_stage_9_arena() {
+    const HUD_LAST_ROW: i32 = 21;
+    let t = tuning();
+    let level = Level::parse(include_str!(
+        "../../../../content/levels/09_cafe_zauner.level"
+    ))
+    .unwrap();
+    let mut g = Game::new(&level, &t, 1);
+    let i = boss_index(&g);
+    g.entities[i].state = boss_st::DONE;
+    g.entities[i].hits = 3;
+    assert!(g.goal_armed(0));
+    let (col, row) = g.goal_spawn(0).map(|s| (s.col, s.row)).unwrap();
+    g.camera.x = level.width * 16 - crate::camera::SCREEN_W;
+    g.player.x = Fx::from_px(col * 16 + 2);
+    g.player.y = Fx::from_px((row + 1) * 16) - g.player.h;
+    g.player.vx = Fx::ZERO;
+    g.player.vy = Fx::ZERO;
+    g.player.on_ground = true;
+    let events = safe(&mut g, "-");
+    assert!(events.contains(&Event::LevelComplete), "{events:?}");
+    assert_eq!(g.camera().y, CAMERA_Y);
+    let text = first(&g, EntityKind::Popup(crate::Popup::Stollen));
+    let highest = text.y.to_px() - t.score.popup_rise - 1 - g.camera().y;
+    assert!(highest >= HUD_LAST_ROW + 3, "highest drawn row {highest}");
+}

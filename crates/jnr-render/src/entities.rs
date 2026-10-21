@@ -3667,4 +3667,40 @@ mod tests {
         }
         assert_ne!(face(&post), Some(SKIN_LIGHT), "driving on: no faces");
     }
+
+    /// E51: the Oberkellner's hit labels, centred
+    /// `OBERKELLNER_POPUP_SIDE_PX` beside him, keep clear of his sprite
+    /// cell (either facing) with the real font: each label's outline
+    /// starts at least 1 px beyond the cell.
+    #[test]
+    fn boss_hit_labels_clear_his_sprite() {
+        let atlas = jnr_assets::atlas();
+        let font = crate::Font::from_atlas(atlas);
+        let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
+        let s = atlas.sprite("oberkellner").expect("the sprite");
+        let half = s.origin.x.max(s.width - s.origin.x) as i32;
+        let t = tuning();
+        let mut labels: Vec<String> = [Popup::Unerhoert, Popup::BitteSehr]
+            .iter()
+            .map(|p| texts.get(p.text_key().unwrap()).into_owned())
+            .collect();
+        labels.push(t.enemies.oberkellner_hit_points.to_string());
+        labels.push(t.enemies.oberkellner_final_points.to_string());
+        for label in labels {
+            let w = font.measure(&label);
+            assert!(w > 0, "{label}");
+            // His cell around x 0: columns -half..half-1 (either facing).
+            // A label is drawn from `centre - w / 2` over w columns, with
+            // its outline 1 px around: columns left-1..=left+w.
+            let side = jnr_core::game::OBERKELLNER_POPUP_SIDE_PX;
+            for centre in [side, -side] {
+                let left = centre - w / 2;
+                let (first, last) = (left - 1, left + w);
+                assert!(
+                    first > half - 1 || last < -half,
+                    "{label} ({w} px) at {centre}: columns {first}..={last} touch the cell"
+                );
+            }
+        }
+    }
 }

@@ -1,0 +1,146 @@
+# QA M7 relaxed run of Café Zauner (D-045 measurement by the ZEIT clock up to
+# the Stollen touch, including the fight). Sensible non-speedrun play at walk
+# speed. Re-cut for D-111 (the ?-box moved from 17 to 8; level-designer):
+# the first 270 frames were a run-jump onto the ?-box at 17 and onto the
+# vitrine; now 0.7 s at the door by the „Bus 150?" board, a walk under the
+# ?-box at 8 and the M-box at 12, a walking jump onto the vitrine (the
+# reach D-111 restores) and a short step on it, so that at frame 270 she
+# stands on the vitrine in exactly the state of the D-110 cut (x 307.312,
+# camera 169, score 0): every later frame is unchanged. Then 1.2 s there
+# watching Kellner #1; then walking-only (a QA beam search in
+# 4-frame chunks that never takes a hurt): the hat shelf, Kellner #2's tray
+# (548), the Selfie-Tourist (650) and the Kurgast (669) in pen C, Vitrine D
+# (stand 0.7 s + 0.7 s); the chandelier route L3-L6 with a 40-frame stand on
+# each band (cafe_zauner_luster_route's inputs), 1.3 s at the checkpoint
+# card, then the patient fight from the left refuge (cafe_zauner_boss_win_
+# normal's arena inputs from 716 on): lock 1811, hits 2071 / 2605 / 3083,
+# the counter: LevelComplete at 3443. ZEIT clock consumed 3442 frames =
+# 57.4 s (HUD ZEIT 143): 3 x 57.4 = 172.1 -> 180 s, below the D-045 clamp,
+# so time_limit = 200 (final, D-111).
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = complete frames=3443..3443 deaths=0 no_event=Hurt no_event=Died boss_hits=3 power=normal score=23300 oblaten=30 state=stage_clear
+---
+- 40
+R 130
+RJ 24
+R 8
+- 20
+R 5
+- 43
+R 16
+- 4
+RJ 16
+- 8
+RJ 4
+- 4
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 8
+- 4
+RJ 4
+- 12
+RJ 4
+- 4
+RJ 8
+- 4
+RJ 20
+- 4
+RJ 4
+- 4
+RJ 12
+- 4
+RJ 8
+- 4
+RJ 16
+R 8
+RJ 32
+- 4
+RJ 4
+- 8
+RJ 36
+- 4
+RJ 4
+- 8
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 4
+- 4
+RJ 20
+- 12
+RJ 4
+- 12
+RJ 8
+- 8
+RJ 4
+- 4
+RJ 8
+- 8
+RJ 12
+- 8
+RJ 8
+- 4
+RJ 12
+- 4
+RJ 16
+R 4
+RJ 28
+- 8
+RJ 16
+L 4
+- 40
+R 13
+- 40
+R 6
+RJ 18
+R 20
+- 40
+R 48
+RJ 6
+R 20
+- 40
+R 45
+RJ 6
+R 20
+- 40
+R 44
+RJ 6
+R 20
+- 40
+R 50
+- 30
+- 80
+R 57
+- 30
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30
