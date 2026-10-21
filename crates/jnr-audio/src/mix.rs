@@ -13,9 +13,12 @@
 //! - [`Cue::StopSfx`] stops one id, [`Cue::CutSfx`] every id on the voices
 //!   it names. Stops are hard cuts (quad-snd has no fades).
 //! - [`Cue::Song`]: stop the song (and its twin), start the new one looping
-//!   from sample 0, and its underwater twin muted on the same sample.
+//!   from sample 0, and its underwater twin muted on the same sample, if
+//!   the sounds have the twin (the app's rule: without it [`Cue::Underwater`]
+//!   is ignored and the stage piece stays audible).
 //!   [`Cue::Jingle`]: stop the jingle, play the new one once.
-//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCKED_MUSIC_VOLUME_PCT`] while ducked;
+//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCKED_MUSIC_VOLUME_PCT`] while ducked,
+//!   times the cue's own [`Music::gain_pct`] (`boss_intro` 25 %);
 //!   0 for the song while held, 0 for the jingle while held. Under water the
 //!   song and its twin swap volumes; a new song starts above water.
 //! - One-shots ring out past the run's end; loops stop at the end of the
@@ -89,7 +92,8 @@ struct Instance {
     looping: bool,
     /// The sample where it was stopped.
     stop: Option<usize>,
-    /// Gain changes: (from sample, volume %), the first at `start`.
+    /// Gain changes: (from sample, volume in 1/10 000), the first at
+    /// `start` (fine enough for a ducked 25 % cue: 1 250).
     gains: Vec<(usize, u32)>,
 }
 
@@ -148,7 +152,7 @@ impl Player {
         }
     }
 
-    fn apply(&mut self, cue: Cue, at: usize) {
+    fn apply(&mut self, cue: Cue, at: usize, has: &dyn Fn(Sound) -> bool) {
         match cue {
             Cue::Sfx(play) => {
                 let voice = play.sfx.voice();
@@ -156,7 +160,7 @@ impl Player {
                     self.stop_sfx(prev, at);
                 }
                 self.stop_sfx(play.sfx, at);
-                let i = self.start(Sound::Sfx(play), at, false, SFX_VOLUME_PCT);
+                let i = self.start(Sound::Sfx(play), at, false, SFX_VOLUME_PCT * 100);
                 self.live_sfx.insert(play.sfx, i);
                 self.last_on_voice.insert(voice, play.sfx);
             }
@@ -178,6 +182,7 @@ impl Player {
                 self.song = Some(self.start(Sound::Music(m), at, true, 0));
                 self.twin = m
                     .underwater_twin()
+                    .filter(|t| has(Sound::Music(*t)))
                     .map(|t| self.start(Sound::Music(t), at, true, 0));
             }
             Cue::StopSong => self.stop_song(at),
@@ -195,7 +200,8 @@ impl Player {
             Cue::HoldSong(b) => self.hold_song = b,
             Cue::HoldJingle(b) => self.hold_jingle = b,
             Cue::Duck(b) => self.duck = b,
-            Cue::Underwater(b) => self.underwater = b,
+            // Without a twin the stage piece stays audible (as in the app).
+            Cue::Underwater(b) => self.underwater = b && self.twin.is_some(),
         }
     }
 
@@ -215,7 +221,11 @@ impl Player {
         let jingle = if self.hold_jingle { 0 } else { music };
         for (i, g) in [(self.song, main), (self.twin, twin), (self.jingle, jingle)] {
             if let Some(i) = i {
-                self.instances[i].set_gain(at, g);
+                let cue = match self.instances[i].sound {
+                    Sound::Music(m) => m.gain_pct(),
+                    Sound::Sfx(_) => 100,
+                };
+                self.instances[i].set_gain(at, g * cue);
             }
         }
     }
@@ -227,12 +237,13 @@ pub fn mix(sounds: &Sounds, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
     let tick = FRAMES_PER_TICK as usize;
     let run_samples = (end_frame as usize + 1) * tick;
     let mut player = Player::default();
+    let has = |s: Sound| sounds.sounds.contains_key(&s);
     let mut k = 0;
     while k < timeline.len() {
         let frame = timeline[k].0;
         let at = frame as usize * tick;
         while k < timeline.len() && timeline[k].0 == frame {
-            player.apply(timeline[k].1, at);
+            player.apply(timeline[k].1, at, &has);
             k += 1;
         }
         player.music_gains(at);
@@ -279,10 +290,10 @@ pub fn mix(sounds: &Sounds, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
             }
             for (t, o) in out.iter_mut().enumerate().take(to).skip(from) {
                 let s = pcm.samples[(t - inst.start) % len] as i32;
-                *o += if gain == 100 {
+                *o += if gain == 10_000 {
                     s
                 } else {
-                    s * gain as i32 / 100
+                    s * gain as i32 / 10_000
                 };
             }
         }
@@ -558,6 +569,30 @@ mod tests {
             [at(0), at(1), at(2), at(3), at(4), at(5), at(6)],
             [400, -60, -30, 0, -30, -60, 400]
         );
+    }
+
+    #[test]
+    fn boss_intro_plays_at_its_cue_gain() {
+        let intro = Sound::Music(Music::BossIntro);
+        let b = bank(&[(intro, vec![800; 4 * T])]);
+        let tl = [(0, Cue::Jingle(Music::BossIntro)), (1, Cue::Duck(true))];
+        let s = mix(&b, &tl, 2).render.pcm.samples;
+        assert_eq!((s[0], s[T]), (200, 100), "25 %, ducked 12.5 %");
+    }
+
+    #[test]
+    fn without_the_twin_the_dive_keeps_the_stage_piece() {
+        let see = Sound::Music(Music::Wolfgangsee);
+        let b = bank(&[(see, vec![400; T])]);
+        let tl = [
+            (0, Cue::Song(Music::Wolfgangsee)),
+            (1, Cue::Underwater(true)),
+            (2, Cue::Underwater(false)),
+        ];
+        let m = mix(&b, &tl, 3);
+        let s = &m.render.pcm.samples;
+        assert_eq!((s[0], s[T], s[2 * T]), (400, 400, 400));
+        assert!(m.missing.is_empty(), "a missing twin is not started");
     }
 
     #[test]

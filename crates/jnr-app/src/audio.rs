@@ -35,7 +35,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use jnr_audio::bank::{Bank, Variant};
-use jnr_audio::cues::{Cue, Cut, Music, Play, Voice};
+use jnr_audio::cues::{Cue, Music, Play, Voice};
 use macroquad::audio::{
     PlaySoundParams, Sound, load_sound_from_bytes, play_sound, set_sound_volume, stop_sound,
 };
@@ -222,6 +222,11 @@ pub struct Mixer {
     underwater: bool,
 }
 
+/// A music cue's own gain ([`Music::gain_pct`]) as a factor.
+fn cue_gain(m: Option<Music>) -> f32 {
+    m.map_or(1.0, |m| m.gain_pct() as f32 / 100.0)
+}
+
 fn slot(v: Voice) -> usize {
     match v {
         Voice::P => 0,
@@ -236,12 +241,14 @@ impl Mixer {
         if self.duck { DUCK_GAIN } else { FULL }
     }
 
-    /// The song's (`twin == false`) or its twin's current volume.
+    /// The song's (`twin == false`) or its twin's current volume, with
+    /// the cue's own gain ([`Music::gain_pct`]).
     fn song_volume(&self, twin: bool) -> f32 {
+        let cue = if twin { self.twin } else { self.song };
         if self.hold_song || twin != self.underwater {
             0.0
         } else {
-            self.duck_gain()
+            self.duck_gain() * cue_gain(cue)
         }
     }
 
@@ -249,7 +256,7 @@ impl Mixer {
         if self.hold_jingle {
             0.0
         } else {
-            self.duck_gain()
+            self.duck_gain() * cue_gain(self.jingle)
         }
     }
 
@@ -308,7 +315,7 @@ impl Mixer {
             }
             Cue::CutSfx(cut) => {
                 for v in Voice::ALL {
-                    if cut == Cut::All || v != Voice::I {
+                    if cut.hits(v) {
                         self.stop_voice(v, &mut out);
                     }
                 }
@@ -382,8 +389,20 @@ impl Mixer {
         self.underwater = false;
     }
 
-    /// After unmuting: the song (and twin) again from their start at their
-    /// current volumes (a muted session made no calls, so nothing plays).
+    /// The song and its twin start together (D-114: they must stay in
+    /// step): `Some(ops)` once every song the mixer plays is loaded (song
+    /// first, then twin, at their current volumes), `None` while one still
+    /// loads. Empty when no song plays.
+    pub fn start_ops(&self, is_loaded: impl Fn(SoundId) -> bool) -> Option<Vec<Op>> {
+        self.songs()
+            .into_iter()
+            .flatten()
+            .all(|m| is_loaded(SoundId::Music(m)))
+            .then(|| self.resume_ops())
+    }
+
+    /// The song (and twin) from their start at their current volumes (a
+    /// song start, and after unmuting: a muted session made no calls).
     pub fn resume_ops(&self) -> Vec<Op> {
         let mut out = Vec::new();
         for (m, twin) in [(self.song, false), (self.twin, true)] {
@@ -404,7 +423,8 @@ impl Mixer {
 pub enum Off {
     /// quad-snd's audio thread died (no device).
     NoDevice,
-    /// A load did not finish within [`LOAD_BUDGET_FRAMES`] (wasm without `audio.js`).
+    /// The first loads did not finish within [`LOAD_BUDGET_FRAMES`] (wasm
+    /// without `audio.js`).
     LoadTimedOut,
 }
 
@@ -426,11 +446,20 @@ pub struct Audio {
     /// Loads in flight; polled once per frame.
     pending: Vec<(SoundId, SoundLoad)>,
     loaded: Vec<(SoundId, Sound)>,
-    /// Music to start as soon as it is loaded (if the mixer still wants it).
-    to_start: Vec<SoundId>,
+    /// Some load finished: from then on a slow load is that load's problem,
+    /// not the missing-`audio.js` case.
+    ever_loaded: bool,
+    /// The mixer's songs wait to start together once loaded.
+    songs_to_start: bool,
+    /// A jingle to start as soon as it is loaded.
+    jingle_to_start: Option<Music>,
+    /// Songs unloaded while muted: dropped at the next active frame (a drop
+    /// is a backend call).
+    to_unload: Vec<Sound>,
     /// Backend calls made: load starts, frames with load polls (on wasm a
     /// poll asks `audio.js` whether the buffer is decoded), plays, stops,
-    /// volume changes and unloads. `--mute` must keep this 0.
+    /// volume changes and unloads (a dropped `Sound`). `--mute` must keep
+    /// this 0.
     calls: u32,
 }
 
@@ -453,7 +482,10 @@ impl Audio {
             queued: Vec::new(),
             pending: Vec::new(),
             loaded: Vec::new(),
-            to_start: Vec::new(),
+            ever_loaded: false,
+            songs_to_start: false,
+            jingle_to_start: None,
+            to_unload: Vec::new(),
             calls: 0,
         }
     }
@@ -461,10 +493,7 @@ impl Audio {
     /// Whether a backend call may be made now (and counts it). Checked
     /// before every macroquad audio call.
     fn may_call(&mut self) -> bool {
-        if (self.dead)() && self.off.is_none() {
-            self.off = Some(Off::NoDevice);
-        }
-        if self.off.is_some() || self.muted {
+        if !self.active() {
             return false;
         }
         self.calls += 1;
@@ -472,7 +501,7 @@ impl Audio {
     }
 
     /// Whether sound is on (not muted, not off): only then is anything
-    /// rendered or loaded.
+    /// rendered, loaded or played.
     fn active(&mut self) -> bool {
         if (self.dead)() && self.off.is_none() {
             self.off = Some(Off::NoDevice);
@@ -532,9 +561,20 @@ impl Audio {
         }
     }
 
-    /// Once per render frame: renders and starts queued loads, polls the
-    /// pending ones, starts music that finished loading (none of it while
-    /// muted or off). Never blocks.
+    /// Whether the mixer still wants `id` loaded (SFX and jingles always;
+    /// a song only while it is the mixer's song or twin).
+    fn wanted(&self, id: SoundId) -> bool {
+        match id {
+            SoundId::Music(m) if m.is_song() => self.mixer.songs().contains(&Some(m)),
+            _ => true,
+        }
+    }
+
+    /// Once per render frame, after the frame's simulation steps (so a cue's
+    /// sound loads and starts on the frame of its cue natively): drops songs
+    /// parked while muted, renders and starts queued loads, polls the
+    /// pending ones and starts music that finished loading (none of it
+    /// while muted or off). Never blocks.
     ///
     /// Loading right at start-up is safe even when the audio thread is about
     /// to die: a send before it dies succeeds silently, and the panic guard
@@ -544,7 +584,17 @@ impl Audio {
         if !self.active() {
             return;
         }
+        for sound in std::mem::take(&mut self.to_unload) {
+            self.calls += 1;
+            drop(sound);
+        }
         self.queue_startup_sfx();
+        // Songs replaced before their load started are not loaded at all.
+        let queued = std::mem::take(&mut self.queued);
+        self.queued = queued
+            .into_iter()
+            .filter(|(id, _)| self.wanted(*id))
+            .collect();
         if !self.queued.is_empty() && self.may_call() {
             for (id, wav) in std::mem::take(&mut self.queued) {
                 let load = Load::new(
@@ -554,46 +604,91 @@ impl Audio {
                 self.pending.push((id, load));
             }
         }
-        if self.pending.is_empty() || !self.may_call() {
-            return;
+        if !self.pending.is_empty() && self.may_call() {
+            self.poll_loads();
         }
+        if self.off.is_none() {
+            self.try_start();
+        }
+    }
+
+    fn poll_loads(&mut self) {
         let mut still_pending = Vec::new();
         for (id, mut load) in std::mem::take(&mut self.pending) {
             if self.off.is_some() {
                 break;
             }
             match load.poll_frame() {
-                LoadPoll::Done(Ok(sound)) => self.loaded.push((id, sound)),
-                LoadPoll::Done(Err(e)) => log_line(&format!("loading sound {id:?} failed: {e}")),
+                LoadPoll::Done(Ok(sound)) => {
+                    self.ever_loaded = true;
+                    if self.wanted(id) {
+                        self.loaded.push((id, sound));
+                    } else {
+                        // A song replaced while it loaded.
+                        self.calls += 1;
+                        drop(sound);
+                    }
+                }
+                LoadPoll::Done(Err(e)) => {
+                    log_line(&format!("loading sound {id:?} failed: {e}"));
+                    self.give_up(id);
+                }
                 LoadPoll::Waiting => still_pending.push((id, load)),
-                LoadPoll::TimedOut => {
+                // Nothing ever loaded: the missing-audio.js case.
+                LoadPoll::TimedOut if !self.ever_loaded => {
                     log_line(&format!(
                         "audio load timed out after {} frames; audio off",
                         load.polls()
                     ));
                     self.off = Some(Off::LoadTimedOut);
                 }
+                LoadPoll::TimedOut => {
+                    log_line(&format!(
+                        "loading sound {id:?} timed out after {} frames",
+                        load.polls()
+                    ));
+                    self.give_up(id);
+                }
             }
         }
-        if self.off.is_some() {
-            return;
+        if self.off.is_none() {
+            self.pending = still_pending;
         }
-        self.pending = still_pending;
-        // Music whose cue came before its load finished starts now, at the
-        // mixer's current volume (natively the same frame, in the browser
-        // 1–2 frames late).
-        for id in std::mem::take(&mut self.to_start) {
-            let SoundId::Music(m) = id else { continue };
+    }
+
+    /// A sound that will never load: nothing waits for it any more.
+    fn give_up(&mut self, id: SoundId) {
+        if let SoundId::Music(m) = id {
+            if self.jingle_to_start == Some(m) {
+                self.jingle_to_start = None;
+            }
+            if self.mixer.songs().contains(&Some(m)) {
+                self.songs_to_start = false;
+            }
+        }
+    }
+
+    /// Starts the waiting jingle and the waiting song group once loaded.
+    fn try_start(&mut self) {
+        if let Some(m) = self.jingle_to_start {
             match self.mixer.music_volume(m) {
-                Some(volume) if self.is_loaded(id) => {
-                    self.exec(Op::Play {
-                        id,
-                        looped: m.is_song(),
-                        volume,
-                    });
+                Some(volume) if self.is_loaded(SoundId::Music(m)) => {
+                    self.jingle_to_start = None;
+                    self.backend_play(SoundId::Music(m), false, volume);
                 }
-                Some(_) => self.to_start.push(id),
-                None => {}
+                Some(_) => {}
+                None => self.jingle_to_start = None,
+            }
+        }
+        if self.songs_to_start {
+            let ops = self.mixer.start_ops(|id| self.is_loaded(id));
+            if let Some(ops) = ops {
+                self.songs_to_start = false;
+                for op in ops {
+                    if let Op::Play { id, looped, volume } = op {
+                        self.backend_play(id, looped, volume);
+                    }
+                }
             }
         }
     }
@@ -603,7 +698,7 @@ impl Audio {
         for &cue in cues {
             let bank = self.bank;
             let ops = self.mixer.apply(cue, |m| bank.has_music(m));
-            if let Cue::Song(_) = cue {
+            if let Cue::Song(_) | Cue::StopSong = cue {
                 self.unload_old_songs();
             }
             if !self.active() {
@@ -613,13 +708,16 @@ impl Audio {
                 self.exec(op);
             }
         }
+        if self.active() {
+            self.try_start();
+        }
     }
 
     /// Drops loaded songs the mixer no longer plays (D-114: one stage's
-    /// songs at a time; jingles stay loaded).
+    /// songs at a time; jingles stay loaded). Off or dead: leaked (a drop
+    /// would call into a dead thread); muted: parked until sound is on.
     fn unload_old_songs(&mut self) {
         let keep = self.mixer.songs();
-        let dead = (self.dead)();
         let (old, kept): (Vec<_>, Vec<_>) =
             std::mem::take(&mut self.loaded)
                 .into_iter()
@@ -628,10 +726,12 @@ impl Audio {
                     SoundId::Sfx(_) => false,
                 });
         self.loaded = kept;
+        let gone = (self.dead)() || self.off.is_some();
         for (_, sound) in old {
-            if dead || self.muted || self.off.is_some() {
-                // A drop sends a delete to quad-snd's thread.
+            if gone {
                 std::mem::forget(sound);
+            } else if self.muted {
+                self.to_unload.push(sound);
             } else {
                 self.calls += 1;
                 drop(sound);
@@ -650,30 +750,53 @@ impl Audio {
         self.sound(id).is_some()
     }
 
-    /// One backend operation (SFX not loaded yet are dropped; music is
-    /// rendered and started once loaded).
+    /// Plays a loaded sound from its start (at most one live copy, D-114).
+    fn backend_play(&mut self, id: SoundId, looped: bool, volume: f32) {
+        if self.is_loaded(id) && self.may_call() {
+            let sound = self.sound(id).expect("checked above");
+            stop_sound(sound);
+            play_sound(sound, PlaySoundParams { looped, volume });
+        }
+    }
+
+    /// The song group (song and twin) to start together once loaded.
+    fn start_songs(&mut self) {
+        for m in self.mixer.songs().into_iter().flatten() {
+            if !self.ensure_music(m) {
+                // Not in the bank (yet): nothing to start.
+                return;
+            }
+        }
+        self.songs_to_start = true;
+    }
+
+    /// One backend operation (an SFX not loaded yet is dropped; music is
+    /// rendered on first use and started once loaded, a song with its twin).
     fn exec(&mut self, op: Op) {
         match op {
-            Op::Play { id, looped, volume } => {
-                if self.sound(id).is_none() {
-                    if let SoundId::Music(m) = id
-                        && self.ensure_music(m)
-                        && !self.to_start.contains(&id)
-                    {
-                        self.to_start.push(id);
-                    }
-                    return;
+            Op::Play {
+                id: SoundId::Music(_),
+                looped: true,
+                ..
+            } => self.start_songs(),
+            Op::Play {
+                id: SoundId::Music(m),
+                volume,
+                ..
+            } => {
+                if self.is_loaded(SoundId::Music(m)) {
+                    self.backend_play(SoundId::Music(m), false, volume);
+                } else if self.ensure_music(m) {
+                    self.jingle_to_start = Some(m);
                 }
-                if !self.may_call() {
-                    return;
-                }
-                let sound = self.sound(id).expect("checked above");
-                // At most one live copy per id (D-114).
-                stop_sound(sound);
-                play_sound(sound, PlaySoundParams { looped, volume });
             }
+            Op::Play { id, looped, volume } => self.backend_play(id, looped, volume),
             Op::Stop(id) => {
-                self.to_start.retain(|t| *t != id);
+                if let SoundId::Music(m) = id
+                    && self.jingle_to_start == Some(m)
+                {
+                    self.jingle_to_start = None;
+                }
                 if self.is_loaded(id) && self.may_call() {
                     stop_sound(self.sound(id).expect("checked above"));
                 }
@@ -696,10 +819,9 @@ impl Audio {
         }
         self.muted = !self.muted;
         log_line(if self.muted { "sound off" } else { "sound on" });
-        if !self.muted {
-            for op in self.mixer.resume_ops() {
-                self.exec(op);
-            }
+        if self.active() {
+            self.start_songs();
+            self.try_start();
         }
     }
 
@@ -727,6 +849,9 @@ impl Drop for Audio {
     fn drop(&mut self) {
         if (self.dead)() {
             for (_, sound) in self.loaded.drain(..) {
+                std::mem::forget(sound);
+            }
+            for sound in self.to_unload.drain(..) {
                 std::mem::forget(sound);
             }
         }
@@ -813,7 +938,7 @@ mod tests {
         assert_eq!(load.polls(), LOAD_BUDGET_FRAMES);
     }
 
-    use jnr_audio::cues::{Director, PAUSE_OUT_SEMITONES, Sfx};
+    use jnr_audio::cues::{Cut, Director, PAUSE_OUT_SEMITONES, Sfx};
 
     /// The cues of `tests/replays/testbed_route.replay` (7 jumps, the
     /// fanfare), step by step.
@@ -924,6 +1049,155 @@ mod tests {
             m.apply(Cue::Sfx(out), none)[0],
             Op::Stop(sfx(Sfx::Pause.play()))
         );
+    }
+
+    /// The app's `Mixer` and the offline `jnr_audio::mix` agree on the
+    /// music volumes after the same cue timeline, with and without the
+    /// underwater twin in the bank (E59 review: one model).
+    #[test]
+    fn the_app_and_the_offline_mix_end_at_the_same_volumes() {
+        use jnr_audio::mix::{Sound as MixSound, Sounds, mix};
+        use jnr_audio::render::Pcm;
+        const T: usize = jnr_audio::FRAMES_PER_TICK as usize;
+        let timelines: [&[Cue]; 6] = [
+            &[Cue::Song(Music::Wolfgangsee), Cue::Jingle(Music::BossIntro)],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Jingle(Music::BossIntro),
+                Cue::Duck(true),
+                Cue::Underwater(true),
+            ],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Underwater(true),
+                Cue::Duck(true),
+            ],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Jingle(Music::Hurry),
+                Cue::HoldSong(true),
+                Cue::Duck(true),
+            ],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Underwater(true),
+                Cue::Jingle(Music::Hurry),
+                Cue::HoldJingle(true),
+                Cue::HoldJingle(false),
+                Cue::Song(Music::Wolfgangsee),
+            ],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Underwater(true),
+                Cue::HoldSong(true),
+                Cue::HoldSong(false),
+                Cue::Duck(true),
+                Cue::Duck(false),
+                Cue::StopJingle,
+            ],
+        ];
+        for with_twin in [true, false] {
+            for tl in timelines {
+                // The app's volumes after the timeline.
+                let mut m = Mixer::default();
+                for &c in tl {
+                    m.apply(c, |t| with_twin && t == Music::Unterwasser);
+                }
+                let vol = |x: Music| m.music_volume(x).unwrap_or(0.0);
+                // Values that every gain (100, 50, 25, 12.5 %) divides exactly.
+                let want = 8_000.0 * vol(Music::Wolfgangsee)
+                    + 800.0 * vol(Music::Unterwasser)
+                    + 80.0 * (vol(Music::Hurry) + vol(Music::BossIntro));
+                // The offline mix, one cue per frame, read on the last frame.
+                let pcm = |v: i16| Pcm {
+                    rate: 44_100,
+                    samples: vec![v; 2 * T * (tl.len() + 2)],
+                };
+                let mut sounds = Sounds::default();
+                sounds
+                    .sounds
+                    .insert(MixSound::Music(Music::Wolfgangsee), pcm(8_000));
+                sounds.sounds.insert(MixSound::Music(Music::Hurry), pcm(80));
+                sounds
+                    .sounds
+                    .insert(MixSound::Music(Music::BossIntro), pcm(80));
+                if with_twin {
+                    sounds
+                        .sounds
+                        .insert(MixSound::Music(Music::Unterwasser), pcm(800));
+                }
+                let timeline: Vec<(u32, Cue)> =
+                    tl.iter().enumerate().map(|(f, &c)| (f as u32, c)).collect();
+                let last = tl.len() - 1;
+                let got = mix(&sounds, &timeline, last as u32 + 1).render.pcm.samples[last * T];
+                assert_eq!(f32::from(got), want, "twin {with_twin}: {tl:?}");
+            }
+        }
+    }
+
+    /// D-114: the song and its twin start in the same update, even when
+    /// the twin's load finishes a frame later (wasm).
+    #[test]
+    fn the_song_and_its_twin_start_together() {
+        let mut m = Mixer::default();
+        m.apply(Cue::Song(Music::Wolfgangsee), |t| t == Music::Unterwasser);
+        // Frame 1: the song is loaded, the twin isn't.
+        let song_only = |id: SoundId| id == music(Music::Wolfgangsee);
+        assert_eq!(m.start_ops(song_only), None);
+        // Frame 2: both.
+        assert_eq!(
+            m.start_ops(|_| true),
+            Some(vec![
+                Op::Play {
+                    id: music(Music::Wolfgangsee),
+                    looped: true,
+                    volume: FULL
+                },
+                Op::Play {
+                    id: music(Music::Unterwasser),
+                    looped: true,
+                    volume: 0.0
+                },
+            ])
+        );
+        // Without a song nothing waits.
+        assert_eq!(Mixer::default().start_ops(|_| false), Some(vec![]));
+    }
+
+    #[test]
+    fn music_volume_follows_hold_duck_and_underwater() {
+        let mut m = Mixer::default();
+        let twin = |t: Music| t == Music::Unterwasser;
+        m.apply(Cue::Song(Music::Wolfgangsee), twin);
+        m.apply(Cue::Jingle(Music::Hurry), twin);
+        let vols = |m: &Mixer| {
+            [
+                Music::Wolfgangsee,
+                Music::Unterwasser,
+                Music::Hurry,
+                Music::Death,
+            ]
+            .map(|x| m.music_volume(x))
+        };
+        assert_eq!(vols(&m), [Some(FULL), Some(0.0), Some(FULL), None]);
+        m.apply(Cue::Duck(true), twin);
+        assert_eq!(
+            vols(&m),
+            [Some(DUCK_GAIN), Some(0.0), Some(DUCK_GAIN), None]
+        );
+        m.apply(Cue::Underwater(true), twin);
+        assert_eq!(
+            vols(&m),
+            [Some(0.0), Some(DUCK_GAIN), Some(DUCK_GAIN), None]
+        );
+        m.apply(Cue::HoldSong(true), twin);
+        assert_eq!(vols(&m), [Some(0.0), Some(0.0), Some(DUCK_GAIN), None]);
+        m.apply(Cue::HoldJingle(true), twin);
+        m.apply(Cue::Duck(false), twin);
+        assert_eq!(vols(&m), [Some(0.0), Some(0.0), Some(0.0), None]);
+        m.apply(Cue::HoldSong(false), twin);
+        m.apply(Cue::HoldJingle(false), twin);
+        assert_eq!(vols(&m), [Some(0.0), Some(FULL), Some(FULL), None]);
     }
 
     #[test]

@@ -328,6 +328,17 @@ impl Music {
         self.jingle_ms() == 0
     }
 
+    /// The cue's playback gain in percent, on top of the music volume
+    /// (game-designer decision, audio-design §4): `boss_intro` is played
+    /// pianissimo, −12 dB (25 %), before the Paukenschlag; every other cue
+    /// at 100 %. The app's `Mixer` and `mix` both apply it.
+    pub const fn gain_pct(self) -> u32 {
+        match self {
+            Music::BossIntro => 25,
+            _ => 100,
+        }
+    }
+
     /// (id, jingle length in ms or 0 for a loop), `docs/audio-design.md` §5.
     const fn spec(self) -> (&'static str, u32) {
         match self {

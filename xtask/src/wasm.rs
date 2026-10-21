@@ -293,7 +293,7 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     run_chromium(
         &chromium,
         &preview,
-        &["--dump-dom"],
+        &["--dump-dom", "--enable-logging=stderr", "--v=0"],
         &na_url,
         &na_out,
         &na_log,
@@ -303,6 +303,14 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     if !na_dom.contains("data-wasm=\"loaded\"") {
         return Err(format!(
             "without audio.js the wasm module did not instantiate; {na_see}"
+        ));
+    }
+    // The budget path: the app's own console line (D-115), via
+    // Chromium's console log on stderr.
+    let na_console = fs::read_to_string(&na_log).unwrap_or_default();
+    if !na_console.contains(NO_AUDIO_JS_LINE) {
+        return Err(format!(
+            "without audio.js the console has no `{NO_AUDIO_JS_LINE}` line; {na_see}"
         ));
     }
     let na_liveness =
@@ -335,10 +343,13 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         )
     })?;
     Ok(format!(
-        "module loaded, {liveness}, without audio.js {na_liveness}, {w}x{h} screenshot {}, {summary}",
+        "module loaded, {liveness}, without audio.js {na_liveness} and the load timeout logged, {w}x{h} screenshot {}, {summary}",
         shot.display()
     ))
 }
+
+/// The app's console line when its first loads never finish (no audio.js).
+const NO_AUDIO_JS_LINE: &str = "jnr-app: audio load timed out after";
 
 /// Writes `smoke.html` (`index.html` that also loads the probe) and
 /// `smoke.js` (the probe with the prompt band) into the web dir `dir`.

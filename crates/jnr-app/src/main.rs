@@ -283,7 +283,6 @@ async fn run(opts: Options) {
         if is_key_pressed(MUTE_KEY) {
             audio.toggle_mute();
         }
-        audio.update();
         audio.cues(&std::mem::take(&mut first_cues));
         let keyboard = input_from(is_key_down);
         for _ in 0..ticks_due(&mut accumulator, f64::from(get_frame_time())) {
@@ -298,6 +297,10 @@ async fn run(opts: Options) {
                 break 'frames;
             }
         }
+
+        // After the steps: this frame's cues load and start now (natively a
+        // load finishes on its first poll).
+        audio.update();
 
         render(&game, &ctx, &mut fb);
         if debug_overlay {
