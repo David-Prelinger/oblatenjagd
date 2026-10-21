@@ -1606,8 +1606,10 @@ fn draw_checkpoint(
 }
 
 /// A popup: the score as digits, or its text, centred and floating up.
+/// Public so tests can measure exactly what a popup draws (E53: the
+/// popups that keep their place, `jnr_core::game::PopupPlace`).
 #[allow(clippy::too_many_arguments)]
-fn draw_popup(
+pub fn draw_popup(
     game: &Game,
     atlas: &Atlas,
     font: &Font,
@@ -3739,6 +3741,37 @@ mod tests {
                     "{label} ({w} px) at {centre}: columns {first}..={last} touch the cell"
                 );
             }
+        }
+    }
+
+    /// E53: the box `jnr-core` keeps the boss's labels in (centre ±
+    /// `LABEL_HALF_W_PX`, `POPUP_DRAWN_H_PX` rows from the top outline)
+    /// holds every label with the real font: the outline's columns
+    /// `left − 1 ..= left + w`, the 8 px glyph cell's rows plus 1 px of
+    /// outline above and below.
+    #[test]
+    fn boss_labels_fit_the_box_core_keeps_clear() {
+        let atlas = jnr_assets::atlas();
+        let font = crate::Font::from_atlas(atlas);
+        let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
+        let t = tuning();
+        let half = jnr_core::game::LABEL_HALF_W_PX;
+        assert_eq!(jnr_core::game::POPUP_DRAWN_H_PX, 8 + 2);
+        let mut labels: Vec<String> = [Popup::Unerhoert, Popup::BitteSehr]
+            .iter()
+            .map(|p| texts.get(p.text_key().unwrap()).into_owned())
+            .collect();
+        labels.push(t.enemies.oberkellner_hit_points.to_string());
+        labels.push(t.enemies.oberkellner_final_points.to_string());
+        for label in labels {
+            let w = font.measure(&label);
+            let left = -(w / 2);
+            assert!(
+                left > -half && left + w < half,
+                "{label} ({w} px): columns {}..={} beyond ±{half}",
+                left - 1,
+                left + w
+            );
         }
     }
 }

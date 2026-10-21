@@ -17,18 +17,17 @@
 # the beaten boss as Hackl: every touch, standing or in the air); Normal
 # never (20 000 fuzz runs). Big shares Hackl's 30 px hitbox and 32 px
 # look, so the same geometry applies.
-# The replay format cannot check screen y, so the expectation is visual
-# (shots; they fail the goldens step until a fixed frame is approved).
-# Suggested regression test for the fix: replay this file and check the
-# Stollen popup's drawn top (y - camera y - rise - 1) >= 22 on every frame
-# (the pattern of qa_m5_zaunerstollen_clear_of_hud's test).
+# Fixed in E53 (D-107 "As built (E53)"): the pair's rise stops under the
+# HUD (top row 22). Checked on every frame by xtask's
+# `stage_9_popups_never_cover_resi_or_reach_the_hud` (popup_clearance.rs);
+# the shots are goldens of the fixed frames (art-director review).
 level  = hackl
 seed   = 1
 source = handwritten
 start  = title
 route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl hackl cafe_zauner
 expect = deaths=0 no_event=Hurt boss_hits=3 power=hackl state=stage_clear
-shots  = 4560:pair_rising 4574:text_in_hud
+shots  = 4560:pair_rising 4574:pair_under_hud
 ---
 - 20
 S 1

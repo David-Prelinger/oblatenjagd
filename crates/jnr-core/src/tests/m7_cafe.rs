@@ -751,35 +751,61 @@ fn kellner_wartender_and_oberkellner_are_lost_in_swim_water() {
     );
 }
 
-/// E51: in Stage 9's arena (camera y 92) the Serve's popups, spawned over
-/// the plate as she stands at the bell on the counter, stay ≥ 2 px below
-/// the HUD even fully risen: the HUD's value row (top 13, glyphs and
-/// outline) ends at screen row 21, so their highest drawn row (the text's
-/// outline, top − 1) must be ≥ 24.
+/// E51/E53: in Stage 9's arena (camera y 92) the Serve's popups, spawned
+/// over the plate as she stands at the bell on the counter, stay below the
+/// HUD (rows 0–21) on every frame, for every form: a Normal Resi's pair
+/// rises freely (its highest drawn row, the text's outline, is 25 on its
+/// last frame, risen 15 px); a Big or Hackl Resi holds the plate 8 px
+/// higher, so her pair stops rising at row 22 (E53: in QA's
+/// `qa_m7a_stollen_popup_in_hud_big` it reached row 16).
 #[test]
 fn the_stollen_popups_stay_clear_of_the_hud_in_the_stage_9_arena() {
-    const HUD_LAST_ROW: i32 = 21;
     let t = tuning();
     let level = Level::parse(include_str!(
         "../../../../content/levels/09_cafe_zauner.level"
     ))
     .unwrap();
-    let mut g = Game::new(&level, &t, 1);
-    let i = boss_index(&g);
-    g.entities[i].state = boss_st::DONE;
-    g.entities[i].hits = 3;
-    assert!(g.goal_armed(0));
-    let (col, row) = g.goal_spawn(0).map(|s| (s.col, s.row)).unwrap();
-    g.camera.x = level.width * 16 - crate::camera::SCREEN_W;
-    g.player.x = Fx::from_px(col * 16 + 2);
-    g.player.y = Fx::from_px((row + 1) * 16) - g.player.h;
-    g.player.vx = Fx::ZERO;
-    g.player.vy = Fx::ZERO;
-    g.player.on_ground = true;
-    let events = safe(&mut g, "-");
-    assert!(events.contains(&Event::LevelComplete), "{events:?}");
-    assert_eq!(g.camera().y, CAMERA_Y);
-    let text = first(&g, EntityKind::Popup(crate::Popup::Stollen));
-    let highest = text.y.to_px() - t.score.popup_rise - 1 - g.camera().y;
-    assert!(highest >= HUD_LAST_ROW + 3, "highest drawn row {highest}");
+    for (power, want_highest) in [(Power::Normal, 25), (Power::Big, 22), (Power::Hackl, 22)] {
+        let mut g = Game::new(&level, &t, 1);
+        let i = boss_index(&g);
+        g.entities[i].state = boss_st::DONE;
+        g.entities[i].hits = 3;
+        assert!(g.goal_armed(0));
+        g.set_player_power(power);
+        g.player.transform = 0;
+        let (col, row) = g.goal_spawn(0).map(|s| (s.col, s.row)).unwrap();
+        g.camera.x = level.width * 16 - crate::camera::SCREEN_W;
+        g.player.x = Fx::from_px(col * 16 + 2);
+        g.player.y = Fx::from_px((row + 1) * 16) - g.player.h;
+        g.player.vx = Fx::ZERO;
+        g.player.vy = Fx::ZERO;
+        g.player.on_ground = true;
+        let events = safe(&mut g, "-");
+        assert!(
+            events.contains(&Event::LevelComplete),
+            "{power:?}: {events:?}"
+        );
+        assert_eq!(g.camera().y, CAMERA_Y);
+        let (mut highest, mut frames) = (i32::MAX, 0);
+        while let Some(text) = g
+            .entities()
+            .iter()
+            .find(|e| e.kind == EntityKind::Popup(crate::Popup::Stollen))
+            .copied()
+        {
+            frames += 1;
+            let top = text.y.to_px() - text.popup_rise_px(&t) - 1 - g.camera().y;
+            assert!(
+                top >= crate::game::HUD_CLEAR_Y,
+                "{power:?}: drawn from row {top}"
+            );
+            highest = highest.min(top);
+            g.step(crate::InputFrame::NONE);
+        }
+        assert!(
+            frames >= t.score.popup_frames,
+            "{power:?}: up {frames} frames"
+        );
+        assert_eq!(highest, want_highest, "{power:?}");
+    }
 }
