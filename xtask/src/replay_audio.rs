@@ -17,14 +17,15 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use jnr_artkit::Image;
-use jnr_audio::cues::{Cue, Director, Voice};
-use jnr_audio::mix::{self, Bank, Mix, Sound};
-use jnr_audio::{FRAMES_PER_TICK, Pcm, RenderOptions};
+use jnr_audio::bank::{Bank, Variant};
+use jnr_audio::cues::{Cue, Director, PENDING_MUSIC, Voice};
+use jnr_audio::mix::{self, Mix, Sound, Sounds};
+use jnr_audio::{FRAMES_PER_TICK, Pcm};
 use jnr_core::Level;
 
 use crate::audio::lint::CEILING_DBFS;
+use crate::audio::plot;
 use crate::audio::stats::{FULL_SCALE, dbfs, dbfs_to_sample, samples_to_ms};
-use crate::audio::{Kind, plot, sources};
 use crate::audio_song::{rect, text};
 use crate::content;
 
@@ -85,46 +86,48 @@ pub fn needed(cues: &[(u32, Cue)]) -> BTreeSet<Sound> {
     out
 }
 
-/// Renders the `needed` sounds from `<root>/audio/` (SFX from `audio/sfx/`,
-/// music from `audio/music/*.song` or `audio/jingles/*.sfx`). A sound
-/// without a source stays out of the bank (silent in the mix); a source
-/// that fails to parse or render is an error.
-pub fn bank(root: &Path, needed: &BTreeSet<Sound>) -> Result<Bank, String> {
-    let srcs = sources(root)?;
-    let find = |id: &str, kinds: &[Kind]| {
-        srcs.iter()
-            .find(|s| s.id == id && kinds.contains(&s.kind))
-            .cloned()
-    };
-    let mut songs = None;
-    let mut out = Bank::default();
+/// The sources under `<root>/audio/` as (path from `root`, text), the way
+/// `jnr-assets` embeds them, parsed and checked by `bank::Bank::load` (the
+/// app's bank: one source of truth for parsing and pitched variants).
+pub fn load_bank(root: &Path) -> Result<Bank, String> {
+    let mut files = Vec::new();
+    let mut stack = vec![root.join("audio")];
+    while let Some(dir) = stack.pop() {
+        let Ok(rd) = fs::read_dir(&dir) else { continue };
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                stack.push(p);
+            } else if p
+                .extension()
+                .is_some_and(|x| ["sfx", "inst", "song", "quote"].contains(&&*x.to_string_lossy()))
+            {
+                let name = p
+                    .strip_prefix(root)
+                    .unwrap_or(&p)
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                files.push((name, content::read(&p)?));
+            }
+        }
+    }
+    files.sort();
+    let refs: Vec<(&str, &str)> = files
+        .iter()
+        .map(|(n, t)| (n.as_str(), t.as_str()))
+        .collect();
+    Bank::load(&refs).map_err(|e| e.join("\n"))
+}
+
+/// Renders the `needed` sounds with the bank's `render_sfx` (pitched
+/// variants included) and `render_music`. A sound the bank doesn't have
+/// stays out of the table (silent in the mix, see [`missing_lint`]).
+pub fn sounds(bank: &Bank, needed: &BTreeSet<Sound>) -> Result<Sounds, String> {
+    let mut out = Sounds::default();
     for &sound in needed {
-        let pcm: Option<Pcm> = match sound {
-            Sound::Sfx(p) => match find(p.sfx.id(), &[Kind::Sfx]) {
-                None => None,
-                Some(src) => {
-                    let text = content::read(&src.path)?;
-                    let patch = jnr_audio::Sfx::parse(&src.path.to_string_lossy(), &text)
-                        .map_err(|e| e.to_string())?;
-                    Some(mix::render_variant(&patch, p.semitones).pcm)
-                }
-            },
-            Sound::Music(m) => match find(m.id(), &[Kind::Song, Kind::Jingle]) {
-                None => None,
-                Some(src) if src.kind == Kind::Jingle => {
-                    Some(crate::audio::render_sfx_file(&src.path)?.pcm)
-                }
-                Some(_) => {
-                    if songs.is_none() {
-                        let b = crate::audio_song::load_bank(root, &root.join("audio"))
-                            .map_err(|e| e.join("\n"))?;
-                        songs = Some(b);
-                    }
-                    let b = songs.as_ref().expect("loaded above");
-                    let r = crate::audio_song::render_in(b, m.id(), &RenderOptions::default())?;
-                    Some(r.render.pcm)
-                }
-            },
+        let pcm = match sound {
+            Sound::Sfx(p) => bank.render_sfx(p),
+            Sound::Music(m) => bank.render_music(m, Variant::Normal)?.map(|r| r.pcm),
         };
         if let Some(pcm) = pcm {
             out.sounds.insert(sound, pcm);
@@ -173,7 +176,7 @@ pub fn analyse(m: &Mix, end_frame: u32) -> MixStats {
     };
     let over = s.iter().filter(|&&v| (v as f64).abs() > ceiling()).count();
     MixStats {
-        frames: end_frame,
+        frames: end_frame + 1,
         duration_ms: samples_to_ms(s.len(), rate),
         peak_dbfs: dbfs(peak / FULL_SCALE),
         peak_sample,
@@ -294,6 +297,35 @@ pub fn lint(m: &Mix) -> Vec<Finding> {
         culprits: culprits(&regions),
     });
     out
+}
+
+/// The `missing` lint: every SFX must exist, and a music cue may be silent
+/// only while it is in `cues::PENDING_MUSIC` (D-122; E58b's pending list).
+pub fn missing_lint(m: &Mix) -> Option<Finding> {
+    let bad: Vec<String> = m
+        .missing
+        .iter()
+        .filter(|s| match s {
+            Sound::Sfx(_) => true,
+            Sound::Music(x) => !PENDING_MUSIC.contains(x),
+        })
+        .map(Sound::to_string)
+        .collect();
+    (!bad.is_empty()).then(|| Finding {
+        lint: "missing",
+        message: format!(
+            "silent for lack of a source (only music in cues::PENDING_MUSIC may be): {}",
+            bad.join(", ")
+        ),
+        culprits: bad,
+    })
+}
+
+/// [`lint`] and [`missing_lint`].
+pub fn findings(m: &Mix) -> Vec<Finding> {
+    let mut f = lint(m);
+    f.extend(missing_lint(m));
+    f
 }
 
 /// Sample positions where a sound starts in `pcm`: a 64-sample block at or
@@ -500,20 +532,26 @@ pub struct Mixed {
     pub findings: Vec<Finding>,
 }
 
-/// Runs, mixes, measures and lints the replay at `path`.
-pub fn mix_replay(root: &Path, path: &Path) -> Result<Mixed, String> {
-    let timeline = timeline(root, path)?;
-    let bank = bank(root, &needed(&timeline.cues))?;
-    let mix = mix::mix(&bank, &timeline.cues, timeline.end_frame);
+/// Mixes, measures and lints one replay's timeline.
+fn mix_timeline(name: String, timeline: Timeline, sounds: &Sounds) -> Mixed {
+    let mix = mix::mix(sounds, &timeline.cues, timeline.end_frame);
     let stats = analyse(&mix, timeline.end_frame);
-    let findings = lint(&mix);
-    Ok(Mixed {
-        name: content::replay_name(path),
+    let findings = findings(&mix);
+    Mixed {
+        name,
         timeline,
         mix,
         stats,
         findings,
-    })
+    }
+}
+
+/// Runs, mixes, measures and lints the replay at `path`.
+pub fn mix_replay(root: &Path, path: &Path) -> Result<Mixed, String> {
+    let timeline = timeline(root, path)?;
+    let bank = load_bank(root)?;
+    let sounds = sounds(&bank, &needed(&timeline.cues))?;
+    Ok(mix_timeline(content::replay_name(path), timeline, &sounds))
 }
 
 /// A short report: the stats, the silent sounds and the findings.
@@ -601,8 +639,31 @@ pub fn check_report(root: &Path) -> (bool, String) {
             "FAIL: no replays to mix (no cue-log goldens)\n".into(),
         );
     }
-    let results = crate::par::map_ordered(&names, crate::par::threads(), |name| {
-        content::resolve_replay(root, name).and_then(|p| mix_replay(root, &p))
+    // Every timeline first, then each needed sound rendered once.
+    let timelines = crate::par::map_ordered(&names, crate::par::threads(), |name| {
+        content::resolve_replay(root, name).and_then(|p| timeline(root, &p))
+    });
+    let all: BTreeSet<Sound> = timelines
+        .iter()
+        .flatten()
+        .flat_map(|t| needed(&t.cues))
+        .collect();
+    let sounds = match load_bank(root).and_then(|b| sounds(&b, &all)) {
+        Ok(s) => s,
+        Err(e) => return (false, format!("error: {e}\n")),
+    };
+    let jobs: Vec<(String, Result<Timeline, String>)> =
+        names.iter().cloned().zip(timelines).collect();
+    let results = crate::par::map_ordered(&jobs, crate::par::threads(), |(name, t)| match t {
+        Ok(t) => Ok(mix_timeline(
+            name.clone(),
+            Timeline {
+                cues: t.cues.clone(),
+                end_frame: t.end_frame,
+            },
+            &sounds,
+        )),
+        Err(e) => Err(e.clone()),
     });
     let mut text = String::new();
     let mut failed = 0;
@@ -635,7 +696,7 @@ pub fn check_report(root: &Path) -> (bool, String) {
     if !silent.is_empty() {
         let list: Vec<String> = silent.into_iter().collect();
         text.push_str(&format!(
-            "note: silent (no source in audio/ yet): {}\n",
+            "note: silent (no source in audio/ yet; pending songs are allowed): {}\n",
             list.join(", ")
         ));
     }
@@ -688,8 +749,8 @@ mod tests {
         assert_eq!(x.timeline.end_frame, 758);
     }
 
-    fn bank(entries: &[(Sfx, i16)]) -> Bank {
-        Bank {
+    fn table(entries: &[(Sfx, i16)]) -> Sounds {
+        Sounds {
             sounds: entries
                 .iter()
                 .map(|&(s, v)| {
@@ -703,7 +764,7 @@ mod tests {
         }
     }
 
-    fn mixed(b: &Bank) -> Mix {
+    fn mixed(b: &Sounds) -> Mix {
         let cues = [
             (1, Cue::Sfx(Sfx::Jump.play())),
             (1, Cue::Sfx(Sfx::Oblate.play())),
@@ -713,7 +774,7 @@ mod tests {
 
     #[test]
     fn a_clipping_mix_is_detected_and_names_the_sounds() {
-        let m = mixed(&bank(&[(Sfx::Jump, 20_000), (Sfx::Oblate, 20_000)]));
+        let m = mixed(&table(&[(Sfx::Jump, 20_000), (Sfx::Oblate, 20_000)]));
         let f = lint(&m);
         assert_eq!(
             f.iter().map(|f| f.lint).collect::<Vec<_>>(),
@@ -736,7 +797,7 @@ mod tests {
     #[test]
     fn a_mix_over_the_ceiling_without_clamping_is_detected() {
         // 2 × 15 000 = 30 000 > 29 204 (−1 dBFS), < 32 767.
-        let m = mixed(&bank(&[(Sfx::Jump, 15_000), (Sfx::Oblate, 15_000)]));
+        let m = mixed(&table(&[(Sfx::Jump, 15_000), (Sfx::Oblate, 15_000)]));
         let f = lint(&m);
         assert_eq!(f.len(), 1, "{f:?}");
         assert_eq!(f[0].lint, "ceiling");
@@ -745,7 +806,7 @@ mod tests {
         assert_eq!(st.clamped_samples, 0);
         assert!((st.ms_over_ceiling - 2.0 * 1000.0 / 60.0).abs() < 0.01);
         // Under the ceiling: no finding.
-        let m = mixed(&bank(&[(Sfx::Jump, 10_000), (Sfx::Oblate, 10_000)]));
+        let m = mixed(&table(&[(Sfx::Jump, 10_000), (Sfx::Oblate, 10_000)]));
         assert!(lint(&m).is_empty());
         // One second of mix per RMS value.
         assert_eq!(analyse(&m, 4).rms_dbfs_per_second.len(), 1);
@@ -783,13 +844,41 @@ mod tests {
             .iter()
             .map(|&p| Sound::Sfx(p))
             .collect();
-        let b = super::bank(&root, &needed).unwrap();
+        let bank = load_bank(&root).unwrap();
+        let b = sounds(&bank, &needed).unwrap();
         assert_eq!(b.sounds.len(), needed.len());
-        let plain = super::bank(&root, &[Sound::Sfx(Sfx::Jump.play())].into()).unwrap();
+        let plain = sounds(&bank, &[Sound::Sfx(Sfx::Jump.play())].into()).unwrap();
         let low = &b.sounds[&Sound::Sfx(Sfx::Jump.pitched(-5))];
         let jump = &plain.sounds[&Sound::Sfx(Sfx::Jump.play())];
         assert_eq!(low.samples.len(), jump.samples.len());
         assert_ne!(low.samples, jump.samples);
+    }
+
+    /// D-122: an SFX without a source fails the gate, a pending song doesn't,
+    /// a song that left the pending list does.
+    #[test]
+    fn missing_sounds_fail_unless_the_music_is_pending() {
+        let empty = Sounds::default();
+        let song = |m: Music| mix::mix(&empty, &[(0, Cue::Song(m))], 1);
+        let sfx = mix::mix(&empty, &[(0, Cue::Sfx(Sfx::Jump.play()))], 1);
+        let f = missing_lint(&sfx).expect("a missing SFX fails");
+        assert_eq!(
+            (f.lint, f.culprits.clone()),
+            ("missing", vec!["jump".to_owned()])
+        );
+        assert_eq!(findings(&sfx), [f]);
+        let pending = PENDING_MUSIC[0];
+        assert!(
+            missing_lint(&song(pending)).is_none(),
+            "{pending:?} is pending"
+        );
+        assert!(!song(pending).missing.is_empty());
+        if let Some(&done) = Music::ALL
+            .iter()
+            .find(|m| m.is_song() && !PENDING_MUSIC.contains(m))
+        {
+            assert!(missing_lint(&song(done)).is_some());
+        }
     }
 
     /// A throwaway workspace whose `audio/music/` holds E57's placeholder
@@ -797,8 +886,10 @@ mod tests {
     fn placeholder_music_root(name: &str) -> PathBuf {
         let tmp = crate::target_dir(&root()).join("tmp").join(name);
         let _ = fs::remove_dir_all(&tmp);
-        let music = tmp.join("audio/music");
-        fs::create_dir_all(&music).unwrap();
+        let audio = tmp.join("audio");
+        for d in ["music", "instruments", "quotes"] {
+            fs::create_dir_all(audio.join(d)).unwrap();
+        }
         let fixtures = root().join("crates/jnr-audio/tests/fixtures/music");
         for e in fs::read_dir(&fixtures).unwrap().flatten() {
             let p = e.path();
@@ -817,7 +908,12 @@ mod tests {
             if let Some((a, b)) = text {
                 body = body.replace(&format!("id = \"{a}\""), &format!("id = \"{b}\""));
             }
-            fs::write(music.join(to), body).unwrap();
+            let dir = match p.extension().unwrap().to_string_lossy().as_ref() {
+                "inst" => "instruments",
+                "quote" => "quotes",
+                _ => "music",
+            };
+            fs::write(audio.join(dir).join(to), body).unwrap();
         }
         tmp
     }
@@ -831,7 +927,7 @@ mod tests {
         let path = content::resolve_replay(&root, "salzburg_tour").unwrap();
         let tl = timeline(&root, &path).unwrap();
         let music_root = placeholder_music_root("replay-audio-music");
-        let b = super::bank(&music_root, &needed(&tl.cues)).unwrap();
+        let b = sounds(&load_bank(&music_root).unwrap(), &needed(&tl.cues)).unwrap();
         assert!(b.sounds.contains_key(&Sound::Music(Music::Salzburg)));
         assert!(b.sounds.contains_key(&Sound::Music(Music::FanfareClear)));
         let m = mix::mix(&b, &tl.cues, tl.end_frame);

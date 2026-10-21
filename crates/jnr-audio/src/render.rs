@@ -114,17 +114,8 @@ fn add_voice(out: &mut Vec<i32>, start: usize, voice: &Voice, layer: &Layer, unt
 
 /// Adds an effect (every layer, at `volume_pct`) into `out` from `start` on.
 pub fn add_sfx(out: &mut Vec<i32>, start: usize, sfx: &Sfx, volume_pct: u32) {
-    add_sfx_shifted(out, start, sfx, volume_pct, 0);
-}
-
-/// Like [`add_sfx`], with every layer's pitch moved by `cents` (a pitched
-/// variant of a cue, `cues::PITCHED`: oscillators, glides, vibrato and arp
-/// move together; filters, envelopes and timing stay as authored).
-pub fn add_sfx_shifted(out: &mut Vec<i32>, start: usize, sfx: &Sfx, volume_pct: u32, cents: i32) {
     for layer in &sfx.layers {
-        let mut voice = Voice::sfx(layer, volume_pct);
-        voice.offset_cents += cents;
-        add_voice(out, start, &voice, layer, None);
+        add_voice(out, start, &Voice::sfx(layer, volume_pct), layer, None);
     }
 }
 

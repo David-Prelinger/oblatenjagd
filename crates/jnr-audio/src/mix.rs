@@ -15,7 +15,7 @@
 //! - [`Cue::Song`]: stop the song (and its twin), start the new one looping
 //!   from sample 0, and its underwater twin muted on the same sample.
 //!   [`Cue::Jingle`]: stop the jingle, play the new one once.
-//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCK_VOLUME_PCT`] while ducked;
+//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCKED_MUSIC_VOLUME_PCT`] while ducked;
 //!   0 for the song while held, 0 for the jingle while held. Under water the
 //!   song and its twin swap volumes; a new song starts above water.
 //! - One-shots ring out past the run's end; loops stop at the end of the
@@ -26,16 +26,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::FRAMES_PER_TICK;
-use crate::cues::{Cue, Cut, Music, Play, Sfx, Voice};
+use crate::cues::{
+    Cue, DUCKED_MUSIC_VOLUME_PCT, MUSIC_VOLUME_PCT, Music, Play, SFX_VOLUME_PCT, Sfx, Voice,
+};
 use crate::render::{Pcm, Render, to_pcm};
-
-/// Playback volume of every SFX (each is rendered at its design peak,
-/// `docs/audio-design.md` §3, so it plays at full volume).
-pub const SFX_VOLUME_PCT: u32 = 100;
-/// Playback volume of songs and jingles (rendered at the music bus level).
-pub const MUSIC_VOLUME_PCT: u32 = 100;
-/// The ducked music volume: −6 dB (§3, 50 % = −6.02 dB).
-pub const DUCK_VOLUME_PCT: u32 = 50;
 
 /// A sound the cues can start.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -54,10 +48,11 @@ impl std::fmt::Display for Sound {
     }
 }
 
-/// The rendered sounds a mix can use; a sound that is missing plays as
-/// silence and is listed in [`Mix::missing`].
+/// The rendered sounds a mix can use (filled from `bank::Bank`'s
+/// `render_sfx`/`render_music`); a sound that is missing plays as silence
+/// and is listed in [`Mix::missing`].
 #[derive(Clone, Debug, Default)]
-pub struct Bank {
+pub struct Sounds {
     pub sounds: BTreeMap<Sound, Pcm>,
 }
 
@@ -78,9 +73,9 @@ pub struct Span {
 pub struct Mix {
     /// The clamped PCM and the number of clamped samples.
     pub render: Render,
-    /// Where each sound of the bank is heard, in start order.
+    /// Where each sound of the table is heard, in start order.
     pub spans: Vec<Span>,
-    /// Sounds the timeline started that the bank lacks (silent).
+    /// Sounds the timeline started that the table lacks (silent).
     pub missing: BTreeSet<Sound>,
     /// The run's length in samples (`(end_frame + 1) ×` [`FRAMES_PER_TICK`]);
     /// the PCM is longer when a one-shot rings out.
@@ -171,7 +166,7 @@ impl Player {
                     .live_sfx
                     .keys()
                     .copied()
-                    .filter(|s| cut == Cut::All || s.voice() != Voice::I)
+                    .filter(|s| cut.hits(s.voice()))
                     .collect();
                 for s in hit {
                     self.stop_sfx(s, at);
@@ -207,7 +202,7 @@ impl Player {
     /// Sets the music volumes from the hold, duck and underwater state.
     fn music_gains(&mut self, at: usize) {
         let music = if self.duck {
-            DUCK_VOLUME_PCT
+            DUCKED_MUSIC_VOLUME_PCT
         } else {
             MUSIC_VOLUME_PCT
         };
@@ -226,18 +221,9 @@ impl Player {
     }
 }
 
-/// Renders an SFX patch as the variant `semitones` away from its authored
-/// pitch (`cues::PITCHED`; 0 = [`crate::render_sfx`]). The app (E58b/E59)
-/// renders its pitched WAVs the same way.
-pub fn render_variant(patch: &crate::patch::Sfx, semitones: i8) -> Render {
-    let mut out = Vec::new();
-    crate::render::add_sfx_shifted(&mut out, 0, patch, 100, semitones as i32 * 100);
-    to_pcm(&out)
-}
-
 /// Mixes `timeline` (game frame, cue; in order) over a run that ends with
-/// frame `end_frame`, using the sounds in `bank`.
-pub fn mix(bank: &Bank, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
+/// frame `end_frame`, using the rendered `sounds`.
+pub fn mix(sounds: &Sounds, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
     let tick = FRAMES_PER_TICK as usize;
     let run_samples = (end_frame as usize + 1) * tick;
     let mut player = Player::default();
@@ -255,7 +241,7 @@ pub fn mix(bank: &Bank, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
     let mut spans: Vec<Span> = Vec::new();
     let mut missing = BTreeSet::new();
     for inst in &player.instances {
-        let Some(pcm) = bank.sounds.get(&inst.sound) else {
+        let Some(pcm) = sounds.sounds.get(&inst.sound) else {
             missing.insert(inst.sound);
             continue;
         };
@@ -313,6 +299,7 @@ pub fn mix(bank: &Bank, timeline: &[(u32, Cue)], end_frame: u32) -> Mix {
 mod tests {
     use super::*;
     use crate::SAMPLE_RATE;
+    use crate::cues::Cut;
 
     const T: usize = FRAMES_PER_TICK as usize;
 
@@ -323,8 +310,8 @@ mod tests {
         }
     }
 
-    fn bank(entries: &[(Sound, Vec<i16>)]) -> Bank {
-        Bank {
+    fn bank(entries: &[(Sound, Vec<i16>)]) -> Sounds {
+        Sounds {
             sounds: entries.iter().map(|(s, p)| (*s, pcm(p.clone()))).collect(),
         }
     }
@@ -418,7 +405,10 @@ mod tests {
             ],
             2,
         );
-        assert_eq!(m.render.pcm.samples[T], 3);
+        // The plain copy is stopped: only the variant sounds from frame 1 on.
+        let s = &m.render.pcm.samples;
+        assert_eq!((s[T - 1], s[T], s[2 * T], s[4 * T]), (100, 3, 3, 3));
+        assert_eq!(m.spans[0].end, T);
         assert_eq!(m.spans[1].sound, low);
     }
 
@@ -486,7 +476,7 @@ mod tests {
     #[test]
     fn missing_sounds_are_silent_and_listed() {
         let m = mix(
-            &Bank::default(),
+            &Sounds::default(),
             &[
                 (0, Cue::Song(Music::Salzburg)),
                 (0, Cue::Sfx(Sfx::Jump.play())),
@@ -518,5 +508,74 @@ mod tests {
         );
         assert_eq!(m.render.clamped, 10);
         assert_eq!(m.render.pcm.samples[0], i16::MAX);
+    }
+
+    #[test]
+    fn duck_and_hold_act_on_a_jingle() {
+        let fan = Sound::Music(Music::FanfareClear);
+        let b = bank(&[(fan, vec![80; 8 * T])]);
+        let tl = [
+            (0, Cue::Jingle(Music::FanfareClear)),
+            (1, Cue::Duck(true)),
+            (2, Cue::HoldJingle(true)),
+            (3, Cue::HoldJingle(false)),
+            (4, Cue::Duck(false)),
+            (5, Cue::StopJingle),
+        ];
+        let s = mix(&b, &tl, 7).render.pcm.samples;
+        let at = |f: usize| s[f * T];
+        assert_eq!(
+            [at(0), at(1), at(2), at(3), at(4), at(5), at(6)],
+            [80, 40, 0, 40, 80, 0, 0]
+        );
+    }
+
+    fn lake() -> (Sound, Sound, Sounds) {
+        let see = Sound::Music(Music::Wolfgangsee);
+        let unter = Sound::Music(Music::Unterwasser);
+        (
+            see,
+            unter,
+            bank(&[(see, vec![400; T]), (unter, vec![-60; T])]),
+        )
+    }
+
+    #[test]
+    fn hold_and_duck_act_on_the_twin_under_water() {
+        let (_, _, b) = lake();
+        let tl = [
+            (0, Cue::Song(Music::Wolfgangsee)),
+            (1, Cue::Underwater(true)),
+            (2, Cue::Duck(true)),
+            (3, Cue::HoldSong(true)),
+            (4, Cue::HoldSong(false)),
+            (5, Cue::Duck(false)),
+            (6, Cue::Underwater(false)),
+        ];
+        let s = mix(&b, &tl, 7).render.pcm.samples;
+        let at = |f: usize| s[f * T];
+        assert_eq!(
+            [at(0), at(1), at(2), at(3), at(4), at(5), at(6)],
+            [400, -60, -30, 0, -30, -60, 400]
+        );
+    }
+
+    #[test]
+    fn a_song_cue_under_water_starts_above_water() {
+        let (see, unter, b) = lake();
+        let tl = [
+            (0, Cue::Song(Music::Wolfgangsee)),
+            (1, Cue::Underwater(true)),
+            (2, Cue::Song(Music::Wolfgangsee)),
+        ];
+        let m = mix(&b, &tl, 3);
+        let s = &m.render.pcm.samples;
+        assert_eq!((s[T], s[2 * T], s[3 * T]), (-60, 400, 400));
+        let heard: Vec<(Sound, usize, usize)> = m
+            .spans
+            .iter()
+            .map(|sp| (sp.sound, sp.start, sp.end))
+            .collect();
+        assert_eq!(heard, [(see, 0, T), (unter, T, 2 * T), (see, 2 * T, 4 * T)]);
     }
 }

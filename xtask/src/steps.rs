@@ -166,7 +166,7 @@ fn audio_goldens(root: &Path) -> Step {
     )
 }
 
-/// L6b: the offline mix of every replay with a cue-log golden stays under
+/// L6c: the offline mix of every replay with a cue-log golden stays under
 /// the −1 dBFS ceiling without clamping (`xtask/src/replay_audio.rs`, E60).
 fn audio_mix(root: &Path) -> Step {
     let started = Instant::now();
