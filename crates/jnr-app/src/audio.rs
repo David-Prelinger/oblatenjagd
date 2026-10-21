@@ -1091,7 +1091,7 @@ mod tests {
         let mut game = replay
             .new_game(&crate::options::embedded_levels(), &tuning)
             .unwrap();
-        let mut d = Director::new(jnr_assets::jingle_frames().clone());
+        let mut d = Director::new(jnr_assets::jingle_frames());
         let mut out = vec![d.begin(&game)];
         for input in replay.frames() {
             game.step(input);

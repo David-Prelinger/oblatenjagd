@@ -10,8 +10,11 @@
 # Expected cue log: the song stays held after the resume until the bells
 # are over (hold-song off at 14781 + 67 = 14848), as without a pause.
 # The replay itself passes; accept its cue golden only after the fix.
-# Fixed (E63, D-124): `14848 hold-song off` (the pause's 201 frames
-# don't count).
+# Fixed (E63, D-124, review round 2): a held jingle runs on at volume 0
+# in the app and the mix (D-114), so the bells ended silently during the
+# pause; the hold is no longer checked while paused and ends on the resume
+# frame: `14781 hold-song off` with the resume. No bells ring over the
+# piece, and no silent wait follows the resume.
 level  = salzburg
 seed   = 1
 source = handwritten

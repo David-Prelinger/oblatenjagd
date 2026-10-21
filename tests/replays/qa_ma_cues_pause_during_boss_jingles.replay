@@ -14,9 +14,12 @@
 # Expected cue log: scheduled songs wait for the pause (start 36 / 150
 # play frames after their jingle, i.e. after the resume). The replay
 # passes; accept its cue golden only after the fix.
-# Fixed (E63, D-124): the director's deadlines count play frames: `1322
-# song boss` (38 rendered frames after the chord, 23 of them after the
-# resume); the café piece would wait likewise (the Stollen comes first).
+# Fixed (E63, D-124, review round 2): the chord runs on at volume 0
+# during the pause (D-114) and ends silently (1123); the boss loop is not
+# started while paused but on the resume frame, from bar 1: `1299 song
+# boss`. After the Tusch (ends 2708 while paused) the 1 s silence is owed
+# in play frames: the café piece would start at 2814 + 60 = 2874, but the
+# Stollen comes first (`2841 jingle fanfare_finale`).
 level  = cafe_zauner
 seed   = 1
 source = handwritten

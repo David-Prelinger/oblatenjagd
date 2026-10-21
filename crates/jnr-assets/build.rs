@@ -9,7 +9,8 @@
 //!
 //! - `audio.rs`: `AUDIO_SOURCES`, every `audio/` sound source as
 //!   `(path, include_str!(…))` (E58b), after `jnr_audio::bank::Bank::load`
-//!   accepted them (parse, ids, music lint errors)
+//!   accepted them (parse, ids, music lint errors), and `JINGLE_FRAMES`,
+//!   every jingle's rendered length (E63: the cue director's timing)
 //!
 //! Any lint error or syntax error fails the build with `file:line:col`.
 
@@ -126,9 +127,9 @@ fn audio_sources(root: &Path) -> String {
         .zip(&texts)
         .map(|((n, _), t)| (n.as_str(), t.as_str()))
         .collect();
-    let errors = match jnr_audio::bank::Bank::load(&refs) {
-        Ok(_) => misplaced,
-        Err(e) => misplaced.into_iter().chain(e).collect(),
+    let (bank, errors) = match jnr_audio::bank::Bank::load(&refs) {
+        Ok(b) => (Some(b), misplaced),
+        Err(e) => (None, misplaced.into_iter().chain(e).collect()),
     };
     if !errors.is_empty() {
         eprintln!("jnr-assets: the audio sources have errors:");
@@ -149,6 +150,24 @@ fn audio_sources(root: &Path) -> String {
             "    ({name:?}, include_str!({:?})),\n",
             abs.display().to_string()
         ));
+    }
+    code.push_str("];\n");
+    // The jingles' rendered lengths, for the cue director (E63): rendered
+    // here once, so the game never renders a jingle just to time it.
+    let lengths = bank
+        .expect("loaded without errors")
+        .jingle_frames()
+        .unwrap_or_else(|e| {
+            eprintln!("jnr-assets: rendering a jingle failed: {e}");
+            process::exit(1);
+        });
+    code.push_str(
+        "/// Every jingle music cue's rendered length in game frames (rounded\n\
+         /// up), as `(id, frames)`: `Bank::jingle_frames` at build time.\n\
+         pub static JINGLE_FRAMES: &[(&str, u32)] = &[\n",
+    );
+    for (m, f) in &lengths.frames {
+        code.push_str(&format!("    ({:?}, {f}),\n", m.id()));
     }
     code.push_str("];\n");
     code

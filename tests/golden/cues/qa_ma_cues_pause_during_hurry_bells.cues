@@ -9,7 +9,7 @@
  14580 sfx pause I9
  14580 hold-jingle on
  14781 sfx pause I9 -2
+ 14781 hold-song off
  14781 hold-jingle off
  14781 duck on
  14797 duck off
- 14848 hold-song off

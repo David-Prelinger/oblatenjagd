@@ -45,11 +45,11 @@
   1100 hold-jingle on
   1100 duck off
   1299 sfx pause I9 -2
+  1299 song boss
   1299 hold-song off
   1299 hold-jingle off
   1299 duck on
   1315 duck off
-  1322 song boss
   1393 sfx jump P4
   1420 sfx boss_breathe W7
   1420 duck on

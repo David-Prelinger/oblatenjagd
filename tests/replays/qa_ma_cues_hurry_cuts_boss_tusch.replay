@@ -13,7 +13,9 @@
 # only after the fix.
 # Fixed (E63, D-124): the bells wait for the Tusch's rendered end
 # (`8656 jingle hurry`, no hold: DONE counts as the fight until the café
-# piece resumes at 8716).
+# piece resumes); the café piece waits for the bells too (game-designer
+# review: its cup clinks fell on a bell strike): `8752 song cafe_zauner`
+# = max(Tusch end + 60, bells' end 8656 + 96).
 level  = cafe_zauner
 seed   = 1
 source = handwritten

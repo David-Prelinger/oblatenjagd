@@ -786,9 +786,10 @@ pub struct Director {
     /// The frame that jingle ends on (its start plus [`JingleFrames::of`]).
     jingle_until: Option<u32>,
     paused: bool,
-    /// The frame the pause began on. The frame deadlines below (and
-    /// `jingle_until`) count play frames: on resume they move by the
-    /// pause's length, and they are not checked while paused (E63).
+    /// The frame the pause began on. The frame deadlines below are not
+    /// checked while paused; a held jingle runs on silently, so they don't
+    /// move, except a scheduled song's silent wait after its jingle
+    /// ([`Director::resume`], E63).
     paused_at: Option<u32>,
     /// The ZEIT-60 bells hold the song until this frame.
     hurry_until: Option<u32>,
@@ -1182,11 +1183,16 @@ impl Director {
 
     /// The ZEIT-60 church bells; outside the boss fight they hold the
     /// stage piece while they ring.
+    /// A song scheduled to start while they ring (the café piece after the
+    /// Tusch) waits until they are over (E63, game-designer review: its cup
+    /// clinks would land on a bell strike).
     fn bells(&mut self, now: u32, boss: Option<u8>, out: &mut Vec<Cue>) {
         self.jingle(out, Music::Hurry);
+        let end = now.saturating_add(self.lengths.of(Music::Hurry));
         if !boss_fighting(boss, self.scheduled.is_some()) {
-            self.hurry_until = Some(now.saturating_add(self.lengths.of(Music::Hurry)));
+            self.hurry_until = Some(end);
         }
+        self.scheduled = self.scheduled.map(|(at, m)| (at.max(end), m));
     }
 
     /// True while a boss jingle the bells wait for plays.
@@ -1194,14 +1200,22 @@ impl Director {
         self.jingle.is_some_and(bells_wait_for) && self.jingle_until.is_some_and(|t| now < t)
     }
 
-    /// Leaving the pause on frame `now`: the frame deadlines move by the
-    /// pause's length (the held jingle resumes in place too).
+    /// Leaving the pause on frame `now`. A held jingle keeps running at
+    /// volume 0 (D-114), so the deadlines tied to its sound (its end, the
+    /// bells' hold, a song due when it ends) don't move: one that passed
+    /// during the pause fires now. Only the silence a scheduled song waits
+    /// after the jingle (the Tusch's 1 s) counts play frames: the part of it
+    /// not yet over when the pause began is still owed after the resume.
     fn resume(&mut self, now: u32) {
         self.paused = false;
-        let d = self.paused_at.take().map_or(0, |p| now.saturating_sub(p));
-        self.hurry_until = self.hurry_until.map(|t| t.saturating_add(d));
-        self.jingle_until = self.jingle_until.map(|t| t.saturating_add(d));
-        self.scheduled = self.scheduled.map(|(t, m)| (t.saturating_add(d), m));
+        let Some(p) = self.paused_at.take() else {
+            return;
+        };
+        let end = self.jingle_until.unwrap_or(0);
+        self.scheduled = self.scheduled.map(|(at, m)| {
+            let gap_left = at.saturating_sub(end.max(p));
+            (at.max(now.saturating_add(gap_left)), m)
+        });
     }
 
     fn cut(&mut self, out: &mut Vec<Cue>, cut: Cut) {
