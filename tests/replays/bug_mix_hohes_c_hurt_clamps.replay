@@ -1,0 +1,91 @@
+# QA MA (audio mix, audio-design §3 master ceiling -1 dBFS, no clamped
+# sample): Zuckerschock Resi jumps into Operettensänger #2's high C
+# column (hohes_c W6, -8 dBFS, RMS -10.7) and is hurt (hurt P8, -6 dBFS,
+# RMS -7.9) over the st_wolfgang piece: the sum clamps. --audio: peak
+# 0.00 dBFS, 12 clamped samples, 1073 samples (24 ms) above -1 dBFS at
+# 76.07..76.35 s (frames 4564..4580), sounds hohes_c + hurt + st_wolfgang.
+# Inputs: qa_m4_singer_column_hit_big to 4620 (Hurt at 4564).
+# Expected: --audio passes (no clamp, no sample above -1 dBFS); the cue-log
+# golden puts it in the verify step audio-mix, which fails until fixed.
+level  = st_wolfgang
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Hurt power=normal
+---
+R 150
+RJ 20
+R 62
+- 26
+J 12
+RJ 10
+- 152
+R 30
+RJ 10
+R 60
+- 40
+R 22
+RJ 16
+R 30
+RJ 8
+R 16
+RJ 8
+R 21
+RJ 8
+R 95
+- 570
+R 225
+RJ 10
+R 70
+- 180
+R 200
+RJ 18
+R 6
+- 345
+R 265
+RJ 12
+R 20
+- 40
+R 16
+- 20
+J 14
+- 230
+R 40
+RJ 12
+R 10
+- 20
+RJ 16
+R 6
+- 30
+RJ 12
+R 8
+- 30
+R 30
+- 255
+R 6
+- 30
+R 40
+- 52
+J 12
+- 60
+R 30
+RJ 14
+R 40
+- 20
+RJ 16
+R 16
+RJ 8
+R 16
+RJ 8
+R 16
+RJ 8
+R 6
+- 68
+RJ 16
+R 40
+- 15
+R 330
+- 150
+R 14
+RJ 30
+R 10
+- 43

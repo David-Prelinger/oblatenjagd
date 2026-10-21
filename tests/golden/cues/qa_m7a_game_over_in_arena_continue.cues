@@ -1,0 +1,104 @@
+# cue log of tests/replays/qa_m7a_game_over_in_arena_continue.replay (cargo xtask cues)
+     0 song title
+    11 stop-song
+    11 sfx ui_start I6
+   161 song cafe_zauner
+   332 sfx jump P4
+   452 sfx jump P4
+   478 sfx oblate I3
+   484 sfx oblate I3
+   488 sfx jump P4
+   495 sfx oblate I3
+   516 sfx jump P4
+   555 sfx jump P4
+   589 sfx jump P4
+   636 sfx jump P4
+   660 sfx oblate I3
+   665 sfx oblate I3
+   672 sfx jump P4
+   709 sfx roof_bounce W5
+   740 sfx oblate I3
+   741 sfx jump P4
+   759 sfx oblate I3
+   762 sfx oblate I3
+   764 sfx jump P4
+   811 sfx stomp W5
+   830 sfx stomp W5
+   858 sfx jump P4
+   889 sfx jump P4
+   911 sfx oblate I3
+   920 sfx jump P4
+   922 sfx oblate I3
+   964 sfx oblate I3
+   976 sfx oblate I3
+  1075 sfx jump P4
+  1117 sfx oblate I3
+  1162 sfx oblate I3
+  1174 sfx oblate I3
+  1195 sfx oblate I3
+  1201 sfx jump P4
+  1206 sfx oblate I3
+  1227 sfx oblate I3
+  1245 sfx oblate I3
+  1284 sfx oblate I3
+  1306 sfx oblate I3
+  1312 sfx jump P4
+  1316 sfx oblate I3
+  1338 sfx oblate I3
+  1355 sfx oblate I3
+  1395 sfx oblate I3
+  1416 sfx oblate I3
+  1422 sfx jump P4
+  1427 sfx oblate I3
+  1448 sfx oblate I3
+  1469 sfx oblate I3
+  1506 sfx oblate I3
+  1773 sfx checkpoint I7
+  1773 duck on
+  1800 duck off
+  1809 sfx jump P4
+  1850 sfx jump P4
+  1972 stop-song
+  1972 jingle boss_intro
+  2062 jingle boss_surprise
+  2062 sfx boss_telegraph W7
+  2062 duck on
+  2098 song boss
+  2102 stop-sfx boss_telegraph
+  2102 duck off
+  2128 cut-sfx all
+  2128 stop-song
+  2128 jingle death
+  2338 song cafe_zauner
+  2620 sfx jump P4
+  2661 sfx jump P4
+  2783 stop-song
+  2783 jingle boss_intro
+  2873 jingle boss_surprise
+  2873 sfx boss_telegraph W7
+  2873 duck on
+  2909 song boss
+  2913 stop-sfx boss_telegraph
+  2913 duck off
+  2942 cut-sfx all
+  2942 stop-song
+  2942 jingle death
+  3152 song cafe_zauner
+  3325 sfx jump P4
+  3366 sfx jump P4
+  3488 stop-song
+  3488 jingle boss_intro
+  3578 jingle boss_surprise
+  3578 sfx boss_telegraph W7
+  3578 duck on
+  3614 song boss
+  3618 stop-sfx boss_telegraph
+  3618 duck off
+  3647 cut-sfx all
+  3647 stop-song
+  3647 jingle death
+  3707 cut-sfx all
+  3707 jingle game_over
+  3986 stop-jingle
+  3986 sfx ui_start I6
+  4136 song cafe_zauner

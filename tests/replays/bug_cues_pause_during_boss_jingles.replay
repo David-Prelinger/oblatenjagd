@@ -1,0 +1,197 @@
+# QA MA (audio, audio-design §4 boss cues + Pause): pauses during the
+# boss cues. cafe_zauner_tour (title flow, the Normal boss win) with two
+# pauses inserted, each 200 frames (START, 198 idle, START):
+# 1) at 1100, 15 frames into boss_surprise (1085). The boss loop is
+#    scheduled 36 frames after the chord on the game-frame clock, so
+#    `song boss` starts at 1121 while paused (silent under the hold); on
+#    resume (1299) the chord's last 21 frames ring over a boss loop that is
+#    already 178 frames (~3 s) in instead of starting on its bar 1.
+# 2) at 2615, 2 frames into the Tusch (boss_defeat at 2613). The café
+#    piece is scheduled 150 frames later (Tusch + 1 s silence) and starts
+#    at 2763 while paused; on resume (2814) the Tusch's last 88 frames play
+#    over cafe_zauner, which is 51 frames in: no 1 s of silence, the Tusch
+#    and the café piece at once.
+# Expected cue log: scheduled songs wait for the pause (start 36 / 150
+# play frames after their jingle, i.e. after the resume). The replay
+# passes; accept its cue golden only after the fix.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 boss_hits=3 complete frames=2841..2841
+---
+- 20
+S 1
+- 150
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 15
+S 1
+- 198
+S 1
+- 93
+LBJ 12
+LB 2
+- 4
+RB 16
+- 180
+LBJ 12
+LB 2
+RB 4
+LB 8
+RBJ 36
+RB 21
+L 4
+LB 8
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 2
+RB 3
+LB 22
+RBJ 12
+RB 2
+RBJ 36
+RB 8
+R 3
+RB 8
+LB 8
+LBJ 21
+LB 17
+RBJ 25
+RB 13
+LB 14
+RB 4
+- 288
+LBJ 12
+LB 10
+RBJ 21
+S 1
+- 198
+S 1
+RBJ 15
+RB 12
+- 59

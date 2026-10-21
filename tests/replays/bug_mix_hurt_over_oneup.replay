@@ -1,0 +1,43 @@
+# QA MA (audio mix, audio-design §3 master ceiling -1 dBFS): the 1-up
+# Juchizer (oneup, I9, -6 dBFS, 30 870 samples) still rings when a hurt
+# (P8, -6 dBFS, RMS -7.9: a near-full-scale square) starts on the P voice.
+# Two "loud" SFX on different voices sum past the ceiling: peak -0.09 dBFS,
+# 320 samples over -1 dBFS at 16.78 s (frames 1007..1016), sounds
+# hurt + oneup (no music on 00_items). Inputs: items_checkpoint_death to 1060.
+# Expected: `cargo xtask replay bug_mix_hurt_over_oneup --audio` passes
+# (no sample above -1 dBFS). Its cue-log golden puts it in the verify
+# step `audio-mix`, which fails until the mix has headroom (a master
+# limiter / soft clip as audio-design §3 asks, or lower SFX levels).
+level  = items
+seed   = 1
+source = handwritten
+expect = deaths=0 event=ExtraLife event=Hurt
+---
+R 28
+- 30
+J 10
+- 50
+R 30
+- 40
+J 10
+- 280
+L 14
+- 30
+J 10
+- 20
+R 60
+RJ 30
+R 111
+- 30
+J 10
+- 20
+J 10
+- 20
+J 10
+- 20
+R 16
+- 30
+J 10
+- 30
+RB 60
+R 41

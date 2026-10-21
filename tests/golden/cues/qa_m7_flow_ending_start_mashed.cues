@@ -1,0 +1,177 @@
+# cue log of tests/replays/qa_m7_flow_ending_start_mashed.replay (cargo xtask cues)
+     0 song title
+    11 stop-song
+    11 sfx ui_start I6
+   161 song cafe_zauner
+   332 sfx jump P4
+   452 sfx jump P4
+   478 sfx oblate I3
+   484 sfx oblate I3
+   488 sfx jump P4
+   495 sfx oblate I3
+   516 sfx jump P4
+   555 sfx jump P4
+   589 sfx jump P4
+   636 sfx jump P4
+   660 sfx oblate I3
+   665 sfx oblate I3
+   672 sfx jump P4
+   709 sfx roof_bounce W5
+   740 sfx oblate I3
+   741 sfx jump P4
+   759 sfx oblate I3
+   762 sfx oblate I3
+   764 sfx jump P4
+   811 sfx stomp W5
+   830 sfx stomp W5
+   858 sfx jump P4
+   889 sfx jump P4
+   911 sfx oblate I3
+   920 sfx jump P4
+   922 sfx oblate I3
+   964 sfx oblate I3
+   976 sfx oblate I3
+  1075 sfx jump P4
+  1117 sfx oblate I3
+  1162 sfx oblate I3
+  1174 sfx oblate I3
+  1195 sfx oblate I3
+  1201 sfx jump P4
+  1206 sfx oblate I3
+  1227 sfx oblate I3
+  1245 sfx oblate I3
+  1284 sfx oblate I3
+  1306 sfx oblate I3
+  1312 sfx jump P4
+  1316 sfx oblate I3
+  1338 sfx oblate I3
+  1355 sfx oblate I3
+  1395 sfx oblate I3
+  1416 sfx oblate I3
+  1422 sfx jump P4
+  1427 sfx oblate I3
+  1448 sfx oblate I3
+  1469 sfx oblate I3
+  1506 sfx oblate I3
+  1773 sfx checkpoint I7
+  1773 duck on
+  1800 duck off
+  1809 sfx jump P4
+  1850 sfx jump P4
+  1972 stop-song
+  1972 jingle boss_intro
+  2062 jingle boss_surprise
+  2062 sfx boss_telegraph W7
+  2062 duck on
+  2085 sfx jump P4
+  2098 song boss
+  2102 stop-sfx boss_telegraph
+  2102 duck off
+  2197 sfx boss_breathe W7
+  2197 duck on
+  2232 sfx boss_hit W8
+  2260 sfx jump P4
+  2262 duck off
+  2292 sfx boss_telegraph W7
+  2292 duck on
+  2328 stop-sfx boss_telegraph
+  2328 duck off
+  2417 sfx boss_breathe W7
+  2417 duck on
+  2453 duck off
+  2477 sfx bills_hang W6
+  2612 sfx boss_telegraph W7
+  2612 duck on
+  2648 stop-sfx boss_telegraph
+  2648 duck off
+  2737 sfx boss_breathe W7
+  2737 duck on
+  2766 sfx boss_hit W8
+  2794 sfx jump P4
+  2796 duck off
+  2826 sfx boss_telegraph W7
+  2826 duck on
+  2858 stop-sfx boss_telegraph
+  2858 duck off
+  2932 sfx boss_breathe W7
+  2932 duck on
+  2968 duck off
+  2980 sfx bills_hang W6
+  3115 sfx boss_telegraph W7
+  3115 duck on
+  3147 stop-sfx boss_telegraph
+  3147 duck off
+  3221 sfx boss_breathe W7
+  3221 duck on
+  3244 stop-song
+  3244 jingle boss_defeat
+  3257 duck off
+  3272 sfx jump P4
+  3394 song cafe_zauner
+  3567 sfx jump P4
+  3604 stop-song
+  3604 cut-sfx P W A
+  3604 jingle fanfare_finale
+  3697 sfx tally_tick I2
+  3700 sfx tally_tick I2
+  3703 sfx tally_tick I2
+  3706 sfx tally_tick I2
+  3709 sfx tally_tick I2
+  3712 sfx tally_tick I2
+  3715 sfx tally_tick I2
+  3718 sfx tally_tick I2
+  3721 sfx tally_tick I2
+  3724 sfx tally_tick I2
+  3727 sfx tally_tick I2
+  3730 sfx tally_tick I2
+  3733 sfx tally_tick I2
+  3736 sfx tally_tick I2
+  3739 sfx tally_tick I2
+  3742 sfx tally_tick I2
+  3745 sfx tally_tick I2
+  3748 sfx tally_tick I2
+  3751 sfx tally_tick I2
+  3754 sfx tally_tick I2
+  3757 sfx tally_tick I2
+  3760 sfx tally_tick I2
+  3763 sfx tally_tick I2
+  3766 sfx tally_tick I2
+  3769 sfx tally_tick I2
+  3772 sfx tally_tick I2
+  3775 sfx tally_tick I2
+  3778 sfx tally_tick I2
+  3781 sfx tally_tick I2
+  3784 sfx tally_tick I2
+  3787 sfx tally_tick I2
+  3790 sfx tally_tick I2
+  3793 sfx tally_tick I2
+  3796 sfx tally_tick I2
+  3799 sfx tally_tick I2
+  3802 sfx tally_tick I2
+  3805 sfx tally_tick I2
+  3808 sfx tally_tick I2
+  3811 sfx tally_tick I2
+  3814 sfx tally_tick I2
+  3817 sfx tally_tick I2
+  3820 sfx tally_tick I2
+  3823 sfx tally_tick I2
+  3826 sfx tally_tick I2
+  3829 sfx tally_tick I2
+  3832 sfx tally_tick I2
+  3835 sfx tally_tick I2
+  3837 sfx tally_end I6
+  4017 jingle ending_map
+  4047 stop-jingle
+  4047 song kaffeehaus
+  4047 sfx ui_start I6
+  4077 sfx ui_start I6
+  4097 sfx kassa_zeile I4
+  4117 sfx kassa_zeile I4
+  4137 song credits
+  4137 sfx ui_start I6
+  4317 stop-song
+  4317 jingle ende
+  4317 sfx ui_start I6
+  4377 stop-jingle
+  4377 song title
+  4377 sfx ui_start I6

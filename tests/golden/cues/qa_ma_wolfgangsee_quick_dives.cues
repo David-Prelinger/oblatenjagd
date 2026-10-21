@@ -1,0 +1,23 @@
+# cue log of tests/replays/qa_ma_wolfgangsee_quick_dives.replay (cargo xtask cues)
+     0 song wolfgangsee
+    54 sfx oblate I3
+   106 sfx jump P4
+   139 sfx oblate I3
+   145 sfx oblate I3
+   166 sfx jump P4
+   181 sfx oblate I3
+   248 sfx jump P4
+   299 sfx jump P4
+   350 sfx jump P4
+   401 sfx jump P4
+   452 sfx jump P4
+   503 sfx jump P4
+   571 sfx oblate I3
+   577 underwater on
+   604 sfx stroke P2
+   611 sfx stroke P2
+   618 sfx stroke P2
+   625 sfx stroke P2
+   632 sfx stroke P2
+   639 sfx jump P4
+   650 underwater off

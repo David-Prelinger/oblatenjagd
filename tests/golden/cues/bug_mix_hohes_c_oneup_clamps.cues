@@ -1,0 +1,114 @@
+# cue log of tests/replays/bug_mix_hohes_c_oneup_clamps.replay (cargo xtask cues)
+     0 song bad_ischl
+   155 sfx oblate I3
+   165 sfx oblate I3
+   176 sfx oblate I3
+   187 sfx oblate I3
+   197 sfx oblate I3
+   227 sfx jump P4
+   234 sfx bump W4
+   350 sfx zucker P8
+   350 duck on
+   380 duck off
+   421 sfx jump P4 -5
+   428 sfx oblate I3
+   454 sfx oblate I3
+   466 sfx jump P4 -5
+   501 sfx jump P4 -5
+   531 sfx stomp W5
+   645 sfx jump P4 -5
+   723 sfx jump P4 -5
+   763 sfx jump P4 -5
+   823 sfx jump P4 -5
+   847 sfx oblate I3
+   848 sfx oblate I3
+  1111 sfx jump P4 -5
+  1111 sfx oblate I3
+  1195 sfx jump P4 -5
+  1200 sfx oblate I3
+  1206 sfx oblate I3
+  1207 sfx oblate I3
+  1243 sfx stomp W5
+  1261 sfx oblate I3
+  1271 sfx oblate I3
+  1275 sfx jump P4 -5
+  1282 sfx oblate I3
+  1302 sfx oblate I3
+  1303 sfx jump P4 -5
+  1357 sfx oblate I3
+  1359 sfx jump P4 -5
+  1407 sfx stomp W5
+  1455 sfx jump P4 -5
+  1473 sfx oblate I3
+  1481 sfx oblate I3
+  1706 sfx oblate I3
+  1707 sfx jump P4 -5
+  1759 sfx oblate I3
+  1760 sfx oblate I3
+  1771 sfx jump P4 -5
+  1813 sfx oblate I3
+  1824 sfx oblate I3
+  1856 sfx oblate I3
+  1867 sfx oblate I3
+  1877 sfx oblate I3
+  1888 sfx oblate I3
+  2055 sfx jump P4 -5
+  2056 sfx oblate I3
+  2061 sfx oblate I3
+  2069 sfx oblate I3
+  2091 sfx jump P4 -5
+  2128 sfx jump P4 -5
+  2175 sfx jump P4 -5
+  2219 sfx jump P4 -5
+  2292 sfx jump P4 -5
+  2304 sfx oblate I3
+  2315 sfx oblate I3
+  2329 sfx oblate I3
+  2336 sfx oblate I3
+  2347 sfx jump P4 -5
+  2407 sfx checkpoint I7
+  2407 duck on
+  2434 duck off
+  2503 sfx jump P4 -5
+  2507 sfx brick W6
+  2518 sfx jump P4 -5
+  2523 sfx bump W4
+  2535 sfx jump P4 -5
+  2539 sfx brick W6
+  2581 sfx oblate I3
+  2592 sfx oblate I3
+  2602 sfx oblate I3
+  2613 sfx oblate I3
+  2624 sfx oblate I3
+  2663 sfx jump P4 -5
+  2695 sfx jump P4 -5
+  2871 sfx jump P4 -5
+  2890 sfx oblate I3
+  2901 sfx oblate I3
+  2912 sfx oblate I3
+  2919 sfx stomp W5
+  2922 sfx oblate I3
+  2963 sfx jump P4 -5
+  3011 sfx jump P4 -5
+  3060 sfx oblate I3
+  3071 sfx oblate I3
+  3082 sfx oblate I3
+  3092 sfx oblate I3
+  3095 sfx jump P4 -5
+  3124 sfx oblate I3
+  3204 sfx hohes_c W6
+  3238 sfx oblate I3
+  3255 sfx jump P4 -5
+  3303 sfx jump P4 -5
+  3335 sfx jump P4 -5
+  3335 sfx oblate I3
+  3384 sfx hohes_c W6
+  3390 sfx jump P4 -5
+  3438 sfx oblate I3
+  3474 sfx jump P4 -5
+  3474 sfx bump W4
+  3500 sfx hohes_c W6
+  3564 sfx hohes_c W6
+  3579 sfx oneup I9
+  3579 duck on
+  3621 duck off
