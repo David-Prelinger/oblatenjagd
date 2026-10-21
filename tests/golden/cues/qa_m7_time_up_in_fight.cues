@@ -1,0 +1,322 @@
+# cue log of tests/replays/qa_m7_time_up_in_fight.replay (cargo xtask cues)
+     0 song cafe_zauner
+    89 sfx jump P4
+   131 sfx roof_bounce W5
+   143 sfx oblate I3
+   150 sfx oblate I3
+   156 sfx oblate I3
+   184 sfx jump P4
+   226 sfx roof_bounce W5
+   246 sfx oblate I3
+   252 sfx oblate I3
+   259 sfx oblate I3
+   291 sfx jump P4
+   354 sfx stomp W5
+   391 sfx jump P4
+   438 sfx oblate I3
+   444 sfx oblate I3
+   466 sfx stomp W5
+   484 sfx oblate I3
+   489 sfx oblate I3
+   504 sfx stomp W5
+   524 sfx stomp W5
+   542 sfx oblate I3
+   565 sfx stomp W5
+   581 sfx oblate I3
+   605 sfx stomp W5
+   625 sfx stomp W5
+   755 sfx checkpoint I7
+   755 duck on
+   782 duck off
+   791 sfx jump P4
+   832 sfx jump P4
+   954 stop-song
+   954 jingle boss_intro
+  1044 jingle boss_surprise
+  1044 sfx boss_telegraph W7
+  1044 duck on
+  1067 sfx jump P4
+  1080 song boss
+  1084 stop-sfx boss_telegraph
+  1084 duck off
+  1179 sfx boss_breathe W7
+  1179 duck on
+  1214 sfx boss_hit W8
+  1242 sfx jump P4
+  1244 duck off
+  1274 sfx boss_telegraph W7
+  1274 duck on
+  1310 stop-sfx boss_telegraph
+  1310 duck off
+  1399 sfx boss_breathe W7
+  1399 duck on
+  1435 duck off
+  1459 sfx bills_hang W6
+  1594 sfx boss_telegraph W7
+  1594 duck on
+  1630 stop-sfx boss_telegraph
+  1630 duck off
+  1719 sfx boss_breathe W7
+  1719 duck on
+  1755 duck off
+  1779 sfx bills_hang W6
+  1914 sfx boss_telegraph W7
+  1914 duck on
+  1950 stop-sfx boss_telegraph
+  1950 duck off
+  2039 sfx boss_breathe W7
+  2039 duck on
+  2075 duck off
+  2099 sfx bills_hang W6
+  2234 sfx boss_telegraph W7
+  2234 duck on
+  2270 stop-sfx boss_telegraph
+  2270 duck off
+  2359 sfx boss_breathe W7
+  2359 duck on
+  2395 duck off
+  2419 sfx bills_hang W6
+  2554 sfx boss_telegraph W7
+  2554 duck on
+  2590 stop-sfx boss_telegraph
+  2590 duck off
+  2679 sfx boss_breathe W7
+  2679 duck on
+  2715 duck off
+  2739 sfx bills_hang W6
+  2874 sfx boss_telegraph W7
+  2874 duck on
+  2910 stop-sfx boss_telegraph
+  2910 duck off
+  2999 sfx boss_breathe W7
+  2999 duck on
+  3035 duck off
+  3059 sfx bills_hang W6
+  3194 sfx boss_telegraph W7
+  3194 duck on
+  3230 stop-sfx boss_telegraph
+  3230 duck off
+  3319 sfx boss_breathe W7
+  3319 duck on
+  3355 duck off
+  3379 sfx bills_hang W6
+  3514 sfx boss_telegraph W7
+  3514 duck on
+  3550 stop-sfx boss_telegraph
+  3550 duck off
+  3639 sfx boss_breathe W7
+  3639 duck on
+  3675 duck off
+  3699 sfx bills_hang W6
+  3834 sfx boss_telegraph W7
+  3834 duck on
+  3870 stop-sfx boss_telegraph
+  3870 duck off
+  3959 sfx boss_breathe W7
+  3959 duck on
+  3995 duck off
+  4019 sfx bills_hang W6
+  4154 sfx boss_telegraph W7
+  4154 duck on
+  4190 stop-sfx boss_telegraph
+  4190 duck off
+  4279 sfx boss_breathe W7
+  4279 duck on
+  4315 duck off
+  4339 sfx bills_hang W6
+  4474 sfx boss_telegraph W7
+  4474 duck on
+  4510 stop-sfx boss_telegraph
+  4510 duck off
+  4599 sfx boss_breathe W7
+  4599 duck on
+  4635 duck off
+  4659 sfx bills_hang W6
+  4794 sfx boss_telegraph W7
+  4794 duck on
+  4830 stop-sfx boss_telegraph
+  4830 duck off
+  4919 sfx boss_breathe W7
+  4919 duck on
+  4955 duck off
+  4979 sfx bills_hang W6
+  5114 sfx boss_telegraph W7
+  5114 duck on
+  5150 stop-sfx boss_telegraph
+  5150 duck off
+  5239 sfx boss_breathe W7
+  5239 duck on
+  5275 duck off
+  5299 sfx bills_hang W6
+  5434 sfx boss_telegraph W7
+  5434 duck on
+  5470 stop-sfx boss_telegraph
+  5470 duck off
+  5559 sfx boss_breathe W7
+  5559 duck on
+  5595 duck off
+  5619 sfx bills_hang W6
+  5754 sfx boss_telegraph W7
+  5754 duck on
+  5790 stop-sfx boss_telegraph
+  5790 duck off
+  5879 sfx boss_breathe W7
+  5879 duck on
+  5915 duck off
+  5939 sfx bills_hang W6
+  6074 sfx boss_telegraph W7
+  6074 duck on
+  6110 stop-sfx boss_telegraph
+  6110 duck off
+  6199 sfx boss_breathe W7
+  6199 duck on
+  6235 duck off
+  6259 sfx bills_hang W6
+  6394 sfx boss_telegraph W7
+  6394 duck on
+  6430 stop-sfx boss_telegraph
+  6430 duck off
+  6519 sfx boss_breathe W7
+  6519 duck on
+  6555 duck off
+  6579 sfx bills_hang W6
+  6714 sfx boss_telegraph W7
+  6714 duck on
+  6750 stop-sfx boss_telegraph
+  6750 duck off
+  6839 sfx boss_breathe W7
+  6839 duck on
+  6875 duck off
+  6899 sfx bills_hang W6
+  7034 sfx boss_telegraph W7
+  7034 duck on
+  7070 stop-sfx boss_telegraph
+  7070 duck off
+  7159 sfx boss_breathe W7
+  7159 duck on
+  7195 duck off
+  7219 sfx bills_hang W6
+  7354 sfx boss_telegraph W7
+  7354 duck on
+  7390 stop-sfx boss_telegraph
+  7390 duck off
+  7479 sfx boss_breathe W7
+  7479 duck on
+  7515 duck off
+  7539 sfx bills_hang W6
+  7674 sfx boss_telegraph W7
+  7674 duck on
+  7710 stop-sfx boss_telegraph
+  7710 duck off
+  7799 sfx boss_breathe W7
+  7799 duck on
+  7835 duck off
+  7859 sfx bills_hang W6
+  7994 sfx boss_telegraph W7
+  7994 duck on
+  8030 stop-sfx boss_telegraph
+  8030 duck off
+  8119 sfx boss_breathe W7
+  8119 duck on
+  8155 duck off
+  8179 sfx bills_hang W6
+  8314 sfx boss_telegraph W7
+  8314 duck on
+  8350 stop-sfx boss_telegraph
+  8350 duck off
+  8400 jingle hurry
+  8439 sfx boss_breathe W7
+  8439 duck on
+  8475 duck off
+  8499 sfx bills_hang W6
+  8634 sfx boss_telegraph W7
+  8634 duck on
+  8670 stop-sfx boss_telegraph
+  8670 duck off
+  8759 sfx boss_breathe W7
+  8759 duck on
+  8795 duck off
+  8819 sfx bills_hang W6
+  8954 sfx boss_telegraph W7
+  8954 duck on
+  8990 stop-sfx boss_telegraph
+  8990 duck off
+  9079 sfx boss_breathe W7
+  9079 duck on
+  9115 duck off
+  9139 sfx bills_hang W6
+  9274 sfx boss_telegraph W7
+  9274 duck on
+  9310 stop-sfx boss_telegraph
+  9310 duck off
+  9399 sfx boss_breathe W7
+  9399 duck on
+  9435 duck off
+  9459 sfx bills_hang W6
+  9594 sfx boss_telegraph W7
+  9594 duck on
+  9630 stop-sfx boss_telegraph
+  9630 duck off
+  9719 sfx boss_breathe W7
+  9719 duck on
+  9755 duck off
+  9779 sfx bills_hang W6
+  9914 sfx boss_telegraph W7
+  9914 duck on
+  9950 stop-sfx boss_telegraph
+  9950 duck off
+ 10039 sfx boss_breathe W7
+ 10039 duck on
+ 10075 duck off
+ 10099 sfx bills_hang W6
+ 10234 sfx boss_telegraph W7
+ 10234 duck on
+ 10270 stop-sfx boss_telegraph
+ 10270 duck off
+ 10359 sfx boss_breathe W7
+ 10359 duck on
+ 10395 duck off
+ 10419 sfx bills_hang W6
+ 10554 sfx boss_telegraph W7
+ 10554 duck on
+ 10590 stop-sfx boss_telegraph
+ 10590 duck off
+ 10679 sfx boss_breathe W7
+ 10679 duck on
+ 10715 duck off
+ 10739 sfx bills_hang W6
+ 10874 sfx boss_telegraph W7
+ 10874 duck on
+ 10910 stop-sfx boss_telegraph
+ 10910 duck off
+ 10999 sfx boss_breathe W7
+ 10999 duck on
+ 11035 duck off
+ 11059 sfx bills_hang W6
+ 11194 sfx boss_telegraph W7
+ 11194 duck on
+ 11230 stop-sfx boss_telegraph
+ 11230 duck off
+ 11319 sfx boss_breathe W7
+ 11319 duck on
+ 11355 duck off
+ 11379 sfx bills_hang W6
+ 11514 sfx boss_telegraph W7
+ 11514 duck on
+ 11550 stop-sfx boss_telegraph
+ 11550 duck off
+ 11639 sfx boss_breathe W7
+ 11639 duck on
+ 11675 duck off
+ 11699 sfx bills_hang W6
+ 11834 sfx boss_telegraph W7
+ 11834 duck on
+ 11870 stop-sfx boss_telegraph
+ 11870 duck off
+ 11959 sfx boss_breathe W7
+ 11959 duck on
+ 11995 duck off
+ 12000 cut-sfx all
+ 12000 stop-song
+ 12000 jingle death
+ 12060 song cafe_zauner

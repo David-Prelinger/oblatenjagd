@@ -631,3 +631,211 @@ Notes for E58 (embedding, cues):
   `render.pcm` is longer than its `length_frames` (the release).
 - A loop's PCM length is always a multiple of 4096 (tested per fixture song); keep a test
   that does this over `audio/music/` once songs exist.
+
+
+## As built (E58a)
+
+E58 was split: **E58a** (this part) is the core event, the cue director, cue logs and the
+level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio/` bank in
+`jnr-assets` and checks the cue ids and level `music` against the embedded files.
+
+- **`Event::Bounced`** (D-113) in `jnr-core`: pushed right after `Stomped` on a step whose
+  bounce came only from `Contact::Bounce` tops (no `Contact::Stomp`: no enemy, no Kurgast,
+  no boss hit). Output only; `Event::ALL` has 19 entries. Every replay, solver route and
+  golden stayed bit-identical (`verify`).
+- **Water line**: no core change. The app and the director read it through the existing
+  public API, `jnr_core::swim::swim_surface(game.player(), game.map(), &game.tuning().swim)`;
+  "under water" = that surface is `Some(s)` and the hitbox top `player.y > s` (equivalent to
+  swimming and not in the surface band, so floating counts as above water). Everything else
+  the director derives is public too (`Game::{mode, stage_clear, route_map, ending,
+  time_left, entities, camera, level, player, events, tuning}`, `Entity::{state, spawn}`).
+- **`jnr_audio::cues`** (pure, `jnr-audio` now depends on `jnr-core`):
+  - `Sfx` (25: exactly the must SFX of audio-design §6) with id, voice, priority and the
+    design's length in ms. Pitched variants are not ids: a cue carries a `Play { sfx,
+    semitones }`, and `cues::PITCHED` lists every variant the cues use (the jump a fourth
+    lower, −5, for Big and Hackl; the pause sound two semitones lower, −2, on leaving the
+    pause), which the app (E59/E58b) renders as extra WAVs at startup (quad-snd can't
+    re-pitch a sound); the stomp chain's steps (nice) would be more entries there.
+    `Music` (25: §5's overview table, songs and
+    jingles, with the jingles' design lengths); `Music::level_song` (the ids a level may
+    name) and `Music::underwater_twin` (`wolfgangsee` → `unterwasser`).
+  - `sfx_for(Event, Power) -> EventSound { Sfx, Music, Silent }`, an exhaustive `match`.
+  - `Voices`: the §6.1 rules. Per step: duplicates of an id count once; per voice the
+    highest priority request wins (first on a tie); it starts if the voice is free or plays
+    a sound of lower or equal priority (a retrigger restarts), else it is dropped. A voice
+    is busy for the sound's design length (E58b may swap in rendered lengths).
+  - `Director::begin(&Game)` once, then `Director::step(&Game, InputFrame)` after every
+    `Game::step`; both return `Vec<Cue>`. The input is only used to tell a START press
+    (`ui_start`) from a timed transition.
+- **Cues** (what E59 does with them): `Sfx(s)` stop what the app last started on
+  `s.sfx.voice()`, then play `s.sfx` at `s.semitones`; `StopSfx(id)` stop that id now
+  (used for `boss_telegraph` when the dash starts and `hohes_c` when the singer is defeated); `CutSfx(All | KeepItems)`; `Song(m)` stop the
+  song, start `m` looping from sample 0 at the current hold/duck volume and above water (for
+  `wolfgangsee` also start `unterwasser`, or the low-passed fallback, muted on the same
+  frame); `StopSong`; `Jingle(m)` stop the jingle, play `m` once; `StopJingle` (also
+  sent for a jingle that already ended: the design lengths are not the rendered ones, and
+  stopping an idle sound is harmless); `HoldSong(bool)` song volume 0 / back (the loop keeps
+  running: pause and the ZEIT-60 bells); `HoldJingle(bool)` the same for the playing jingle
+  (pause only: a jingle is held in place like the song, D-114, so the bells or `boss_intro`
+  survive a pause; the jingle keeps running silently, so its rest is heard only if it is
+  still running on resume); `Duck(bool)` music −6 dB (never while paused); `Underwater(bool)` swap the song and its twin's volumes. Mute
+  (M) stays app state and never reaches the director.
+- **Music rules as built**: Title → `title`; START on the title, „Weiter?", the map or the
+  ending → `ui_start`; StageIntro (not after a death) → stop song and jingle (silence);
+  Playing from anything but Paused → the level's piece from sample 0 (also every respawn and
+  the first frame of `start = playing` games; a level without `music` is silent); Paused →
+  cut all SFX, `pause`, `HoldSong(true)`, `HoldJingle(true)`; resume → `pause` at −2
+  semitones, both holds off; `Died` → cut all, stop song, `death`; `GameOver` → cut all,
+  `game_over`; a `Died` or `GameOver` step derives nothing else (no boss music, no bells,
+  and stopping the song clears a scheduled song and the bells' hold); `LevelComplete`
+  → stop song, cut P/W/A, `fanfare_clear` (or `fanfare_finale` when the clear starts in
+  `Serve`); tally ticks on every 3rd Tally frame while the bonus grows, `tally_end` on the
+  first Clear frame; the route map → `route_map` (once per visit); the ending: Map →
+  `ending_map` jingle, Scene → `kaffeehaus` (runs on through the Bill), Credits →
+  `credits`, Ende → `ende` jingle, then `title`; the bill's lines 1–3 → `kassa_zeile`,
+  line 4 (Trinkgeld) → `muenze`, at `ending.bill_line_frames` steps.
+- **ZEIT 60**: `hurry` jingle on the first Playing frame with `time_left` 60 after 61; outside
+  the boss fight it also holds the piece for the jingle's 96 frames. In the fight (the
+  Oberkellner neither `WAIT` nor `DONE`) the jingle plays over the boss music without a hold
+  (**deviation**: the design puts the bells on SFX voice I there; as a jingle they take no
+  SFX voice, which changes nothing audible but keeps one bell render; the game-designer's
+  OK is asked at the MA review).
+- **Stage songs have no intro bars**: D-114 songs loop from sample 0, so "the stage piece
+  from bar 1 (intro bars included)" (audio-design §4) becomes the loop from its start; the
+  design's intro bars are either part of the loop or dropped (E57's format has no `intro`),
+  and the stage intro screen stays silent as in §4.
+- **The map's START fires `ui_start`**: a START press that leaves the title, „Weiter?", the
+  route map (a skip in Arrive/Walk or the press in Wait) or an ending phase gives `ui_start`
+  (§6.3 lists the map skip too); Wait → StageIntro also stops `route_map` (golden
+  `flow_route_carry_over`).
+- **Boss**: `WAIT → INTRO` stop song, `boss_intro`; `INTRO → TELEGRAPH` `boss_surprise` and
+  `boss` from 36 frames later (the chord's 600 ms); every `TELEGRAPH` start
+  `boss_telegraph` (stopped when the `DASH` starts), `BREATHE` `boss_breathe`, `STUN`
+  `boss_hit` (replacing that step's `stomp`/`axe_hit`), `VOLLEY` `bills_hang`; `DONE` stop
+  song, `boss_defeat`, and the level's piece 150 frames later (the 1.5 s Tusch + 1 s of
+  silence; from sample 0, not from a loop point: D-114 songs have none). A death resets him
+  to `WAIT`, so the cues come again at the next lock.
+- **Operettensänger**: `hohes_c` on the first `SING` frame (on screen only), `StopSfx` when a
+  singer that was singing is defeated or gone.
+- **Under water**: only while the song has an underwater twin and in Playing; 20
+  consecutive frames below (above) the water line swap in (out); every `Song` resets it.
+- **Off-screen rule**: applied to the entity-derived SFX (boss, singer); event SFX are the
+  player's own.
+- **Cue logs**: `cargo xtask replay <file> --cue-log` prints `frame cue` lines (`frame` 0 =
+  `begin`); `cargo xtask cues [--accept <replay>|--all]` compares/writes
+  `tests/golden/cues/<replay>.cues` (verify step `cue-logs`, also an xtask unit test).
+  Goldens: `testbed_route`, `salzburg_tour`, `cafe_zauner_boss_win_normal`,
+  `wolfgangsee_gelse_dive`, `flow_game_over`, `qa_flow_pause_stops_timer`,
+  `qa_m7_time_up_in_fight`, `flow_m7_cafe_zauner_ending_skip`, `m4_enemies_axe_singer`,
+  `flow_route_carry_over`. `--accept` refuses a replay that fails its expectations. No reviewer gate (D-121): they are
+  text and their diffs read like the design's tables; a commit that changes one says why
+  (the game-designer reviews the Stage 1 tour and the boss win as part of MA's review task).
+- **Level music**: `music = "<id>"` in the 9 journey levels (the level ids are the §5 ids);
+  `levels lint` requires it in every journey level (`01_`…`99_`) and accepts only
+  `Music::level_song` ids. `music` is not hashed (the replays and the solver are unchanged).
+- **Nice-to-haves not done** (all derivable later from the same snapshot): `land`, `crawl`,
+  stomp chain pitch, `axe_pling`, `tray_ding`, `station_gong`, `boss_dash`, `bills_fall`,
+  `einatmen`, `applaus`, Ampel/Postbus/bus/Fiaker/Schwan/Regattaboot/Steinschlag/Schneekugel/
+  Offizier/Blasmusiker/E-Biker/Schafbergbahn/Dampfer/Mozartkugel-Verkäufer cues, `selfie`,
+  `sprout`, `ballast`, `liegestuhl`, `platsch`, `stempel`, `seite`, the ambience loops
+  (`gelse`, `summen`, `dampf`), the music layers, the hurry +12 % tempo, the boss tempo
+  steps, the map transposition and the climb layer; fades (cuts only, D-114).
+
+## As built (E58b)
+
+- **Embedding**: `jnr-assets/build.rs` collects `audio/**/*.{sfx,inst,song,quote}` (sorted; `README.md` and `targets.toml` are not sources), runs `jnr_audio::bank::Bank::load` and fails the build on any error with `file:line:col` (tried with a broken `.sfx`: `audio/sfx/zz_broken.sfx:5:1: error[schema]: unknown field `bogus`…`), then writes `AUDIO_SOURCES` (`include_str!` of each file). Music-lint **errors** (`lint_song`, with every instrument, song and quote as context) fail the build; warnings stay with `cargo xtask audio lint`. Duplicate ids within a kind are errors; a song and an `.sfx` jingle may not share an id.
+- **Runtime API** (`jnr_audio::bank`, re-exported through `jnr_assets::audio_bank()`): `Bank::startup_sfx() -> Vec<(Play, Pcm)>` (the 25 SFX plus `cues::PITCHED`, rendered with `bank::transpose`), `Bank::render_sfx(Play)`, `Bank::render_music(Music, Variant::{Normal, Hurry}) -> Result<Option<MusicRender>, String>` (`None`: not authored yet; a song goes through `render_in`, so `unterwasser` with `length_of = "wolfgangsee"` matches the stage piece; `Hurry` = `tempo_pct` 112 for loops), `Bank::has_music`. `jnr_audio::wav::write(&pcm)` gives the bytes for `load_sound_from_bytes`.
+- **Pending songs**: `jnr_audio::cues::PENDING_MUSIC` (all 25 music cues at E58b: no `.song` is merged yet). `jnr-assets` tests: every `Sfx` id is an embedded `.sfx` (and `audio/sfx` holds exactly those 25), every `Music` cue is embedded xor pending; `levels lint` accepts a level's `music` only if it is a `Music::level_song` id that is embedded or pending. S2 (or whoever merges a song) removes its entry; MA's acceptance needs the list empty.
+- **Cost** (release, aarch64, load average ~1–6): parsing the embedded bank 0.2 ms; the 27 startup SFX renders 1.5 ms (381 552 samples, 745 KB as i16; quad-snd keeps them as f32 stereo natively, ~3 MB); a 24 s 4-channel fixture loop (`placeholder_polka`, no game songs yet) 4.0 ms, its hurry render 2.8 ms. wasm was not measured here; E55 measured wasm at ~1.3× native for the synth, so expect ~2 ms for the SFX and ~5 ms per such song. A 60 s, 5-channel piece should stay well under E57's 50 ms budget.
+- **Not done** (optional in the task): the director's voice lengths stay the design's (`Sfx::ms`); the rendered lengths are available (`startup_sfx`), and differences show up in the cue logs only as voice-busy windows. The low-passed `wolfgangsee` fallback for a missing `unterwasser` is the app's (E59) choice: `render_music(Unterwasser, …)` returns `None` until the song exists.
+- The xtask test that compared `audio/sfx` with the cue ids (E58a review) moved to `jnr-assets` and uses the embedded bank.
+
+### E58b review fixes
+
+- **Music cue kinds** (`Bank::load`, build error `file:1:1: error[kind]`): a looping cue (`Music::is_song`) must be a `.song` with `kind = "loop"` (a jingle song or an `audio/jingles/<id>.sfx` of that id is an error); a one-shot cue must be a `.song` with `kind = "jingle"` or an `audio/jingles/<id>.sfx`. A song and an `.sfx` jingle may not share an id. Unit tests for each case.
+- **Embedding matches `xtask audio`'s layout**: only `audio/{sfx,jingles}/*.sfx`, `audio/instruments/*.inst`, `audio/music/*.song` and `audio/quotes/*.quote` are sources; a source file anywhere else under `audio/` (nested or in the wrong directory) is a build error. An unreadable `audio/` panics with its path. Sources are sorted by their embedded name, and only `audio/jingles/` (exactly) makes a jingle.
+- `bank::transpose` clamps to `patch::FREQ_RANGE`; band-pass centres don't move with the pitch, so a variant of a band-passed or noise-heavy patch needs a second look (doc on `cues::PITCHED`).
+- `PENDING_MUSIC`: a test rejects duplicates and checks its length against `PENDING_MUSIC_MAX` (25; lower it as songs land, never raise it). A `jnr-assets` test renders every embedded song (normal and hurry): loops a multiple of 4096 frames, no clamped samples (it runs as soon as songs land).
+
+## As built (E60)
+
+`cargo xtask replay <file|name> --audio [out.wav]` (`xtask/src/replay_audio.rs`), the pure
+playback model `jnr_audio::mix` (new module, D-122) and the verify step `audio-mix`; usage in
+`docs/validation.md` L6c and the `replay-testing` skill.
+
+- **Shared core in `jnr-audio`**: `mix::mix(&Sounds, &[(frame, Cue)], end_frame) -> Mix`
+  (PCM with clamp count, a `Span` per audible stretch of a sound, the sounds missing from the
+  table). The volumes are E59's `cues::{SFX_VOLUME_PCT (100), MUSIC_VOLUME_PCT (100),
+  DUCKED_MUSIC_VOLUME_PCT (50)}`, shared with the app (added here with E59's exact block, so
+  the merge with `ma-e58` dedupes).
+- **Playback rules** as in the E58a cue list: an SFX cue stops the voice's last sound and any
+  live copy of its id, then plays; `StopSfx`/`CutSfx` stop ids; `Song` stops song and twin,
+  starts the song (and its twin muted) from sample 0 and resets "under water"; `Jingle` once;
+  volumes are recomputed after each frame's cues (held 0, ducked 50 %, the twin swapped).
+  Stops are hard cuts (quad-snd). Loops end with the run; one-shots ring out (a final
+  fanfare is heard whole). Not modelled: the design's duck ramps and 5 ms steal fade (D-114:
+  cuts only).
+- **Sounds come from the app's bank** (review fix): xtask reads `<root>/audio/**` as
+  (path, text) like `jnr-assets`, runs `bank::Bank::load` and fills the table with
+  `Bank::render_sfx(Play)` (pitched variants via `bank::transpose`, one variant path) and
+  `Bank::render_music(m, Variant::Normal)` (`Ok(None)` = missing). A missing sound is silent
+  and listed; it fails the lint `missing` unless it is music in `cues::PENDING_MUSIC`. The
+  low-passed `unterwasser` fallback is E59's choice and not rendered here.
+- **Outputs**: `<name>.wav`, `<name>_audio.png` (instead of the proposal's `_spec.png`: cue
+  labels and ticks, waveform, spectrogram and time axis in one image, 2x) and
+  `<name>_audio.json` (instead of `_cues.txt`: stats, findings, detected onsets and the cue
+  timeline with frame, ms and sample; the plain timeline is `--cue-log`).
+- **Lints** (`replay_audio::lint`): `clamp` and `ceiling` (−1 dBFS), each with up to 8 places
+  and the sounds heard there; `missing_lint` (SFX always, music unless pending); the command exits non-zero on a finding (files are written
+  first). `onsets` (64-sample blocks, +12 dB over the previous ~12 ms, ≥ −40 dBFS, 20 ms
+  debounce) checks timing in the test.
+- **Verify** (beyond the proposal): `audio-mix` mixes all 10 replays with cue-log goldens and
+  lints them (~0.5 s; every needed sound is rendered once for all replays). With the committed bank (25 SFX, no music yet) all pass. Measured:
+  Stage 1 tour (`salzburg_tour`, 2572 frames): peak −3.62 dBFS at 27.35 s (`oblate` +
+  `stomp`), RMS −25.07 dBFS, 0 clamped, 0 ms over the ceiling; silent: `title`,
+  `route_map`, `salzburg`, `fanfare_clear`. Normal boss win (`cafe_zauner_boss_win_normal`,
+  2598 frames): peak −5.85 dBFS at 17.80 s (`boss_telegraph` + `jump`), RMS −24.35 dBFS, 0
+  clamped; silent: `cafe_zauner`, `boss_intro`, `boss_surprise`, `boss`, `boss_defeat`,
+  `fanfare_finale`. With the sound-designer's in-progress songs from `ma-s2` (not committed
+  here) the tour peaks at −2.19 dBFS (`oblate` + `salzburg` + `stomp`), still 1.2 dB under the
+  ceiling.
+- **Tests**: `jnr_audio::mix` unit tests (frame × 735, retrigger and voice stealing, cuts and
+  `KeepItems`, a pitched cue stopping the plain copy, loops with hold/duck/underwater,
+  hold/duck on the twin under water, a `Song` cue under water starting above water, jingles
+  once, ducked, held and stopped, missing sounds, clamps); in xtask the E60
+  criterion (`testbed_route` onsets within one frame of the 7 jump cues), a clamping and an
+  over-ceiling mix detected with `jump` + `oblate` named, the three output files, the pitched
+  variants rendered, the pending-aware `missing` lint, and placeholder songs (E57 fixtures as `salzburg`/`fanfare_clear`)
+  looping from their cue in the tour. `cues::cue_log` now uses the same `timeline` function.
+- **Review fixes**: merged E58b; the first version's own pitched-variant renderer
+  (`mix::render_variant`, `render::add_sfx_shifted`) and xtask's own source loading are gone
+  in favour of `jnr_audio::bank`; `mix::Bank` is `mix::Sounds`; `Cut::hits` is public and
+  reused; `MixStats.frames` counts frame 0 (`end_frame + 1`, the WAV's length in frames).
+
+## As built (E59)
+
+- **Wiring**: `crates/jnr-app/src/main.rs` creates a `Director` next to the game, executes `begin`'s cues on the first frame and `step`'s cues after every `Game::step` (keyboard and `--replay` alike). `crates/jnr-app/src/audio.rs` splits the cue semantics from the backend: the pure `Mixer` (state: the last sound per voice, song, twin, jingle, hold/duck/underwater) returns `Op`s, and `Audio` executes them through the E54 gate (`may_call`, the `calls()` counter, the dead-thread probe, the budgeted loader).
+- **Semantics**: as listed in architecture.md ("jnr-app" → "Cues (E59)"). Volumes: SFX and music 1.0 (each sound is rendered at its design level; D-113's level table is checked offline), duck 0.5 (−6 dB), hold 0. The volumes are integer percents in `jnr_audio::cues` (`SFX_VOLUME_PCT` 100, `MUSIC_VOLUME_PCT` 100, `DUCKED_MUSIC_VOLUME_PCT` 50) for E60's offline mix to import, so the app plays what the mix measures; the single pitched-variant path is `Bank::render_sfx(play)` (`bank::transpose`), which E60 also uses (orchestrator decision).
+- **Loading**: all SFX and pitched variants are rendered and queued on the first frame on which sound is on (not muted, device alive); measured `27 sfx rendered in 2.5 ms` (native debug build, jnr-audio at opt-level 2; 1.5 ms release, E58b). A `Song`/`Jingle` cue renders its music on first use (`audio: song <id> rendered in … ms`), loads it and starts it once loaded at the mixer's then-current volume; a `Song` cue unloads every other loaded song (not the twin; jingles stay loaded). A cue for an id the bank doesn't have yet (all music while `PENDING_MUSIC` is full) is ignored.
+- **Mute**: `--mute` renders, loads and plays nothing (test: a whole replay's cues give 0 backend calls); M while playing stops everything; unmuting restarts the current song from sample 0 (a muted session made no calls, so it can't resume in place; deviation from audio-design §6.1 rule 7, which assumed a running mixer).
+- **Underwater fallback**: not done. The twin plays only if `unterwasser` is in the bank; without it `Underwater` cues change nothing (the low-passed `wolfgangsee` render needs a filter option in the song renderer; E57/E60 territory).
+- **Native timing**: quad-snd starts sounds at its 93 ms block boundaries (spike), so the capture's onsets lag the cue frames by up to ~190 ms; the browser is sample-exact.
+- **vnc-smoke**: `--test-tone` is removed from the app and the smoke test. With Pulse the capture of `testbed_route` must hold ≥ 5 onsets and no clipping (measured: 7 onsets, peak 11467). The no-device run's racy "test tone played" assertion is dropped: a sound started before the thread died is fine; the run still needs exactly one `audio unavailable (` line and no `Audio thread died`.
+- **wasm**: `wasm-smoke` also loads `smoke_no_audio.html` (no `audio.js`): the module instantiates and the title prompt blinks (9 changes in 408 frames), so the budget path works; with `audio.js` as before (9 in 406). Release `jnr-app.wasm`: 15 178 782 bytes before E59, 15 948 594 after (+770 KB: jnr-audio's synth and parsers, the cue director and the embedded `audio/` text).
+
+### E59 review fixes
+
+- **Song and twin start together**: a `Song` cue no longer plays at once; `Audio` waits until every song of the mixer (song and twin) is loaded and starts both in one update (`Mixer::start_ops`; test with the twin loading a frame later). `Audio::update` now runs after the frame's simulation steps, so natively a cue's music loads and starts on the cue's own frame (the browser 1–2 frames later).
+- **Unloads**: only a dead or off backend leaks `Sound`s (`mem::forget`); while muted, unloaded songs are parked and dropped at the next active update. Queued loads of songs the mixer no longer plays are dropped, and a song whose load finishes after it was replaced is dropped at once (jingles stay loaded).
+- **Load budget**: the 120-frame timeout turns audio off only while nothing has loaded yet (the missing-`audio.js` detector); later a slow load gives up only that sound. A failed or given-up load clears whatever waited for it (a jingle, the song group).
+- `Cut::hits` replaces the app's copy; M only restarts the song when sound is really on (not off, not dead); tests for `Mixer::music_volume` under hold, duck and underwater.
+- **App and offline mix agree**: `jnr_audio::mix` now starts the underwater twin only if its sound exists and ignores `Underwater` without a twin (the stage piece stays audible), as the app does; a jnr-app test runs six cue timelines through both models, with and without the twin, and compares the final music volumes.
+- **Cue gain** (game-designer decision): `Music::gain_pct()` in `jnr_audio::cues` (`boss_intro` 25 % = −12 dB, pianissimo before the Paukenschlag; every other cue 100 %), multiplied into the music volume by the app's `Mixer` and by `mix` (whose gains are now in 1/10 000, so a ducked 25 % cue is exact: 12.5 %). Covered by the shared app/mix test and a `mix` unit test.
+- `wasm-smoke` without `audio.js` also asserts the app's console line `jnr-app: audio load timed out after …` (Chromium's console log on stderr). In the headless browser `date::now()` reports the SFX render as 0.0 ms (coarse clock under the virtual-time budget).
+
+
+### E59 follow-ups
+
+- **Twin fallback**: if the underwater twin can't be rendered or its load fails (error or timeout), `Mixer::drop_twin` forgets it: the stage song starts alone (audible even if the dive came first) and `Underwater` is ignored from then on, the same as `jnr_audio::mix` without the twin.
+- Muting clears a jingle that was waiting for its load (it doesn't start after the mute).
+- The bookkeeping decisions are pure functions with tests: `keep_loaded` (a finished load of a replaced song is dropped), `unload_action` (drop / park while muted / forget only when dead or off), `give_up_effects` (clear the waiting jingle, cancel the song group, or drop the twin) and `timeout_turns_audio_off` (only before anything loaded).

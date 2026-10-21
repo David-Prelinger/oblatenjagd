@@ -206,6 +206,7 @@ name = "jnr-app"
 version = "0.1.0"
 dependencies = [
  "jnr-assets",
+ "jnr-audio",
  "jnr-core",
  "jnr-render",
  "macroquad",
@@ -226,12 +227,14 @@ name = "jnr-assets"
 version = "0.1.0"
 dependencies = [
  "jnr-artkit",
+ "jnr-audio",
 ]
 
 [[package]]
 name = "jnr-audio"
 version = "0.1.0"
 dependencies = [
+ "jnr-core",
  "serde",
  "toml",
 ]

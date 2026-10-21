@@ -1,0 +1,30 @@
+# cue log of tests/replays/wolfgangsee_gelse_dive.replay (cargo xtask cues)
+     0 song wolfgangsee
+    41 sfx oblate I3
+    65 sfx jump P4
+    93 sfx oblate I3
+   169 sfx oblate I3
+   182 sfx oblate I3
+   298 sfx oblate I3
+   338 sfx oblate I3
+   458 sfx oblate I3
+   498 sfx oblate I3
+  1325 sfx jump P4
+  1373 sfx stomp W5
+  2087 sfx checkpoint I7
+  2087 duck on
+  2114 duck off
+  2615 sfx jump P4
+  2623 sfx oblate I3
+  2662 sfx oblate I3
+  2678 sfx oblate I3
+  2694 sfx oblate I3
+  2735 sfx jump P4
+  2835 underwater on
+  2987 sfx stroke P2
+  3000 sfx stroke P2
+  3013 sfx stroke P2
+  3026 sfx jump P4
+  3033 sfx oblate I3
+  3037 underwater off
+  3054 sfx oblate I3

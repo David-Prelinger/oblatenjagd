@@ -476,7 +476,7 @@ fn draw_event(
     }
 }
 
-fn rect(img: &mut Image, x: u32, y: u32, w: u32, h: u32, px: [u8; 4]) {
+pub(crate) fn rect(img: &mut Image, x: u32, y: u32, w: u32, h: u32, px: [u8; 4]) {
     for yy in y..(y + h).min(img.height) {
         for xx in x..(x + w).min(img.width) {
             img.set(xx, yy, px);
@@ -533,7 +533,7 @@ fn glyph(c: char) -> [&'static str; 5] {
     }
 }
 
-fn text(img: &mut Image, x: u32, y: u32, s: &str, px: [u8; 4]) {
+pub(crate) fn text(img: &mut Image, x: u32, y: u32, s: &str, px: [u8; 4]) {
     for (i, c) in s.chars().enumerate() {
         let gx = x + 4 * i as u32;
         for (row, bits) in glyph(c).iter().enumerate() {

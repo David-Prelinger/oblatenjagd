@@ -1185,6 +1185,8 @@ Then **the title** with the run reset (Salzburg, score 0, 3 lives, Oblaten 0, No
 
 The audio design is `docs/audio-design.md` (D-113): chiptune Blasmusik and Ländler from our own synth, one piece per stage plus the title, the map, the boss, the fanfares, death, game over, the ZEIT-60 church bells and the ending, quoting only melodies that are public domain worldwide (Mozart, Haydn, Strauss Vater and Sohn, traditional tunes), every SFX mapped to a core event or a state change. The only core change is the output event `Bounced` (a no-damage bounce off a non-stompable top). M toggles mute.
 
+**Event `Bounced`** (D-113, E58a): emitted together with `Stomped` on a step whose bounce came only from non-stompable tops (Fiaker, Reisebus/Postbus, Auto, the Regattaboot's masthead, a Kellner's tray, the Oberkellner's raised tray); a step that also stomps an enemy, lays a Kurgast down or hits the Oberkellner has `Stomped` alone. `Stomped` keeps its meaning (every bounce). An output for the sound (`roof_bounce` instead of `stomp`): no state, hash, replay or golden depends on it; replays may name it (`event=Bounced`, `no_event=Bounced`).
+
 ## UI text (German)
 
 All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, signs ≤ 2 lines of ≤ 12 characters, only characters of the font's charset (D-012; no `°`, `€`, `&`, `*`).

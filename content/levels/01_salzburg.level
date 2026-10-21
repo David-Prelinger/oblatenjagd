@@ -78,6 +78,7 @@
 
 [meta]
 id = "salzburg"
+music = "salzburg"
 title_key = "stage.salzburg.title"
 time_limit = 300
 min_jump_window = 6

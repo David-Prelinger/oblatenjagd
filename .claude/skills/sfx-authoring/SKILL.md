@@ -5,7 +5,7 @@ description: How to make game audio as text - the .sfx, .inst and .song formats 
 
 # SFX and music authoring
 
-Status: draft v1 (MA). Formats are specified in `docs/architecture.md` → "jnr-audio"; what to make is in `docs/audio-design.md` (D-113). This skill is the practical guide.
+Status: approved v1 (MA). Formats are specified in `docs/architecture.md` → "jnr-audio"; what to make is in `docs/audio-design.md` (D-113). This skill is the practical guide.
 
 ## Files
 - Sound effects: `audio/sfx/<id>.sfx` — 1–8 `[[layer]]` tables, all values integers with unit-named keys (`freq_hz`, `decay_ms`, `volume_pct`, …).

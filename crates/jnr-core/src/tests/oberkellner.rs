@@ -372,6 +372,7 @@ fn the_raised_tray_bounces_her_without_damage_or_points_and_its_side_hurts() {
         g.player.invulnerable = 0;
         let events = g.step(input("-")).to_vec();
         assert!(events.contains(&Event::Stomped), "{state}: a bounce");
+        assert!(events.contains(&Event::Bounced), "{state}: the tray");
         assert!(!events.contains(&Event::Hurt) && !events.contains(&Event::Died));
         assert_eq!(g.score(), 0, "{state}: no points");
         assert_eq!(boss(&g).hits, 0);
@@ -462,6 +463,7 @@ fn a_stomp_in_the_breather_is_a_hit_and_its_side_hurts() {
     g.player.invulnerable = 0;
     let events = g.step(input("-")).to_vec();
     assert!(events.contains(&Event::Stomped));
+    assert!(!events.contains(&Event::Bounced), "a boss hit: {events:?}");
     let b = boss(&g);
     assert_eq!((b.hits, b.state, b.count), (1, st::STUN, 1));
     assert_eq!(g.score(), t.enemies.oberkellner_hit_points);

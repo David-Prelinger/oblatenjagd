@@ -12,6 +12,7 @@ jnr-artkit = { workspace = true, features = ["png"] }
 jnr-core.workspace = true
 jnr-render.workspace = true
 jnr-assets.workspace = true
+# Cue logs (`xtask cues`, `replay --cue-log`) and `xtask audio`.
 jnr-audio.workspace = true
 serde.workspace = true
 toml.workspace = true

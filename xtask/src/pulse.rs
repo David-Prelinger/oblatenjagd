@@ -148,6 +148,37 @@ pub struct CaptureStats {
     pub peak: u16,
     /// Samples at full scale (±32767/-32768).
     pub clipped: usize,
+    /// Sound onsets ([`count_onsets`]).
+    pub onsets: usize,
+}
+
+/// Window of the onset detector (10 ms at 44.1 kHz).
+pub const ONSET_WINDOW: usize = 441;
+/// A window this loud after a quiet stretch is an onset.
+pub const ONSET_LEVEL: u16 = 1500;
+/// Below this a window is quiet ...
+pub const QUIET_LEVEL: u16 = 300;
+/// ... and this many quiet windows in a row end a sound (30 ms).
+pub const QUIET_WINDOWS: usize = 3;
+
+/// Counts the sounds that start after silence: a 10 ms window reaching
+/// [`ONSET_LEVEL`] after at least [`QUIET_WINDOWS`] windows below
+/// [`QUIET_LEVEL`] (or at the start). Overlapping sounds count once.
+pub fn count_onsets(samples: &[i16]) -> usize {
+    let mut onsets = 0;
+    let mut quiet = QUIET_WINDOWS;
+    for w in samples.chunks(ONSET_WINDOW) {
+        let level = w.iter().map(|s| s.unsigned_abs()).max().unwrap_or(0);
+        if level >= ONSET_LEVEL && quiet >= QUIET_WINDOWS {
+            onsets += 1;
+        }
+        if level < QUIET_LEVEL {
+            quiet += 1;
+        } else {
+            quiet = 0;
+        }
+    }
+    onsets
 }
 
 /// Statistics of raw little-endian s16 bytes (a trailing odd byte is ignored).
@@ -156,15 +187,20 @@ pub fn capture_stats(raw: &[u8]) -> CaptureStats {
         samples: 0,
         peak: 0,
         clipped: 0,
+        onsets: 0,
     };
-    for b in raw.chunks_exact(2) {
-        let s = i16::from_le_bytes([b[0], b[1]]);
+    let samples: Vec<i16> = raw
+        .chunks_exact(2)
+        .map(|b| i16::from_le_bytes([b[0], b[1]]))
+        .collect();
+    for &s in &samples {
         stats.samples += 1;
         stats.peak = stats.peak.max(s.unsigned_abs());
         if s == i16::MAX || s == i16::MIN {
             stats.clipped += 1;
         }
     }
+    stats.onsets = count_onsets(&samples);
     stats
 }
 
@@ -201,9 +237,38 @@ mod tests {
             CaptureStats {
                 samples: 6,
                 peak: 32768,
-                clipped: 2
+                clipped: 2,
+                onsets: 1
             }
         );
         assert_eq!(capture_stats(&[]).peak, 0);
+    }
+
+    #[test]
+    fn onsets_are_sounds_after_silence() {
+        let beep = |n: usize| vec![4000i16; n];
+        let quiet = |n: usize| vec![0i16; n];
+        let mut s = quiet(10_000);
+        for _ in 0..7 {
+            s.extend(beep(6615)); // 150 ms
+            s.extend(quiet(26_000));
+        }
+        assert_eq!(count_onsets(&s), 7);
+        // A gap shorter than 30 ms doesn't split a sound.
+        let mut s = beep(4410);
+        s.extend(quiet(441));
+        s.extend(beep(4410));
+        assert_eq!(count_onsets(&s), 1);
+        // Too soft is no onset.
+        assert_eq!(count_onsets(&vec![1000i16; 44_100]), 0);
+        let raw: Vec<u8> = [0i16, 2000, -32768, 5]
+            .iter()
+            .flat_map(|s| s.to_le_bytes())
+            .collect();
+        let st = capture_stats(&raw);
+        assert_eq!(
+            (st.samples, st.peak, st.clipped, st.onsets),
+            (4, 32768, 1, 1)
+        );
     }
 }

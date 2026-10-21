@@ -45,6 +45,7 @@ Status: **approved v1**. The agent and skill files already exist under `.claude/
 │        code    → engine-engineer
 │        art     → pixel-artist      ⟲ art-director until APPROVED (max 3 rounds)
 │        levels  → level-designer    ⟲ solver + difficulty report
+│        audio   → sound-designer    ⟲ game-designer audio verdict until APPROVED (max 3 rounds)
 │   4. cargo xtask verify  (fix until green; the Stop hook already forces `check`)
 │   5. qa-tester: try to break it, add replay tests for anything found
 │   6. code-reviewer on the diff (blocking findings must be fixed)
