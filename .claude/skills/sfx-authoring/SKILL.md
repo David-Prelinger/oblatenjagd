@@ -11,13 +11,14 @@ Status: draft v1 (MA). Formats are specified in `docs/architecture.md` → "jnr-
 - Sound effects: `audio/sfx/<id>.sfx` — 1–8 `[[layer]]` tables, all values integers with unit-named keys (`freq_hz`, `decay_ms`, `volume_pct`, …).
 - Instruments: `audio/instruments/<id>.inst` — melodic (a `range` plus layers that take their pitch from the note, ADSR) or a drum kit (`[kit]` letters → patches).
 - Songs: `audio/music/<id>.song` — TOML header (tempo, meter, key, channels → instruments, loop or jingle, `source`/`edition` for quotes) plus bar-structured note lines per channel.
+- Lint targets: `audio/targets.toml`, one `[<id>]` table per `.sfx` with `class` (loud | normal | soft | ambience | jingle; required), optional `peak_dbfs` (the SFX table's peak where it differs from the class), `duration_ms`, `centroid_hz = [lo, hi]` (set from a measured render: naive pulses alias, so centroids run high) and `placeholder = true` for a stand-in (never a golden).
 - The id is the file stem and must match the ids in `audio-design.md` §5/§6 (the cue director refers to them).
 - Examples of every key: `crates/jnr-audio/tests/fixtures/` (test fixtures; don't copy their sound, copy their syntax).
 
 ## Commands
-- `cargo xtask audio render <id>` / `--all` → `$CARGO_TARGET_DIR/audio/<id>.{wav,json,wave.png,spec.png}` (songs also `.roll.png`).
-- `cargo xtask audio lint` — signal lints (ceiling, clamps, DC, length bounds, silent tail) and music lints (bar lengths, ranges, key, loop point).
-- `cargo xtask audio golden` — PCM hashes; `--accept` only by the orchestrator after a game-designer verdict.
+- `cargo xtask audio render <id>|<file.sfx>|--all` → `$CARGO_TARGET_DIR/preview/audio/<id>.wav`, `<id>.json` (stats), `<id>_wave.png`, `<id>_spec.png` (songs also a piano roll, E57); `--all` also `sheet_spectrograms.png` (every sound side by side on one time scale). How to read the images: `docs/validation.md`, "Audio".
+- `cargo xtask audio lint [id]` — signal lints against `audio/targets.toml`: clamp, ceiling (−1 dBFS), peak (class band or `peak_dbfs` ± 1 dB), rms (jingles), dc, onset (≤ 10 ms), tail (≤ 50 ms), edges (no click), length, duration, centroid; plus music lints (E57).
+- `cargo xtask audio golden` — PCM hashes in `tests/golden/audio.toml`; `--accept <id>` only by the orchestrator after a game-designer verdict (refuses placeholders and sounds that fail lint).
 - `cargo xtask replay <file> --audio` — offline mix of a real run (cue timeline + spectrogram) to check timing and the mix.
 
 ## Judging a sound without ears
