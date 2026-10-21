@@ -11,16 +11,18 @@
 //!    (`$CARGO_TARGET_DIR/preview/vnc_smoke_root.png`) shows the game window:
 //!    cropped to the window's geometry (`xwininfo`), at least
 //!    [`MIN_SKY_SHARE`] of it is the palette sky colour,
-//! 4. audio (E54, D-118): the app runs with `--test-tone`; its log must not
-//!    contain quad-snd's `Audio thread died`. With PulseAudio (a null sink
-//!    of this run, see `pulse.rs`, selected with `PULSE_SINK`) the sink's
-//!    monitor is recorded with `parec` and must hold the tone (peak ≥
-//!    [`MIN_TONE_PEAK`], no clipping); without Pulse that part notes "audio
-//!    not exercised",
+//! 4. audio (E54, E59, D-118): the app plays the replay's real cues (the
+//!    testbed has 7 jumps and no music); its log must not contain quad-snd's
+//!    `Audio thread died`. With PulseAudio (a null sink of this run, see
+//!    `pulse.rs`, selected with `PULSE_SINK`) the sink's monitor is recorded
+//!    with `parec` and must hold at least [`MIN_SFX_ONSETS`] sound onsets
+//!    (`pulse::count_onsets`), no clipping; without Pulse that part notes
+//!    "audio not exercised",
 //! 5. the no-device path, always: a short second run with
 //!    `PULSE_SERVER=unix:/nonexistent` (so even a running daemon is out of
-//!    reach) must exit 0 and log exactly one `audio unavailable (` line,
-//!    no `Audio thread died` and no `test tone played`.
+//!    reach) must exit 0 and log exactly one `audio unavailable (` line and
+//!    no `Audio thread died`. (A sound played before the audio thread died
+//!    is fine: the guard only has to stop the calls after it.)
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -58,9 +60,9 @@ const MIN_SKY_SHARE: f64 = 0.25;
 /// Per-channel tolerance when matching the sky colour: the noVNC desktop's
 /// root window is 16 bit (RGB565), which moves 5-bit channels by up to 8.
 const SKY_TOLERANCE: u8 = 8;
-/// Least peak of the recorded test tone (amplitude 6000 at volume 0.5 in
-/// the app; the spike measured the expected level exactly).
-const MIN_TONE_PEAK: u16 = 1000;
+/// Least SFX onsets in the capture of the testbed replay (7 jumps; native
+/// playback starts at 93 ms block boundaries, so a margin).
+const MIN_SFX_ONSETS: usize = 5;
 /// quad-snd's line for every call after its audio thread died.
 const AUDIO_THREAD_DIED: &str = "Audio thread died";
 
@@ -103,7 +105,6 @@ pub fn app_args(replay: &Path, shots: &[Shot], out_dir: &Path) -> Vec<String> {
         SCALE.to_string(),
         "--exit-after".to_owned(),
         (last + 1).to_string(),
-        "--test-tone".to_owned(),
     ];
     for s in shots {
         args.push("--screenshot-at".to_owned());
@@ -325,7 +326,7 @@ enum AudioRun {
 }
 
 /// The audio part of the smoke test: no `Audio thread died` spam in the app
-/// log ever; with Pulse, the capture holds the test tone without clipping.
+/// log ever; with Pulse, the capture holds the replay's SFX without clipping.
 fn audio_verdict(app_log: &str, audio: &AudioRun) -> Result<String, String> {
     no_thread_died(app_log)?;
     match audio {
@@ -338,11 +339,11 @@ fn audio_verdict(app_log: &str, audio: &AudioRun) -> Result<String, String> {
             stats: Some(stats),
         } => {
             let secs = stats.samples as f64 / 44_100.0;
-            if stats.peak < MIN_TONE_PEAK {
+            if stats.onsets < MIN_SFX_ONSETS {
                 return Err(format!(
-                    "audio capture is silent: peak {} in {secs:.1}s (need {MIN_TONE_PEAK}; \
-                     the app plays a test tone)",
-                    stats.peak
+                    "audio capture: {} sound onset(s), peak {} in {secs:.1}s (need {MIN_SFX_ONSETS}; \
+                     the replay jumps 7 times)",
+                    stats.onsets, stats.peak
                 ));
             }
             if stats.clipped > 0 {
@@ -353,8 +354,8 @@ fn audio_verdict(app_log: &str, audio: &AudioRun) -> Result<String, String> {
             }
             let daemon = if *started { "started" } else { "running" };
             Ok(format!(
-                "audio: test tone captured on a Pulse null sink (peak {}, {secs:.1}s, daemon {daemon})",
-                stats.peak
+                "audio: {} SFX onsets captured on a Pulse null sink (peak {}, {secs:.1}s, daemon {daemon})",
+                stats.onsets, stats.peak
             ))
         }
     }
@@ -380,9 +381,6 @@ fn no_device_verdict(app_log: &str) -> Result<String, String> {
             "no-device run: expected exactly one `{AUDIO_UNAVAILABLE}` line, got {unavailable}"
         ));
     }
-    if app_log.contains("test tone played") {
-        return Err("no-device run: the test tone was played without a device".to_owned());
-    }
     Ok("no-device run: audio off with one line".to_owned())
 }
 
@@ -395,7 +393,6 @@ fn no_device_run(root: &Path, app: &Path, display: &str, out_dir: &Path) -> Resu
         .args([
             "--level",
             "testbed",
-            "--test-tone",
             "--exit-after",
             &NO_DEVICE_FRAMES.to_string(),
         ])
@@ -672,7 +669,6 @@ mod tests {
                 "4",
                 "--exit-after",
                 "751",
-                "--test-tone",
                 "--screenshot-at",
                 "0:/o/start.png",
                 "--screenshot-at",
@@ -707,11 +703,12 @@ mod tests {
     }
 
     #[test]
-    fn audio_verdict_needs_the_tone_with_pulse_and_never_thread_died_lines() {
+    fn audio_verdict_needs_the_sfx_with_pulse_and_never_thread_died_lines() {
         let tone = CaptureStats {
             samples: 44_100,
             peak: 3000,
             clipped: 0,
+            onsets: 7,
         };
         let recorded = |stats: CaptureStats| AudioRun::Recorded {
             started: true,
@@ -720,22 +717,24 @@ mod tests {
         assert!(
             audio_verdict("ok\n", &recorded(tone))
                 .unwrap()
-                .contains("peak 3000")
+                .contains("7 SFX onsets")
         );
-        let silent = CaptureStats {
+        let few = CaptureStats {
             samples: 44_100,
-            peak: 0,
+            peak: 9000,
             clipped: 0,
+            onsets: 4,
         };
         assert!(
-            audio_verdict("", &recorded(silent))
+            audio_verdict("", &recorded(few))
                 .unwrap_err()
-                .contains("silent")
+                .contains("4 sound onset(s)")
         );
         let clipping = CaptureStats {
             samples: 44_100,
             peak: 32768,
             clipped: 3,
+            onsets: 7,
         };
         assert!(
             audio_verdict("", &recorded(clipping))
@@ -777,12 +776,10 @@ mod tests {
                 .unwrap_err()
                 .contains("Audio thread died")
         );
-        let played = format!("{ok}jnr-app: test tone played\n");
-        assert!(
-            no_device_verdict(&played)
-                .unwrap_err()
-                .contains("without a device")
-        );
+        // A sound played before the thread died is no failure (the race of
+        // E57's run): only calls after it would print `Audio thread died`.
+        let early = format!("jnr-app: audio: 27 sfx rendered in 2.0 ms\n{ok}");
+        assert!(no_device_verdict(&early).is_ok());
     }
 
     #[test]
