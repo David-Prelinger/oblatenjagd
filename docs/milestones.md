@@ -208,7 +208,7 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes the Wolfgangsee filmstrip, the scroll start on the steamer, a dive under a swan, a Gelse waiting over a diver, a regatta start, the respawn on the pontoon, the Hackl replays and all new German text.
 
-## M6 – Stage 7 Strobl + Stage 8 Bad Ischl: Fensterläden, Ampeln and Autos, Kurgäste, Offiziere
+## M6 – Stage 7 Strobl + Stage 8 Bad Ischl: Fensterläden, Ampeln and Autos, Kurgäste, Offiziere — ✅ accepted 2026-10-21 (docs/reports/M6.md)
 
 Scope as in `game-design.md` → "Stage 7: Strobl" and "Stage 8: Bad Ischl" (incl. their "Difficulty and reach rules") and "Route map"; decisions D-092 … D-098; sprites in `sprite-catalog.md` → "M6 additions". Two stages (as in M2); extras are in the backlog (D-092). Branch `m6-strobl-bad-ischl`.
 
@@ -251,7 +251,7 @@ Replays and goldens
 - [x] Route-map goldens: Strobl → Bad Ischl Wait (both alternate slots) and the Bad Ischl → Café Zauner teaser, Normal and Hackl form
 
 Platform
-- [ ] wasm build plays the route through Bad Ischl; `wasm-smoke` still green; verify runtime within budget after E35 (record it)
+- [x] wasm build plays the route through Bad Ischl; `wasm-smoke` still green; verify runtime within budget after E35 (record it) — wasm embeds all 8 levels and the same core (QA M6 acceptance); the route is proven natively (`qa_m6_accept_full_route`), a wasm playthrough stays open for MW; verify 193 s cold, ~60 s with the solver cache
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes both stages' filmstrips, a shutter staircase, the Postbus halt, an Ampel's car stream, the Bürglstein walkway, a Kurgast's chair used as a step, a file presenting sabres, the queue at Café Zauner, the route-map label screens and all new German text.
 
@@ -269,7 +269,7 @@ Platform
 - **M3** Falkenstein: vertical climbing, Hackl power-up, Durchkriechstein (accepted, docs/reports/M3.md)
 - **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (accepted, docs/reports/M4.md)
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (accepted, docs/reports/M5.md)
-- **M6** Strobl + Bad Ischl
+- **M6** Strobl + Bad Ischl (accepted, docs/reports/M6.md)
 - **M7** Café Zauner finale + ending
 - **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
 - **MW** Web release: polished `index.html`, gamepad support, headless-browser smoke test, hosting
