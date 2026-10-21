@@ -13,3 +13,167 @@
 #   [jump]
 #   class = "normal"
 #   duration_ms = 150
+
+[jump]
+class = "normal"
+duration_ms = 150
+centroid_hz = [3260, 5090]
+placeholder = false
+
+[zucker]
+class = "loud"
+duration_ms = 500
+centroid_hz = [4040, 6320]
+placeholder = false
+
+[hackl]
+class = "loud"
+duration_ms = 500
+centroid_hz = [2180, 3410]
+placeholder = false
+
+[hurt]
+class = "loud"
+duration_ms = 500
+centroid_hz = [3810, 5950]
+placeholder = false
+
+[throw]
+class = "normal"
+peak_dbfs = -10
+duration_ms = 140
+centroid_hz = [2630, 4100]
+placeholder = false
+
+[stroke]
+class = "soft"
+peak_dbfs = -14
+duration_ms = 90
+centroid_hz = [2310, 3620]
+placeholder = false
+
+[oblate]
+class = "normal"
+duration_ms = 180
+centroid_hz = [5130, 8020]
+placeholder = false
+
+[oneup]
+class = "loud"
+duration_ms = 700
+centroid_hz = [4580, 7160]
+placeholder = false
+
+[checkpoint]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 450
+centroid_hz = [1600, 2490]
+placeholder = false
+
+[bump]
+class = "normal"
+duration_ms = 90
+centroid_hz = [420, 600]
+placeholder = false
+
+[brick]
+class = "loud"
+duration_ms = 220
+centroid_hz = [4110, 6420]
+placeholder = false
+
+[stomp]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 110
+centroid_hz = [2900, 4540]
+placeholder = false
+
+[roof_bounce]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 160
+centroid_hz = [3150, 4930]
+placeholder = false
+
+[axe_hit]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 100
+centroid_hz = [2770, 4340]
+placeholder = false
+
+[boss_telegraph]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 667
+centroid_hz = [3310, 5180]
+placeholder = false
+
+[boss_breathe]
+class = "normal"
+peak_dbfs = -10
+duration_ms = 600
+centroid_hz = [1040, 1630]
+placeholder = false
+
+[boss_hit]
+class = "loud"
+duration_ms = 500
+centroid_hz = [2870, 4480]
+placeholder = false
+
+[bills_hang]
+class = "normal"
+peak_dbfs = -12
+duration_ms = 400
+centroid_hz = [7370, 11510]
+placeholder = false
+
+[hohes_c]
+class = "normal"
+peak_dbfs = -8
+duration_ms = 800
+centroid_hz = [3890, 6080]
+placeholder = false
+
+[ui_start]
+class = "normal"
+duration_ms = 200
+centroid_hz = [3690, 5770]
+placeholder = false
+
+[pause]
+class = "normal"
+peak_dbfs = -10
+duration_ms = 260
+centroid_hz = [2680, 4200]
+placeholder = false
+
+[tally_tick]
+class = "soft"
+peak_dbfs = -16
+duration_ms = 25
+centroid_hz = [5600, 8760]
+placeholder = false
+
+[tally_end]
+class = "normal"
+duration_ms = 500
+centroid_hz = [1970, 3070]
+placeholder = false
+
+[kassa_zeile]
+class = "normal"
+peak_dbfs = -10
+duration_ms = 250
+centroid_hz = [2210, 3460]
+placeholder = false
+
+[muenze]
+class = "normal"
+peak_dbfs = -12
+duration_ms = 150
+centroid_hz = [2950, 4610]
+placeholder = false

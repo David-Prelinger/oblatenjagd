@@ -59,7 +59,7 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 
 - **Relative balance**: music sits ~6 dB under the "normal" SFX, so a jump is always heard over a full band.
 - **Ducking**: while an SFX with priority ≥ 7 plays, the music bus is lowered **−6 dB** (attack 20 ms, release 250 ms).
-- **All content below 10 kHz** except clicks, so a 22 050 Hz output rate is acceptable (engine's call; 44 100 Hz is fine too). Band-limited oscillators recommended for square/saw above C6 (aliasing would read as noise).
+- **All content below 10 kHz** except clicks and paper-rustle noise (`bills_hang`, centroid ~9 kHz, accepted in the S1 review: the engine renders at 44 100 Hz), so a 22 050 Hz output rate is acceptable (engine's call; 44 100 Hz is fine too). Band-limited oscillators recommended for square/saw above C6 (aliasing would read as noise).
 - **DC offset** < 0.5 % of full scale in every render; every cue starts and ends at zero (fade-in/out ≥ 2 ms) so nothing clicks.
 
 ## 4. Music: transitions and rules
@@ -70,7 +70,7 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | START on the title / on „Weiter?" / in the map's Wait | the current piece stops (10 ms fade), SFX `ui_start` |
 | **Stage intro** (150 frames) | silence; SFX `station_gong` (nice) when it follows the title, the map or a continue, **not** after a death (the death cue's tail is still ringing) |
 | **Playing** begins (after the intro; in `start = playing` games: the first frame and every `Respawned`) | the stage piece from **bar 1** (intro bars included), normal tempo |
-| **Pause** (START) | music **pauses in place** (no duck, silence), every SFX voice is cut (10 ms), SFX `pause`; on resume `pause` (2 semitones lower) and the music continues from where it stopped |
+| **Pause** (START) | music **pauses in place** (no duck, silence), every SFX voice is cut (10 ms), SFX `pause`; on resume `pause` (2 semitones lower is nice, section 6.3) and the music continues from where it stopped |
 | **ZEIT drops to 60** (the HUD turns red; the first frame of play with `time_left == 60` after a frame with 61) | music cue `hurry` (the piece pauses for 1.6 s, then resumes where it was); **nice**: from then on the piece plays **+12 % tempo** (until the next respawn or stage). In the boss fight the bells play on SFX voice I over the boss music instead (no pause mid-fight) |
 | **Died** | music cut at once, all SFX voices cut, cue `death` (1.0 s + 0.3 s release; the Dying phase is 60 frames) |
 | **GameOver** event | cue `game_over` (cuts any tail of `death`); after it, silence until START |
@@ -268,7 +268,7 @@ Columns: **Trigger** (a core `Event`, or a state change the app derives; "first 
 
 | Event | SFX id | Voice / prio | Duration | Synthesis and pitch contour | Peak | Prio |
 |---|---|---|---|---|---|---|
-| `Jumped` | `jump` „Hupf" | P / 4 | 150 ms | pulse 25 %, D4 (294 Hz) → A5 (880 Hz) exponential over 120 ms; A 2 / D 140 / S 0. **Big or Hackl**: a fourth lower (A3 → E5). A jump-out from water is the same | −9 | must |
+| `Jumped` | `jump` „Hupf" | P / 4 | 150 ms | pulse 25 %, D4 (294 Hz) → A5 (880 Hz) exponential over 120 ms; A 2 / D 140 / S 0. **Nice** (S1 review: needs a cue-time pitch offset or a second id): Big or Hackl a fourth lower (A3 → E5). A jump-out from water is the same | −9 | must |
 | `Landed` | `land` | P / 1 | 50 ms | noise lowpass 500 Hz, A 1 / D 45; only after ≥ 16 airborne frames (the app counts frames off the ground) | −20 | nice |
 | `Died` | cue `death` | music | 1.3 s | section 5 | −6 | must |
 | `Respawned` | – | – | – | none (the stage piece starts with Playing) | – | – |
@@ -296,19 +296,19 @@ The app derives these from `Game` state (modes, phases, timers, entity kinds, `s
 | Moment (trigger) | SFX id | Voice / prio | Duration | Synthesis and pitch contour | Peak | Prio |
 |---|---|---|---|---|---|---|
 | START accepted: Title → intro, „Weiter?" → intro, map skip or Wait → intro, an ending phase skip (a new START press on a step whose mode or phase changes) | `ui_start` „Los!" | I / 6 | 200 ms | pulse 25 %, C5+G5 (arpeggio) 60 ms then C6 140 ms | −9 | must |
-| Pause entered / left | `pause` „Löffel am Häferl" | I / 9 | 260 ms | sines 2 637 + 3 951 + 5 274 Hz, A 1 / D 250 (a spoon on a cup: Jausenpause); leaving: 2 semitones lower | −10 | must |
+| Pause entered / left | `pause` „Löffel am Häferl" | I / 9 | 260 ms | sines 2 637 + 3 951 + 5 274 Hz, A 1 / D 250 (a spoon on a cup: Jausenpause); leaving plays the same sound. **Nice** (S1 review): leaving 2 semitones lower | −10 | must |
 | StageIntro entered, not from Dying | `station_gong` „Nächster Halt" | I / 3 | 900 ms | sine + 2nd partial at −10 dB, G5 400 ms then E5 500 ms | −12 | nice |
-| `ClearPhase::Tally`, every 3rd frame while the bonus grows | `tally_tick` | I / 2 | 25 ms | pulse 12.5 % B6 (1 976 Hz) | −16 | must |
+| `ClearPhase::Tally`, every 3rd frame while the bonus grows | `tally_tick` | I / 2 | 25 ms | pulse 12 % B6 (1 976 Hz) (duty in whole percent; S1 review) | −16 | must |
 | First frame of `ClearPhase::Clear` | `tally_end` „Kassa" | I / 6 | 500 ms | noise click 10 ms + sines 1 568 + 2 349 Hz, D 450 (an old till's bell) | −9 | must |
 | ZEIT drops to 60 | cue `hurry` | music | 1.6 s | section 5 | −8 | must |
-| Oberkellner: first frame of each `TELEGRAPH` | `boss_telegraph` „Vorsicht, heiß!" | W / 7 | the telegraph's length: 667 / 600 / 533 ms | cup rattle (noise ticks 8 ms at 15 Hz, bandpass 3 kHz) + a kettle whistle rising sine 1 800 → 2 400 Hz with 20 % noise, getting louder; it ends as the dash starts | −8 | must |
+| Oberkellner: first frame of each `TELEGRAPH` | `boss_telegraph` „Vorsicht, heiß!" | W / 7 | the telegraph's length: 667 / 600 / 533 ms | cup rattle (noise ticks 8 ms at 15 Hz, bandpass 3 kHz) + a kettle whistle rising sine 1 800 → 2 400 Hz with 20 % noise, getting louder; it ends as the dash starts (rendered at 667 ms; the cue director cuts it at the dash start in the 600 / 533 ms rounds, S1 review) | −8 | must |
 | Oberkellner: `DASH` (every 8th frame) | `boss_dash` | W / 3 | 30 ms | noise lowpass 800 Hz (footsteps) | −16 | nice |
 | Oberkellner: first frame of `BREATHE` | `boss_breathe` „Schnauf" | W / 7 | 600 ms | noise lowpass, cutoff 1.2 kHz → 300 Hz, amplitude hump (a sigh): **now you may stomp** | −10 | must |
 | Oberkellner: first frame of `STUN` (hits 1 and 2) | `boss_hit` „Unerhört!" | W / 8 | 500 ms | crockery clatter: six noise ticks bandpass 4 kHz at 0, 40, 70, 130, 180, 260 ms + slide whistle sine 1 200 → 300 Hz over 400 ms. It replaces that step's `stomp` or `axe_hit` | −6 | must |
 | Oberkellner: first frame of `VOLLEY` | `bills_hang` „Zahlen, bitte!" | W / 6 | 400 ms | paper rustle: four noise bursts 60 ms (gaps 20 ms), highpass 3 kHz | −12 | must |
 | Rechnung: first frame of `FALL` (one per step) | `bills_fall` | W / 5 | 600 ms | sine 1 500 → 500 Hz with tremolo 10 Hz (paper fluttering down) | −14 | nice |
 | Oberkellner: first frame of `INTRO` / of the first `TELEGRAPH` / of `DONE` | cues `boss_intro` / `boss_surprise` / `boss_defeat` | music | – | section 5 | – | must |
-| Operettensänger: first frame of `SING` | `hohes_c` „Das hohe C" | W / 6 | 800 ms (the 48 SING frames) | pulse 50 % **C6 (1 046.5 Hz)**, A 60 / R 80, vibrato 5.5 Hz ±35 cents from 150 ms, plus C5 at −12 dB (chest); cut at once if he is defeated | −8 | must |
+| Operettensänger: first frame of `SING` | `hohes_c` „Das hohe C" | W / 6 | 800 ms (the 48 SING frames) | pulse 50 % **C6 (1 046.5 Hz)**, A 60 / R 80, vibrato 6 Hz ±35 cents from 150 ms (rates are whole Hz; S1 review), plus C5 at −12 dB (chest); cut at once if he is defeated | −8 | must |
 | Operettensänger: first frame of `INHALE` | `einatmen` | W / 3 | 600 ms | noise bandpass, centre 1 kHz → 2.5 kHz (a big breath) | −16 | nice |
 | Popup „Bravo!" spawns | `applaus` | I / 5 | 900 ms | 40 noise grains (5–10 ms, bandpass 1–5 kHz) at fixed pseudo-random offsets (a seeded table, the same every time), swell 100 ms, decay | −12 | nice |
 | Kellner: first frame of `TRAY_BOUNCE` | `tray_ding` | – | – | see `Bounced` | – | nice |
