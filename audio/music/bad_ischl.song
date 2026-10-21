@@ -1,7 +1,7 @@
 # `bad_ischl` „Kurkonzert" (audio-design §5): Stage 8. 2/4, 112 BPM (bar 1.071 s),
-# D major (the Radetzky-Marsch's key), Trio G major. Intro 4 + A 16 + B 16 + C 4 = 40
-# bars, 42.9 s. D-114: a loop plays from sample 0, so after the chorale the spa band
-# tunes up again (C's A7 resolves onto their A) instead of the design's cymbal crash.
+# D major (the Radetzky-Marsch's key), Trio G major. Intro 4 + A 16 + B 16 + C 8 = 44
+# bars, 47.1 s. D-114: a loop plays from sample 0, so after the chorale the spa band
+# tunes up again instead of the design's cymbal crash.
 # Intro (1-4) „Die Kurkapelle stimmt": four band voices on A4, detuned -40/+25/-15/+40
 #   cents, sliding together over bars 1-2 (`stimmung`); a snare roll in bars 3-4 and the
 #   march's pickup.
@@ -11,8 +11,9 @@
 #   New Year's Concert clap-along: claps on every beat, the drums drop out.
 # B (21-36): original „Kurpark-Trio" in G major: a slow promenade (Kurgäste in
 #   bathrobes), the slippers shuffling on beat 2.
-# C (37-40): Haydn, „Gott erhalte Franz den Kaiser", its first four notes only, as a
-#   solemn chorale in half notes in D (Flügelhorn 3 dB down, the band held, no
+# C (37-44): Haydn, „Gott erhalte Franz den Kaiser": the hymn's first phrase („Gott
+#   erhalte Franz den Kaiser", 9 notes) at double note values in D, as a solemn chorale
+#   (Flügelhorn 3 dB down, the band's chords held one per bar, Helikon on the roots, no
 #   percussion). D-113's restriction: this phrase only, only here, no text, never as a
 #   victory, ending or credits music.
 [meta]
@@ -22,9 +23,9 @@ tempo_bpm = 112
 meter = "2/4"
 steps_per_beat = 4            # sixteenths: a bar has 8 steps
 key = "d major"
-bars = 40
+bars = 44
 order = ["I", "A", "B", "C"]
-source = "Johann Strauss (Vater), Radetzky-Marsch op. 228 (A); Joseph Haydn, Gott erhalte Franz den Kaiser, Hob. XXVIa:43 (C, first four notes)"
+source = "Johann Strauss (Vater), Radetzky-Marsch op. 228 (A); Joseph Haydn, Gott erhalte Franz den Kaiser, Hob. XXVIa:43 (C, first phrase)"
 edition = "Radetzky: Vienna, Haslinger, plate T.H. 10,996 (IMSLP preview), checked against Paris, Richault, plate R. 1233 [1859]; Kaiserhymne: L. Erk, Die deutschen Volkslieder mit ihren Singweisen, Berlin 1839"
 
 [channels]
@@ -99,9 +100,13 @@ drums  | r/4 L         | r/4 L         | r/4 L         | r/4 L         |
 
 [pattern.C]
 score = '''
-lead   | d5/8@71       | e5/8@71       | f#5/8@71      | e5/8@71       |
-second | [f#3,a3,d4]/8 | [e3,a3,c#4]/8 | [f#3,a3,d4]/8 | [e3,g3,c#4]/8 |
-bass   | d2/8          | a1/8          | d2/8          | a1/8          |
+lead   | d5/8@71       | _/4 e5/4@71   | f#5/8@71      | e5/8@71       |
+second | [f#3,a3,d4]/8 | [f#3,a3,d4]/4 [e3,a3,c#4]/4 | [f#3,a3,d4]/8 | [e3,a3,c#4]/8 |
+bass   | d2/8          | d2/4 a1/4     | d2/8          | a1/8          |
+
+lead   | g5/8@71       | f#5/8@71      | e5/4@71 c#5/4@71 | d5/8@71    |
+second | [g3,b3,d4]/8  | [f#3,a3,d4]/8 | [e3,g3,c#4]/8 | [f#3,a3,d4]/8 |
+bass   | g1/8          | d2/8          | a1/8          | d2/8          |
 '''
 
 [[quote]]
@@ -115,4 +120,4 @@ fixture = "haydn_kaiserhymne"
 channel = "lead"
 bar = 37
 transpose = 9
-compare = "pitches"     # a chorale in half notes (§5)
+augment = 2             # double note values (S2c review)
