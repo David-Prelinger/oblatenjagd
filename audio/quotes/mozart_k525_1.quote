@@ -1,0 +1,13 @@
+# Mozart, Eine kleine Nachtmusik K. 525, I. Allegro, bars 1-4 of the first violin, 4/4,
+# G major. Bar 1's first beat is a chord in the violins; its melody note is G (all five
+# parts sound G). Grid: eighths (a 4/4 bar = 8 steps).
+# Read from Mozart's autograph (first page; IMSLP #562645, reproduced on Wikimedia Commons
+# as „Mozart - Eine kleine Nachtmusik K.525 autograph.png"). The AMA score named in
+# audio-design §7 (Serie XIII No. 9, Breitkopf 1883, IMSLP #01776) could not be opened:
+# IMSLP's downloads are behind a captcha, and only page-1 previews of some files load.
+source = "W. A. Mozart, Eine kleine Nachtmusik K. 525, I. Allegro, Violino I, bars 1-4"
+edition = "Autograph score, Vienna, 10 August 1787 (holograph, IMSLP #562645)"
+steps_per_beat = 2
+notes = '''
+g5/2 r/1 d5 g5/2 r/1 d5 | g5/1 d5 g5 b5 d6/2 r | c6/2 r/1 a5 c6/2 r/1 a5 | c6/1 a5 f#5 a5 d5/2 r
+'''

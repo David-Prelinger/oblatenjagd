@@ -38,3 +38,31 @@ semitones lower when leaving, `stomp` chain pitch steps) are not authored.
 Noise layers through a low-pass carry DC (the LFSR's start is the same every time): give them
 a `highpass_hz` of ~100 Hz, but never on the layer that ends last (the high-pass's ring-out
 leaves a non-zero last sample, the `edges` lint).
+
+## Instruments and music (S2a)
+
+Instruments (`instruments/`, audio-design §2.1): `fluegelhorn` (M1), `klarinette` (M1 variant),
+`tenorhorn` (M2), `helikon` (M3), `begleitung` (M4 Nachschlag, played as chip chords),
+`orgel_satz` (sustained band chords: the funeral march, the Tusch), `schlagwerk` (M5 kit:
+`K` grosse_trommel, `S` kleine_trommel, `B` becken, `C` becken_kurz (choked), `X` klatschen,
+`T` triangel, `M` trommel_dumpf), and the special colours `glocke` (the `hurry` church bell)
+and `helikon_plumps` (the `death` fall C3 to G2).
+
+Mixing notes for songs (the music bus wants peak ≤ −8 dBFS at RMS −20 ± 2):
+- Every note restarts its oscillator at phase 0, so onsets on the same step add their peaks.
+  The Flügelhorn is a 75 % pulse and the Tenorhorn a 25 % pulse: the same spectrum, opposite
+  polarity, so lead and second voice don't stack. Keep that pairing in new instruments.
+- Kicks and the Helikon land together on beat 1; keep the kit low (5–9 % channel volume) and
+  let the sustained voices carry the RMS.
+- Chords with `arp_ms = 0` sum three in-phase voices; hold them quietly (the Tusch) or
+  arpeggiate them.
+- Jingles end on a choked cymbal (`C`) or a release, not the long `B`: a 400 ms linear decay
+  leaves more than 50 ms under −40 dBFS (the `tail` lint).
+
+Intros (D-114: a loop plays from sample 0): `title` (bars 1–4, the post-horn call) and
+`salzburg` (bars 1–2, the vamp) keep their intro bars inside the loop, so they recur once per loop.
+
+Quotes (`quotes/`): `mozart_k606_1` and `mozart_k596` are read from the AMA pages on IMSLP
+(page-1 previews; the PDFs are behind a captcha), `mozart_k525_1` from Mozart's autograph
+(IMSLP #562645, the AMA file could not be opened). `oblaten_motiv` and `oblaten_motiv_moll`
+are the leitmotif.

@@ -1,0 +1,102 @@
+# M5 Schlagwerk, the band's percussion (audio-design §2.1). One hit at a time: a new hit
+# cuts the old one (the channel is monophonic).
+#   K grosse_trommel   sine 120 -> 50 Hz in 60 ms + a 10 ms noise thump
+#   S kleine_trommel   noise band-pass 1.5 kHz 150 ms + a sine body 180 Hz 40 ms
+#   B becken           noise high-pass 6 kHz, decay 400 ms
+#   C becken_kurz      the choked cymbal: the same, cut after 60 ms
+#   X klatschen        a hand clap: 4 noise bursts 10 ms apart, band-pass 1.2 kHz
+#   T triangel         sine 4.2 kHz, decay 300 ms
+#   M trommel_dumpf    the muffled funeral drum: grosse_trommel with D 400, low-pass 300 Hz
+[kit]
+K = "grosse_trommel"
+S = "kleine_trommel"
+B = "becken"
+C = "becken_kurz"
+X = "klatschen"
+T = "triangel"
+M = "trommel_dumpf"
+
+[[patch.grosse_trommel.layer]]
+wave = "sine"
+freq_hz = 120
+slide_to_hz = 50
+slide_ms = 60
+attack_ms = 1
+hold_ms = 20
+decay_ms = 130
+volume_pct = 70
+
+[[patch.grosse_trommel.layer]]
+wave = "noise"
+freq_hz = 3000
+attack_ms = 1
+decay_ms = 10
+volume_pct = 20
+lowpass_hz = 2000
+
+[[patch.kleine_trommel.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 150
+volume_pct = 40
+bandpass = { hz = 1500, q_pct = 120 }
+
+[[patch.kleine_trommel.layer]]
+wave = "sine"
+freq_hz = 180
+attack_ms = 1
+decay_ms = 40
+volume_pct = 30
+
+[[patch.becken.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 400
+volume_pct = 40
+highpass_hz = 6000
+
+[[patch.becken_kurz.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+hold_ms = 40
+decay_ms = 20
+volume_pct = 40
+highpass_hz = 6000
+
+[[patch.klatschen.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 9
+volume_pct = 45
+bandpass = { hz = 1200, q_pct = 120 }
+repeat = { count = 4, every_ms = 10 }
+
+[[patch.triangel.layer]]
+wave = "sine"
+freq_hz = 4200
+attack_ms = 1
+decay_ms = 300
+volume_pct = 18
+
+[[patch.trommel_dumpf.layer]]
+wave = "sine"
+freq_hz = 120
+slide_to_hz = 50
+slide_ms = 60
+attack_ms = 2
+hold_ms = 20
+decay_ms = 400
+volume_pct = 70
+lowpass_hz = 300
+
+[[patch.trommel_dumpf.layer]]
+wave = "noise"
+freq_hz = 3000
+attack_ms = 1
+decay_ms = 15
+volume_pct = 20
+lowpass_hz = 300

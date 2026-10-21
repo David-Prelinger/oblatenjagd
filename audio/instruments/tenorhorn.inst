@@ -1,0 +1,17 @@
+# M2 Zweite Stimme, the Tenorhorn (audio-design §2.1): pulse 25 % like the Flügelhorn but
+# without the scoop and darker (low-pass 3.5 kHz), so the Zwiegesang's lower voice sits
+# under the lead. The songs give it 3 dB less than M1 (channel volume ≈ 0.7 × M1's).
+# Its 25 % spike points up, the Flügelhorn's (duty 75 %) down, so the two voices' peaks
+# don't stack.
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+attack_ms = 10
+decay_ms = 80
+sustain_pct = 70
+release_ms = 60
+volume_pct = 60
+lowpass_hz = 3500
+vibrato = { depth_cents = 10, rate_hz = 5, delay_ms = 250 }

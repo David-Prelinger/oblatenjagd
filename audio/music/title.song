@@ -1,0 +1,113 @@
+# `title` „Oblatenjagd-Marsch" (audio-design §5): 2/4, 116 BPM, B-flat major, Trio in
+# E-flat. Intro 4 (the post-horn call) + A 16 + Trio 16 = 36 bars.
+# D-114: a loop plays from sample 0, so the post-horn call is bar 1 of the loop (it opens
+# the title screen and comes back every 37 s, like a Postbus at its stop). Bar 36 is an
+# F7 bar (the dominant of B-flat) that leads into the call's B-flat.
+[meta]
+id = "title"
+kind = "loop"
+tempo_bpm = 116
+meter = "2/4"
+steps_per_beat = 4            # sixteenths: a bar has 8 steps
+key = "bb major"
+bars = 36
+order = ["I", "A", "T", "X"]
+source = "original"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 26 }
+trio   = { instrument = "fluegelhorn", volume_pct = 19 }   # the Trio's lead, 3 dB softer
+second = { instrument = "tenorhorn", volume_pct = 23 }
+bass   = { instrument = "helikon", volume_pct = 20 }
+chords = { instrument = "begleitung", volume_pct = 22, arp_ms = 17 }
+drums  = { instrument = "schlagwerk", volume_pct = 7 }
+
+# Intro: the post horn alone, natural harmonics of B-flat only (F4 B-flat4 D5 F5), and a
+# snare roll swelling under bar 4.
+[pattern.I]
+score = '''
+lead   | f4/2 bb4 d5/4 | f5/8          | d5/2 bb4 f4 d5 | bb4/4 r/4      |
+drums  | r/8           | r/8           | r/8            | S/1@30 S@35 S@40 S@50 S@60 S@70 S@85 S@100 |
+'''
+
+# A: the march tune, opening with the Oblaten-Motiv; 8 bars to a half cadence on F,
+# 8 bars to the full cadence. Second voice in thirds (and sixths where a third clashes).
+[pattern.A]
+score = '''
+lead   | r/2 bb4 d5 f5 | eb5/4> d5     | c5/2 d5 eb5 c5 | f5/4 d5        |
+second | r/2 g4 bb4 d5 | c5/4 bb4      | a4/2 bb4 c5 a4 | d5/4 bb4       |
+bass   | bb2/4 f2      | eb2/4 bb2     | f2/4 c3        | bb2/4 f2       |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [eb4,g4,bb4]' r [bb3,d4,f4]' | r/2 [f4,a4,c5]' r [f4,a4,eb5]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' |
+drums  | [K,B]/4 K     | K/4 K         | K/4 K          | K/4 K          |
+
+lead   | r/2 bb4 d5 f5 | g5/4> f5      | eb5/2 d5 c5 a4 | c5/8           |
+second | r/2 g4 bb4 d5 | eb5/4 d5      | c5/2 bb4 a4 f4 | a4/8           |
+bass   | bb2/4 f2      | eb2/4 bb2     | f2/4 c3        | f2/4 c3        |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [eb4,g4,bb4]' r [bb3,d4,f4]' | r/2 [f4,a4,eb5]' r [f4,a4,eb5]' | r/2 [f4,a4,c5]' r [f4,a4,c5]' |
+drums  | K/4 K         | K/4 K         | K/4 K          | K/4 S/1 S S S  |
+
+lead   | r/2 d5 eb5 f5 | bb5/4 f5      | g5/2 eb5 c5 eb5 | d5/4 bb4      |
+second | r/2 bb4 c5 d5 | d5/4 d5       | eb5/2 c5 g4 c5 | bb4/4 f4       |
+bass   | bb2/4 f2      | bb2/4 d2      | eb2/4 c3       | bb2/4 f2       |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [eb4,g4,bb4]' r [c4,eb4,g4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' |
+drums  | [K,B]/4 K     | K/4 K         | K/4 K          | K/4 K          |
+
+lead   | c5/2 d5 eb5 c5 | f5/2 d5 bb4 d5 | c5/2 a4 f4 a4 | bb4/4 r      |
+second | a4/2 bb4 c5 a4 | d5/2 bb4 f4 bb4 | a4/2 f4 c4 eb4 | d4/4 r      |
+bass   | f2/4 c3        | bb2/4 f2       | f2/4 c3        | bb2/4 f2    |
+chords | r/2 [f4,a4,eb5]' r [f4,a4,eb5]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [f4,a4,eb5]' r [f4,a4,eb5]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' |
+drums  | K/4 K          | K/4 K          | K/4 K         | K/4 S/1 S S S |
+'''
+
+# Trio: E-flat major, softer (lead 3 dB down, kick on 1 only), a broad cantabile with the
+# Oblaten-Motiv in augmentation (quarter quarter quarter half: Eb5 G5 Bb5 Ab5) in bar 21.
+[pattern.T]
+key = "eb major"
+score = '''
+trio   | eb5/4 g5      | bb5/4 ab5     | _/4 g5         | f5/8           |
+second | g4/4 bb4      | g5/4 f5       | _/4 eb5        | d5/8           |
+bass   | eb2/4 bb2     | eb2/4 ab2     | ab2/4 eb2      | bb2/4 f2       |
+chords | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [eb4,g4,bb4]' r [ab3,c4,eb4]' | r/2 [ab3,c4,eb4]' r [eb4,g4,bb4]' | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' |
+drums  | [K,B]/4 r     | K/4 r         | K/4 r          | K/4 r          |
+
+trio   | ab5/4 f5      | d5/4 bb4      | eb5/4 f5       | g5/8           |
+second | f5/4 d5       | bb4/4 f4      | g4/4 d5        | eb5/8          |
+bass   | bb2/4 f2      | bb2/4 ab2     | eb2/4 bb2      | eb2/4 bb2      |
+chords | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' r [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | K/4 r         | K/4 r         | K/4 r          | K/4 S/1 S S S  |
+
+trio   | eb5/4 g5      | bb5/4 ab5     | _/4 c6         | bb5/8          |
+second | g4/4 bb4      | g5/4 f5       | _/4 ab5        | g5/8           |
+bass   | eb2/4 bb2     | eb2/4 ab2     | ab2/4 eb2      | eb2/4 bb2      |
+chords | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [eb4,g4,bb4]' r [ab3,c4,eb4]' | r/2 [ab3,c4,eb4]' r [ab3,c4,eb4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | [K,B]/4 r     | K/4 r         | K/4 r          | K/4 r          |
+
+trio   | ab5/4 g5      | f5/4 bb4      | eb5/8          |
+second | c5/4 eb5      | d5/4 ab4      | g4/8           |
+bass   | ab2/4 eb2     | bb2/4 f2      | eb2/4 bb2      |
+chords | r/2 [ab3,c4,eb4]' r [eb4,g4,bb4]' | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | K/4 r         | K/4 r         | K/4 r          |
+'''
+
+# Bar 36: the way back, F7 (back in B-flat) with a snare roll into the post horn.
+[pattern.X]
+score = '''
+trio   | c5/2 eb5 a4 c5 |
+second | a4/2 c5 f4 a4  |
+bass   | f2/4 c3        |
+chords | r/2 [f4,a4,eb5]' r [f4,a4,eb5]' |
+drums  | K/4 S/1 S S S  |
+'''
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 5
+step = 2
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "trio"
+bar = 21
+transpose = 5
+augment = 2
