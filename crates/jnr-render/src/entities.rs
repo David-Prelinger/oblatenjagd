@@ -32,7 +32,7 @@
 
 use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite};
 use jnr_core::entity::{EnemyKind, Entity, EntityKind, Popup};
-use jnr_core::{AmpelLight, Block, BusLook, Camera, Game, Pose, Tile};
+use jnr_core::{AmpelLight, Block, BusLook, Camera, Game, Pose, SpawnKind, Tile};
 
 use crate::Framebuffer;
 use crate::blit::draw_sprite;
@@ -153,6 +153,28 @@ pub const GISCHT_SPREAD_PX: i32 = 8;
 /// the `kurgast` sprite's `liegen`/`wake` anims are used.
 pub const LIEGESTUHL_SPRITE: &str = "liegestuhl";
 
+/// A Wartender (D-105, a still Selfie-Tourist placed as `wartender`):
+/// 16×24, origin at the feet, always facing right; three looks picked by
+/// (spawn column div 3) mod [`WARTENDER_LOOKS`] (D-112), each with its own anims
+/// ([`WARTENDER_IDLE`], [`WARTENDER_SELFIE`], [`WARTENDER_SQUISHED`]).
+/// Without it: the Selfie-Tourist's grey box.
+pub const WARTENDER_SPRITE: &str = "wartender";
+/// The number of Wartender looks.
+pub const WARTENDER_LOOKS: i32 = 3;
+/// A Wartender's standing anim by look (a Selfie-Tourist's `walk`).
+pub const WARTENDER_IDLE: [&str; WARTENDER_LOOKS as usize] = ["idle_0", "idle_1", "idle_2"];
+/// A Wartender's selfie anim by look (frame 1 = the flash, like `selfie`).
+pub const WARTENDER_SELFIE: [&str; WARTENDER_LOOKS as usize] = ["selfie_0", "selfie_1", "selfie_2"];
+/// A defeated Wartender's anim by look.
+pub const WARTENDER_SQUISHED: [&str; WARTENDER_LOOKS as usize] =
+    ["squished_0", "squished_1", "squished_2"];
+
+/// The Kellner's grey box (until the `kellner` art lands, D-105): the tray
+/// line at the box top is this many px high ...
+pub const KELLNER_TRAY_PX: i32 = 2;
+/// ... and drawn this many px lower in the `bounce` pose (the tray dips).
+pub const KELLNER_TRAY_DIP_PX: i32 = 2;
+
 /// The entity sprites, resolved once.
 #[derive(Clone, Debug, Default)]
 pub struct EntityLooks<'a> {
@@ -187,6 +209,10 @@ pub struct EntityLooks<'a> {
     liegestuhl: Option<&'a AtlasSprite>,
     offizier: Option<&'a AtlasSprite>,
     offizier_lead: Option<&'a AtlasSprite>,
+    kellner: Option<&'a AtlasSprite>,
+    wartender: Option<&'a AtlasSprite>,
+    oberkellner: Option<&'a AtlasSprite>,
+    rechnung: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -245,6 +271,10 @@ impl<'a> EntityLooks<'a> {
             liegestuhl: s(LIEGESTUHL_SPRITE),
             offizier: s(EnemyKind::Offizier.sprite()),
             offizier_lead: s("offizier_lead"),
+            kellner: s(EnemyKind::Kellner.sprite()),
+            wartender: s(WARTENDER_SPRITE),
+            oberkellner: s(EnemyKind::Oberkellner.sprite()),
+            rechnung: s("rechnung"),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -295,7 +325,10 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Auto => self.auto,
                 EnemyKind::Kurgast => self.kurgast,
                 EnemyKind::Offizier => self.offizier,
+                EnemyKind::Kellner => self.kellner,
+                EnemyKind::Oberkellner => self.oberkellner,
             },
+            EntityKind::Rechnung => self.rechnung,
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
             EntityKind::Gondel => self.gondel,
@@ -347,7 +380,14 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             EnemyKind::Auto => DIRNDL_RED,
             EnemyKind::Kurgast => STONE_GREY,
             EnemyKind::Offizier => STONE_GREY,
+            // `d` like the Operettensänger (the palette has no colour
+            // left); his box differs by its white apron and tray line.
+            EnemyKind::Kellner => SLATE_DARK,
+            // `d` tails (D-106 grey box: a `d` box with an `i` tray line).
+            EnemyKind::Oberkellner => SLATE_DARK,
         },
+        // `w` paper.
+        EntityKind::Rechnung => WHITE,
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
         EntityKind::Thrown => LEATHER_DARK,
@@ -415,7 +455,8 @@ impl Layer {
             | EntityKind::Thrown
             | EntityKind::Stein
             | EntityKind::Note
-            | EntityKind::ThrownHackl => Layer::Enemies,
+            | EntityKind::ThrownHackl
+            | EntityKind::Rechnung => Layer::Enemies,
             _ => Layer::Middle,
         }
     }
@@ -480,7 +521,8 @@ fn draw_entity(
         | EntityKind::Thrown
         | EntityKind::Stein
         | EntityKind::Note
-        | EntityKind::ThrownHackl => draw_enemy(game, looks, atlas, fb, cam, e),
+        | EntityKind::ThrownHackl
+        | EntityKind::Rechnung => draw_enemy(game, looks, atlas, fb, cam, e),
         EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
         EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
         EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
@@ -965,6 +1007,50 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::March => ("march", None),
         Pose::Habtacht => ("habtacht", None),
         Pose::Praesentiert => ("praesentiert", None),
+        Pose::Anstellen => ("anstellen", None),
+        Pose::Dash => ("dash", None),
+        Pose::Verschnaufen => ("verschnaufen", None),
+        Pose::Zahlen => ("zahlen", None),
+        Pose::Stun => ("stun", None),
+        Pose::Verbeugen => ("verbeugen", None),
+        Pose::Hang => ("hang", None),
+        Pose::Flutter => ("flutter", None),
+        Pose::Bounce => ("bounce", None),
+    }
+}
+
+/// A Wartender's look (0..[`WARTENDER_LOOKS`]: [`wartender_look_at`] its
+/// spawn column, D-112) if `e` (an enemy or a defeated one) was placed as
+/// `wartender`; `None` for everything else, a plain Selfie-Tourist included.
+pub fn wartender_look(game: &Game, e: &Entity) -> Option<usize> {
+    if !matches!(
+        e.kind,
+        EntityKind::Enemy(EnemyKind::SelfieTourist)
+            | EntityKind::Defeated(EnemyKind::SelfieTourist)
+    ) {
+        return None;
+    }
+    let s = e
+        .spawn
+        .and_then(|i| game.level().entities.get(usize::from(i)))?;
+    (s.kind == SpawnKind::Wartender).then(|| wartender_look_at(s.col))
+}
+
+/// The look of a Wartender spawned in column `col`: (col div 3) mod 3
+/// (D-112), so a queue spaced 3 apart (Stage 9) cycles through all three
+/// looks and neighbours never share one.
+pub fn wartender_look_at(col: i32) -> usize {
+    col.div_euclid(3).rem_euclid(WARTENDER_LOOKS) as usize
+}
+
+/// A Wartender's anim for `pose` in `look` (`idle_N`, `selfie_N` with its
+/// fixed frame, `squished_N`).
+pub fn wartender_anim(pose: Pose, look: usize) -> (&'static str, Option<usize>) {
+    let look = look.min(WARTENDER_LOOKS as usize - 1);
+    match pose {
+        Pose::Selfie { flash } => (WARTENDER_SELFIE[look], Some(usize::from(flash))),
+        Pose::Squished | Pose::Tumble => (WARTENDER_SQUISHED[look], None),
+        _ => (WARTENDER_IDLE[look], None),
     }
 }
 
@@ -1059,15 +1145,19 @@ fn draw_enemy(
     // A Kurgast in his deck chair is the `liegestuhl` sprite (its lying
     // anim is `idle`), else his own sprite's `liegen`/`wake`.
     let chair = matches!(pose, Pose::Liegen | Pose::Wake);
-    let (sprite, (name, frame)) = match (lead_sprite, looks.liegestuhl) {
-        (Some(s), _) if lead => (Some(s), pose_anim(pose)),
+    // A Wartender (D-105): the `wartender` sprite in its look (without it
+    // the Selfie-Tourist's grey box, not its sprite), always facing right.
+    let look = wartender_look(game, e);
+    let (sprite, (name, frame)) = match (look, lead_sprite, looks.liegestuhl) {
+        (Some(look), _, _) => (looks.wartender, wartender_anim(pose, look)),
+        (_, Some(s), _) if lead => (Some(s), pose_anim(pose)),
         // Postbus 150 (D-097): its own sprite (without it the yellow grey
         // box); at its stop `halt`, doors shut, faces at the windows.
         _ if postbus => match pose {
             Pose::Fotostopp { .. } => (looks.postbus, ("halt", None)),
             _ => (looks.postbus, pose_anim(pose)),
         },
-        (_, Some(s)) if chair => {
+        (_, _, Some(s)) if chair => {
             let anim = if pose == Pose::Liegen {
                 ("idle", None)
             } else {
@@ -1105,7 +1195,8 @@ fn draw_enemy(
                     EnemyKind::Fiaker | EnemyKind::EBiker | EnemyKind::Schneekugel
                 )
             );
-            let left = e.facing_left() && !fixed;
+            // A Wartender always faces right, towards the counter (D-105).
+            let left = e.facing_left() && !fixed && look.is_none();
             // The Regattaboot's origin is its sprite's bottom (its cell's
             // bottom), below the keel (the hitbox bottom).
             let y = if e.kind == EntityKind::Enemy(EnemyKind::Regattaboot) {
@@ -1153,10 +1244,16 @@ fn draw_enemy(
                     fb.fill_rect(bx + w - 5, by - 5, 2, 5, WHITE);
                 }
             }
+            if e.kind == EntityKind::Enemy(EnemyKind::Kellner) {
+                draw_kellner_marks(fb, bx, by, w, h, pose);
+            }
             if e.kind == EntityKind::Enemy(EnemyKind::Schwan) && pose == Pose::Telegraph {
                 // The hiss: raised wings as two white posts over the box.
                 fb.fill_rect(bx + 1, by - 4, 3, 4, WHITE);
                 fb.fill_rect(bx + w - 4, by - 4, 3, 4, WHITE);
+            }
+            if e.kind == EntityKind::Enemy(EnemyKind::Oberkellner) {
+                draw_tray_marks(fb, bx, by, w, pose, e.facing_left());
             }
             let officer = e.kind == EntityKind::Enemy(EnemyKind::Offizier);
             if officer {
@@ -1169,6 +1266,40 @@ fn draw_enemy(
             }
         }
     }
+}
+
+/// The Oberkellner grey box's tray (no `oberkellner` sprite yet, D-106):
+/// an `i` line 2 px high and 4 px wider than the box on its top while the
+/// tray is up (intro, telegraph, dash, volley, stun: the top of his
+/// hitbox is the tray); in his breather the tray hangs lowered at his
+/// front side, a 2×10 `i` bar beside the box from its middle down. No
+/// tray while he waits (it stands on the counter) or bows.
+fn draw_tray_marks(fb: &mut Framebuffer, bx: i32, by: i32, w: i32, pose: Pose, left: bool) {
+    match pose {
+        Pose::Anstellen | Pose::Telegraph | Pose::Dash | Pose::Zahlen | Pose::Stun => {
+            fb.fill_rect(bx - 2, by, w + 4, 2, SILVER_LIGHT);
+        }
+        Pose::Verschnaufen => {
+            let x = if left { bx - 2 } else { bx + w };
+            fb.fill_rect(x, by + 15, 2, 10, SILVER_LIGHT);
+        }
+        _ => {}
+    }
+}
+
+/// Grey-box marks of a walking Kellner (no `kellner` sprite yet, D-105) on
+/// his `d` box at (`x`, `y`), `w`×`h`: a white `w` apron over the lower
+/// half (1 px in from the sides) and the `i` tray line,
+/// [`KELLNER_TRAY_PX`] high across the whole top (the bounce surface), or
+/// [`KELLNER_TRAY_DIP_PX`] lower in the `bounce` pose.
+fn draw_kellner_marks(fb: &mut Framebuffer, x: i32, y: i32, w: i32, h: i32, pose: Pose) {
+    fb.fill_rect(x + 1, y + h / 2, w - 2, h - h / 2 - 1, WHITE);
+    let dip = if pose == Pose::Bounce {
+        KELLNER_TRAY_DIP_PX
+    } else {
+        0
+    };
+    fb.fill_rect(x, y + dip, w, KELLNER_TRAY_PX, SILVER_LIGHT);
 }
 
 /// Grey-box marks of an Offizier (no `offizier` sprite yet): in
@@ -1475,8 +1606,10 @@ fn draw_checkpoint(
 }
 
 /// A popup: the score as digits, or its text, centred and floating up.
+/// Public so tests can measure exactly what a popup draws (E53: the
+/// popups that keep their place, `jnr_core::game::PopupPlace`).
 #[allow(clippy::too_many_arguments)]
-fn draw_popup(
+pub fn draw_popup(
     game: &Game,
     atlas: &Atlas,
     font: &Font,
@@ -1947,6 +2080,15 @@ mod tests {
             Pose::March,
             Pose::Habtacht,
             Pose::Praesentiert,
+            Pose::Bounce,
+            Pose::Anstellen,
+            Pose::Dash,
+            Pose::Verschnaufen,
+            Pose::Zahlen,
+            Pose::Stun,
+            Pose::Verbeugen,
+            Pose::Hang,
+            Pose::Flutter,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -2006,6 +2148,50 @@ mod tests {
         assert_eq!((w1, w2), (Some(WHITE), Some(WHITE)), "flashes");
         let (_, _, w1, _) = marks(Pose::Fotostopp { flash: false }, 0);
         assert_eq!(w1, Some(SLATE_DARK));
+    }
+
+    #[test]
+    fn the_grey_box_oberkellner_shows_his_tray_up_or_lowered() {
+        use jnr_core::Pose;
+        // A 16×36 box at (100, 100); facing left or right.
+        let tray = |pose: Pose, left: bool| {
+            let mut fb = Framebuffer::new();
+            draw_tray_marks(&mut fb, 100, 100, 16, pose, left);
+            fb
+        };
+        // Tray up: an `i` line on the box's top, 2 px wider on each side.
+        for pose in [
+            Pose::Anstellen,
+            Pose::Telegraph,
+            Pose::Dash,
+            Pose::Zahlen,
+            Pose::Stun,
+        ] {
+            let fb = tray(pose, true);
+            for x in 98..118 {
+                assert_eq!(fb.get(x, 100), Some(SILVER_LIGHT), "{pose:?} x {x}");
+            }
+            assert_ne!(fb.get(98, 115), Some(SILVER_LIGHT));
+        }
+        // The breather: lowered to his front side, from his middle down.
+        let fb = tray(Pose::Verschnaufen, true);
+        assert_ne!(fb.get(105, 100), Some(SILVER_LIGHT), "no tray on top");
+        assert_eq!(fb.get(98, 115), Some(SILVER_LIGHT), "facing left");
+        assert_eq!(fb.get(99, 124), Some(SILVER_LIGHT));
+        let fb = tray(Pose::Verschnaufen, false);
+        assert_eq!(fb.get(116, 115), Some(SILVER_LIGHT), "facing right");
+        // Waiting (the tray is on the counter) and bowing: none.
+        for pose in [Pose::Idle, Pose::Verbeugen] {
+            let fb = tray(pose, true);
+            assert_ne!(fb.get(105, 100), Some(SILVER_LIGHT), "{pose:?}");
+            assert_ne!(fb.get(98, 115), Some(SILVER_LIGHT), "{pose:?}");
+        }
+        assert_eq!(
+            grey_box_colour(EntityKind::Enemy(EnemyKind::Oberkellner)),
+            SLATE_DARK
+        );
+        assert_eq!(grey_box_colour(EntityKind::Rechnung), WHITE);
+        assert_eq!(Layer::of(EntityKind::Rechnung), Layer::Enemies);
     }
 
     /// A grey-box level with `marks` (row, col, legend char) on a 20x10
@@ -2147,12 +2333,44 @@ mod tests {
             Popup::Checkpoint,
             Popup::Wurstkranz,
             Popup::Hoppala,
+            Popup::Hackl,
+            Popup::Ballast,
+            Popup::Bravo,
+            Popup::Beleidigt,
             Popup::Kurruhe,
             Popup::Abtreten,
+            Popup::Stollen,
+            Popup::KommGleich,
+            Popup::Anstellen,
+            Popup::Unerhoert,
+            Popup::BitteSehr,
         ] {
             let key = p.text_key().unwrap();
             assert!(texts.contains(key), "{key}");
+            // Every text popup's key is listed as an engine key.
+            assert!(crate::screens::TEXT_KEYS.contains(&key), "{key}");
         }
+        // Exhaustive on purpose (no `_` arm): a new popup kind fails to
+        // compile here until it is added to the list above.
+        let listed = |p: Popup| match p {
+            Popup::Score(_) => false,
+            Popup::ExtraLife
+            | Popup::Checkpoint
+            | Popup::Wurstkranz
+            | Popup::Hoppala
+            | Popup::Hackl
+            | Popup::Ballast
+            | Popup::Bravo
+            | Popup::Beleidigt
+            | Popup::Kurruhe
+            | Popup::Abtreten
+            | Popup::Stollen
+            | Popup::KommGleich
+            | Popup::Anstellen
+            | Popup::Unerhoert
+            | Popup::BitteSehr => true,
+        };
+        assert!(listed(Popup::BitteSehr) && !listed(Popup::Score(100)));
     }
 
     /// Two grey-box officers on a 20-column strip (the lead one at column
@@ -2272,6 +2490,8 @@ mod tests {
             // The Offizier shares the Kurgast's STONE_GREY (the palette has no
             // colour left; both draw their sprites, the grey box is a fallback).
             // His box differs by its hilt, flag and sabre marks.
+            // The Kellner shares the Operettensänger's SLATE_DARK (D-105);
+            // his box differs by its white apron and silver tray line.
         ];
         for (i, a) in kinds.iter().enumerate() {
             for b in &kinds[i + 1..] {
@@ -2853,6 +3073,196 @@ mod tests {
         }
     }
 
+    // ------------------------------------------- Kellner, Wartende (D-105)
+
+    /// A grey-box level with a Kellner at (6, 8) and Wartende at (9, 8),
+    /// (12, 8) and (15, 8) (looks 0, 1, 2 by (col div 3) mod 3) on the ground,
+    /// stepped once.
+    fn cafe_game() -> Game {
+        layered_game(
+            "....................\n....................\n....................\n\
+             ....................\n....................\n....................\n\
+             ....................\n....................\n..P...K..W..W..W....\n\
+             ####################\n",
+            "\"K\" = { entity = \"kellner\" }\n\"W\" = { entity = \"wartender\" }",
+        )
+    }
+
+    fn of(g: &Game, kind: EntityKind) -> Vec<Entity> {
+        g.entities()
+            .iter()
+            .filter(|e| e.kind == kind)
+            .copied()
+            .collect()
+    }
+
+    #[test]
+    fn the_grey_box_kellner_shows_his_apron_and_tray_line_dipping_on_a_bounce() {
+        use jnr_core::enemies::state;
+        let atlas = crate::testutil::atlas(&[]);
+        let g = cafe_game();
+        let mut k = of(&g, EntityKind::Enemy(EnemyKind::Kellner))[0];
+        let fb = drawn(&g, &atlas, &k);
+        let (bx, by) = (k.x.to_px() - g.camera().x, k.y.to_px() - g.camera().y);
+        let (w, h) = (k.w.to_px(), k.h.to_px());
+        assert_eq!(fb.get(bx + w / 2, by), Some(SILVER_LIGHT), "the tray line");
+        assert_eq!(fb.get(bx + w / 2, by + KELLNER_TRAY_PX), Some(SLATE_DARK));
+        assert_eq!(fb.get(bx + w / 2, by + h - 3), Some(WHITE), "the apron");
+        assert_eq!(
+            fb.get(bx + w / 2, by + h / 4),
+            Some(SLATE_DARK),
+            "waistcoat"
+        );
+        k.state = state::TRAY_BOUNCE;
+        let fb = drawn(&g, &atlas, &k);
+        assert_eq!(
+            fb.get(bx + w / 2, by),
+            Some(OUTLINE),
+            "dipped: the box outline"
+        );
+        assert_eq!(
+            fb.get(bx + w / 2, by + KELLNER_TRAY_DIP_PX),
+            Some(SILVER_LIGHT)
+        );
+    }
+
+    #[test]
+    fn the_kellner_sprite_shows_bounce_after_a_bounce_else_walk() {
+        use crate::testutil::{A, B, image, sprite};
+        use jnr_core::enemies::state;
+        let one = |c: &str| vec![image(&[c; 4])];
+        let atlas = crate::testutil::atlas(&[sprite(
+            "kellner",
+            (2, 4),
+            true,
+            vec![("walk", 0, one("aaaa")), ("bounce", 0, one("bbbb"))],
+        )]);
+        let g = cafe_game();
+        let mut k = of(&g, EntityKind::Enemy(EnemyKind::Kellner))[0];
+        for (st, colour) in [(state::WALK, A), (state::TRAY_BOUNCE, B)] {
+            k.state = st;
+            let fb = drawn(&g, &atlas, &k);
+            let (fx, fy) = k.feet();
+            let (x, y) = (fx.to_px() - g.camera().x, fy.to_px() - 1 - g.camera().y);
+            assert_eq!(fb.get(x, y), Some(colour), "state {st}");
+        }
+        assert_eq!(pose_anim(Pose::Bounce), ("bounce", None));
+    }
+
+    #[test]
+    fn wartende_pick_their_look_by_column_div_3_and_always_face_right() {
+        use crate::testutil::{A, B, C, image, sprite};
+        // Each look's anims in its own colour, a `.` column on the right
+        // half: mirrored, the colour would show right of the feet instead.
+        let half = |c: char| {
+            let row = format!("{c}{c}..");
+            vec![image(&[row.as_str(); 4])]
+        };
+        let mut anims = Vec::new();
+        for (i, c) in ['a', 'b', 'c'].into_iter().enumerate() {
+            anims.push((WARTENDER_IDLE[i], 0, half(c)));
+            anims.push((WARTENDER_SELFIE[i], 0, half(c)));
+            anims.push((WARTENDER_SQUISHED[i], 0, half(c)));
+        }
+        let atlas = crate::testutil::atlas(&[sprite(WARTENDER_SPRITE, (2, 4), true, anims)]);
+        let g = cafe_game();
+        let ws = of(&g, EntityKind::Enemy(EnemyKind::SelfieTourist));
+        assert_eq!(ws.len(), 3);
+        for (mut w, colour) in ws.into_iter().zip([A, B, C]) {
+            let look = wartender_look(&g, &w).unwrap();
+            assert_eq!(look, (w.feet().0.to_px() / 16 / 3) as usize % 3);
+            // Facing left in core would mirror any other enemy.
+            w.dir = -1;
+            let fb = drawn(&g, &atlas, &w);
+            let (fx, fy) = w.feet();
+            let (x, y) = (fx.to_px() - g.camera().x, fy.to_px() - 1 - g.camera().y);
+            assert_eq!(fb.get(x - 1, y), Some(colour), "look {look}");
+            assert_eq!(fb.get(x + 1, y), Some(crate::testutil::BG), "not mirrored");
+        }
+        assert_eq!(WARTENDER_LOOKS, 3);
+    }
+
+    #[test]
+    fn wartender_looks_cycle_along_the_stage_9_queue() {
+        // D-112: the real queue (3 apart) reads 0, 1, 2, ... from the left
+        // and neighbours never share a look.
+        let level =
+            Level::parse(include_str!("../../../content/levels/09_cafe_zauner.level")).unwrap();
+        let g = Game::new(&level, &tuning(), 1);
+        let mut queue: Vec<(i32, usize)> = g
+            .entities()
+            .iter()
+            .filter_map(|e| {
+                let look = wartender_look(&g, e)?;
+                Some((level.entities[usize::from(e.spawn?)].col, look))
+            })
+            .collect();
+        queue.sort_unstable();
+        assert_eq!(queue.len(), 9, "{queue:?}");
+        for (i, &(_, look)) in queue.iter().enumerate() {
+            assert_eq!(look, i % 3, "{queue:?}");
+        }
+        for pair in queue.windows(2) {
+            assert_ne!(pair[0].1, pair[1].1, "{queue:?}");
+        }
+        assert_eq!(
+            (0..6).map(wartender_look_at).collect::<Vec<_>>(),
+            [0, 0, 0, 1, 1, 1]
+        );
+        assert_eq!(wartender_look_at(9), 0);
+    }
+
+    #[test]
+    fn wartender_anims_follow_the_selfie_tourist_poses() {
+        assert_eq!(wartender_anim(Pose::Walk, 0), ("idle_0", None));
+        assert_eq!(
+            wartender_anim(Pose::Selfie { flash: false }, 1),
+            ("selfie_1", Some(0))
+        );
+        assert_eq!(
+            wartender_anim(Pose::Selfie { flash: true }, 2),
+            ("selfie_2", Some(1))
+        );
+        assert_eq!(wartender_anim(Pose::Squished, 2), ("squished_2", None));
+        assert_eq!(wartender_anim(Pose::Tumble, 0), ("squished_0", None));
+        let catalog = include_str!("../../../docs/sprite-catalog.md");
+        for n in [
+            "idle_0",
+            "selfie_0",
+            "squished_0",
+            "`wartender`",
+            "`kellner`",
+        ] {
+            assert!(catalog.contains(n), "{n} not in the catalog");
+        }
+    }
+
+    #[test]
+    fn a_wartender_without_his_sprite_is_the_selfie_tourist_grey_box() {
+        use crate::testutil::{A, image, sprite};
+        // The Selfie-Tourist's sprite exists, the Wartender's doesn't: a
+        // plain tourist draws its sprite, a Wartender the grey box.
+        let one = |c: &str| vec![image(&[c; 4])];
+        let atlas = crate::testutil::atlas(&[sprite(
+            "selfie_tourist",
+            (2, 4),
+            true,
+            vec![("walk", 0, one("aaaa"))],
+        )]);
+        let g = cafe_game();
+        let w = of(&g, EntityKind::Enemy(EnemyKind::SelfieTourist))[0];
+        let fb = drawn(&g, &atlas, &w);
+        let (fx, fy) = w.feet();
+        let (x, y) = (fx.to_px() - g.camera().x, fy.to_px() - 1 - g.camera().y);
+        assert_eq!(fb.get(x, y - 4), Some(LAKE_DEEP));
+        assert_ne!(fb.get(x, y), Some(A));
+        // A plain Selfie-Tourist is not a Wartender.
+        let plain = Entity { spawn: None, ..w };
+        assert_eq!(wartender_look(&g, &plain), None);
+        let fb = drawn(&g, &atlas, &plain);
+        assert_eq!(fb.get(x, y), Some(A));
+    }
+
     // ------------------------------------------------ draw layers (D-086)
 
     /// A 20×10 grey-box level from `grid` (10 rows) with `legend` entries
@@ -3296,5 +3706,72 @@ mod tests {
             post.step(InputFrame::NONE);
         }
         assert_ne!(face(&post), Some(SKIN_LIGHT), "driving on: no faces");
+    }
+
+    /// E51: the Oberkellner's hit labels, centred
+    /// `OBERKELLNER_POPUP_SIDE_PX` beside him, keep clear of his sprite
+    /// cell (either facing) with the real font: each label's outline
+    /// starts at least 1 px beyond the cell.
+    #[test]
+    fn boss_hit_labels_clear_his_sprite() {
+        let atlas = jnr_assets::atlas();
+        let font = crate::Font::from_atlas(atlas);
+        let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
+        let s = atlas.sprite("oberkellner").expect("the sprite");
+        let half = s.origin.x.max(s.width - s.origin.x) as i32;
+        let t = tuning();
+        let mut labels: Vec<String> = [Popup::Unerhoert, Popup::BitteSehr]
+            .iter()
+            .map(|p| texts.get(p.text_key().unwrap()).into_owned())
+            .collect();
+        labels.push(t.enemies.oberkellner_hit_points.to_string());
+        labels.push(t.enemies.oberkellner_final_points.to_string());
+        for label in labels {
+            let w = font.measure(&label);
+            assert!(w > 0, "{label}");
+            // His cell around x 0: columns -half..half-1 (either facing).
+            // A label is drawn from `centre - w / 2` over w columns, with
+            // its outline 1 px around: columns left-1..=left+w.
+            let side = jnr_core::game::OBERKELLNER_POPUP_SIDE_PX;
+            for centre in [side, -side] {
+                let left = centre - w / 2;
+                let (first, last) = (left - 1, left + w);
+                assert!(
+                    first > half - 1 || last < -half,
+                    "{label} ({w} px) at {centre}: columns {first}..={last} touch the cell"
+                );
+            }
+        }
+    }
+
+    /// E53: the box `jnr-core` keeps the boss's labels in (centre ±
+    /// `LABEL_HALF_W_PX`, `POPUP_DRAWN_H_PX` rows from the top outline)
+    /// holds every label with the real font: the outline's columns
+    /// `left − 1 ..= left + w`, the 8 px glyph cell's rows plus 1 px of
+    /// outline above and below.
+    #[test]
+    fn boss_labels_fit_the_box_core_keeps_clear() {
+        let atlas = jnr_assets::atlas();
+        let font = crate::Font::from_atlas(atlas);
+        let texts = Texts::parse(include_str!("../../../content/text/de.toml")).unwrap();
+        let t = tuning();
+        let half = jnr_core::game::LABEL_HALF_W_PX;
+        assert_eq!(jnr_core::game::POPUP_DRAWN_H_PX, 8 + 2);
+        let mut labels: Vec<String> = [Popup::Unerhoert, Popup::BitteSehr]
+            .iter()
+            .map(|p| texts.get(p.text_key().unwrap()).into_owned())
+            .collect();
+        labels.push(t.enemies.oberkellner_hit_points.to_string());
+        labels.push(t.enemies.oberkellner_final_points.to_string());
+        for label in labels {
+            let w = font.measure(&label);
+            let left = -(w / 2);
+            assert!(
+                left > -half && left + w < half,
+                "{label} ({w} px): columns {}..={} beyond ±{half}",
+                left - 1,
+                left + w
+            );
+        }
     }
 }

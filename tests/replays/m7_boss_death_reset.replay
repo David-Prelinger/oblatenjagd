@@ -1,0 +1,27 @@
+# A death in the arena and the reset (D-106: a respawn resets the level and
+# so the fight). As m7_boss_win_normal up to hit 1 (frame 579, 1000); then
+# Resi walks off the refuge behind his dash right and waits on the floor
+# under the round-2 volley's first bill (arena column 4): it hits her as
+# Normal (936: a death; the bill is gone, two remain). She respawns at the
+# checkpoint (996) with the score kept and one life less; the Oberkellner
+# is back at his spawn, waiting, with no hits (boss_hits=0).
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=936..936 event=Respawned boss_hits=0 score=1000 lives=2 state=playing
+---
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+R 40
+- 400

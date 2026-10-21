@@ -546,8 +546,9 @@ mod tests {
 
     /// D-036: each stage tour is the title intro, then the stage's solver
     /// route unchanged, then 800 idle frames for the Maibaum sequence (and
-    /// the route map). A re-solve that changes a route must be copied into
-    /// its tour.
+    /// the route map); Café Zauner's tour idles 3348 frames instead, through
+    /// the finale and the whole ending to the marked title (M7). A re-solve
+    /// that changes a route must be copied into its tour.
     #[test]
     fn stage_tours_replay_the_solver_route() {
         let frames = |name: &str| -> Vec<u64> {
@@ -557,18 +558,19 @@ mod tests {
         };
         let (none, start) = (0, u64::from(InputFrame::START.bits()));
         let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
-        for stage in [
-            "salzburg",
-            "st_gilgen",
-            "brunnwinkl",
-            "falkenstein",
-            "st_wolfgang",
-            "wolfgangsee",
-            "strobl",
-            "bad_ischl",
+        for (stage, outro) in [
+            ("salzburg", 800),
+            ("st_gilgen", 800),
+            ("brunnwinkl", 800),
+            ("falkenstein", 800),
+            ("st_wolfgang", 800),
+            ("wolfgangsee", 800),
+            ("strobl", 800),
+            ("bad_ischl", 800),
+            ("cafe_zauner", 3348),
         ] {
             let route = frames(&format!("{stage}_solver.replay"));
-            let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+            let expected = [intro.clone(), route.clone(), vec![none; outro]].concat();
             let tour = frames(&format!("{stage}_tour.replay"));
             if let Some(i) = first_difference(&tour, &expected) {
                 let part = if i < intro.len() {
@@ -576,15 +578,15 @@ mod tests {
                 } else if i < intro.len() + route.len() {
                     "the solver route"
                 } else {
-                    "the Maibaum outro `- 800`"
+                    "the outro (`- 800`; Café Zauner `- 3348`)"
                 };
                 panic!(
                     "tests/replays/{stage}_tour.replay differs at frame {i}, in {part} (tour {} \
                      frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs \
-                     of tests/replays/{stage}_solver.replay unchanged, then `- 800` (D-036). \
-                     If `cargo xtask solve {stage} --write` changed the route, re-copy its \
-                     inputs into the tour, update its `expect` frames and re-pick the shot \
-                     frames (new goldens need an art-director verdict).",
+                     of tests/replays/{stage}_solver.replay unchanged, then `- {outro}` \
+                     (D-036). If `cargo xtask solve {stage} --write` changed the route, \
+                     re-copy its inputs into the tour, update its `expect` frames and \
+                     re-pick the shot frames (new goldens need an art-director verdict).",
                     tour.len(),
                     expected.len()
                 );
@@ -731,6 +733,50 @@ mod tests {
         assert!(played.image(1).is_none());
         let (ok, text) = run_replays(&root, &all_replays(&root).unwrap(), false);
         assert!(ok, "{text}");
+    }
+
+    /// D-104, the Stage 9 "New mechanics" table: in a level whose
+    /// `camera_top` is its bottom clamp (a fixed room camera: Café Zauner
+    /// and its grey boxes) the camera's y is that value on every frame of
+    /// every replay that plays it (by its `level` or `route` header), in
+    /// every mode.
+    #[test]
+    fn fixed_room_cameras_never_move_vertically_in_any_replay() {
+        let root = root();
+        let levels: Vec<Level> = content::all_levels(&root)
+            .unwrap()
+            .into_iter()
+            .map(|(_, l)| l.unwrap())
+            .collect();
+        let tuning = content::tuning(&root).unwrap();
+        let fixed = |l: &Level| {
+            l.meta
+                .camera_top
+                .filter(|&top| top == l.height * 16 - jnr_core::SCREEN_H)
+        };
+        let fixed_id = |id: &str| levels.iter().any(|l| l.meta.id == id && fixed(l).is_some());
+        let mut checked = Vec::new();
+        for path in all_replays(&root).unwrap() {
+            let replay = content::load_replay(&path).unwrap();
+            if !fixed_id(&replay.level) && !replay.route.iter().any(|id| fixed_id(id)) {
+                continue;
+            }
+            let game = replay.new_game(&levels, &tuning).unwrap();
+            let mut moved = None;
+            replay.run_game(game, |g| {
+                if let Some(top) = fixed(g.level())
+                    && g.camera().y != top
+                    && moved.is_none()
+                {
+                    moved = Some((g.frame(), g.camera().y));
+                }
+            });
+            assert_eq!(moved, None, "{}: (frame, camera y)", path.display());
+            checked.push(replay.level.clone());
+        }
+        for id in ["m7_boss", "m7_cafe"] {
+            assert!(checked.iter().any(|l| l == id), "{id}: {checked:?}");
+        }
     }
 
     #[test]

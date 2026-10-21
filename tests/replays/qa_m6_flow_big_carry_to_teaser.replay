@@ -1,5 +1,6 @@
 # QA M6 flow: Zuckerschock carried through Wolfgangsee -> Strobl -> Bad
-# Ischl -> the Cafe Zauner teaser -> title (D-047). Title flow with the run
+# Ischl -> the Cafe Zauner intro (D-047; up to M6 it went on to the
+# teaser and the title, hence the name). Title flow with the run
 # started at the Wolfgangsee: START at 20, intro, then
 # qa_m5_wolfgangsee_relaxed's inputs from 171 (the Mozartkugel at its
 # M-box, Zuckerschock from then on, LevelComplete at 5163), idle: tally,
@@ -13,8 +14,10 @@
 # the Fiaker, the first Traun notch; an extra life on the 100th Oblate),
 # from 9970 (before notch 2) a hurt-free solver beam search, power kept,
 # over the D-102 kerb and B2 pier to the goal (LevelComplete at 10897).
-# Idle: tally, the map walk to Cafe Zauner, the teaser, the title (11626)
-# with the run reset to the Wolfgangsee, Normal.
+# Idle: tally, the map walk to Cafe Zauner, the map in Wait, the Cafe
+# Zauner intro (11746) still big (score 58150, lives 4); the replay ends
+# in the intro (11807). Re-cut for D-108 (M7): Stage 9 is playable now,
+# so the map waits and leads into it instead of the teaser.
 # Re-cut for D-102 (E42): Strobl's 230 s shorten its tally by 10 frames
 # (10 idle frames fewer before Bad Ischl, whose inputs keep their clock);
 # the old route ran into the kerb at 151; Bad Ischl's 210 s shorten its
@@ -24,7 +27,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=5163..5163 deaths=0 no_event=Died no_event=Hurt no_event=GameOver event=PowerUp event=ExtraLife
-expect = state=title stage=wolfgangsee power=normal score=0 lives=3 oblaten=0
+expect = state=stage_intro stage=cafe_zauner power=big score=58150 lives=4 oblaten=11
 ---
 - 20
 S 1
@@ -267,4 +270,4 @@ BJR 36
 BR 2
 BJR 36
 BR 18
-- 760    # tally, map walk, teaser, title
+- 910    # tally, map walk (Wait), the Cafe Zauner intro (11746)

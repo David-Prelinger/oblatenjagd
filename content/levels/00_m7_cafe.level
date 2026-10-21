@@ -1,0 +1,88 @@
+# Grey-box test level for the M7 integration (task E49; not part of the
+# journey): every M7 kind together, side camera with camera_top = 92 (the
+# bottom clamp of a 17-row level: the camera never moves vertically,
+# D-104), the café's tiles (`stuck` ceiling rows 0-6, `marmor` floor with
+# its top on row 15, `marmor_punkt` dots, `vitrine`, `theke`, `luster`)
+# and props (`zauner_tuer`, `garderobe`, `kuchentheke`, `luster_deko`) on
+# the opaque `bg_zauner_salon` at factor 16. Columns are 0-based:
+#   0-9   the start at 2 (the door behind her at 1).
+#   10-23 a Kellner pen beside a still queue: a 2-high vitrine at 10-11,
+#         the Kellner at 21, the hat shelf (`oneway_wood`, row 12, 3 up)
+#         at 15-17 with the coat stand behind it and 3 Oblaten above;
+#         the pen's right end is the first Wartender: the Kellner turns
+#         at him (D-105 keeps a real level's Kellner away from the queue;
+#         here it is the point).
+#   24-36 the queue: five Wartende 3 apart on `marmor_punkt` dots, two
+#         chandeliers (row 10, 5 up) with Oblaten above them.
+#   42-57 a Kurgast's chair beside a vitrine: a 2-high vitrine at 42-43,
+#         the Kurgast at 52, a chandelier (row 10) at 48-50, a 3-high
+#         vitrine at 56-57 (his chair, lying beside it, makes it a 2-tile
+#         step).
+#   58-67 the checkpoint at 59, the `M`-box at (62, row 11), 4 columns
+#         left of the 1-high step at 66-67: its Mozartkugel falls off the
+#         box's right edge (rolling on while it falls) onto the floor,
+#         turns at the step and never reaches the arena (a box directly
+#         left of the step drops it onto the step, where it turns at the
+#         arena's refuge instead); a big Resi passes under the box (no
+#         D-106 squeeze).
+#   68-87 the arena (the level's last 20 columns, D-106): the 3-high left
+#         refuge (`vitrine`) at 68-69, the floor 70-84, the counter
+#         (`theke`, 3 high) at 85-87 with the `goal_stollen` at 86 on its
+#         top and the counter's shelves (`kuchentheke`, placed on the
+#         floor cell 84 with dx 32: centred on 86, since a prop's cell must
+#         not collide); the Oberkellner at 82 (arena column 14). The arena
+#         locks when the camera reaches x 1088.
+# Bills: round 2 at columns 72, 77, 82, round 3 at 71, 75, 79, 83.
+# Solver replay: tests/replays/m7_cafe_solver.replay.
+
+[meta]
+id = "m7_cafe"
+time_limit = 300
+min_jump_window = 5
+camera_top = 92
+background = [
+  { sprite = "bg_zauner_salon", factor = 16 },
+]
+
+[legend]
+"S" = "stuck"
+"m" = "marmor"
+"p" = "marmor_punkt"
+"V" = "vitrine"
+"T" = "theke"
+"L" = "luster"
+"=" = "oneway_wood"
+"o" = { entity = "oblate" }
+"D" = { entity = "prop", sprite = "zauner_tuer", layer = "back" }
+"g" = { entity = "prop", sprite = "garderobe", layer = "back" }
+"u" = { entity = "prop", sprite = "kuchentheke", layer = "back", dx = 32 }
+"l" = { entity = "prop", sprite = "luster_deko", layer = "back" }
+"K" = { entity = "kellner" }
+"W" = { entity = "wartender" }
+"k" = { entity = "kurgast" }
+"C" = { entity = "checkpoint" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"O" = { entity = "oberkellner" }
+"G" = { entity = "goal_stollen" }
+"P" = { entity = "player_start" }
+
+[map]
+grid = '''
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+........................................................................................
+..........................ooo....ooo............ooo..........................l..........
+........................................................................................
+...............ooo........LLL....LLL............LLL.....................................
+..............................................................M.......................G.
+...............===......................................VV..........VV...............TTT
+..........VV..............................VV............VV..........VV...............TTT
+.DP.......VV....g....K..W..W..W..W..W.....VV........k...VV.C......mmVV............O.uTTT
+mmmmmmmmmmmmmmmmmmmmmmmmpmmpmmpmmpmmpmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+'''

@@ -67,9 +67,14 @@ pub const INVISIBLE_TILE: &str = "invisible";
 /// The autotile family of a tile name: names of one family count as the
 /// same neighbour for [`autotile_mask`] (in both directions). A small
 /// explicit table; every other name is its own family.
+/// - `arch_under` (the arch's lower row) joins `arch`.
+/// - `marmor_punkt` (Stage 9's „Abstand halten" floor dot) joins the
+///   `marmor` floor (art-director, M7 café art: else each dot shows the
+///   floor's cream lip line under it; D-104 addendum).
 pub(crate) fn autotile_family(name: &str) -> &str {
     match name {
         "arch_under" => "arch",
+        "marmor_punkt" => "marmor",
         other => other,
     }
 }
@@ -386,6 +391,37 @@ mod tests {
     }
 
     #[test]
+    fn marmor_punkt_joins_the_marmor_floor() {
+        assert_eq!(autotile_family("marmor_punkt"), "marmor");
+        assert_eq!(autotile_family("marmor"), "marmor");
+        // A marble floor two rows deep with a dot in its top row, a
+        // vitrine beside it.
+        let l = level(
+            "\"m\" = \"marmor\"\n\"p\" = \"marmor_punkt\"\n\"V\" = \"vitrine\"\n",
+            "P....\n.mpmV\n.mmmV\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (2,1) the dot: marble on both sides and below, open top.
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 2, 1),
+            MASK_E | MASK_S | MASK_W
+        );
+        // The marble beside it sees it as marble (E / W), the marble
+        // under it sees it above (N): no lip line under the dot.
+        assert_eq!(autotile_mask(&map, &looks.family, 1, 1), MASK_E | MASK_S);
+        assert_eq!(autotile_mask(&map, &looks.family, 3, 1), MASK_S | MASK_W);
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 2, 2),
+            MASK_N | MASK_E | MASK_S | MASK_W
+        );
+        // Without the families the dot is a different tile.
+        assert_eq!(autotile_mask(&map, &[], 2, 1), 0);
+        assert_eq!(autotile_mask(&map, &[], 1, 1), MASK_S);
+    }
+
+    #[test]
     fn kalkfels_bg_joins_a_steig_wall_plank_one_way() {
         assert_eq!(one_way_join("kalkfels_bg", "steig_wall"), 15);
         assert_eq!(one_way_join("steig_wall", "kalkfels_bg"), 0);
@@ -565,6 +601,26 @@ mod tests {
         assert_eq!(ns(2), MASK_S, "top: open above (the deck)");
         assert_eq!(ns(3), MASK_N | MASK_S, "middle");
         assert_eq!(ns(4), MASK_N, "bottom: the bed below");
+    }
+
+    #[test]
+    fn cafe_tiles_draw_as_grey_boxes_by_kind_until_the_art_lands() {
+        // M7 (E48): no `tile_<name>` sprites yet; the five solids fill their
+        // cell in stone grey, the chandelier ring is a one-way strip on top.
+        let l = level(
+            "\"m\" = \"marmor\"\n\"d\" = \"marmor_punkt\"\n\"s\" = \"stuck\"\n\"v\" = \"vitrine\"\n\"t\" = \"theke\"\n\"l\" = \"luster\"\n",
+            "Psl\nvt.\nmdm\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let mut fb = testutil::fb();
+        let air = fb.get(36, 12);
+        draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, 0);
+        for (x, y) in [(20, 8), (4, 24), (20, 24), (4, 40), (20, 40), (36, 40)] {
+            assert_eq!(fb.get(x, y), Some(STONE_GREY), "solid at {x},{y}");
+        }
+        assert_eq!(fb.get(36, 1), Some(LEATHER_DARK), "luster: one-way top");
+        assert_eq!(fb.get(36, 12), air, "luster: open below its top");
     }
 
     #[test]

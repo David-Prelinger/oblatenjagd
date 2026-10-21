@@ -55,6 +55,21 @@ pub enum Popup {
     Kurruhe,
     /// `popup.abtreten` („Abtreten!"), a defeated Offizier (D-096).
     Abtreten,
+    /// `popup.stollen` („Zaunerstollen!"), touching the armed
+    /// `goal_stollen` (D-107).
+    Stollen,
+    /// `popup.komm_gleich` („Komm' gleich!"), a bounce off a Kellner's
+    /// tray (D-105).
+    KommGleich,
+    /// `popup.anstellen` („Hinten anstellen!"), the Oberkellner's intro at
+    /// the arena lock (D-106).
+    Anstellen,
+    /// `popup.unerhoert` („Unerhört!"), the Oberkellner's first and second
+    /// hit (D-106).
+    Unerhoert,
+    /// `popup.bitte_sehr` („Bitte sehr!"), the Oberkellner's third hit: he
+    /// is beaten (D-106).
+    BitteSehr,
 }
 
 impl Popup {
@@ -72,11 +87,17 @@ impl Popup {
             Popup::Beleidigt => Some("popup.beleidigt"),
             Popup::Kurruhe => Some("popup.kurruhe"),
             Popup::Abtreten => Some("popup.abtreten"),
+            Popup::Stollen => Some("popup.stollen"),
+            Popup::KommGleich => Some("popup.komm_gleich"),
+            Popup::Anstellen => Some("popup.anstellen"),
+            Popup::Unerhoert => Some("popup.unerhoert"),
+            Popup::BitteSehr => Some("popup.bitte_sehr"),
         }
     }
 }
 
-/// The enemy types of Stages 1–8.
+/// The enemy types of Stages 1–9. (A Stage 9 Wartender is a
+/// `SelfieTourist` that never walks: [`SpawnKind::Wartender`], D-105.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -129,6 +150,18 @@ pub enum EnemyKind {
     /// `offizier`: marches, halts and presents sabres on the stage clock;
     /// the sabre zone ([`crate::enemies::sabre_zone`]) hurts (D-096).
     Offizier,
+    /// `kellner`: a fast walker (the Nordic-Walker's turn rules); not
+    /// stompable, his tray (the hitbox top) only bounces (D-105,
+    /// [`crate::enemies::update_kellner`]).
+    Kellner,
+    /// `oberkellner`: the boss of Stage 9 (D-106), a state machine from the
+    /// arena lock: telegraph, dash to the far wall, breather (the only
+    /// time a stomp or an axe hits him), volley of bills
+    /// ([`EntityKind::Rechnung`]); three hits beat him
+    /// ([`crate::enemies::update_oberkellner`]). Not stompable as a kind:
+    /// his tray bounces her; `Game::interact` asks
+    /// [`crate::enemies::oberkellner_contact`].
+    Oberkellner,
 }
 
 impl EnemyKind {
@@ -142,6 +175,8 @@ impl EnemyKind {
                 | EnemyKind::Reisebus
                 | EnemyKind::Regattaboot
                 | EnemyKind::Auto
+                | EnemyKind::Kellner
+                | EnemyKind::Oberkellner
         )
     }
 
@@ -171,7 +206,11 @@ impl EnemyKind {
             // Walking or lying in his deck chair (D-097).
             | EnemyKind::Kurgast
             // D-097: an officer sinks like a walker.
-            | EnemyKind::Offizier => true,
+            | EnemyKind::Offizier
+            // On foot (D-105).
+            | EnemyKind::Kellner
+            // D-106: on foot (no water in his arena, the lint keeps it flat).
+            | EnemyKind::Oberkellner => true,
             EnemyKind::Taube
             | EnemyKind::TaubeSitting
             | EnemyKind::Fiaker
@@ -229,6 +268,8 @@ impl EnemyKind {
             EnemyKind::Auto => "auto",
             EnemyKind::Kurgast => "kurgast",
             EnemyKind::Offizier => "offizier",
+            EnemyKind::Kellner => "kellner",
+            EnemyKind::Oberkellner => "oberkellner",
         }
     }
 
@@ -256,6 +297,10 @@ impl EnemyKind {
             EnemyKind::Kurgast => 19,
             // M6: 21–22 are reserved for the Offizier (E39).
             EnemyKind::Offizier => 21,
+            // M7: 23–24 are reserved for the Kellner (E45).
+            EnemyKind::Kellner => 23,
+            // M7: 25–26 are reserved for the Oberkellner (E46).
+            EnemyKind::Oberkellner => 25,
         }
     }
 }
@@ -340,6 +385,10 @@ pub enum EntityKind {
     /// A Fensterladen: a stationary one-way platform that is there only
     /// while open on the stage clock ([`crate::platform::shutter`], D-094).
     Fensterladen,
+    /// A Rechnung, the Oberkellner's bill (D-106): hangs harmless at the
+    /// ceiling, then flutters down and hurts on any contact; can't be
+    /// stomped, axes pass ([`crate::enemies::update_rechnung`]).
+    Rechnung,
 }
 
 impl EntityKind {
@@ -368,6 +417,7 @@ impl EntityKind {
             EntityKind::Dampfer => Some("dampfer"),
             EntityKind::Ampel => Some("ampel"),
             EntityKind::Fensterladen => Some("fensterladen"),
+            EntityKind::Rechnung => Some("rechnung"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -425,6 +475,8 @@ impl EntityKind {
             EntityKind::Ampel => 26,
             // 26–27: E36 (traffic); 28–29: E37.
             EntityKind::Fensterladen => 28,
+            // M7: 30–31 are reserved for E46.
+            EntityKind::Rechnung => 30,
         }
     }
 
@@ -446,6 +498,13 @@ impl EntityKind {
                 Popup::Beleidigt => h.u8(8),
                 Popup::Kurruhe => h.u8(9),
                 Popup::Abtreten => h.u8(10),
+                // M7: 12 is the Kellner's (E45); 13–16: E46; 17: E47.
+                Popup::KommGleich => h.u8(12),
+                Popup::Stollen => h.u8(17),
+                // M7: 13–16 are reserved for E46.
+                Popup::Anstellen => h.u8(13),
+                Popup::Unerhoert => h.u8(14),
+                Popup::BitteSehr => h.u8(15),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -496,6 +555,9 @@ pub struct Entity {
     /// Per-kind frame counter (e.g. the Selfie-Tourist's phase in its
     /// selfie period, frames into a state); 0 at spawn and activation.
     pub count: u16,
+    /// Hits taken: the Oberkellner's (0..=3, D-106); 0 for every other
+    /// entity.
+    pub hits: u8,
 }
 
 impl Entity {
@@ -519,6 +581,7 @@ impl Entity {
             base_y: y,
             base_x: x,
             count: 0,
+            hits: 0,
         }
     }
 
@@ -539,7 +602,9 @@ impl Entity {
         let feet_y = tile.mul_int(s.row + 1);
         let e = &t.enemies;
         let mut entity = match s.kind {
-            SpawnKind::PlayerStart | SpawnKind::Goal | SpawnKind::Prop => return None,
+            SpawnKind::PlayerStart | SpawnKind::Goal | SpawnKind::GoalStollen | SpawnKind::Prop => {
+                return None;
+            }
             SpawnKind::Oblate => {
                 // Centred in its cell.
                 let [w, h] = t.items.oblate_hitbox;
@@ -780,6 +845,28 @@ impl Entity {
                 feet_y,
                 e.offizier_hitbox,
             ),
+            SpawnKind::Kellner => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Kellner),
+                feet_x,
+                feet_y,
+                e.kellner_hitbox,
+            ),
+            // A Wartender is a Selfie-Tourist that never walks (D-105; its
+            // `dir` is set to 0 below); only the renderer tells them apart.
+            SpawnKind::Wartender => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::SelfieTourist),
+                feet_x,
+                feet_y,
+                e.selfie_tourist_hitbox,
+            ),
+            // Tray up, feet on his cell's bottom (the arena floor), waiting
+            // for the arena lock (D-106).
+            SpawnKind::Oberkellner => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Oberkellner),
+                feet_x,
+                feet_y,
+                e.oberkellner_hitbox,
+            ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -795,8 +882,10 @@ impl Entity {
         entity.active = false;
         entity.spawn = Some(index as u16);
         if let EntityKind::Enemy(kind) = entity.kind {
-            // A `still` tourist has no direction: it never walks (D-026).
-            entity.dir = if s.still { 0 } else { -1 };
+            // A `still` tourist and a Wartender have no direction: they
+            // never walk (D-026, D-105).
+            let still = s.still || s.kind == SpawnKind::Wartender;
+            entity.dir = if still { 0 } else { -1 };
             entity.state = crate::enemies::initial_state(kind);
             if kind == EnemyKind::Bienenschwarm {
                 // `dir` is its run direction (0..=7), placed at `phase`.
@@ -911,6 +1000,10 @@ impl Entity {
                 crate::enemies::update_stein(self, map, t);
                 None
             }
+            EntityKind::Rechnung => {
+                crate::enemies::update_rechnung(self, map, t);
+                None
+            }
             EntityKind::PoppedOblate => self.update_popped_oblate(t),
             EntityKind::Mozartkugel => {
                 self.update_power_up(map, t, t.items.mozartkugel_speed);
@@ -992,6 +1085,7 @@ impl Entity {
         h.i32(self.base_y.raw());
         h.i32(self.base_x.raw());
         h.u16(self.count);
+        h.u8(self.hits);
     }
 }
 
@@ -1029,6 +1123,9 @@ pub(crate) struct UpdateCtx<'a> {
     /// (`base_x`, `base_y`): an Ampel counts its own by its spawn point
     /// (D-093: at most `ampel_max_alive`).
     pub cars: &'a [(Fx, Fx)],
+    /// How many Rechnungen (the Oberkellner's bills) were alive at the
+    /// start of the update: his volley ends when none is left (D-106).
+    pub bills: usize,
 }
 
 impl UpdateCtx<'_> {
@@ -1113,6 +1210,7 @@ mod tests {
                 EntityKind::Dampfer => 25,
                 EntityKind::Ampel => 26,
                 EntityKind::Fensterladen => 27,
+                EntityKind::Rechnung => 28,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -1145,6 +1243,7 @@ mod tests {
             EntityKind::Dampfer,
             EntityKind::Ampel,
             EntityKind::Fensterladen,
+            EntityKind::Rechnung,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -1179,6 +1278,8 @@ mod tests {
                 EnemyKind::Auto => 17,
                 EnemyKind::Kurgast => 18,
                 EnemyKind::Offizier => 19,
+                EnemyKind::Kellner => 20,
+                EnemyKind::Oberkellner => 21,
             }
         }
         let enemies = [
@@ -1202,6 +1303,8 @@ mod tests {
             EnemyKind::Auto,
             EnemyKind::Kurgast,
             EnemyKind::Offizier,
+            EnemyKind::Kellner,
+            EnemyKind::Oberkellner,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1227,6 +1330,39 @@ mod tests {
         ten.u8(EntityKind::Popup(Popup::Abtreten).hash_tag());
         ten.u8(10);
         assert_eq!(h.finish(), ten.finish());
+        // M7 (E47, D-107): „Zaunerstollen!" sub-tag 17.
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::Stollen).hash(&mut h);
+        let mut seventeen = crate::hash::Fnv::new();
+        seventeen.u8(EntityKind::Popup(Popup::Stollen).hash_tag());
+        seventeen.u8(17);
+        assert_eq!(h.finish(), seventeen.finish());
+        // M7 ranges (parallel tasks): E45's Kellner 23 (23–24 reserved),
+        // its „Komm' gleich!“ sub-tag 12.
+        assert_eq!(EnemyKind::Kellner.id(), 23);
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::KommGleich).hash(&mut h);
+        let mut twelve = crate::hash::Fnv::new();
+        twelve.u8(EntityKind::Popup(Popup::KommGleich).hash_tag());
+        twelve.u8(12);
+        assert_eq!(h.finish(), twelve.finish());
+        // M7 E46: the Oberkellner 25 (25–26 reserved), the Rechnung 30
+        // (30–31), the popups „Hinten anstellen!" 13, „Unerhört!" 14,
+        // „Bitte sehr!" 15 (13–16).
+        assert_eq!(EnemyKind::Oberkellner.id(), 25);
+        assert_eq!(EntityKind::Rechnung.hash_tag(), 30);
+        for (p, sub) in [
+            (Popup::Anstellen, 13),
+            (Popup::Unerhoert, 14),
+            (Popup::BitteSehr, 15),
+        ] {
+            let mut h = crate::hash::Fnv::new();
+            EntityKind::Popup(p).hash(&mut h);
+            let mut want = crate::hash::Fnv::new();
+            want.u8(EntityKind::Popup(p).hash_tag());
+            want.u8(sub);
+            assert_eq!(h.finish(), want.finish(), "{p:?}");
+        }
     }
 
     use super::*;
@@ -1290,6 +1426,7 @@ mod tests {
             globes: &[],
             stage_clock: 0,
             cars: &[],
+            bills: 0,
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());

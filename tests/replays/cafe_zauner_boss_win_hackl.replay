@@ -1,0 +1,159 @@
+# Hackl in the café (D-105 axe rules; D-104: no H-box in Stage 9, so the
+# Hackl is carried in). The test route of
+# flow_m6_hackl_bad_ischl_to_cafe_zauner (the `hackl` level in Bad
+# Ischl's slot, station 8 of 9) and its 2076 frames: the hackl run's
+# Maibaum (1343), the tally, the route map, the Café Zauner intro (2016)
+# drawn with Hackl Resi; play from 2166 as Hackl (score 5450, lives 3).
+# She walks under the ?-box at 8 and the M-box at 12 (D-111) and hops
+# onto the vitrine at 18-19 (2343); as Kellner #1 comes towards her she
+# throws an axe (2369): it bounces off his tray (AxeHit 2408, no points,
+# he walks on). A beam search (no hurt, Hackl kept, no RUN) to Vitrine D:
+# down into pen 1, a tray bounce off Kellner #1 (2525) onto Vitrine A,
+# a tray bounce off Kellner #2 (2690) onto Vitrine B, a stomp on Kurgast
+# #1 (2798), Vitrine C, Vitrine D (2956). From its top she throws an axe
+# over the queue (2987): it comes down on the third Wartender (col 79):
+# defeated, 100 (3031).
+# Then a beam search (no hurt, Hackl kept, no RUN) over seven Wartende
+# (stomps 3067 ... 3334), the checkpoint (3491), the step and the
+# Tortenvitrine onto the arena floor (3609); she walks to the arena's
+# middle and the arena locks (3672, „Hinten anstellen!"). From the lock
+# on the inputs are m7_boss_win_hackl's from its lock (468): an axe in
+# his first telegraph bounces off the tray (AxeHit 3788, no points); she
+# stays on the floor and jumps every dash as it passes under her (3824,
+# 4049, 4268); one axe in each breather: hits at 3934 (left wall), 4156
+# (right wall) and 4358 (left wall), 1000 + 1000 + 5000; right after the
+# first hit a second axe flies through the stunned waiter (3939, no hit).
+# Every breather is hit, so no volley comes. Then the counter: the armed
+# goal_stollen (4547, 10 000); the replay ends in the Serve (4559).
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl hackl cafe_zauner
+expect = complete frames=1343..1343 deaths=0 no_event=Hurt event=AxeHit boss_hits=3
+expect = state=stage_clear stage=cafe_zauner power=hackl score=34550 lives=3
+---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 209
+- 823
+R 140
+RJ 20
+R 6
+- 36
+B 1
+- 45
+R 72
+RJ 20
+R 2
+RJ 1
+R 10
+RJ 36
+R 10
+RJ 36
+R 50
+RJ 20
+R 10
+RJ 20
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 20
+R 2
+RJ 20
+R 2
+RJ 19
+- 30
+B 1
+- 50
+R 24
+RJ 36
+R 10
+RJ 36
+R 2
+RJ 12
+R 2
+RJ 36
+R 2
+- 4
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+- 16
+RJ 36
+R 2
+RJ 36
+R 130
+RJ 20
+R 2
+RJ 1
+R 2
+RJ 1
+R 2
+RJ 1
+R 2
+RJ 6
+R 2
+RJ 35
+R 49
+- 105
+B 1
+- 59
+J 20
+- 60
+L 1
+B 1
+- 33
+B 1
+- 109
+J 20
+- 54
+R 1
+B 1
+- 143
+J 20
+- 40
+L 1
+B 1
+- 60
+R 120
+RJ 20
+R 30

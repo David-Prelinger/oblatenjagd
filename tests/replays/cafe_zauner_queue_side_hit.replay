@@ -1,0 +1,36 @@
+# A Wartender's side hurts (D-105; Stage 9 "New mechanics"): the queue
+# walk's prefix (cafe_zauner_queue_walk) to the floor at 71-72 in front of
+# the queue (506), then she walks right into the first Wartender (73) as
+# Normal: a death (542, no stomp). She has not reached the checkpoint
+# (112), so she respawns at the stage start (602, x 34, the player start
+# at col 2) with one life less and the score kept; the queue is whole
+# again.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=542..542 event=Respawned no_event=CheckpointReached no_event=Hurt lives=2 score=1700 power=normal state=playing
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 16
+L 4
+- 40
+R 3
+- 34
+R 30
+- 100

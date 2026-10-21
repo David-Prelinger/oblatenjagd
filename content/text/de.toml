@@ -9,6 +9,9 @@
 name = "Oblatenjagd"
 subtitle = "Salzburg – Bad Ischl"
 press_start = "Drück START, oida"
+# M7: the title after the ending, for the rest of the session (D-107).
+cleared = "Durchgespielt! Mahlzeit!"
+press_start_again = "Nochmal? Drück START"
 
 [hud]
 score = "PUNKTE"
@@ -39,6 +42,14 @@ beleidigt = "Beleidigt!"
 kurruhe = "Kurruhe!"
 # M6: an Offizier is defeated (stomp, axe or a bumped block).
 abtreten = "Abtreten!"
+# M7: Resi bounces off a Kellner's tray (D-105).
+komm_gleich = "Komm' gleich!"
+# M7: the Oberkellner: the arena locks; his first and second hit; the third (D-106).
+anstellen = "Hinten anstellen!"
+unerhoert = "Unerhört!"
+bitte_sehr = "Bitte sehr!"
+# M7: touching the armed Zaunerstollen on the counter (D-107).
+stollen = "Zaunerstollen!"
 
 # Route map between stages (docs/game-design.md "Route map").
 [map]
@@ -204,3 +215,87 @@ sign_stollen = "Stollen\nseit 1905"
 sign_anstellen = "Zauner:\nanstellen!"
 # Style `street`, in place of an Ortsende: the journey ends at the café (D-097).
 sign_zauner = "Café Zauner\ngleich da"
+
+[stage.cafe_zauner]
+title = "Etappe 9: Café Zauner"
+tagline = "Herr Ober sieht alles."
+# The clear panel's second line; the finale has no next station (D-107).
+next = "Mahlzeit, Resi!"
+# Level signs (entity `sign`), in the order of the stage. No Ortsende.
+# Style `bus`: the last Bus 150 board, at the café door.
+sign_bus = "Bus 150?\nWurscht!"
+sign_platziert = "Sie werden\nplatziert"
+sign_hofzucker = "k.u.k. Hof-\nzuckerbäcker"
+sign_melange = "1 Melange:\n3 Stunden"
+sign_rezept = "Rezept liegt\nim Tresor"
+sign_bruch = "Aus Bruch\nwird Stollen"
+sign_liegen = "Kein Platz\nfür Liegen"
+sign_posten = "Erst essen,\ndann posten"
+sign_abstand = "Abstand\nhalten"
+sign_wartezeit = "Wartezeit:\nab hier ewig"
+sign_vordraengeln = "Bitte nicht\nvordrängeln"
+# Beside the checkpoint (D-039 pattern), style `street`: a reserved card.
+sign_checkpoint = "Reserviert\nseit 1832"
+
+# M7: the ending after Café Zauner (docs/game-design.md "Finale and ending", D-107).
+[ending]
+# Map phase: the panel's three lines.
+map_title = "Ziel erreicht!"
+map_route = "Salzburg – Café Zauner"
+map_note = "Zu Fuß. Ohne Bus 150."
+# Scene phase: three lines under the picture.
+scene_1 = "Endlich: Zaunerstollen!"
+scene_2 = "Draußen fährt Bus 150."
+scene_3 = "Voll. Ist Resi wurscht."
+# Bill phase: labels (the engine draws the numbers).
+bill_title = "Die Rechnung, bitte!"
+bill_score = "Punkte"
+bill_oblaten = "Oblaten gesammelt"
+bill_lives = "Leben übrig"
+bill_tip = "Trinkgeld: inklusive"
+bill_thanks = "Beehren S' uns wieder!"
+# Ende phase.
+end_title = "Ende"
+end_line1 = "Danke fürs Spielen!"
+end_line2 = "Pfiat di, Resi!"
+
+# The credits: six pages, each with an optional title and up to four lines
+# (<= 24 characters). No living person is named (D-107).
+[credits.page1]
+title = "Oblatenjagd"
+line1 = "In neun Etappen zu Fuß"
+line2 = "von Salzburg nach Ischl"
+
+[credits.page2]
+title = "Es spielten:"
+line1 = "Resi, im Dirndl"
+line2 = "Der Oberkellner"
+line3 = "Die Schlange, sehr lang"
+line4 = "Bus 150, immer voll"
+
+[credits.page3]
+title = "Weiters:"
+line1 = "Selfie-Touristen"
+line2 = "Fiaker, Tauben, Gelsen"
+line3 = "Pilger, Gams und Schwan"
+line4 = "Kurgäste und Offiziere"
+
+[credits.page4]
+title = "Gebaut von:"
+line1 = "Spiel, Grafik, Technik:"
+line2 = "ein Team aus KI-Agenten"
+line3 = "Geprüft von: noch mehr"
+line4 = "KI-Agenten. Ehrlich."
+
+[credits.page5]
+title = "Mit Dank an:"
+line1 = "Café Zauner, seit 1832"
+line2 = "die Lokalbahn, bis 1957"
+line3 = "Postbus 150, trotzdem"
+line4 = "alle, die anstehen"
+
+[credits.page6]
+line1 = "Bei der Herstellung"
+line2 = "dieses Spiels wurde"
+line3 = "keine Oblate"
+line4 = "verschwendet."

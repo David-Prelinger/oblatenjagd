@@ -1,0 +1,156 @@
+# QA M7 acceptance, BUG (E51 / D-107 as-built (2): the 10 000 /
+# „Zaunerstollen!" pair spawns over the plate when she stands, "never
+# enters the HUD band"): for a Big or Hackl Resi it does. E51 measured the
+# pair for a Normal Resi on the counter (her look 24 px, highest drawn row
+# screen y 24, 2 px below the HUD's last row 21). A Big/Hackl look is
+# 32 px, so plate and pair sit 8 px higher and the text rises to screen y
+# 16-17: it runs into the HUD's ZEIT digits (x 250-314 under „ZEIT").
+# Steps: cafe_zauner_boss_win_hackl unchanged (Hackl carried in on the test
+# route, the boss beaten with axes, the goal_stollen touched standing at
+# 4547, Hackl), then 100 idle frames of the Serve.
+# Expected: „Zaunerstollen!" and „10000" stay at screen y >= 22 for the
+# whole rise, as for Normal.
+# Actual: the pair spawns at once (standing touch) with the text's top
+# (outline) at y 32 and rises 16 px; from 4568 to 4577 its top row is
+# 21 ... 16, inside the HUD band, over the ZEIT value „161" (shot
+# text_in_hud). Every Big/Hackl clear of Stage 9 does this (QA fuzz from
+# the beaten boss as Hackl: every touch, standing or in the air); Normal
+# never (20 000 fuzz runs). Big shares Hackl's 30 px hitbox and 32 px
+# look, so the same geometry applies.
+# Fixed in E53 (D-107 "As built (E53)"): the pair's rise stops under the
+# HUD (top row 22). Checked on every frame by xtask's
+# `stage_9_popups_never_cover_resi_or_reach_the_hud` (popup_clearance.rs);
+# the shots are goldens of the fixed frames (art-director review).
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl hackl cafe_zauner
+expect = deaths=0 no_event=Hurt boss_hits=3 power=hackl state=stage_clear
+shots  = 4560:pair_rising 4574:pair_under_hud
+---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 209
+- 823
+R 140
+RJ 20
+R 6
+- 36
+B 1
+- 45
+R 72
+RJ 20
+R 2
+RJ 1
+R 10
+RJ 36
+R 10
+RJ 36
+R 50
+RJ 20
+R 10
+RJ 20
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 20
+R 2
+RJ 20
+R 2
+RJ 19
+- 30
+B 1
+- 50
+R 24
+RJ 36
+R 10
+RJ 36
+R 2
+RJ 12
+R 2
+RJ 36
+R 2
+- 4
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+- 16
+RJ 36
+R 2
+RJ 36
+R 130
+RJ 20
+R 2
+RJ 1
+R 2
+RJ 1
+R 2
+RJ 1
+R 2
+RJ 6
+R 2
+RJ 35
+R 49
+- 105
+B 1
+- 59
+J 20
+- 60
+L 1
+B 1
+- 33
+B 1
+- 109
+J 20
+- 54
+R 1
+B 1
+- 143
+J 20
+- 40
+L 1
+B 1
+- 60
+R 120
+RJ 20
+R 30
+- 40       # the Serve: the pair rises into the HUD (4568-4577)

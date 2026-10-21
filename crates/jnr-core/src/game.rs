@@ -15,10 +15,17 @@
 //! also has a [`Route`]: after a stage clear in the real flow it shows the
 //! route map and then plays the next stage's level (D-042, D-047).
 
+mod ending;
 mod flow;
+mod popups;
 mod power;
 
-pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
+pub use ending::{BILL_LINES, Ending, EndingPhase};
+pub use flow::{ClearPhase, STOLLEN_POPUP_ABOVE_TOP_PX, StageClear, Start, maibaum_points};
+pub use popups::{
+    DODGE_MARGIN_X_PX, DODGE_MARGIN_Y_PX, DODGE_SPEED_PX, HUD_CLEAR_Y, LABEL_HALF_W_PX,
+    POPUP_DRAWN_H_PX, PopupPlace,
+};
 
 use std::sync::Arc;
 
@@ -46,6 +53,12 @@ pub const TELEPORT_SEARCH_COLS: i32 = 8;
 /// (the art review asks for at least 2), and it only rises from there (E12
 /// art review: it used to spawn at 40 and cover the board).
 pub const CHECKPOINT_POPUP_ABOVE_GROUND_PX: i32 = 52;
+
+/// The Oberkellner's hit labels („Unerhört!"/„Bitte sehr!" over the
+/// score, E51) are centred this many px from his centre, on the room's
+/// side: the widest label („Bitte sehr!") then keeps clear of his 32 px
+/// wide sprite cell (`jnr-render` checks it with the real font).
+pub const OBERKELLNER_POPUP_SIDE_PX: i32 = 42;
 
 /// Highest score (the HUD shows 6 digits).
 pub const MAX_SCORE: u32 = 999_999;
@@ -158,6 +171,11 @@ pub enum Mode {
     Title {
         /// Frames since the title screen appeared (saturating; for blinking).
         frames: u16,
+        /// Entered from the ending's „Ende" (the marked title, D-111):
+        /// START counts only once `frames >= ending.end_start_frames`.
+        /// Every other title (boot, after „Fortsetzung folgt …") takes
+        /// START at once.
+        from_ending: bool,
     },
     /// The stage intro screen before play, also after every death and after
     /// a continue (only with [`Start::Title`]). Nothing moves.
@@ -184,6 +202,11 @@ pub enum Mode {
     /// route): Resi walks to the next station, then its stage intro (or
     /// the teaser and the title). [`Game::route_map`] has the details.
     RouteMap,
+    /// The ending after the journey's last station (only with
+    /// [`Start::Title`] and a route, D-107): map, scene, bill, credits,
+    /// „Ende", then the title with the „durchgespielt" mark.
+    /// [`Game::ending`] has the details.
+    Ending,
     /// No lives left. START (after `game.game_over_frames`) restarts the
     /// stage from its start with full lives, score 0 and Oblaten 0.
     GameOver {
@@ -255,6 +278,9 @@ pub struct Game {
     multi: Vec<MultiBlock>,
     pub(crate) score: u32,
     pub(crate) oblaten: u8,
+    /// Every Oblate collected since the run started or the last continue
+    /// (D-107); unlike `oblaten` it never wraps. Shown on the ending's bill.
+    pub(crate) oblaten_total: u32,
     pub(crate) lives: u8,
     /// Seconds left.
     pub(crate) time: u16,
@@ -282,6 +308,11 @@ pub struct Game {
     first_stage: u8,
     /// The route map while `Mode::RouteMap`.
     route_map: Option<RouteMap>,
+    /// The ending while `Mode::Ending` (D-107).
+    ending: Option<Ending>,
+    /// The session's „durchgespielt" mark (D-107): set when the ending
+    /// ends, never cleared (it survives `end_run` and every new run).
+    pub(crate) cleared: bool,
     /// Hash of everything that never changes during a game (start grid,
     /// goals, spawns, tuning), computed per level (`level_parts`).
     static_hash: u64,
@@ -357,6 +388,7 @@ impl Game {
             multi: Vec::new(),
             score: 0,
             oblaten: 0,
+            oblaten_total: 0,
             lives: tuning.game.lives_start,
             time: 0,
             time_frames: 0,
@@ -370,13 +402,18 @@ impl Game {
             stage,
             first_stage: stage,
             route_map: None,
+            ending: None,
+            cleared: false,
             static_hash,
             events: Vec::new(),
         };
         game.reset_level();
         game.place_camera();
         if start == Start::Title {
-            game.mode = Mode::Title { frames: 0 };
+            game.mode = Mode::Title {
+                frames: 0,
+                from_ending: false,
+            };
             game.frame_title();
         }
         game
@@ -388,12 +425,21 @@ impl Game {
         self.frame = self.frame.wrapping_add(1);
         let start_pressed = input.contains(InputFrame::START) && !self.start_held;
         match self.mode {
-            Mode::Title { frames } => {
+            Mode::Title {
+                frames,
+                from_ending,
+            } => {
                 self.player.jump_held = input.jump();
+                let frames = frames.saturating_add(1);
                 self.mode = Mode::Title {
-                    frames: frames.saturating_add(1),
+                    frames,
+                    from_ending,
                 };
-                if start_pressed {
+                // D-111: the marked title ignores START for its first
+                // frames, like the game over's prompt (a press counts once
+                // the title is `end_start_frames` frames old).
+                let ready = !from_ending || frames >= self.tuning.ending.end_start_frames;
+                if start_pressed && ready {
                     self.restart();
                 }
             }
@@ -438,6 +484,10 @@ impl Game {
                 self.player.jump_held = input.jump();
                 self.step_route_map(start_pressed);
             }
+            Mode::Ending => {
+                self.player.jump_held = input.jump();
+                self.step_ending(start_pressed);
+            }
             Mode::GameOver { frames } => {
                 self.player.jump_held = input.jump();
                 let frames = frames.saturating_add(1);
@@ -447,6 +497,7 @@ impl Game {
                 }
             }
         }
+        self.place_popups();
         self.start_held = input.contains(InputFrame::START);
         // In every mode, so RUN held across screens is not a new press.
         self.player.run_held = input.run();
@@ -526,7 +577,7 @@ impl Game {
             return;
         }
         self.check_checkpoints();
-        if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
+        if let Some(goal) = self.touched_goal(&hb) {
             self.touch_goal(goal);
         }
         // Also on the frame the scroll hands over to the lead-out.
@@ -809,6 +860,7 @@ impl Game {
         self.lives = self.tuning.game.lives_start;
         self.score = 0;
         self.oblaten = 0;
+        self.oblaten_total = 0;
         self.checkpoint = None;
         self.clear = None;
         self.death_cause = None;
@@ -1086,6 +1138,12 @@ impl Game {
             .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Auto) && !e.removed)
             .map(|e| (e.base_x, e.base_y))
             .collect();
+        // The Oberkellner's volley ends once his bills are gone (D-106).
+        let bills = self
+            .entities
+            .iter()
+            .filter(|e| e.kind == EntityKind::Rechnung && !e.removed)
+            .count();
         let ctx = UpdateCtx {
             map: &self.map,
             tuning: &self.tuning,
@@ -1099,6 +1157,7 @@ impl Game {
             globes: &globes,
             stage_clock: self.stage_clock(),
             cars: &cars,
+            bills,
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -1139,6 +1198,14 @@ impl Game {
                 && e.state == crate::enemies::state::SHATTERED
             {
                 spawned.extend(crate::enemies::globe_shards(e, ctx.tuning));
+            }
+            // The first frame of the Oberkellner's volley: his bills
+            // (D-106).
+            if e.kind == EntityKind::Enemy(EnemyKind::Oberkellner)
+                && e.state == crate::enemies::state::oberkellner::VOLLEY
+                && e.count == 1
+            {
+                spawned.extend(crate::enemies::volley(e, ctx.level, ctx.tuning));
             }
             if e.kind.is_platform() {
                 crate::platform::carry(
@@ -1271,7 +1338,22 @@ impl Game {
                     // from before this frame's movement).
                     let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
                     let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
-                    match crate::enemies::contact(kind, from_above, swimming) {
+                    // The Oberkellner's contact depends on his state: his
+                    // breather is a hit, his tray a bounce (D-106, the
+                    // officer's state-dependent contact, D-096).
+                    let contact = if kind == EnemyKind::Oberkellner {
+                        crate::enemies::oberkellner_contact(&e, from_above, swimming)
+                    } else {
+                        crate::enemies::contact(kind, from_above, swimming)
+                    };
+                    match contact {
+                        // A hit on the Oberkellner: she bounces as from a
+                        // stomp; his points are outside the stomp chain
+                        // (it neither advances nor resets).
+                        Contact::Stomp if kind == EnemyKind::Oberkellner => {
+                            bounced = true;
+                            spawned.extend(self.hit_oberkellner(i));
+                        }
                         // A stomped Kurgast lies down in his deck chair
                         // instead (D-095): 100 in the chain on his first
                         // stomp only; a later one only bounces her (no
@@ -1305,6 +1387,9 @@ impl Game {
                         Contact::Bounce => {
                             bounced = true;
                             rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
+                            // A Kellner's tray: „Komm' gleich!" on every
+                            // bounce, and his `bounce` pose (D-105).
+                            spawned.extend(crate::enemies::tray_bounce(&mut self.entities[i]));
                         }
                         // A swarm (and anything while she swims) hurts
                         // even in the grace after a bounce; a non-stompable
@@ -1322,6 +1407,17 @@ impl Game {
                 }
                 // A falling rock hurts on any contact, also from above.
                 EntityKind::Thrown | EntityKind::Note | EntityKind::Stein => hurt = true,
+                // A falling bill hurts on any contact and is gone when it
+                // does (D-106; it passes her while she blinks); a hanging
+                // one is harmless.
+                EntityKind::Rechnung => {
+                    if e.state == crate::enemies::state::rechnung::FALL {
+                        hurt = true;
+                        if self.player.invulnerable == 0 && !self.touches_goal() {
+                            self.entities[i].removed = true;
+                        }
+                    }
+                }
                 EntityKind::PoppedOblate
                 | EntityKind::Steinschlag
                 | EntityKind::Souvenirstand
@@ -1386,10 +1482,9 @@ impl Game {
         }
     }
 
-    /// True if the player's hitbox overlaps a goal.
+    /// True if the player's hitbox overlaps an armed goal.
     fn touches_goal(&self) -> bool {
-        let hb = self.player.hitbox();
-        self.goals.iter().any(|g| g.overlaps(&hb))
+        self.touched_goal(&self.player.hitbox()).is_some()
     }
 
     /// Points (or a life) for a stomp in the current chain; returns its
@@ -1409,6 +1504,64 @@ impl Game {
             }
             None => self.add_life().then(|| popup(Popup::ExtraLife, x, y)),
         }
+    }
+
+    /// The Oberkellner `i` takes a hit in his breather (a stomp or an axe,
+    /// D-106): 1000 and „Unerhört!" on hits 1 and 2; on the third 5000 and
+    /// „Bitte sehr!", and every bill is gone. Returns the popups (score,
+    /// then the text stacked above it); none if he wasn't in his breather.
+    ///
+    /// Where (E51): beside his head, on the room's side. The text's drawn
+    /// top (its outline) is on the breather's hitbox top, where her feet
+    /// are on a stomp, with the score below it, so the labels start under
+    /// her as she bounces off; they are centred
+    /// [`OBERKELLNER_POPUP_SIDE_PX`] from his centre away from the wall he
+    /// breathes at (his `dir` faces it), so they don't cover him either.
+    /// From there (E53) they keep clear of her as she moves
+    /// ([`PopupPlace::ClearOfResi`], `Game::place_popups`).
+    pub(crate) fn hit_oberkellner(&mut self, i: usize) -> Vec<Entity> {
+        let Some(e) = self.entities.get_mut(i) else {
+            return Vec::new();
+        };
+        // His head: the breather's hitbox top, before the hit resizes it.
+        let head = e.y;
+        let Some(beaten) = crate::enemies::hit_oberkellner(e, &self.tuning) else {
+            return Vec::new();
+        };
+        let e = *e;
+        let et = &self.tuning.enemies;
+        let (points, text) = if beaten {
+            (et.oberkellner_final_points, Popup::BitteSehr)
+        } else {
+            (et.oberkellner_hit_points, Popup::Unerhoert)
+        };
+        self.add_score(points);
+        if beaten {
+            for b in &mut self.entities {
+                if b.kind == EntityKind::Rechnung {
+                    b.removed = true;
+                }
+            }
+        }
+        let (cx, _) = e.feet();
+        let fx = cx - Fx::from_px(OBERKELLNER_POPUP_SIDE_PX * i32::from(e.dir));
+        let text_top = head + Fx::ONE;
+        let room = -e.dir;
+        [
+            popup(
+                Popup::Score(points),
+                fx,
+                text_top + Fx::from_px(crate::entity::POPUP_STACK_PX),
+            ),
+            popup(text, fx, text_top),
+        ]
+        .into_iter()
+        .map(|mut p| {
+            p.state = PopupPlace::ClearOfResi as u8;
+            p.dir = room;
+            p
+        })
+        .collect()
     }
 
     /// A projectile (the thrown Hackl, D-056) hit entity `i`: the outcome
@@ -1488,6 +1641,7 @@ impl Game {
     fn collect_oblate(&mut self, x: Fx, y: Fx) -> Option<Entity> {
         self.add_score(self.tuning.score.oblate);
         self.oblaten = self.oblaten.saturating_add(1);
+        self.oblaten_total = self.oblaten_total.saturating_add(1);
         self.events.push(Event::OblateCollected);
         if self.oblaten >= self.tuning.game.oblaten_per_life {
             self.oblaten = 0;
@@ -1596,9 +1750,13 @@ impl Game {
                 h.u8(3);
                 h.u16(frames);
             }
-            Mode::Title { frames } => {
+            Mode::Title {
+                frames,
+                from_ending,
+            } => {
                 h.u8(4);
                 h.u16(frames);
+                h.bool(from_ending);
             }
             Mode::StageIntro { timer } => {
                 h.u8(5);
@@ -1606,6 +1764,7 @@ impl Game {
             }
             Mode::Paused => h.u8(6),
             Mode::RouteMap => h.u8(7),
+            Mode::Ending => h.u8(8),
         }
         // Only runs with a route have these (lone-level hashes stay as
         // they were before routes existed).
@@ -1650,6 +1809,17 @@ impl Game {
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
         h.u32(self.score);
         h.u8(self.oblaten);
+        // D-107: the run's Oblaten total, the ending and the title mark
+        // (E47 re-pinned the testbed's FINISH_HASH with them).
+        h.u32(self.oblaten_total);
+        match &self.ending {
+            None => h.u8(0),
+            Some(e) => {
+                h.u8(1);
+                e.hash(&mut h);
+            }
+        }
+        h.bool(self.cleared);
         h.u8(self.lives);
         h.u16(self.time);
         h.u8(self.time_frames);
@@ -1731,11 +1901,14 @@ impl Game {
                     | EntityKind::Fensterladen
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
+                    | EntityKind::Rechnung
             ) {
+                // `hits`: the Oberkellner's (D-106), 0 for all others.
                 w.word(
                     u64::from(e.active)
                         | u64::from(e.state) << 8
                         | u64::from(e.dir as u8) << 16
+                        | u64::from(e.hits) << 24
                         | u64::from(e.count) << 32,
                 );
             }
@@ -1822,6 +1995,45 @@ impl Game {
     pub fn oblaten(&self) -> u8 {
         self.oblaten
     }
+
+    /// Every Oblate collected since the run started or the last continue
+    /// (never wraps, D-107).
+    pub fn oblaten_total(&self) -> u32 {
+        self.oblaten_total
+    }
+
+    /// The ending (while `Mode::Ending`, D-107).
+    pub fn ending(&self) -> Option<&Ending> {
+        self.ending.as_ref()
+    }
+
+    /// The session's „durchgespielt" mark: the ending has been seen (D-107).
+    pub fn cleared(&self) -> bool {
+        self.cleared
+    }
+
+    /// The level spawn of goal number `goal` (index into [`Game::goals`]).
+    pub fn goal_spawn(&self, goal: usize) -> Option<&crate::level::EntitySpawn> {
+        self.level
+            .entities
+            .iter()
+            .filter(|e| e.kind.is_goal())
+            .nth(goal)
+    }
+
+    /// Whether goal number `goal` can be touched: a Maibaum always, a
+    /// `goal_stollen` once no undefeated Oberkellner is in the level
+    /// (D-107; unarmed it is decoration).
+    pub fn goal_armed(&self, goal: usize) -> bool {
+        self.goal_spawn(goal).is_some_and(|s| {
+            goal_kind_armed(s.kind, crate::enemies::boss_undefeated(&self.entities))
+        })
+    }
+
+    /// The first armed goal `hb` overlaps.
+    fn touched_goal(&self, hb: &Aabb) -> Option<usize> {
+        (0..self.goals.len()).find(|&i| self.goals[i].overlaps(hb) && self.goal_armed(i))
+    }
     /// Lives left (counting the current one).
     pub fn lives(&self) -> u8 {
         self.lives
@@ -1877,6 +2089,12 @@ impl Game {
     }
 }
 
+/// Whether a goal of `kind` can be touched (D-107): a Maibaum always, a
+/// `goal_stollen` only while no Oberkellner is undefeated.
+pub(crate) fn goal_kind_armed(kind: SpawnKind, boss_undefeated: bool) -> bool {
+    kind != SpawnKind::GoalStollen || !boss_undefeated
+}
+
 /// D-054: in a climb level an entity activates only while its spawn cell
 /// (or, for entities without a spawn, its hitbox's top row) is within
 /// `margin` px of the screen vertically ([`Camera::row_near`]).
@@ -1892,19 +2110,28 @@ pub fn spawn_row_near(level: &Level, e: &Entity, camera: Camera, margin: i32) ->
 /// goal boxes and the hash of everything that never changes while playing
 /// it (grid, goals, spawns, tuning).
 ///
-/// A goal occupies its cell's column from one level height above the top
-/// of the level down to the cell's bottom edge.
+/// A Maibaum occupies its cell's column from one level height above the
+/// top of the level down to the cell's bottom edge; a `goal_stollen` only
+/// its cell (D-107).
 fn level_parts(level: &Level, tuning: &Tuning) -> (Arc<TileMap>, Arc<[Aabb]>, u64) {
     let map = Arc::new(TileMap::from_level(level));
     let goals: Vec<Aabb> = level
         .entities
         .iter()
-        .filter(|e| e.kind == SpawnKind::Goal)
-        .map(|e| Aabb {
-            x: TILE.mul_int(e.col),
-            y: -TILE.mul_int(level.height),
-            w: TILE,
-            h: TILE.mul_int(level.height + e.row + 1),
+        .filter(|e| e.kind.is_goal())
+        .map(|e| match e.kind {
+            SpawnKind::GoalStollen => Aabb {
+                x: TILE.mul_int(e.col),
+                y: TILE.mul_int(e.row),
+                w: TILE,
+                h: TILE,
+            },
+            _ => Aabb {
+                x: TILE.mul_int(e.col),
+                y: -TILE.mul_int(level.height),
+                w: TILE,
+                h: TILE.mul_int(level.height + e.row + 1),
+            },
         })
         .collect();
 

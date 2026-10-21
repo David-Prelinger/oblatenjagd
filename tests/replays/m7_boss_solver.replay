@@ -1,0 +1,57 @@
+# Written by `cargo xtask solve m7_boss --write`; re-create it instead of editing.
+level  = m7_boss
+seed   = 1
+source = solver
+expect = complete frames=1650..1650 deaths=0
+---
+RB 72
+RBJ 20
+RB 104
+RBJ 36
+RB 10
+LBJ 22
+LB 16
+RB 16
+- 256
+RBJ 20
+RB 11
+LB 14
+LBJ 12
+LB 2
+RB 6
+L 4
+RBJ 20
+RB 5
+- 4
+RB 3
+L 4
+- 8
+RBJ 36
+RB 2
+- 16
+L 4
+DJ 1
+- 3
+RB 3
+L 4
+- 4
+RB 3
+L 4
+RB 4
+- 368
+LBJ 12
+LB 10
+RBJ 36
+RB 330
+LBJ 12
+LB 2
+RB 3
+- 16
+RBJ 12
+RB 6
+LB 8
+- 16
+LBJ 12
+LB 10
+RBJ 36
+RB 12

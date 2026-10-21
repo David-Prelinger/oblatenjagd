@@ -1,0 +1,26 @@
+# Hopping between the Wartende (D-105): past the Kellner (the tray bounce
+# route), five short hops (JUMP held 8 frames, one every 32 frames at walk
+# speed) land in each 2-tile gap of the queue without a stomp, to
+# the queue's end (score 0: nothing stomped; the tray bounce scores nothing).
+level  = m7_kellner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score=0 player_x>=740
+---
+R 66
+RJ 6
+R 8
+- 20
+R 130
+RJ 20
+R 65
+RJ 8
+R 24
+RJ 8
+R 24
+RJ 8
+R 24
+RJ 8
+R 24
+RJ 8
+R 50

@@ -1,0 +1,49 @@
+# The Oberkellner beaten as Normal without a hurt (D-106), from the left
+# refuge only (the patient way: every second breather is under her). Resi hops onto
+# the step under the M-box without bumping it, climbs the left refuge,
+# walks right until the arena locks (frame 319: camera x 320, „Hinten
+# anstellen!"), walks back to the refuge's face and jumps onto it before
+# his first dash (telegraph 409-448, dash left 449-543), and waits pinned
+# at the screen's left edge (x 320). In every breather at the left wall
+# she steps off the refuge onto his head (LEFT held after the step: hits
+# at 579, 1113 and 1591: 1000, 1000, 5000), lands beside him while he is
+# stunned and hops back onto the refuge; the round-2 and round-3 volleys
+# fall while she waits there. After the bow she crosses the floor and
+# jumps onto the counter: the armed goal_stollen (frame 1951, 10 000).
+# Each press shifted alone (the D-100 method, every other input at its
+# frame; tests/oberkellner.rs `normal_win_presses_have_windows_of_at_least_8`):
+# the jump onto the refuge after the lock 106 (route-limited), the
+# step-offs 29 / 26 / 46, the hops back 29 / 29 / 85, the jump onto the
+# counter 64.
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = complete frames=1951..1951 deaths=0 no_event=Hurt no_event=PowerUp boss_hits=3 power=normal score=17000
+---
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30

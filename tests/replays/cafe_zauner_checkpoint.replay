@@ -1,0 +1,69 @@
+# The checkpoint before the arena (D-106, Stage 9 "New mechanics"): a
+# death in the arena respawns her at 112 as Normal with the level reset,
+# the boss back at his spawn with no hits and the M-box at 115 fresh.
+# Life 1 is cafe_zauner_boss_win_big up to hit 1: the checkpoint (717),
+# the M-box bumped (748) and its Mozartkugel taken (844, big), the arena
+# lock, the dash hurt (1274, Normal), hit 1 (1348, 1000), back on the
+# refuge (1404). She waits there while he telegraphs and dashes right,
+# then walks across the floor between the volley's bills into him at the
+# right wall (tray up: side contact): a death (1623). Respawn at the
+# checkpoint (1683, x 1794, col 112) as Normal, score kept, one life less;
+# the Oberkellner waits at his spawn (col 134) with no hits. She walks
+# under the M-box and bumps it again (1844): it is fresh, its Mozartkugel
+# turns at the step, rolls back and she grows (1903). Ends big.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=1623..1623 event=CheckpointReached event=Respawned event=BlockBumped event=PowerUp
+expect = boss_hits=0 power=big lives=2 score=10200 state=playing
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 65
+- 20
+J 6
+- 20
+L 24
+- 80
+R 20
+RJ 20
+R 20
+RJ 20
+R 104
+L 130
+- 126
+J 20
+- 42
+LJ 20
+L 13
+- 60
+R 200
+- 143
+R 28
+J 10
+- 90

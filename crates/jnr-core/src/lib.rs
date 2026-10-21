@@ -54,7 +54,9 @@ pub use camera::{Autoscroll, Camera, SCREEN_H, SCREEN_W, ScrollPhase};
 pub use enemies::{AmpelLight, Pose};
 pub use entity::{EnemyKind, Entity, EntityKind, Popup};
 pub use fx::Fx;
-pub use game::{ClearPhase, DeathCause, Event, Game, Mode, StageClear, Start};
+pub use game::{
+    BILL_LINES, ClearPhase, DeathCause, Ending, EndingPhase, Event, Game, Mode, StageClear, Start,
+};
 pub use hackl::AxeHit;
 pub use input::InputFrame;
 pub use level::{

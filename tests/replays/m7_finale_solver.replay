@@ -1,0 +1,9 @@
+# Written by `cargo xtask solve m7_finale --write`; re-create it instead of editing.
+level  = m7_finale
+seed   = 1
+source = solver
+expect = complete frames=168..168 deaths=0
+---
+RB 120
+RBJ 20
+RB 28

@@ -37,6 +37,39 @@ pub struct Tuning {
     pub crawl: CrawlTuning,
     /// Swimming in swim water (D-076).
     pub swim: SwimTuning,
+    /// The ending after the last station (D-107).
+    pub ending: EndingTuning,
+}
+
+/// The ending after the last station (`docs/game-design.md` → "Finale and
+/// ending", D-107). Frame counts of its phases; START is a new press and
+/// is ignored for the first `start_ignore_frames` frames of a phase or
+/// credits page (`bill_start_frames` / `end_start_frames` in Bill and Ende).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EndingTuning {
+    /// The route map with every station done.
+    pub map_frames: u16,
+    /// The café scene.
+    pub scene_frames: u16,
+    /// The bill, at most (START ends it earlier).
+    pub bill_frames: u16,
+    /// START ends the bill from this frame of it on.
+    pub bill_start_frames: u16,
+    /// The bill's lines after its title appear one every this many frames.
+    pub bill_line_frames: u16,
+    /// Credits pages (`credits.page1` … `credits.pageN`).
+    pub credits_pages: u8,
+    /// Frames per credits page.
+    pub credits_page_frames: u16,
+    /// „Ende", at most (START ends it earlier).
+    pub end_frames: u16,
+    /// START ends „Ende" from this frame of it on; also the marked
+    /// title's START window (D-111): START counts once it is this old.
+    pub end_start_frames: u16,
+    /// START is ignored for this many frames at the start of the Map,
+    /// Scene and every credits page.
+    pub start_ignore_frames: u16,
 }
 
 /// Swimming in swim water (`docs/game-design.md` → "Swimming", D-076).
@@ -153,6 +186,9 @@ pub struct GoalTuning {
     pub clear_frames: u16,
     /// Frames of „Fortsetzung folgt …" before the title screen (M1).
     pub to_be_continued_frames: u16,
+    /// The finale (`goal_stollen`, D-107): frames of the Serve, counted
+    /// from the frame she stands (she falls first if she is in the air).
+    pub serve_frames: u16,
 }
 
 /// Moving platforms.
@@ -426,6 +462,8 @@ pub struct ScoreTuning {
     pub bump_enemy: u32,
     /// Time bonus per second left at the goal (tallied one second per frame).
     pub time_bonus: u32,
+    /// Touching the armed `goal_stollen` (D-107).
+    pub stollen: u32,
     /// Frames a score popup is shown.
     pub popup_frames: u16,
     /// How far a popup floats up over its lifetime, whole pixels.
@@ -722,7 +760,50 @@ pub struct EnemyTuning {
     pub offizier_attention: u16,
     /// The sabre zone `[w, h]` px: centred on him, from his hitbox top up.
     pub offizier_sabre: [i32; 2],
+    /// Kellner (D-105); the hitbox top is his tray.
+    pub kellner_hitbox: [i32; 2],
+    /// He walks at this speed (the Nordic-Walker's turn rules).
+    pub kellner_speed: Fx,
+    /// Frames his `bounce` pose lasts after a tray bounce (the frame of
+    /// the bounce included; looks only).
+    pub kellner_bounce_pose: u16,
+    /// The Oberkellner (D-106): his hitbox with the tray up (its top is
+    /// the tray) ...
+    pub oberkellner_hitbox: [i32; 2],
+    /// ... and in his breather (tray lowered, his head the top): the same
+    /// width, feet kept.
+    pub oberkellner_breathe_hitbox: [i32; 2],
+    /// Frames of the intro from the arena lock („Hinten anstellen!").
+    pub oberkellner_intro: u16,
+    /// Telegraph frames per round (index = hits taken, 0..=2).
+    pub oberkellner_telegraph: [u16; 3],
+    /// Dash speed per round.
+    pub oberkellner_dash: [Fx; 3],
+    /// Breather frames per round.
+    pub oberkellner_breathe: [u16; 3],
+    /// Frames of the stun after a hit (no contact).
+    pub oberkellner_stun: u16,
+    /// Points for the first and second hit (outside the stomp chain).
+    pub oberkellner_hit_points: u32,
+    /// Points for the third hit.
+    pub oberkellner_final_points: u32,
+    /// A bill's hitbox.
+    pub oberkellner_bill_hitbox: [i32; 2],
+    /// Frames a bill hangs (harmless) before it falls.
+    pub oberkellner_bill_hang: u16,
+    /// A falling bill's speed.
+    pub oberkellner_bill_fall: Fx,
+    /// A falling bill sways this many px either side of its column centre
+    /// ...
+    pub oberkellner_bill_sway: i32,
+    /// ... on an integer sine with this period (frames).
+    pub oberkellner_bill_sway_period: u16,
 }
+
+/// The shortest telegraph the Oberkellner's attacks may have, frames
+/// (D-106: every attack has a telegraph of at least 30 frames; the bills'
+/// hang is the volley's).
+pub const MIN_BOSS_TELEGRAPH: u16 = 30;
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
 /// move would take it below its start height), moving like
@@ -1144,6 +1225,88 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The M7 Kellner's keys (D-105): a hitbox that fits his 16×32 sprite,
+    /// a positive speed and a bounce pose of at least one frame.
+    fn validate_kellner(&self) -> Result<(), ParseError> {
+        let [w, h] = self.kellner_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        if self.kellner_speed <= Fx::ZERO || self.kellner_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        if self.kellner_bounce_pose == 0 {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_bounce_pose must be >= 1",
+            ));
+        }
+        Ok(())
+    }
+
+    /// The Oberkellner's keys (D-106): a hitbox that fits his 32×48 sprite
+    /// and a breather hitbox of the same width, not taller (so a breather
+    /// at a wall keeps him flush with its face); every telegraph, and the
+    /// bills' hang, at least [`MIN_BOSS_TELEGRAPH`] frames (the fairness
+    /// rule: every attack is telegraphed); dash and fall speeds above 0 and
+    /// below a tile per frame; a bill that fits its 12×12 sprite and a sway
+    /// of at most a tile.
+    fn validate_oberkellner(&self) -> Result<(), ParseError> {
+        let [w, h] = self.oberkellner_hitbox;
+        let [bw, bh] = self.oberkellner_breathe_hitbox;
+        if !(1..=32).contains(&w) || !(1..=48).contains(&h) || bw != w || !(1..=h).contains(&bh) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.oberkellner_hitbox 1..=32 px wide and 1..=48 px high, \
+                 and oberkellner_breathe_hitbox as wide and 1..=that high",
+            ));
+        }
+        let [bw, bh] = self.oberkellner_bill_hitbox;
+        if !(1..=12).contains(&bw) || !(1..=12).contains(&bh) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.oberkellner_bill_hitbox must be 1..=12 px wide and high",
+            ));
+        }
+        if self
+            .oberkellner_telegraph
+            .iter()
+            .chain([&self.oberkellner_bill_hang])
+            .any(|&f| f < MIN_BOSS_TELEGRAPH)
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: every enemies.oberkellner_telegraph and oberkellner_bill_hang must be >= {MIN_BOSS_TELEGRAPH} frames"
+            )));
+        }
+        let tile = Fx::from_px(TILE_PX);
+        if self
+            .oberkellner_dash
+            .iter()
+            .chain([&self.oberkellner_bill_fall])
+            .any(|&v| v <= Fx::ZERO || v >= tile)
+        {
+            return Err(ParseError::new(
+                "tuning.toml: every enemies.oberkellner_dash and oberkellner_bill_fall must be > 0 and < 16 px/frame (4096)",
+            ));
+        }
+        if self.oberkellner_breathe.contains(&0)
+            || self.oberkellner_intro == 0
+            || self.oberkellner_stun == 0
+            || self.oberkellner_bill_sway_period == 0
+        {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.oberkellner_breathe, oberkellner_intro, oberkellner_stun and oberkellner_bill_sway_period must be >= 1",
+            ));
+        }
+        if !(0..=TILE_PX).contains(&self.oberkellner_bill_sway) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.oberkellner_bill_sway must be 0..=16 px",
+            ));
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1327,6 +1490,8 @@ impl Tuning {
         self.enemies.validate_traffic()?;
         self.enemies.validate_kurgast()?;
         self.enemies.validate_offizier()?;
+        self.enemies.validate_kellner()?;
+        self.enemies.validate_oberkellner()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1438,6 +1603,7 @@ impl Tuning {
             ),
             ("game.intro_frames", g.intro_frames),
             ("goal.clear_frames", self.goal.clear_frames),
+            ("goal.serve_frames", self.goal.serve_frames),
             (
                 "goal.to_be_continued_frames",
                 self.goal.to_be_continued_frames,
@@ -1467,6 +1633,7 @@ impl Tuning {
                 "tuning.toml: map.walk_px must be 1..=8 px/frame",
             ));
         }
+        self.validate_ending()?;
         // Counted down in the frame it is set: 1 would protect no frame.
         if e.bounce_grace_frames < 2 {
             return Err(ParseError::new(
@@ -1676,6 +1843,48 @@ impl Tuning {
         Ok(())
     }
 
+    /// The ending's phases (D-107): every phase at least one frame longer
+    /// than its START delay (so START can end it), the bill's lines all
+    /// shown before it ends, 1–9 credits pages (`credits.page1..9`).
+    fn validate_ending(&self) -> Result<(), ParseError> {
+        let e = &self.ending;
+        for (name, frames, delay) in [
+            ("ending.map_frames", e.map_frames, e.start_ignore_frames),
+            ("ending.scene_frames", e.scene_frames, e.start_ignore_frames),
+            (
+                "ending.credits_page_frames",
+                e.credits_page_frames,
+                e.start_ignore_frames,
+            ),
+            ("ending.bill_frames", e.bill_frames, e.bill_start_frames),
+            ("ending.end_frames", e.end_frames, e.end_start_frames),
+        ] {
+            if frames <= delay {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be greater than its START delay ({delay})"
+                )));
+            }
+        }
+        if e.bill_start_frames < e.start_ignore_frames || e.end_start_frames < e.start_ignore_frames
+        {
+            return Err(ParseError::new(
+                "tuning.toml: ending.bill_start_frames and end_start_frames must be >= start_ignore_frames",
+            ));
+        }
+        let lines = u32::from(e.bill_line_frames) * u32::from(crate::BILL_LINES);
+        if e.bill_line_frames == 0 || lines >= u32::from(e.bill_frames) {
+            return Err(ParseError::new(
+                "tuning.toml: ending.bill_line_frames must be >= 1 and show every bill line before bill_frames",
+            ));
+        }
+        if !(1..=9).contains(&e.credits_pages) {
+            return Err(ParseError::new(
+                "tuning.toml: ending.credits_pages must be 1..=9",
+            ));
+        }
+        Ok(())
+    }
+
     /// The `[swim]` section (D-076). The chest point lies inside every
     /// form's hitbox (it is measured from the top, so the Normal height is
     /// the limit); the band is at most a tile. A stroke is slower than a
@@ -1861,6 +2070,47 @@ mod tests {
             "like the climb settle (D-086)"
         );
         assert_eq!((c.autoscroll_ground_y, c.autoscroll_top), (84, 24), "D-090");
+    }
+
+    #[test]
+    fn ending_numbers_are_validated() {
+        let t = Tuning::parse(REAL).unwrap();
+        let e = t.ending;
+        assert_eq!(
+            (e.map_frames, e.scene_frames, e.bill_frames, e.end_frames),
+            (240, 360, 600, 600),
+            "D-107"
+        );
+        assert_eq!((e.credits_pages, e.credits_page_frames), (6, 180));
+        assert_eq!(
+            (
+                e.start_ignore_frames,
+                e.bill_start_frames,
+                e.end_start_frames
+            ),
+            (30, 60, 60)
+        );
+        assert_eq!(e.bill_line_frames, 20);
+        assert_eq!((t.goal.serve_frames, t.score.stollen), (90, 10_000));
+        let with = |old: &str, new: &str| {
+            assert!(REAL.contains(old), "{old}");
+            Tuning::parse(&REAL.replace(old, new))
+        };
+        assert!(with("map_frames = 240", "map_frames = 31").is_ok());
+        assert!(with("map_frames = 240", "map_frames = 30").is_err());
+        assert!(with("scene_frames = 360", "scene_frames = 30").is_err());
+        assert!(with("credits_page_frames = 180", "credits_page_frames = 30").is_err());
+        assert!(with("bill_frames = 600", "bill_frames = 60").is_err());
+        assert!(with("end_frames = 600", "end_frames = 60").is_err());
+        assert!(with("bill_start_frames = 60", "bill_start_frames = 29").is_err());
+        assert!(with("end_start_frames = 60", "end_start_frames = 29").is_err());
+        assert!(with("bill_line_frames = 20", "bill_line_frames = 0").is_err());
+        assert!(with("bill_line_frames = 20", "bill_line_frames = 119").is_ok());
+        assert!(with("bill_line_frames = 20", "bill_line_frames = 120").is_err());
+        assert!(with("credits_pages = 6", "credits_pages = 0").is_err());
+        assert!(with("credits_pages = 6", "credits_pages = 9").is_ok());
+        assert!(with("credits_pages = 6", "credits_pages = 10").is_err());
+        assert!(with("serve_frames = 90", "serve_frames = 0").is_err());
     }
 
     #[test]
@@ -2360,6 +2610,29 @@ mod tests {
     }
 
     #[test]
+    fn kellner_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-105: 12×26 (the top is the tray), 1.0 px/frame; the `bounce`
+        // pose for 8 frames (E45).
+        assert_eq!(t.kellner_hitbox, [12, 26]);
+        assert_eq!(t.kellner_speed, Fx(256), "1.0 px/frame");
+        assert_eq!(t.kellner_bounce_pose, 8);
+        for (field, bad) in [
+            ("kellner_hitbox", "[17, 26]"),
+            ("kellner_hitbox", "[0, 26]"),
+            ("kellner_hitbox", "[12, 0]"),
+            ("kellner_hitbox", "[12, 33]"),
+            ("kellner_speed", "0"),
+            ("kellner_speed", "3072"),
+            ("kellner_bounce_pose", "0"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+    }
+
+    #[test]
     fn lake_enemy_keys_are_validated() {
         let t = Tuning::parse(REAL).unwrap().enemies;
         // D-078: 16×12, 4 px under the water line, 96 px, 32 / 1.5 × 64 /
@@ -2432,6 +2705,83 @@ mod tests {
             ("regattaboot_telegraph", "0", "regattaboot_telegraph"),
             ("regattaboot_speed", "0", "regattaboot_speed"),
             ("regattaboot_speed", "3072", "regattaboot_speed"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(named), "{field} = {bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn oberkellner_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-106: 16×36 / 16×30, intro 90, telegraph 40/36/32, dash
+        // 2.0/2.5/3.0, breathe 72/60/48, stun 60, bills 8×8 hanging 30,
+        // falling 1.0 with a ±12 px sway over 64 frames.
+        assert_eq!(
+            (t.oberkellner_hitbox, t.oberkellner_breathe_hitbox),
+            ([16, 36], [16, 30])
+        );
+        assert_eq!((t.oberkellner_intro, t.oberkellner_stun), (90, 60));
+        assert_eq!(t.oberkellner_telegraph, [40, 36, 32]);
+        assert_eq!(t.oberkellner_dash, [Fx(512), Fx(640), Fx(768)]);
+        assert_eq!(t.oberkellner_breathe, [72, 60, 48]);
+        assert_eq!(
+            (t.oberkellner_hit_points, t.oberkellner_final_points),
+            (1000, 5000)
+        );
+        assert_eq!(t.oberkellner_bill_hitbox, [8, 8]);
+        assert_eq!(
+            (
+                t.oberkellner_bill_hang,
+                t.oberkellner_bill_fall,
+                t.oberkellner_bill_sway,
+                t.oberkellner_bill_sway_period
+            ),
+            (30, Fx(256), 12, 64)
+        );
+        for (field, bad, named) in [
+            ("oberkellner_hitbox", "[33, 36]", "oberkellner_hitbox"),
+            ("oberkellner_hitbox", "[16, 49]", "oberkellner_hitbox"),
+            (
+                "oberkellner_breathe_hitbox",
+                "[14, 30]",
+                "oberkellner_hitbox",
+            ),
+            (
+                "oberkellner_breathe_hitbox",
+                "[16, 37]",
+                "oberkellner_hitbox",
+            ),
+            (
+                "oberkellner_breathe_hitbox",
+                "[16, 0]",
+                "oberkellner_hitbox",
+            ),
+            (
+                "oberkellner_bill_hitbox",
+                "[13, 8]",
+                "oberkellner_bill_hitbox",
+            ),
+            (
+                "oberkellner_telegraph",
+                "[40, 29, 32]",
+                "oberkellner_telegraph",
+            ),
+            ("oberkellner_bill_hang", "29", "oberkellner_bill_hang"),
+            ("oberkellner_dash", "[512, 0, 768]", "oberkellner_dash"),
+            ("oberkellner_dash", "[512, 640, 4096]", "oberkellner_dash"),
+            ("oberkellner_bill_fall", "0", "oberkellner_bill_fall"),
+            ("oberkellner_breathe", "[72, 0, 48]", "oberkellner_breathe"),
+            ("oberkellner_intro", "0", "oberkellner_intro"),
+            ("oberkellner_stun", "0", "oberkellner_stun"),
+            (
+                "oberkellner_bill_sway_period",
+                "0",
+                "oberkellner_bill_sway_period",
+            ),
+            ("oberkellner_bill_sway", "17", "oberkellner_bill_sway"),
+            ("oberkellner_bill_sway", "-1", "oberkellner_bill_sway"),
         ] {
             let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             let err = Tuning::parse(&text).unwrap_err().to_string();

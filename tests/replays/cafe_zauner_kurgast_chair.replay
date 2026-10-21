@@ -1,0 +1,38 @@
+# The Kurgast's deck chair as a step up to chandelier L2 (Stage 9 section
+# 2, „Kein Platz / für Liegen"): the first 290 frames of
+# cafe_zauner_solver.replay (both tray bounces, L1, down into pen B),
+# then a running jump onto Vitrine B (48-50) through its 3 Oblaten and a
+# brake on it (x 808). She waits while Kurgast #1 shuffles towards her in
+# pen C and hops onto the ?-box at 52 (409), steps off it onto his head:
+# a stomp (439, 100), he lies down in his deck chair („Kurruhe!"), and
+# she lands on the chair (460, its top 1 tile up). From the chair a
+# walking jump with JUMP held (473) reaches L2 (56-58, row 10 = 5 up
+# from the floor, 4 from the chair; landed 507) and its 3 Oblaten; she
+# stands on the band over the Selfie-Tourist. The jump press shifted
+# with the inputs after it: -14 … +30 frames all land on L2 (the
+# chair stays).
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=2300 oblaten=11 player_y<=138 player_y>=138 player_x>=896 state=playing
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 11
+L 16
+- 64
+RJ 12
+R 10
+- 70
+RJ 36
+- 50

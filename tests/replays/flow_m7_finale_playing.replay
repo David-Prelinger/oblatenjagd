@@ -1,0 +1,16 @@
+# M7 flow (D-107, E47): `start = playing` keeps the M1 ending even on the
+# journey's last station: the finale (goal_stollen touched in the air at
+# 293, the Serve, the tally, the clear panel), then „Fortsetzung folgt …"
+# and the title, with no ending and no „durchgespielt" mark.
+level  = m7_finale
+seed   = 1
+source = handwritten
+start  = playing
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl bad_ischl m7_finale
+expect = complete frames=293..293 deaths=0 no_event=Died
+expect = state=title cleared=false stage=cafe_zauner score=0
+---
+R 260
+RJ 20     # onto the counter
+R 30      # goal_stollen at 293
+- 900     # Serve, tally, clear, „Fortsetzung folgt …", the title

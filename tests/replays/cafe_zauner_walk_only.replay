@@ -1,0 +1,72 @@
+# The walking reach of Stage 9 (D-111): Normal, no run button at all, from
+# the start onto Vitrine D's top (col 69), no hurt. With
+# cafe_zauner_queue_walk (from Vitrine D on) it proves sections 1-3 at
+# walk speed. Built in segments that each end standing still (beam
+# searches without RUN, then hand-centred presses):
+# 1 a walking jump under the ?-box at 8 and the M-box at 12 onto the
+#   2-high vitrine at 18-19 (press 141, landed 178);
+# 2 down into pen 1 (236), a walking jump that comes down on Kellner #1's
+#   tray (press 289, bounce 328) and lands on Vitrine A (346);
+# 3 a step along Vitrine A, a wait, a hop off it (press 620, JUMP held
+#   again from 632) onto Kellner #2's tray as he reaches its face (647)
+#   up onto chandelier L1 (673); off L1 behind the waiter, a walking jump
+#   onto Vitrine B (press 760, landed 807);
+# 4 a hop onto the ?-box at 52 (press 886, standing on it from 923), a
+#   wait, a step off onto Kurgast #1 (1250, „Kurruhe!"), she lands on his
+#   deck chair (1271) and a walking jump from it reaches L2 (press 1275,
+#   landed 1310);
+# 5 off L2, a walking jump onto Vitrine C (press 1402, landed 1430) and
+#   one onto Vitrine D (press 1438, landed 1479); she stands there (1531).
+# Each press shifted alone (D-100: every other input at its frame; judged
+# on standing on the segment's target with no hurt): 19, 12, 13, 17, 34,
+# 18, 20, 16, 23. All >= 8.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt power=normal score=2700 player_x>=1092 player_y<=170 player_y>=170 state=playing
+---
+- 1
+R 140
+RJ 20
+R 4
+- 40
+R 27
+- 4
+R 53
+RJ 20
+R 2
+- 15
+R 25
+L 6
+- 30
+R 18
+- 215
+RJ 2
+R 10
+RJ 30
+R 6
+L 4
+- 30
+R 40
+- 18
+RJ 36
+R 8
+- 30
+R 12
+- 40
+RJ 12
+J 8
+- 313
+R 12
+L 4
+- 40
+RJ 36
+- 50
+R 37
+- 4
+RJ 12
+R 24
+RJ 20
+R 29
+L 4
+- 40

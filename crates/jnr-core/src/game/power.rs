@@ -110,11 +110,18 @@ impl Game {
     }
 
     /// Axe `i` hits entity `j` (its reaction is not `Pass`): the axe is
-    /// gone; `defeat_by_projectile` defeats or shatters the target (a
-    /// `Bounce`, the Fiaker, does nothing there).
+    /// gone; an Oberkellner in his breather (`Hit`) takes a hit through
+    /// `Game::hit_oberkellner`; otherwise `defeat_by_projectile` defeats or
+    /// shatters the target (a `Bounce`, the Fiaker, does nothing there).
     fn axe_hit(&mut self, i: usize, j: usize) {
         self.entities[i].removed = true;
         self.events.push(Event::AxeHit);
+        // The Oberkellner in his breather takes a hit (D-106).
+        if self.entities[j].axe_hit() == AxeHit::Hit {
+            let popups = self.hit_oberkellner(j);
+            self.entities.extend(popups);
+            return;
+        }
         self.defeat_by_projectile(j);
     }
 

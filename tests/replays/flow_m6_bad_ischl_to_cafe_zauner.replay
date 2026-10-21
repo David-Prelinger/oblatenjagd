@@ -5,21 +5,24 @@
 # the inputs of bad_ischl_solver.replay (Bad Ischl clear at 4793, the
 # goal sequence past the queue at Café Zauner), then idle: the tally, the
 # route map Bad Ischl -> Café Zauner (5279; the walk from 5319, primary
-# label slots on this screen per D-098), which has no level yet, so the
-# teaser („Fortsetzung folgt …", 5343-5522) and the title (5523) with
-# the run reset to its first stage (Strobl), Normal, score 0, lives 3.
+# label slots on this screen per D-098), the map in Wait, and with no
+# START the Café Zauner intro (5643) with the run carried over (Normal,
+# score 35600, lives 3, 75 Oblaten); the replay ends in the intro (5703).
 # Shot: the map walk to Café Zauner (5330). D-102 (E42): Strobl 230 s and
 # Bad Ischl 210 s shorten the tallies (10 and 60 frames), 10 idle frames
 # fewer before Bad Ischl, the re-solved Bad Ischl route; the shot moved
-# from 5400 to the same point of the walk. The teaser itself is
-# bad_ischl_tour's `teaser` shot (Normal) and flow_m6_hackl_bad_ischl_teaser's
-# (Hackl).
+# from 5400 to the same point of the walk. Re-cut for D-108 (M7): was
+# flow_m6_bad_ischl_teaser_title, which ended on the teaser and the title;
+# Stage 9 is playable now, so the map waits and leads into it. The shot
+# keeps its frame (the walk is unchanged; the panel's third line can
+# differ). The map in Wait is bad_ischl_tour's `route_map` shot (Normal)
+# and flow_m6_hackl_bad_ischl_to_cafe_zauner's (Hackl).
 level  = strobl
 seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1900..1900 deaths=0 no_event=Hurt
-expect = event=LevelComplete state=title stage=strobl power=normal score=0 lives=3 oblaten=0
+expect = event=LevelComplete state=stage_intro stage=cafe_zauner power=normal score=35600 lives=3 oblaten=75
 shots  = 5330:map_walk
 ---
 - 20
@@ -121,5 +124,5 @@ RBJ 36
 RB 18
 RBJ 36
 RB 56
-# --- tally, route map, teaser, title ---
-- 800
+# --- tally, route map (Wait), the Café Zauner intro ---
+- 910

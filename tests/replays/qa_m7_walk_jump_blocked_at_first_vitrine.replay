@@ -1,0 +1,24 @@
+# QA M7 bug (level, 09_cafe_zauner sec. 1): a walking Resi can't get past
+# the first vitrine. The `?`-box at (17, row 11) stands directly in front
+# of the 2-high vitrine at 18-19, so the 2-tile step-up (a walking jump by
+# the reach rules: required step-ups <= 3) is closed for a 22 px tall
+# Resi: under the box her head stops at y 192 (feet 214), but the vitrine
+# top is y 208, and a walking jump's apex (feet ~181) can't reach the box
+# top (176). Only a running jump (apex feet ~171) lands on the `?`-box and
+# steps from it onto the vitrine (the solver's route, jump at 77). A
+# walking-only beam search (2-frame chunks, beam 3000, 500 frames) never
+# gets past x 276; a Big Resi (30 px) can't either. Here she walks into
+# the vitrine face (x 276 from frame ~165), then a held walking jump with
+# RIGHT: she bumps the box (BlockBumped at 188, its Oblate pops) and falls
+# back onto the floor at x 276 (landed 200).
+# Expected: the walking jump lands on the vitrine (player_x >= 290).
+# Actual: player_x = 276, on the floor in front of the vitrine.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=290
+---
+R 180
+RJ 30
+R 10
+- 30

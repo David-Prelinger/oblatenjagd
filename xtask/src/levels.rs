@@ -34,11 +34,18 @@
 //!
 //! Signs (M5, [`crate::signlint`], E33, D-088): no placed Oblate
 //! overlaps a sign board's drawn rectangle (known findings only warn).
+//!
+//! The boss arena (M7, D-106, `jnr_core::enemies::arena_problems`): a
+//! level with an `oberkellner` has exactly one, in its last 20 columns on
+//! the arena floor; a 3-high solid refuge at each end, one flat solid
+//! floor between them with only air above it from row 8 (1-based);
+//! no other enemy, sign, platform, box or brick in the arena; every bill
+//! column (with its sway) over the floor.
 
 use std::path::Path;
 use std::process::ExitCode;
 
-use jnr_core::{PROP_SPRITES, SpawnKind, Texts, Tuning};
+use jnr_core::{PROP_SPRITES, Texts, Tuning};
 
 use crate::content::{self, LevelFile};
 
@@ -59,7 +66,10 @@ Commands:
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
               columns (warnings never fail); no placed Oblate on a sign
-              board (face and frame as drawn, posts left out)
+              board (face and frame as drawn, posts left out); a level
+              with an oberkellner: his arena (last 20 columns: refuges,
+              flat floor, nothing above it, no other enemy/sign/box, bill
+              columns over the floor)
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -169,13 +179,17 @@ pub fn lint(
                 ));
             }
         }
-        if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
-            problems.push(format!("{shown}: no goal (add a `goal` entity)"));
+        if !level.entities.iter().any(|e| e.kind.is_goal()) {
+            problems.push(format!(
+                "{shown}: no goal (add a `goal` or `goal_stollen` entity)"
+            ));
         }
         for p in jnr_core::platform::track_problems(level, tuning)
             .into_iter()
             .chain(jnr_core::platform::recovery_problems(level, tuning))
             .chain(jnr_core::enemies::reisebus_lane_problems(level, tuning))
+            // The Oberkellner's arena (D-106).
+            .chain(jnr_core::enemies::arena_problems(level, tuning))
             // No solid on a swim surface in the columns the scroll shows.
             .chain(jnr_core::swim::problems(level, scroll_columns(level)))
         {
@@ -325,7 +339,7 @@ mod tests {
                 "b.level: meta.id `a` is also used by a.level",
                 "b.level: title_key `stage.nope` is missing in content/text/de.toml",
                 "b.level: sign at row 1, column 3: text key `stage.a.sign` is missing in content/text/de.toml",
-                "b.level: no goal (add a `goal` entity)",
+                "b.level: no goal (add a `goal` or `goal_stollen` entity)",
                 "c.level: unknown grid character '?' at row 1, column 2 (not in [legend])",
             ]
         );
@@ -509,6 +523,13 @@ mod tests {
                 "01_s.level: still enemy at row 1, column 2: `still = true` is for grey-box test levels (00_*.level) only"
             ]
         );
+        // A Wartender is still by its kind and legal in stages (D-105).
+        let queue = text.replace("selfie_tourist\", still = true", "wartender\"");
+        let stage = vec![(
+            PathBuf::from("09_s.level"),
+            Level::parse(&queue).map_err(|e| e.to_string()),
+        )];
+        assert_eq!(lint(&stage, &texts, &tuning(), None), Vec::<String>::new());
     }
 
     #[test]
@@ -531,10 +552,10 @@ mod tests {
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
         // the M2 "Items and props", the M3 "Props", the M4 "Props", the M5
-        // "Props" and the M6 "Props" tables that are props (not the
-        // checkpoint, Maibaum, signs or the
-        // car, which have entities of their own; the M4 train and its steam
-        // are in the "Platforms" table, not read here).
+        // "Props", the M6 "Props" and the M7 "Props" tables that are props
+        // (not the checkpoint, Maibaum, signs or the car, which have
+        // entities of their own; the M4 train and its steam are in the
+        // "Platforms" table, not read here).
         let catalog = include_str!("../../docs/sprite-catalog.md");
         let section = |heading: &str, end: &str| {
             let start = catalog.find(heading).expect(heading);
@@ -554,6 +575,7 @@ mod tests {
             section("### Props (group `props`, M4)", "\n### "),
             section("### Props (group `props`, M5)", "\n### "),
             section("### Props (group `props`, M6)", "\n### "),
+            section("### Props (group `props`, M7)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)

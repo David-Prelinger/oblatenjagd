@@ -26,12 +26,24 @@ fn start_playing(g: &mut Game) {
 #[test]
 fn title_then_start_then_intro_then_playing() {
     let mut g = titled(&flat(30));
-    assert_eq!(g.mode(), Mode::Title { frames: 0 });
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: false
+        }
+    );
     assert_eq!(g.start(), Start::Title);
     let p0 = *g.player();
     // Nothing moves on the title screen; it counts frames for blinking.
     hold(&mut g, "R", 30);
-    assert_eq!(g.mode(), Mode::Title { frames: 30 });
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 30,
+            from_ending: false
+        }
+    );
     assert_eq!(*g.player(), p0);
     // A START press starts the stage intro (no `Respawned`: nobody died).
     let events = hold(&mut g, "S", 1);

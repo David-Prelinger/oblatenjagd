@@ -90,7 +90,7 @@ pub fn problems(level: &Level) -> Vec<String> {
     let seen_to = to + SCREEN_COLS;
     for e in &level.entities {
         match e.kind {
-            SpawnKind::Goal if e.col < seen_to => out.push(format!(
+            SpawnKind::Goal | SpawnKind::GoalStollen if e.col < seen_to => out.push(format!(
                 "goal at {}: in an auto-scroll level the goal must be at column >= {} (to + {SCREEN_COLS}, 1-based; the goal sequence uses the side camera, D-075)",
                 at(e.col, e.row),
                 seen_to + 1

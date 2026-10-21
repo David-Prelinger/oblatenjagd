@@ -476,6 +476,7 @@ fn gelse_update(e: &mut Entity, level: &Level, target: (i32, i32), screen: (i32,
         globes: &[],
         stage_clock: 0,
         cars: &[],
+        bills: 0,
     };
     e.update(&ctx);
 }
