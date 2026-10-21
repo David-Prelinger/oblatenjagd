@@ -750,3 +750,10 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
 - **Not done** (optional in the task): the director's voice lengths stay the design's (`Sfx::ms`); the rendered lengths are available (`startup_sfx`), and differences show up in the cue logs only as voice-busy windows. The low-passed `wolfgangsee` fallback for a missing `unterwasser` is the app's (E59) choice: `render_music(Unterwasser, …)` returns `None` until the song exists.
 - The xtask test that compared `audio/sfx` with the cue ids (E58a review) moved to `jnr-assets` and uses the embedded bank.
 
+### E58b review fixes
+
+- **Music cue kinds** (`Bank::load`, build error `file:1:1: error[kind]`): a looping cue (`Music::is_song`) must be a `.song` with `kind = "loop"` (a jingle song or an `audio/jingles/<id>.sfx` of that id is an error); a one-shot cue must be a `.song` with `kind = "jingle"` or an `audio/jingles/<id>.sfx`. A song and an `.sfx` jingle may not share an id. Unit tests for each case.
+- **Embedding matches `xtask audio`'s layout**: only `audio/{sfx,jingles}/*.sfx`, `audio/instruments/*.inst`, `audio/music/*.song` and `audio/quotes/*.quote` are sources; a source file anywhere else under `audio/` (nested or in the wrong directory) is a build error. An unreadable `audio/` panics with its path. Sources are sorted by their embedded name, and only `audio/jingles/` (exactly) makes a jingle.
+- `bank::transpose` clamps to `patch::FREQ_RANGE`; band-pass centres don't move with the pitch, so a variant of a band-passed or noise-heavy patch needs a second look (doc on `cues::PITCHED`).
+- `PENDING_MUSIC`: a test rejects duplicates and checks its length against `PENDING_MUSIC_MAX` (25; lower it as songs land, never raise it). A `jnr-assets` test renders every embedded song (normal and hurry): loops a multiple of 4096 frames, no clamped samples (it runs as soon as songs land).
+

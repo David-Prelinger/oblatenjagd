@@ -241,7 +241,9 @@ pub const JUMP_BIG_SEMITONES: i8 = -5;
 /// Leaving the pause: two semitones lower (§6.3 `pause`).
 pub const PAUSE_OUT_SEMITONES: i8 = -2;
 
-/// Every pitched variant the cues can play (the app pre-renders them).
+/// Every pitched variant the cues can play (the app pre-renders them with
+/// `bank::transpose`). A variant of a band-passed or noise-heavy patch
+/// needs a second look: its filters don't move with the pitch.
 pub const PITCHED: [Play; 2] = [
     Sfx::Jump.pitched(JUMP_BIG_SEMITONES),
     Sfx::Pause.pitched(PAUSE_OUT_SEMITONES),
@@ -378,10 +380,11 @@ impl Music {
     }
 }
 
-/// Music cues not authored yet (S2): the only place where a cue id or a
-/// level's `music` may lack its `audio/music/<id>.song` (or
-/// `audio/jingles/<id>.sfx`). The bank tests fail for an entry that
-/// exists, so the list only shrinks; MA's acceptance needs it empty.
+/// Music cues without a source yet (S2 is authoring them): the one place
+/// where a cue id or a level's `music` may lack its `audio/music/<id>.song`
+/// (or `audio/jingles/<id>.sfx`). The `jnr-assets` tests fail for an entry
+/// whose source exists, so remove it when its song lands; MA's acceptance
+/// expects the list to be empty.
 pub const PENDING_MUSIC: &[Music] = &[
     Music::Title,
     Music::RouteMap,
@@ -409,6 +412,10 @@ pub const PENDING_MUSIC: &[Music] = &[
     Music::Credits,
     Music::Ende,
 ];
+
+/// The most entries [`PENDING_MUSIC`] may have. Lower it whenever songs
+/// land; never raise it (a test checks the list against it).
+pub const PENDING_MUSIC_MAX: usize = 25;
 
 /// Which voices a [`Cue::CutSfx`] stops.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

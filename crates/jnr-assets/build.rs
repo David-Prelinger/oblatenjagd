@@ -53,55 +53,84 @@ fn main() {
     );
     write(&out.join("assets.rs"), generated.as_bytes());
 
+    // Cargo scans a directory recursively for changed files, so a new or
+    // edited file anywhere under `audio/` reruns this script.
     println!("cargo:rerun-if-changed={}", root.join("audio").display());
     write(&out.join("audio.rs"), audio_sources(&root).as_bytes());
 }
 
-/// Audio source extensions (`README.md`, `targets.toml` are not sources).
-const AUDIO_EXTENSIONS: [&str; 4] = ["sfx", "inst", "song", "quote"];
+/// The source directories under `audio/` and their extension (flat: as
+/// `cargo xtask audio` reads them). `README.md` and `targets.toml` are not
+/// sources.
+const AUDIO_DIRS: [(&str, &str); 5] = [
+    ("sfx", "sfx"),
+    ("jingles", "sfx"),
+    ("instruments", "inst"),
+    ("music", "song"),
+    ("quotes", "quote"),
+];
 
-/// Every audio source under `audio/` (sorted), checked with
-/// `Bank::load`; returns the generated `AUDIO_SOURCES` table.
+/// Every audio source (sorted by its embedded name), checked with
+/// `Bank::load`; returns the generated `AUDIO_SOURCES` table. A source file
+/// anywhere else under `audio/` (nested, or in the wrong directory) is a
+/// build error, so nothing is silently left out.
 fn audio_sources(root: &Path) -> String {
     let dir = root.join("audio");
-    let mut files = Vec::new();
+    let mut files: Vec<(String, PathBuf)> = Vec::new();
+    let mut misplaced = Vec::new();
     let mut stack = vec![dir.clone()];
     while let Some(d) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&d) else {
-            continue;
-        };
-        for e in entries.flatten() {
-            let p = e.path();
+        let entries =
+            fs::read_dir(&d).unwrap_or_else(|e| panic!("read the audio dir {}: {e}", d.display()));
+        for e in entries {
+            let p = e
+                .unwrap_or_else(|e| panic!("read the audio dir {}: {e}", d.display()))
+                .path();
             if p.is_dir() {
                 stack.push(p);
-            } else if p
-                .extension()
-                .and_then(|x| x.to_str())
-                .is_some_and(|x| AUDIO_EXTENSIONS.contains(&x))
-            {
-                files.push(p);
+                continue;
+            }
+            let Some(ext) = p.extension().and_then(|x| x.to_str()) else {
+                continue;
+            };
+            if !AUDIO_DIRS.iter().any(|(_, x)| *x == ext) {
+                continue;
+            }
+            let rel = p.strip_prefix(root).unwrap_or(&p);
+            let name = rel
+                .iter()
+                .map(|c| c.to_string_lossy())
+                .collect::<Vec<_>>()
+                .join("/");
+            let parent = p.parent().filter(|par| par.parent() == Some(dir.as_path()));
+            let known = parent
+                .and_then(|par| par.file_name())
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| AUDIO_DIRS.contains(&(n, ext)));
+            if known {
+                files.push((name, p));
+            } else {
+                misplaced.push(format!(
+                    "{name}:1:1: error[id]: an audio source must sit directly in audio/sfx, audio/jingles (.sfx), audio/instruments (.inst), audio/music (.song) or audio/quotes (.quote)"
+                ));
             }
         }
     }
     files.sort();
-    let texts: Vec<(String, String)> = files
+    let texts: Vec<String> = files
         .iter()
-        .map(|p| {
-            let name = p
-                .strip_prefix(root)
-                .unwrap_or(p)
-                .to_string_lossy()
-                .replace('\\', "/");
-            let text =
-                fs::read_to_string(p).unwrap_or_else(|e| panic!("read {}: {e}", p.display()));
-            (name, text)
-        })
+        .map(|(_, p)| fs::read_to_string(p).unwrap_or_else(|e| panic!("read {}: {e}", p.display())))
         .collect();
-    let refs: Vec<(&str, &str)> = texts
+    let refs: Vec<(&str, &str)> = files
         .iter()
-        .map(|(n, t)| (n.as_str(), t.as_str()))
+        .zip(&texts)
+        .map(|((n, _), t)| (n.as_str(), t.as_str()))
         .collect();
-    if let Err(errors) = jnr_audio::bank::Bank::load(&refs) {
+    let errors = match jnr_audio::bank::Bank::load(&refs) {
+        Ok(_) => misplaced,
+        Err(e) => misplaced.into_iter().chain(e).collect(),
+    };
+    if !errors.is_empty() {
         eprintln!("jnr-assets: the audio sources have errors:");
         for e in &errors {
             eprintln!("{e}");
@@ -114,7 +143,7 @@ fn audio_sources(root: &Path) -> String {
          /// text), sorted by path.\n\
          pub static AUDIO_SOURCES: &[(&str, &str)] = &[\n",
     );
-    for (p, (name, _)) in files.iter().zip(&texts) {
+    for (name, p) in &files {
         let abs = p.canonicalize().unwrap_or_else(|_| p.clone());
         code.push_str(&format!(
             "    ({name:?}, include_str!({:?})),\n",

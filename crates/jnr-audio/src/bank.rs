@@ -3,21 +3,24 @@
 //! when its cue first comes up).
 //!
 //! [`Bank::load`] takes `(path, text)` pairs (`jnr_assets::audio_sources()`
-//! in the game, the files on disk in tools): `.sfx` under `jingles/` are
-//! jingles, every other `.sfx` an SFX; `.inst`, `.song` and `.quote` by
+//! in the game, the files on disk in tools): `.sfx` under `audio/jingles/`
+//! are jingles, every other `.sfx` an SFX; `.inst`, `.song` and `.quote` by
 //! extension; anything else (`README.md`, `targets.toml`) is skipped. A
-//! parse error, a duplicate id or a music lint *error* fails the load with
+//! parse error, a duplicate id, a music cue of the wrong kind (below) or a
+//! music lint *error* fails the load with
 //! `file:line:col` messages; `jnr-assets/build.rs` turns that into a build
 //! error.
 //!
 //! Music cues are songs (`music/*.song`) or `.sfx` jingles
-//! (`jingles/*.sfx`); [`Bank::has_music`] accepts either.
+//! (`jingles/*.sfx`); [`Bank::has_music`] accepts either. A cue that loops
+//! ([`Music::is_song`]) must be a `.song` of `kind = "loop"`; a jingle cue a
+//! `.song` of `kind = "jingle"` or a `jingles/*.sfx` (`error[kind]`).
 
 use std::collections::BTreeMap;
 
 use crate::cues::{Music, Play};
 use crate::music_lint::{Level, LintContext, lint_song};
-use crate::patch::{Pitch, Sfx};
+use crate::patch::{FREQ_RANGE, Pitch, Sfx};
 use crate::render::{Pcm, render_sfx};
 use crate::song::{Song, SongKind};
 use crate::song_render::{RenderOptions, render_in};
@@ -63,6 +66,8 @@ impl Bank {
     pub fn load(sources: &[(&str, &str)]) -> Result<Bank, Vec<String>> {
         let mut bank = Bank::default();
         let mut errors = Vec::new();
+        // The file of each jingle, for messages.
+        let mut jingle_files: BTreeMap<String, String> = BTreeMap::new();
         let dup = |errors: &mut Vec<String>, file: &str, kind: &str, id: &str| {
             errors.push(format!("{file}:1:1: error[id]: a second {kind} `{id}`"));
         };
@@ -71,7 +76,10 @@ impl Bank {
             match ext {
                 "sfx" => match Sfx::parse(file, text) {
                     Ok(s) => {
-                        let jingle = file.contains("jingles/");
+                        let jingle = file.starts_with("audio/jingles/");
+                        if jingle {
+                            jingle_files.insert(s.id.clone(), file.to_owned());
+                        }
                         let (map, kind) = if jingle {
                             (&mut bank.jingles, "jingle")
                         } else {
@@ -122,6 +130,7 @@ impl Bank {
                 ));
             }
         }
+        errors.extend(kind_problems(&bank, &jingle_files));
         if errors.is_empty() {
             let ctx = LintContext {
                 instruments: &bank.instruments,
@@ -201,8 +210,38 @@ impl Bank {
     }
 }
 
+/// Music cues whose source has the wrong kind (module docs).
+fn kind_problems(bank: &Bank, jingle_files: &BTreeMap<String, String>) -> Vec<String> {
+    let mut out = Vec::new();
+    for m in Music::ALL {
+        let id = m.id();
+        let song = bank.songs.get(id);
+        if m.is_song() {
+            if let Some(file) = jingle_files.get(id) {
+                out.push(format!(
+                    "{file}:1:1: error[kind]: `{id}` is a looping music cue: it must be audio/music/{id}.song with kind = \"loop\", not a jingle"
+                ));
+            }
+            if let Some(s) = song.filter(|s| s.kind != SongKind::Loop) {
+                out.push(format!(
+                    "{}:1:1: error[kind]: `{id}` is a looping music cue: kind must be \"loop\"",
+                    s.file
+                ));
+            }
+        } else if let Some(s) = song.filter(|s| s.kind != SongKind::Jingle) {
+            out.push(format!(
+                "{}:1:1: error[kind]: `{id}` is a one-shot music cue: kind must be \"jingle\" (or make it audio/jingles/{id}.sfx)",
+                s.file
+            ));
+        }
+    }
+    out
+}
+
 /// `sfx` with every oscillator's pitch moved by `semitones` (filters,
-/// envelopes and timing stay; arpeggios and vibrato are relative anyway).
+/// envelopes and timing stay; arpeggios and vibrato are relative anyway),
+/// clamped to [`FREQ_RANGE`]. A noise layer's `freq_hz` (its LFSR rate)
+/// moves too; band-pass centres don't.
 pub fn transpose(sfx: &Sfx, semitones: i8) -> Sfx {
     if semitones == 0 {
         return sfx.clone();
@@ -211,9 +250,8 @@ pub fn transpose(sfx: &Sfx, semitones: i8) -> Sfx {
     // Hz in 16.16 fixed point, scaled, rounded back to whole Hz.
     let shift = |hz: u32| -> u32 {
         let scaled = tables::scale_by_cents(u64::from(hz) << 16, cents);
-        u32::try_from((scaled + (1 << 15)) >> 16)
-            .unwrap_or(u32::MAX)
-            .max(1)
+        let hz = (scaled + (1 << 15)) >> 16;
+        hz.clamp(FREQ_RANGE.0 as u64, FREQ_RANGE.1 as u64) as u32
     };
     let mut out = sfx.clone();
     for layer in &mut out.layers {
@@ -309,6 +347,79 @@ mod tests {
         assert_eq!(errors.len(), 2, "{errors:?}");
     }
 
+    /// `fixtures()` with the fixture song `from` renamed to music cue `to`.
+    fn as_cue(from: &str, to: &str) -> Vec<(String, String)> {
+        fixtures()
+            .into_iter()
+            .map(|(f, t)| {
+                if f == format!("audio/music/{from}.song") {
+                    (
+                        format!("audio/music/{to}.song"),
+                        t.replace(&format!("id = \"{from}\""), &format!("id = \"{to}\"")),
+                    )
+                } else {
+                    (f.to_owned(), t.to_owned())
+                }
+            })
+            .collect()
+    }
+
+    fn load(src: &[(String, String)]) -> Result<Bank, Vec<String>> {
+        let refs: Vec<(&str, &str)> = src.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect();
+        Bank::load(&refs)
+    }
+
+    #[test]
+    fn a_music_cue_needs_a_source_of_its_kind() {
+        // The right kinds load.
+        assert!(load(&as_cue("placeholder_polka", "title")).is_ok());
+        assert!(load(&as_cue("placeholder_fanfare", "death")).is_ok());
+        let mut jingle = as_cue("placeholder_polka", "salzburg");
+        jingle.push(("audio/jingles/death.sfx".into(), JUMP.into()));
+        assert!(load(&jingle).is_ok());
+        // A looping cue as a jingle song.
+        let e = load(&as_cue("placeholder_fanfare", "title")).unwrap_err();
+        assert_eq!(
+            e,
+            [
+                "audio/music/title.song:1:1: error[kind]: `title` is a looping music cue: kind must be \"loop\""
+            ]
+        );
+        // A one-shot cue as a loop.
+        let e = load(&as_cue("placeholder_polka", "death")).unwrap_err();
+        assert!(
+            e[0].starts_with(
+                "audio/music/death.song:1:1: error[kind]: `death` is a one-shot music cue"
+            ),
+            "{e:?}"
+        );
+        // A looping cue as an .sfx jingle.
+        let mut src = as_cue("placeholder_polka", "placeholder_polka");
+        src.push(("audio/jingles/title.sfx".into(), JUMP.into()));
+        let e = load(&src).unwrap_err();
+        assert!(
+            e[0].starts_with(
+                "audio/jingles/title.sfx:1:1: error[kind]: `title` is a looping music cue"
+            ),
+            "{e:?}"
+        );
+        // Only `audio/jingles/` makes a jingle.
+        let mut src = as_cue("placeholder_polka", "placeholder_polka");
+        src.push(("audio/sfx/jingles/title.sfx".into(), JUMP.into()));
+        assert!(load(&src).unwrap().jingles.is_empty());
+    }
+
+    #[test]
+    fn a_song_and_a_jingle_may_not_share_an_id() {
+        let mut src = as_cue("placeholder_fanfare", "death");
+        src.push(("audio/jingles/death.sfx".into(), JUMP.into()));
+        let e = load(&src).unwrap_err();
+        assert_eq!(
+            e,
+            ["audio/music/death.song:1:1: error[id]: `death` is both a song and a jingle"]
+        );
+    }
+
     #[test]
     fn a_music_lint_error_fails_the_load() {
         let mut src = fixtures();
@@ -357,14 +468,36 @@ mod tests {
     fn transpose_moves_fixed_pitches_by_semitones() {
         let sfx = Sfx::parse("audio/sfx/jump.sfx", JUMP).unwrap();
         let up = transpose(&sfx, 12);
+        let mut slides = 0;
         for (a, b) in sfx.layers.iter().zip(&up.layers) {
-            if let (Pitch::Fixed { freq_hz: f0, .. }, Pitch::Fixed { freq_hz: f1, .. }) =
-                (a.pitch, b.pitch)
-            {
-                assert!(f1.abs_diff(f0 * 2) <= 1, "{f0} -> {f1}");
+            let (
+                Pitch::Fixed {
+                    freq_hz: f0,
+                    slide_to_hz: s0,
+                },
+                Pitch::Fixed {
+                    freq_hz: f1,
+                    slide_to_hz: s1,
+                },
+            ) = (a.pitch, b.pitch)
+            else {
+                panic!("an .sfx has fixed pitches");
+            };
+            assert!(f1.abs_diff(f0 * 2) <= 1, "{f0} -> {f1}");
+            if let (Some(s0), Some(s1)) = (s0, s1) {
+                assert!(s1.abs_diff(s0 * 2) <= 1, "slide {s0} -> {s1}");
+                slides += 1;
             }
+            assert_eq!(s0.is_some(), s1.is_some());
         }
+        assert!(slides > 0, "the fixture jump glides");
         assert_eq!(transpose(&sfx, 0), sfx);
+        // Clamped to the patch format's range.
+        let way_down = transpose(&sfx, -100);
+        assert!(way_down.layers.iter().all(|l| matches!(
+            l.pitch,
+            Pitch::Fixed { freq_hz, .. } if freq_hz as i64 == FREQ_RANGE.0
+        )));
     }
 
     #[test]

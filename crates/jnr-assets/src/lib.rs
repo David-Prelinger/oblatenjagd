@@ -92,6 +92,31 @@ mod tests {
         }
     }
 
+    /// Every embedded song renders clean: a loop is a multiple of 4096
+    /// frames (D-114) and nothing clamps (a no-op until S2's songs land).
+    #[test]
+    fn every_embedded_song_renders_aligned_and_unclamped() {
+        let bank = audio_bank();
+        for m in Music::ALL
+            .into_iter()
+            .filter(|m| bank.songs.contains_key(m.id()))
+        {
+            for variant in [
+                jnr_audio::bank::Variant::Normal,
+                jnr_audio::bank::Variant::Hurry,
+            ] {
+                let r = bank
+                    .render_music(m, variant)
+                    .unwrap_or_else(|e| panic!("{}: {e}", m.id()))
+                    .expect("in the bank");
+                if r.looped {
+                    assert_eq!(r.pcm.samples.len() % 4096, 0, "{} {variant:?}", m.id());
+                }
+                assert_eq!(r.clamped, 0, "{} {variant:?}: clamped samples", m.id());
+            }
+        }
+    }
+
     #[test]
     fn embedded_audio_sources_are_sorted_sources() {
         let src = audio_sources();
