@@ -1,12 +1,12 @@
 # Oberkellner breathes, „Schnauf" (audio-design §6.3): noise through a low-pass falling
-# 1.2 kHz -> 300 Hz (a Q 1 band-pass sweep, the synth's low-pass sweep), amplitude hump
+# 1.2 kHz -> 300 Hz (a Q 6 band-pass sweep under a fixed 1.2 kHz low-pass), amplitude hump
 # (a sigh). Now you may stomp. 600 ms.
 [[layer]]
 wave = "noise"
-freq_hz = 1500
-bandpass = { hz = 1200, to_hz = 300, q_pct = 150 }
+freq_hz = 8000
+bandpass = { hz = 1200, to_hz = 300, q_pct = 600 }
 attack_ms = 140
 hold_ms = 100
 decay_ms = 360
-volume_pct = 30
+volume_pct = 69
 lowpass_hz = 1200
