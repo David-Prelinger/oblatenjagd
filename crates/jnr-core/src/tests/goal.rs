@@ -182,7 +182,13 @@ fn sequence_timing_slide_hop_walk_tally_texts_title() {
         frames_in(&mut g, ClearPhase::ToBeContinued),
         u32::from(t.goal.to_be_continued_frames)
     );
-    assert_eq!(g.mode(), Mode::Title { frames: 0 });
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: false
+        }
+    );
     assert!(g.stage_clear().is_none());
     assert_eq!(*g.player(), *Game::new(&goal_world(), &t, 1).player());
     // START from the title starts the stage again (direct flow: at once).

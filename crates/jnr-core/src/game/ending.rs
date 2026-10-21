@@ -16,8 +16,9 @@
 //! then the title with the run reset and the session's „durchgespielt"
 //! mark set (`Game::cleared`). START is ignored for the first
 //! `ending.start_ignore_frames` frames of the Map, the Scene and every
-//! credits page. Everything has fixed frame counts, so `start = title`
-//! replays run through it.
+//! credits page, and for the first `ending.end_start_frames` frames of
+//! that marked title (D-111). Everything has fixed frame counts, so
+//! `start = title` replays run through it.
 
 use super::{Game, Mode};
 use crate::hash::Fnv;
@@ -121,7 +122,7 @@ impl Game {
                     self.ending = None;
                     // Set only here; it survives `end_run` (D-107).
                     self.cleared = true;
-                    self.end_run();
+                    self.end_run(true);
                     return;
                 }
             }
