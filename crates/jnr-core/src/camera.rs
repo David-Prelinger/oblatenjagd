@@ -4,6 +4,8 @@
 //! (`[meta] camera`, D-054):
 //! - `side` (default, Stages 1–3): [`Camera::follow`] keeps the player's
 //!   centre inside the dead zone `camera.deadzone_top..=deadzone_bottom`;
+//!   a level with `[meta] camera_top` (D-103) never puts y above it, in
+//!   any phase ([`Camera::clamp_top`] after every move and placement);
 //! - `climb`: [`Camera::follow_climb`], SMW style. Grounded, the camera
 //!   settles by at most `climb_settle_speed` px per frame towards the
 //!   framing with the *settle feet* ([`ClimbFocus::settle_feet`]) at
@@ -191,7 +193,15 @@ impl Camera {
     /// `autoscroll_top` (or the bottom clamp, if that is higher), so the
     /// water stays on screen however high she jumps.
     pub fn clamp_autoscroll_top(&mut self, level_h: i32, t: &CameraTuning) {
-        self.y = self.y.max(t.autoscroll_top.min(rest_y(level_h)));
+        self.clamp_top(t.autoscroll_top, level_h);
+    }
+
+    /// A top clamp: y at least `top` (or the bottom clamp, if that is
+    /// higher). The auto-scroll camera's `autoscroll_top` (D-090) and a
+    /// side level's `[meta] camera_top` (D-103), applied after
+    /// [`Camera::new`], [`Camera::follow`] and [`Camera::follow_y`].
+    pub fn clamp_top(&mut self, top: i32, level_h: i32) {
+        self.y = self.y.max(top.min(rest_y(level_h)));
     }
 
     /// Follows `focus`: scrolls right once it passes `follow_x` on screen
@@ -1075,6 +1085,37 @@ mod tests {
         let mut c = Camera { x: 0, y: 92 };
         c.follow((40, 20), W, LAKE_H, &T);
         assert_eq!(c.y, 0);
+    }
+
+    #[test]
+    fn side_camera_top_clamp_holds_after_new_follow_and_follow_y() {
+        // D-103 with Bad Ischl's numbers: 17 rows (272 px, bottom clamp 92),
+        // `camera_top = 76`. A focus high above the street pulls the dead
+        // zone up to y < 76 (and to 0); the clamp keeps 76 after every one
+        // of the side camera's moves, and below it changes nothing.
+        const ISCHL_H: i32 = 272;
+        const TOP: i32 = 76;
+        for fy in [200, 140, 139, 101, 20, -40] {
+            let dead_zone = (fy - T.deadzone_top).clamp(0, 92);
+            let mut c = Camera { x: 0, y: 92 };
+            c.follow((40, fy), W, ISCHL_H, &T);
+            assert_eq!(c.y, dead_zone, "follow without the key, focus {fy}");
+            c.clamp_top(TOP, ISCHL_H);
+            assert_eq!(c.y, dead_zone.max(TOP), "follow, focus {fy}");
+            let mut c = Camera { x: 0, y: 92 };
+            c.follow_y(fy, ISCHL_H, &T);
+            c.clamp_top(TOP, ISCHL_H);
+            assert_eq!(c.y, dead_zone.max(TOP), "follow_y, focus {fy}");
+            let mid = (T.deadzone_top + T.deadzone_bottom) / 2;
+            let mut c = Camera::new((40, fy), W, ISCHL_H, &T);
+            assert_eq!(c.y, (fy - mid).clamp(0, 92), "new without the key");
+            c.clamp_top(TOP, ISCHL_H);
+            assert_eq!(c.y, (fy - mid).clamp(0, 92).max(TOP), "new, focus {fy}");
+        }
+        // The bottom clamp still wins over a top below it.
+        let mut c = Camera { x: 0, y: 0 };
+        c.clamp_top(120, ISCHL_H);
+        assert_eq!(c.y, 92);
     }
 
     #[test]

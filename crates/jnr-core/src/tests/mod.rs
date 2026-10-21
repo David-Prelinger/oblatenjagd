@@ -2,6 +2,7 @@
 //! determinism, the testbed level). Unit tests live next to their modules.
 
 mod autoscroll;
+mod bad_ischl;
 mod boats;
 mod climb;
 mod enemies;

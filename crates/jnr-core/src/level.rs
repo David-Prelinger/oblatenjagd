@@ -763,6 +763,12 @@ pub struct LevelMeta {
     /// `0 ≤ from < to ≤ width − 20` (D-075).
     #[serde(default)]
     pub autoscroll: Option<[i32; 2]>,
+    /// The side camera's top clamp in level pixels (D-103): in every phase
+    /// the camera's y is never above it (the side-level twin of D-090's
+    /// `camera.autoscroll_top`). Only with `camera = "side"`;
+    /// `0 ≤ camera_top ≤ level_h − 180`.
+    #[serde(default)]
+    pub camera_top: Option<i32>,
 }
 
 impl LevelMeta {
@@ -997,6 +1003,7 @@ impl Level {
             )));
         }
         validate_autoscroll(&raw.meta, width as i32)?;
+        validate_camera_top(&raw.meta, rows.len() as i32 * TILE_PX)?;
 
         Ok(Level {
             meta: raw.meta,
@@ -1095,6 +1102,29 @@ fn validate_autoscroll(meta: &LevelMeta, width: i32) -> Result<(), ParseError> {
             "meta.autoscroll is only allowed with camera = \"autoscroll\"",
         )),
         (CameraMode::Side | CameraMode::Climb, None) => Ok(()),
+    }
+}
+
+/// `[meta] camera_top` (D-103): only with `camera = "side"`, and
+/// `0 ≤ camera_top ≤ level_h − 180` (the bottom clamp) in a `level_h` px
+/// tall level.
+fn validate_camera_top(meta: &LevelMeta, level_h: i32) -> Result<(), ParseError> {
+    let Some(top) = meta.camera_top else {
+        return Ok(());
+    };
+    if meta.camera != CameraMode::Side {
+        return Err(ParseError::new(
+            "meta.camera_top is only allowed with camera = \"side\"",
+        ));
+    }
+    let last = level_h - crate::camera::SCREEN_H;
+    if (0..=last).contains(&top) {
+        Ok(())
+    } else {
+        Err(ParseError::new(format!(
+            "meta.camera_top = {top}: need 0 <= camera_top <= level_h - {} = {last}",
+            crate::camera::SCREEN_H
+        )))
     }
 }
 
@@ -2751,6 +2781,46 @@ P.sSC.tfG
             );
             assert_eq!(zone(camera), None);
         }
+    }
+
+    #[test]
+    fn camera_top_is_side_only_and_at_most_the_bottom_clamp() {
+        // 21 x 14 tiles (wide enough for an auto-scroll zone), 224 px tall:
+        // the bottom clamp is 224 - 180 = 44.
+        let tall = |meta: &str| {
+            format!(
+                "[meta]\nid = \"t\"\ntime_limit = 1\n{meta}\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP{}{}\n'''\n",
+                ".".repeat(20),
+                format!("\n{}", ".".repeat(21)).repeat(13)
+            )
+        };
+        let top = |meta: &str| Level::parse(&tall(meta)).unwrap().meta.camera_top;
+        assert_eq!(top(""), None);
+        assert_eq!(top("camera_top = 0"), Some(0));
+        assert_eq!(top("camera_top = 44"), Some(44));
+        assert_eq!(top("camera = \"side\"\ncamera_top = 20"), Some(20));
+        for bad in ["-1", "45"] {
+            let e = err(&tall(&format!("camera_top = {bad}")));
+            assert!(
+                e.contains("need 0 <= camera_top <= level_h - 180 = 44"),
+                "{bad}: {e}"
+            );
+        }
+        // Too short a level has no valid value at all.
+        let e = err(&with_meta("camera_top = 0"));
+        assert!(e.contains("level_h - 180 = -164"), "{e}");
+        for camera in [
+            "camera = \"climb\"",
+            "camera = \"autoscroll\"\nautoscroll = [0, 1]",
+        ] {
+            let e = err(&tall(&format!("{camera}\ncamera_top = 20")));
+            assert!(
+                e.contains("camera_top is only allowed with camera = \"side\""),
+                "{camera}: {e}"
+            );
+        }
+        let e = err(&tall("camera_top = \"high\""));
+        assert!(e.contains("camera_top"), "{e}");
     }
 
     #[test]

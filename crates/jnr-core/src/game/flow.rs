@@ -285,6 +285,9 @@ impl Game {
                     // D-090: the top clamp holds in the goal sequence too.
                     self.camera.clamp_autoscroll_top(level_h, t);
                 }
+                // D-103: so does a side level's `camera_top` (validation
+                // keeps the two clamps apart: only one ever applies).
+                self.clamp_camera_top();
             }
         }
         if let Some(phase) = next {
