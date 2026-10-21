@@ -155,7 +155,7 @@ pub const LIEGESTUHL_SPRITE: &str = "liegestuhl";
 
 /// A Wartender (D-105, a still Selfie-Tourist placed as `wartender`):
 /// 16×24, origin at the feet, always facing right; three looks picked by
-/// the spawn column mod [`WARTENDER_LOOKS`], each with its own anims
+/// (spawn column div 3) mod [`WARTENDER_LOOKS`] (D-112), each with its own anims
 /// ([`WARTENDER_IDLE`], [`WARTENDER_SELFIE`], [`WARTENDER_SQUISHED`]).
 /// Without it: the Selfie-Tourist's grey box.
 pub const WARTENDER_SPRITE: &str = "wartender";
@@ -1019,9 +1019,9 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
     }
 }
 
-/// A Wartender's look (0..[`WARTENDER_LOOKS`]: its spawn column mod 3,
-/// D-105) if `e` (an enemy or a defeated one) was placed as `wartender`;
-/// `None` for everything else, a plain Selfie-Tourist included.
+/// A Wartender's look (0..[`WARTENDER_LOOKS`]: [`wartender_look_at`] its
+/// spawn column, D-112) if `e` (an enemy or a defeated one) was placed as
+/// `wartender`; `None` for everything else, a plain Selfie-Tourist included.
 pub fn wartender_look(game: &Game, e: &Entity) -> Option<usize> {
     if !matches!(
         e.kind,
@@ -1033,7 +1033,14 @@ pub fn wartender_look(game: &Game, e: &Entity) -> Option<usize> {
     let s = e
         .spawn
         .and_then(|i| game.level().entities.get(usize::from(i)))?;
-    (s.kind == SpawnKind::Wartender).then(|| s.col.rem_euclid(WARTENDER_LOOKS) as usize)
+    (s.kind == SpawnKind::Wartender).then(|| wartender_look_at(s.col))
+}
+
+/// The look of a Wartender spawned in column `col`: (col div 3) mod 3
+/// (D-112), so a queue spaced 3 apart (Stage 9) cycles through all three
+/// looks and neighbours never share one.
+pub fn wartender_look_at(col: i32) -> usize {
+    col.div_euclid(3).rem_euclid(WARTENDER_LOOKS) as usize
 }
 
 /// A Wartender's anim for `pose` in `look` (`idle_N`, `selfie_N` with its
@@ -3067,12 +3074,13 @@ mod tests {
     // ------------------------------------------- Kellner, Wartende (D-105)
 
     /// A grey-box level with a Kellner at (6, 8) and Wartende at (9, 8),
-    /// (10, 8) and (11, 8) (looks 0, 1, 2) on the ground, stepped once.
+    /// (12, 8) and (15, 8) (looks 0, 1, 2 by (col div 3) mod 3) on the ground,
+    /// stepped once.
     fn cafe_game() -> Game {
         layered_game(
             "....................\n....................\n....................\n\
              ....................\n....................\n....................\n\
-             ....................\n....................\n..P...K..WWW........\n\
+             ....................\n....................\n..P...K..W..W..W....\n\
              ####################\n",
             "\"K\" = { entity = \"kellner\" }\n\"W\" = { entity = \"wartender\" }",
         )
@@ -3140,7 +3148,7 @@ mod tests {
     }
 
     #[test]
-    fn wartende_pick_their_look_by_column_and_always_face_right() {
+    fn wartende_pick_their_look_by_column_div_3_and_always_face_right() {
         use crate::testutil::{A, B, C, image, sprite};
         // Each look's anims in its own colour, a `.` column on the right
         // half: mirrored, the colour would show right of the feet instead.
@@ -3160,7 +3168,7 @@ mod tests {
         assert_eq!(ws.len(), 3);
         for (mut w, colour) in ws.into_iter().zip([A, B, C]) {
             let look = wartender_look(&g, &w).unwrap();
-            assert_eq!(look, (w.feet().0.to_px() / 16) as usize % 3);
+            assert_eq!(look, (w.feet().0.to_px() / 16 / 3) as usize % 3);
             // Facing left in core would mirror any other enemy.
             w.dir = -1;
             let fb = drawn(&g, &atlas, &w);
@@ -3170,6 +3178,36 @@ mod tests {
             assert_eq!(fb.get(x + 1, y), Some(crate::testutil::BG), "not mirrored");
         }
         assert_eq!(WARTENDER_LOOKS, 3);
+    }
+
+    #[test]
+    fn wartender_looks_cycle_along_the_stage_9_queue() {
+        // D-112: the real queue (3 apart) reads 0, 1, 2, ... from the left
+        // and neighbours never share a look.
+        let level =
+            Level::parse(include_str!("../../../content/levels/09_cafe_zauner.level")).unwrap();
+        let g = Game::new(&level, &tuning(), 1);
+        let mut queue: Vec<(i32, usize)> = g
+            .entities()
+            .iter()
+            .filter_map(|e| {
+                let look = wartender_look(&g, e)?;
+                Some((level.entities[usize::from(e.spawn?)].col, look))
+            })
+            .collect();
+        queue.sort_unstable();
+        assert_eq!(queue.len(), 9, "{queue:?}");
+        for (i, &(_, look)) in queue.iter().enumerate() {
+            assert_eq!(look, i % 3, "{queue:?}");
+        }
+        for pair in queue.windows(2) {
+            assert_ne!(pair[0].1, pair[1].1, "{queue:?}");
+        }
+        assert_eq!(
+            (0..6).map(wartender_look_at).collect::<Vec<_>>(),
+            [0, 0, 0, 1, 1, 1]
+        );
+        assert_eq!(wartender_look_at(9), 0);
     }
 
     #[test]
