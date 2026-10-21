@@ -190,6 +190,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "jnr-audio"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "jnr-core"
 version = "0.1.0"
 dependencies = [

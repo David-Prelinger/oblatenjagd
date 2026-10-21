@@ -1,0 +1,21 @@
+# PLACEHOLDER (E55 test fixture; the sound-designer authors the real `oblate`).
+# An Oblate is collected: a two-note arpeggio with a soft sine an octave up.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 988
+attack_ms = 1
+hold_ms = 60
+decay_ms = 120
+volume_pct = 25
+arp = { every_ms = 50, semitones = [0, 5] }
+lowpass_hz = 7000
+
+[[layer]]
+wave = "sine"
+freq_hz = 1976
+attack_ms = 2
+hold_ms = 40
+decay_ms = 140
+volume_pct = 12
+vibrato = { depth_cents = 15, rate_hz = 8 }

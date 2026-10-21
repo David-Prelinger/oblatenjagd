@@ -2,12 +2,15 @@
 //!
 //! 1. Dependency rules (from `cargo metadata`, normal + build dependencies,
 //!    transitively; dev-dependencies are ignored except for rule c):
-//!    a. per-crate forbidden packages ([`DEP_RULES`]): `jnr-core` and
-//!    `jnr-render` never reach macroquad/miniquad, `jnr-core` never reaches
-//!    `rand`/`getrandom`;
-//!    b. `jnr-core` depends on no other workspace crate;
+//!    a. per-crate forbidden packages ([`DEP_RULES`]): `jnr-core`,
+//!    `jnr-render` and `jnr-audio` never reach macroquad/miniquad,
+//!    `jnr-core` and `jnr-audio` never reach `rand`/`getrandom`, `jnr-audio`
+//!    never reaches `quad-snd`, `jnr-render` never reaches `jnr-audio`;
+//!    b. workspace dependencies ([`WORKSPACE_DEPS`]): `jnr-core` depends on
+//!    no other workspace crate, `jnr-audio` only on `jnr-core`;
 //!    c. no package depends on `xtask` (any dependency kind).
-//! 2. Determinism rules for `crates/jnr-core/src` (outside test code):
+//! 2. Determinism rules for the source of every [`DETERMINISTIC_CRATES`]
+//!    crate (`crates/<name>/src`, outside test code):
 //!    a. no `f32`, `f64`, `HashMap`, `HashSet`, `Instant`, `SystemTime`
 //!    (whole words; `1.0f32` and `1_f32` are caught too);
 //!    b. no `std::time`, `std::fs`, `std::thread`, `core::time` (as text);
@@ -48,18 +51,25 @@ use std::process::Command;
 use serde_json::Value;
 
 /// Per-crate forbidden packages (transitive normal/build dependencies).
-const DEP_RULES: [(&str, &[&str]); 2] = [
+const DEP_RULES: [(&str, &[&str]); 3] = [
     ("jnr-core", &["macroquad", "miniquad", "rand", "getrandom"]),
-    ("jnr-render", &["macroquad", "miniquad"]),
+    ("jnr-render", &["macroquad", "miniquad", "jnr-audio"]),
+    (
+        "jnr-audio",
+        &["macroquad", "miniquad", "quad-snd", "rand", "getrandom"],
+    ),
 ];
-/// Workspace crates that must not depend on any other workspace crate.
-const ISOLATED_CRATES: [&str; 1] = ["jnr-core"];
+/// Workspace crates and the only workspace crates they may depend on.
+const WORKSPACE_DEPS: [(&str, &[&str]); 2] = [("jnr-core", &[]), ("jnr-audio", &["jnr-core"])];
+/// Crates under the determinism source scan (rule 2): integers only, no
+/// hash-map iteration, no time/fs/threads (D-117 for jnr-audio).
+const DETERMINISTIC_CRATES: [&str; 2] = ["jnr-core", "jnr-audio"];
 /// Packages nothing may depend on.
 const NO_DEPENDENTS: [&str; 1] = ["xtask"];
 
-/// Identifiers forbidden in `jnr-core` (matched as whole words).
+/// Identifiers forbidden in [`DETERMINISTIC_CRATES`] (matched as whole words).
 const FORBIDDEN_IDENTS: [&str; 6] = ["f32", "f64", "HashMap", "HashSet", "Instant", "SystemTime"];
-/// Paths forbidden in `jnr-core` (matched as substrings).
+/// Paths forbidden in [`DETERMINISTIC_CRATES`] (matched as substrings).
 const FORBIDDEN_PATHS: [&str; 4] = ["std::time", "std::fs", "std::thread", "core::time"];
 /// Functions only xtask and tests may call (rule 3).
 const TOOLING_ONLY_FNS: [&str; 1] = ["teleport_player"];
@@ -78,29 +88,7 @@ pub fn run(root: &Path) -> Result<(), Vec<String>> {
         Err(e) => problems.push(e),
     }
 
-    let core_src = root.join("crates/jnr-core/src");
-    match rust_files(&core_src) {
-        Ok(files) => {
-            for file in files {
-                let rel_to_src = file.strip_prefix(&core_src).unwrap_or(&file);
-                if is_test_file(rel_to_src) {
-                    continue;
-                }
-                let rel = file.strip_prefix(root).unwrap_or(&file).display();
-                match fs::read_to_string(&file) {
-                    Ok(text) => {
-                        for (line, what) in scan_source(&text) {
-                            problems.push(format!(
-                                "{rel}:{line}: {what} is forbidden in jnr-core (determinism rules, docs/architecture.md)"
-                            ));
-                        }
-                    }
-                    Err(e) => problems.push(format!("{rel}: cannot read: {e}")),
-                }
-            }
-        }
-        Err(e) => problems.push(format!("{}: cannot list: {e}", core_src.display())),
-    }
+    problems.extend(determinism_violations(root));
 
     problems.extend(tooling_only_violations(root));
 
@@ -109,6 +97,39 @@ pub fn run(root: &Path) -> Result<(), Vec<String>> {
     } else {
         Err(problems)
     }
+}
+
+/// Rule 2 over `crates/<name>/src` of every [`DETERMINISTIC_CRATES`] crate.
+pub fn determinism_violations(root: &Path) -> Vec<String> {
+    let mut problems = Vec::new();
+    for krate in DETERMINISTIC_CRATES {
+        let src = root.join("crates").join(krate).join("src");
+        let files = match rust_files(&src) {
+            Ok(files) => files,
+            Err(e) => {
+                problems.push(format!("{}: cannot list: {e}", src.display()));
+                continue;
+            }
+        };
+        for file in files {
+            let rel_to_src = file.strip_prefix(&src).unwrap_or(&file);
+            if is_test_file(rel_to_src) {
+                continue;
+            }
+            let rel = file.strip_prefix(root).unwrap_or(&file).display();
+            match fs::read_to_string(&file) {
+                Ok(text) => {
+                    for (line, what) in scan_source(&text) {
+                        problems.push(format!(
+                            "{rel}:{line}: {what} is forbidden in {krate} (determinism rules, docs/architecture.md)"
+                        ));
+                    }
+                }
+                Err(e) => problems.push(format!("{rel}: cannot read: {e}")),
+            }
+        }
+    }
+    problems
 }
 
 fn cargo_metadata(root: &Path) -> Result<Value, String> {
@@ -213,7 +234,7 @@ impl<'a> Graph<'a> {
     }
 }
 
-/// Checks [`DEP_RULES`], [`ISOLATED_CRATES`] and [`NO_DEPENDENTS`].
+/// Checks [`DEP_RULES`], [`WORKSPACE_DEPS`] and [`NO_DEPENDENTS`].
 pub fn dependency_violations(meta: &Value) -> Vec<String> {
     let graph = Graph::from_metadata(meta);
     let mut problems = Vec::new();
@@ -235,14 +256,14 @@ pub fn dependency_violations(meta: &Value) -> Vec<String> {
         }
     }
 
-    for krate in ISOLATED_CRATES {
+    for (krate, allowed) in WORKSPACE_DEPS {
         let Some(start) = graph.member(krate) else {
             problems.push(format!("workspace crate `{krate}` not found"));
             continue;
         };
         let parent = graph.reachable(start);
         for &id in parent.keys() {
-            if id != start && graph.members.contains(&id) {
+            if id != start && graph.members.contains(&id) && !allowed.contains(&graph.name(id)) {
                 problems.push(format!(
                     "`{krate}` must not depend on workspace crate `{}`: {}",
                     graph.name(id),
@@ -820,7 +841,7 @@ let d = core::time::Duration::ZERO;
         })
     }
 
-    const MEMBERS: [&str; 4] = ["jnr-core", "jnr-render", "jnr-app", "xtask"];
+    const MEMBERS: [&str; 5] = ["jnr-core", "jnr-render", "jnr-audio", "jnr-app", "xtask"];
 
     #[test]
     fn dependency_rules_pass_for_the_intended_layout() {
@@ -829,6 +850,7 @@ let d = core::time::Duration::ZERO;
             &[
                 ("jnr-core", &[("fixed", None), ("macroquad", Some("dev"))]),
                 ("jnr-render", &[("jnr-core", None)]),
+                ("jnr-audio", &[]),
                 ("jnr-app", &[("jnr-render", None), ("macroquad", None)]),
                 ("xtask", &[("jnr-core", None)]),
                 ("fixed", &[]),
@@ -845,6 +867,7 @@ let d = core::time::Duration::ZERO;
             &[
                 ("jnr-core", &[]),
                 ("jnr-render", &[("jnr-core", None), ("gen", Some("build"))]),
+                ("jnr-audio", &[]),
                 ("jnr-app", &[]),
                 ("xtask", &[]),
                 ("gen", &[("macroquad", None)]),
@@ -864,6 +887,7 @@ let d = core::time::Duration::ZERO;
             &[
                 ("jnr-core", &[("helper", None), ("jnr-render", None)]),
                 ("jnr-render", &[]),
+                ("jnr-audio", &[]),
                 ("jnr-app", &[]),
                 ("xtask", &[]),
                 ("helper", &[("getrandom", None)]),
@@ -886,6 +910,7 @@ let d = core::time::Duration::ZERO;
             &[
                 ("jnr-core", &[]),
                 ("jnr-render", &[]),
+                ("jnr-audio", &[]),
                 ("jnr-app", &[("xtask", Some("dev"))]),
                 ("xtask", &[]),
             ],
@@ -905,8 +930,79 @@ let d = core::time::Duration::ZERO;
             dependency_violations(&meta),
             vec![
                 "workspace crate `jnr-core` not found",
-                "workspace crate `jnr-core` not found"
+                "workspace crate `jnr-audio` not found",
+                "workspace crate `jnr-core` not found",
+                "workspace crate `jnr-audio` not found",
             ]
         );
+    }
+
+    #[test]
+    fn audio_may_reach_core_only_and_render_never_reaches_audio() {
+        let meta = metadata(
+            &MEMBERS,
+            &[
+                ("jnr-core", &[]),
+                ("jnr-render", &[("jnr-audio", None)]),
+                (
+                    "jnr-audio",
+                    &[("jnr-core", None), ("jnr-render", None), ("quad-snd", None)],
+                ),
+                ("jnr-app", &[]),
+                ("xtask", &[]),
+                ("quad-snd", &[]),
+            ],
+        );
+        assert_eq!(
+            dependency_violations(&meta),
+            vec![
+                "`jnr-render` must not depend on `jnr-audio`: jnr-render -> jnr-audio",
+                "`jnr-audio` must not depend on `quad-snd`: jnr-audio -> quad-snd",
+                "`jnr-audio` must not depend on workspace crate `jnr-render`: jnr-audio -> jnr-render",
+            ]
+        );
+    }
+
+    /// A throwaway workspace root with one source file per (crate, text).
+    fn fake_root(name: &str, files: &[(&str, &str)]) -> PathBuf {
+        let root =
+            std::env::temp_dir().join(format!("xtask-archlint-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        for krate in DETERMINISTIC_CRATES {
+            fs::create_dir_all(root.join("crates").join(krate).join("src")).unwrap();
+        }
+        for (path, text) in files {
+            fs::write(root.join(path), text).unwrap();
+        }
+        root
+    }
+
+    #[test]
+    fn an_f32_in_jnr_audio_fails_the_lint() {
+        let root = fake_root(
+            "audio-f32",
+            &[
+                ("crates/jnr-core/src/lib.rs", "pub fn ok() -> i32 { 1 }\n"),
+                (
+                    "crates/jnr-audio/src/synth.rs",
+                    "pub fn gain(x: i32) -> i32 {\n    (x as f32 * 0.5) as i32\n}\n#[cfg(test)]\nmod tests { fn t() -> f64 { 1.0 } }\n",
+                ),
+            ],
+        );
+        let found = determinism_violations(&root);
+        let _ = fs::remove_dir_all(&root);
+        assert_eq!(
+            found,
+            vec![
+                "crates/jnr-audio/src/synth.rs:2: `f32` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
+                "crates/jnr-audio/src/synth.rs:2: float literal `0.5` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
+            ]
+        );
+    }
+
+    #[test]
+    fn the_real_deterministic_crates_pass() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        assert_eq!(determinism_violations(&root), Vec::<String>::new());
     }
 }

@@ -1,0 +1,12 @@
+[package]
+name = "jnr-audio"
+description = "Integer synth for SFX and music: text patch formats, renderer to 44.1 kHz mono i16 PCM, WAV writer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Pure and wasm-safe, like jnr-core (arch-lint: never macroquad, quad-snd, rand).
+serde = { workspace = true }
+toml = { workspace = true }

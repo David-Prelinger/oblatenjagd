@@ -1,0 +1,19 @@
+# PLACEHOLDER (E55 test fixture): a hand clap, four band-passed noise bursts 10 ms apart.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 9
+volume_pct = 60
+bandpass = { hz = 1200, q_pct = 150 }
+repeat = { count = 4, every_ms = 10 }
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+delay_ms = 30
+attack_ms = 1
+decay_ms = 80
+volume_pct = 40
+bandpass = { hz = 1200, to_hz = 900, q_pct = 150 }
+highpass_hz = 300

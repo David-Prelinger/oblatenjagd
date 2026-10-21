@@ -65,6 +65,8 @@ fn wasm_build(root: &Path) -> Step {
             "build",
             "-p",
             "jnr-app",
+            "-p",
+            "jnr-audio",
             "--target",
             "wasm32-unknown-unknown",
         ],
