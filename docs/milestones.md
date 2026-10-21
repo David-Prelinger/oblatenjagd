@@ -319,12 +319,12 @@ Engine
 Sound (sound-designer, game-designer review)
 - [x] S1 The 25 must SFX (audio-design §6), stats in range
 - [x] S2 Must music in the order of audio-design's task list (title, death, clear, hurry, game over, map, Salzburg, boss set, café, finale, ending set, Stages 2–8, underwater), each quote transcribed from its PD edition with its header filled in
-- [ ] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows
-- [ ] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
+- [x] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows: deferred to the backlog ("MA deferred"); `fanfare_finale` shortened in MA QA
+- [x] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
 
 Platform
 - [x] Every music cue has its `.song`: `jnr_audio::cues::PENDING_MUSIC` is empty; no placeholder among the must sounds
-- [ ] wasm build loads and plays (audio.js present; still runs without it); `wasm-smoke` and `vnc-smoke` green; verify runtime within budget (record it)
+- [x] wasm build loads and plays (audio.js present; still runs without it); `wasm-smoke` and `vnc-smoke` green; verify runtime within budget (record it)
 
 **Acceptance:** see "Milestone acceptance" below, with the art-director step replaced by the game-designer's audio verdict on every piece and SFX (stats, spectrograms, piano rolls, the offline mixes of the Stage 1 solver run and the boss win); QA covers the cue logs over every flow, mute in every mode, and the Stage 6 dive/surface swap.
 
@@ -344,5 +344,5 @@ Platform
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (accepted, docs/reports/M5.md)
 - **M6** Strobl + Bad Ischl (accepted, docs/reports/M6.md)
 - **M7** Café Zauner finale + ending (accepted, docs/reports/M7.md)
-- **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
+- **MA** Audio (accepted, docs/reports/MA.md): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
 - **MW** Web release: polished `index.html`, gamepad support, headless-browser smoke test, hosting
