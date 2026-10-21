@@ -531,10 +531,10 @@ mod tests {
         }
         // PROP_SPRITES == the rows of the catalog's "Props and goal" table,
         // the M2 "Items and props", the M3 "Props", the M4 "Props", the M5
-        // "Props" and the M6 "Props" tables that are props (not the
-        // checkpoint, Maibaum, signs or the
-        // car, which have entities of their own; the M4 train and its steam
-        // are in the "Platforms" table, not read here).
+        // "Props", the M6 "Props" and the M7 "Props" tables that are props
+        // (not the checkpoint, Maibaum, signs or the car, which have
+        // entities of their own; the M4 train and its steam are in the
+        // "Platforms" table, not read here).
         let catalog = include_str!("../../docs/sprite-catalog.md");
         let section = |heading: &str, end: &str| {
             let start = catalog.find(heading).expect(heading);
@@ -554,6 +554,7 @@ mod tests {
             section("### Props (group `props`, M4)", "\n### "),
             section("### Props (group `props`, M5)", "\n### "),
             section("### Props (group `props`, M6)", "\n### "),
+            section("### Props (group `props`, M7)", "\n### "),
         ]
         .into_iter()
         .flat_map(str::lines)
