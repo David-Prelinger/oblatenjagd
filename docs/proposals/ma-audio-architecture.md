@@ -833,3 +833,9 @@ playback model `jnr_audio::mix` (new module, D-122) and the verify step `audio-m
 - **Cue gain** (game-designer decision): `Music::gain_pct()` in `jnr_audio::cues` (`boss_intro` 25 % = −12 dB, pianissimo before the Paukenschlag; every other cue 100 %), multiplied into the music volume by the app's `Mixer` and by `mix` (whose gains are now in 1/10 000, so a ducked 25 % cue is exact: 12.5 %). Covered by the shared app/mix test and a `mix` unit test.
 - `wasm-smoke` without `audio.js` also asserts the app's console line `jnr-app: audio load timed out after …` (Chromium's console log on stderr). In the headless browser `date::now()` reports the SFX render as 0.0 ms (coarse clock under the virtual-time budget).
 
+
+### E59 follow-ups
+
+- **Twin fallback**: if the underwater twin can't be rendered or its load fails (error or timeout), `Mixer::drop_twin` forgets it: the stage song starts alone (audible even if the dive came first) and `Underwater` is ignored from then on, the same as `jnr_audio::mix` without the twin.
+- Muting clears a jingle that was waiting for its load (it doesn't start after the mute).
+- The bookkeeping decisions are pure functions with tests: `keep_loaded` (a finished load of a replaced song is dropped), `unload_action` (drop / park while muted / forget only when dead or off), `give_up_effects` (clear the waiting jingle, cancel the song group, or drop the twin) and `timeout_turns_audio_off` (only before anything loaded).
