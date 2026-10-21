@@ -1,0 +1,15 @@
+# cue log of tests/replays/qa_ma_cues_pause_during_hurry_bells.replay (cargo xtask cues)
+     0 song title
+     1 stop-song
+     1 sfx ui_start I6
+   151 song salzburg
+ 14551 jingle hurry
+ 14551 hold-song on
+ 14580 cut-sfx all
+ 14580 sfx pause I9
+ 14580 hold-jingle on
+ 14781 sfx pause I9 -2
+ 14781 hold-song off
+ 14781 hold-jingle off
+ 14781 duck on
+ 14797 duck off

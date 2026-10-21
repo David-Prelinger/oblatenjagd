@@ -9,7 +9,8 @@
 //! - A cue on game frame `f` acts at sample `f ×` [`FRAMES_PER_TICK`].
 //! - [`Cue::Sfx`]: stop the sound last started on the same [`Voice`] and
 //!   any live copy of the same id (an id has at most one live copy), then
-//!   play the variant from its first sample at [`SFX_VOLUME_PCT`].
+//!   play the variant from its first sample at [`SFX_VOLUME_PCT`] times
+//!   its own [`Sfx::gain_pct`] (D-124).
 //! - [`Cue::StopSfx`] stops one id, [`Cue::CutSfx`] every id on the voices
 //!   it names. Stops are hard cuts (quad-snd has no fades).
 //! - [`Cue::Song`]: stop the song (and its twin), start the new one looping
@@ -160,7 +161,8 @@ impl Player {
                     self.stop_sfx(prev, at);
                 }
                 self.stop_sfx(play.sfx, at);
-                let i = self.start(Sound::Sfx(play), at, false, SFX_VOLUME_PCT * 100);
+                let gain = SFX_VOLUME_PCT * play.sfx.gain_pct();
+                let i = self.start(Sound::Sfx(play), at, false, gain);
                 self.live_sfx.insert(play.sfx, i);
                 self.last_on_voice.insert(voice, play.sfx);
             }
@@ -336,6 +338,21 @@ mod tests {
     const JUMP: Sound = Sound::Sfx(Sfx::Jump.play());
     const OBLATE: Sound = Sound::Sfx(Sfx::Oblate.play());
 
+    /// Sample `v` of `sfx` as the mix plays it (its playback gain, D-124).
+    fn at(v: i16, sfx: Sfx) -> i16 {
+        (v as i32 * (SFX_VOLUME_PCT * sfx.gain_pct()) as i32 / 10_000) as i16
+    }
+
+    #[test]
+    fn sfx_play_at_the_sfx_volume_times_their_own_gain() {
+        let hohes_c = Sound::Sfx(Sfx::HohesC.play());
+        let b = bank(&[(JUMP, vec![10_000; 2]), (hohes_c, vec![10_000; 2])]);
+        let m = mix(&b, &[(0, Cue::Sfx(Sfx::Jump.play()))], 0);
+        assert_eq!(m.render.pcm.samples[0], 8_900, "jump: 89 %");
+        let m = mix(&b, &[(0, Cue::Sfx(Sfx::HohesC.play()))], 0);
+        assert_eq!(m.render.pcm.samples[0], 7_476, "hohes_c: 89 % × 84 %");
+    }
+
     #[test]
     fn a_cue_starts_its_sound_at_frame_times_735() {
         let b = bank(&[(JUMP, vec![1000; 10])]);
@@ -343,7 +360,7 @@ mod tests {
         let s = &m.render.pcm.samples;
         assert_eq!(m.run_samples, 6 * T);
         assert_eq!(s[3 * T - 1], 0);
-        assert_eq!(s[3 * T..3 * T + 10], [1000; 10]);
+        assert_eq!(s[3 * T..3 * T + 10], [at(1000, Sfx::Jump); 10]);
         assert_eq!(s[3 * T + 10], 0);
         assert_eq!(m.spans[0].start, 3 * T);
         assert_eq!(m.spans[0].end, 3 * T + 10);
@@ -362,7 +379,10 @@ mod tests {
             4,
         );
         let s = &m.render.pcm.samples;
-        assert!(s[..3 * T].iter().all(|&v| v == 100), "never stacked");
+        assert!(
+            s[..3 * T].iter().all(|&v| v == at(100, Sfx::Jump)),
+            "never stacked"
+        );
         assert_eq!(s[3 * T], 0);
         assert_eq!(m.spans[0].end, T);
         // A different id on the same voice (P) also stops the playing one.
@@ -377,8 +397,8 @@ mod tests {
             4,
         );
         let s = &m.render.pcm.samples;
-        assert_eq!(s[T - 1], 100);
-        assert_eq!(s[T], 7);
+        assert_eq!(s[T - 1], at(100, Sfx::Jump));
+        assert_eq!(s[T], at(7, Sfx::Hurt));
         // Different voices overlap and add up.
         let b = bank(&[(JUMP, vec![100; 2 * T]), (OBLATE, vec![7; 2 * T])]);
         let m = mix(
@@ -389,7 +409,10 @@ mod tests {
             ],
             4,
         );
-        assert_eq!(m.render.pcm.samples[T], 107);
+        assert_eq!(
+            m.render.pcm.samples[T],
+            at(100, Sfx::Jump) + at(7, Sfx::Oblate)
+        );
     }
 
     #[test]
@@ -401,13 +424,14 @@ mod tests {
         ];
         let keep = [start[0], start[1], (1, Cue::CutSfx(Cut::KeepItems))];
         let s = mix(&b, &keep, 3).render.pcm.samples;
-        assert_eq!(s[T], 7);
+        assert_eq!(s[T], at(7, Sfx::Oblate));
         let all = [start[0], start[1], (1, Cue::CutSfx(Cut::All))];
         let s = mix(&b, &all, 3).render.pcm.samples;
         assert_eq!(s[T], 0);
         let one = [start[0], start[1], (2, Cue::StopSfx(Sfx::Oblate))];
         let s = mix(&b, &one, 3).render.pcm.samples;
-        assert_eq!((s[T], s[2 * T]), (107, 100));
+        let (j, o) = (at(100, Sfx::Jump), at(7, Sfx::Oblate));
+        assert_eq!((s[T], s[2 * T]), (j + o, j));
     }
 
     #[test]
@@ -424,7 +448,8 @@ mod tests {
         );
         // The plain copy is stopped: only the variant sounds from frame 1 on.
         let s = &m.render.pcm.samples;
-        assert_eq!((s[T - 1], s[T], s[2 * T], s[4 * T]), (100, 3, 3, 3));
+        let (j, v) = (at(100, Sfx::Jump), at(3, Sfx::Jump));
+        assert_eq!((s[T - 1], s[T], s[2 * T], s[4 * T]), (j, v, v, v));
         assert_eq!(m.spans[0].end, T);
         assert_eq!(m.spans[1].sound, low);
     }

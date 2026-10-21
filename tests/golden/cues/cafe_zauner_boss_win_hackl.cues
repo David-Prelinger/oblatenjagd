@@ -1,0 +1,139 @@
+# cue log of tests/replays/cafe_zauner_boss_win_hackl.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   242 sfx jump P4
+   244 sfx bump W4
+   362 sfx jump P4
+   397 sfx hackl P8
+   397 duck on
+   427 duck off
+   612 sfx jump P4 -5
+   812 sfx throw P5
+   848 sfx axe_hit W6
+   943 sfx throw P5
+   978 sfx axe_hit W6
+  1074 sfx throw P5
+  1109 sfx axe_hit W6
+  1343 cut-sfx P W A
+  1343 jingle fanfare_clear
+  1394 sfx tally_tick I2
+  1397 sfx tally_tick I2
+  1400 sfx tally_tick I2
+  1403 sfx tally_tick I2
+  1406 sfx tally_tick I2
+  1409 sfx tally_tick I2
+  1412 sfx tally_tick I2
+  1415 sfx tally_tick I2
+  1418 sfx tally_tick I2
+  1421 sfx tally_tick I2
+  1424 sfx tally_tick I2
+  1427 sfx tally_tick I2
+  1430 sfx tally_tick I2
+  1433 sfx tally_tick I2
+  1436 sfx tally_tick I2
+  1439 sfx tally_tick I2
+  1442 sfx tally_tick I2
+  1445 sfx tally_tick I2
+  1448 sfx tally_tick I2
+  1451 sfx tally_tick I2
+  1454 sfx tally_tick I2
+  1457 sfx tally_tick I2
+  1460 sfx tally_tick I2
+  1463 sfx tally_tick I2
+  1466 sfx tally_tick I2
+  1469 sfx tally_tick I2
+  1472 sfx tally_end I6
+  1726 song route_map
+  2016 stop-song
+  2016 stop-jingle
+  2166 song cafe_zauner
+  2307 sfx jump P4 -5
+  2369 sfx throw P5
+  2408 sfx axe_hit W6
+  2487 sfx jump P4 -5
+  2525 sfx roof_bounce W5
+  2652 sfx jump P4 -5
+  2690 sfx roof_bounce W5
+  2724 sfx oblate I3
+  2735 sfx oblate I3
+  2742 sfx jump P4 -5
+  2798 sfx stomp W5
+  2856 sfx jump P4 -5
+  2899 sfx oblate I3
+  2906 sfx oblate I3
+  2916 sfx jump P4 -5
+  2916 sfx oblate I3
+  2953 sfx oblate I3
+  2959 sfx oblate I3
+  2987 sfx throw P5
+  3031 sfx axe_hit W6
+  3067 sfx stomp W5
+  3089 sfx oblate I3
+  3100 sfx oblate I3
+  3113 sfx stomp W5
+  3139 sfx oblate I3
+  3143 sfx oblate I3
+  3163 sfx stomp W5
+  3180 sfx oblate I3
+  3185 sfx oblate I3
+  3209 sfx stomp W5
+  3239 sfx oblate I3
+  3259 sfx stomp W5
+  3293 sfx stomp W5
+  3313 sfx oblate I3
+  3324 sfx oblate I3
+  3334 sfx stomp W5
+  3346 sfx oblate I3
+  3491 sfx checkpoint I7
+  3491 duck on
+  3518 duck off
+  3536 sfx jump P4 -5
+  3568 sfx jump P4 -5
+  3672 stop-song
+  3672 jingle boss_intro
+  3762 jingle boss_surprise
+  3762 sfx boss_telegraph W7
+  3762 duck on
+  3764 sfx throw P5
+  3800 song boss
+  3802 stop-sfx boss_telegraph
+  3802 duck off
+  3824 sfx jump P4 -5
+  3897 sfx boss_breathe W7
+  3897 duck on
+  3905 sfx throw P5
+  3933 duck off
+  3934 sfx boss_hit W8
+  3934 duck on
+  3939 sfx throw P5
+  3964 duck off
+  3994 sfx boss_telegraph W7
+  3994 duck on
+  4030 stop-sfx boss_telegraph
+  4030 duck off
+  4049 sfx jump P4 -5
+  4119 sfx boss_breathe W7
+  4119 duck on
+  4124 sfx throw P5
+  4155 duck off
+  4156 sfx boss_hit W8
+  4156 duck on
+  4186 duck off
+  4216 sfx boss_telegraph W7
+  4216 duck on
+  4248 stop-sfx boss_telegraph
+  4248 duck off
+  4268 sfx jump P4 -5
+  4322 sfx boss_breathe W7
+  4322 duck on
+  4329 sfx throw P5
+  4358 stop-song
+  4358 jingle boss_defeat
+  4358 sfx axe_hit W6
+  4358 duck off
+  4510 sfx jump P4 -5
+  4513 song cafe_zauner
+  4547 stop-song
+  4547 cut-sfx P W A
+  4547 jingle fanfare_finale

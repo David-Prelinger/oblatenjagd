@@ -1,0 +1,61 @@
+# cue log of tests/replays/qa_m6a_bad_ischl_water_death_on_time_up_frame.replay (cargo xtask cues)
+     0 song bad_ischl
+   155 sfx oblate I3
+   165 sfx oblate I3
+   176 sfx oblate I3
+   187 sfx oblate I3
+   197 sfx oblate I3
+   227 sfx jump P4
+   234 sfx bump W4
+   350 sfx zucker P8
+   350 duck on
+   380 duck off
+   421 sfx jump P4 -5
+   428 sfx oblate I3
+   454 sfx oblate I3
+   466 sfx jump P4 -5
+   501 sfx jump P4 -5
+   531 sfx stomp W5
+   645 sfx jump P4 -5
+   723 sfx jump P4 -5
+   763 sfx jump P4 -5
+   823 sfx jump P4 -5
+   847 sfx oblate I3
+   848 sfx oblate I3
+  1111 sfx jump P4 -5
+  1111 sfx oblate I3
+  1195 sfx jump P4 -5
+  1200 sfx oblate I3
+  1206 sfx oblate I3
+  1207 sfx oblate I3
+  1243 sfx stomp W5
+  1261 sfx oblate I3
+  1271 sfx oblate I3
+  1275 sfx jump P4 -5
+  1282 sfx oblate I3
+  1302 sfx oblate I3
+  1303 sfx jump P4 -5
+  1357 sfx oblate I3
+  1359 sfx jump P4 -5
+  1407 sfx stomp W5
+  1455 sfx jump P4 -5
+  1473 sfx oblate I3
+  1481 sfx oblate I3
+  1706 sfx oblate I3
+  1707 sfx jump P4 -5
+  1759 sfx oblate I3
+  1760 sfx oblate I3
+  1771 sfx jump P4 -5
+  1813 sfx oblate I3
+  1824 sfx oblate I3
+  1856 sfx oblate I3
+  1867 sfx oblate I3
+  1877 sfx oblate I3
+  1888 sfx oblate I3
+  9030 jingle hurry
+  9030 hold-song on
+  9126 hold-song off
+ 12630 cut-sfx all
+ 12630 stop-song
+ 12630 jingle death
+ 12690 song bad_ischl

@@ -1,0 +1,74 @@
+# cue log of tests/replays/qa_ma_mix_hohes_c_hurt_clamps.replay (cargo xtask cues)
+     0 song st_wolfgang
+    54 sfx oblate I3
+    65 sfx oblate I3
+    75 sfx oblate I3
+    86 sfx oblate I3
+    97 sfx oblate I3
+   151 sfx jump P4
+   259 sfx jump P4
+   463 sfx jump P4
+   482 sfx oblate I3
+   595 sfx jump P4
+   632 sfx stomp W5
+   665 sfx jump P4
+   694 sfx jump P4
+   723 sfx oblate I3
+   765 sfx oblate I3
+  1491 sfx oblate I3
+  1502 sfx oblate I3
+  1543 sfx oblate I3
+  1545 sfx oblate I3
+  1592 sfx jump P4
+  1611 sfx oblate I3
+  1645 sfx oblate I3
+  1647 sfx oblate I3
+  1657 sfx oblate I3
+  1993 sfx oblate I3
+  2004 sfx oblate I3
+  2015 sfx oblate I3
+  2052 sfx jump P4
+  2079 sfx oblate I3
+  2092 sfx oblate I3
+  2435 sfx oblate I3
+  2686 sfx jump P4
+  2688 sfx checkpoint I7
+  2688 duck on
+  2715 duck off
+  2725 sfx stomp W5
+  2794 sfx jump P4
+  2801 sfx bump W4
+  3017 sfx zucker P8
+  3017 duck on
+  3047 duck off
+  3078 sfx jump P4 -5
+  3120 sfx jump P4 -5
+  3148 sfx oblate I3
+  3172 sfx jump P4 -5
+  3279 sfx oblate I3
+  3521 sfx stomp W5
+  3635 sfx jump P4 -5
+  3737 sfx jump P4 -5
+  3759 sfx oblate I3
+  3813 sfx jump P4 -5
+  3844 sfx jump P4 -5
+  3872 sfx jump P4 -5
+  3895 sfx jump P4 -5
+  3973 sfx jump P4 -5
+  4009 sfx stomp W5
+  4027 sfx stomp W5
+  4088 sfx oblate I3
+  4099 sfx oblate I3
+  4110 sfx oblate I3
+  4120 sfx oblate I3
+  4193 sfx oblate I3
+  4204 sfx oblate I3
+  4215 sfx oblate I3
+  4263 sfx hohes_c W6
+  4359 sfx hohes_c W6
+  4443 sfx hohes_c W6
+  4538 sfx jump P4 -5
+  4539 sfx hohes_c W6
+  4564 sfx hurt P8
+  4564 duck on
+  4594 duck off

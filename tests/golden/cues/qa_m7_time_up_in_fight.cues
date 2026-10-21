@@ -36,7 +36,7 @@
   1044 sfx boss_telegraph W7
   1044 duck on
   1067 sfx jump P4
-  1080 song boss
+  1082 song boss
   1084 stop-sfx boss_telegraph
   1084 duck off
   1179 sfx boss_breathe W7

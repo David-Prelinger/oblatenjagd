@@ -258,7 +258,7 @@ async fn run(opts: Options) {
     let mut recording = start_recording(&opts, &game);
     let mut audio = audio::Audio::new(opts.mute);
     // What to play: the cue director, fed after every step (E58/E59).
-    let mut director = jnr_audio::cues::Director::new();
+    let mut director = jnr_audio::cues::Director::new(jnr_assets::jingle_frames());
     let mut first_cues = director.begin(&game);
     // Closing the window only sets a flag; the loop below ends cleanly.
     #[cfg(not(target_arch = "wasm32"))]

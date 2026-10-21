@@ -23,7 +23,7 @@ ende = { pcm = "fnv64:742058698407e155", frames = 191646, peak_dbfs = -6.84, rms
 ending_map = { pcm = "fnv64:8e457966fdc9791c", frames = 165656, peak_dbfs = -6.11, rms_dbfs = -18.53, centroid_hz = 3098 }
 falkenstein = { pcm = "fnv64:0d8b5eadf3725ec7", frames = 2977792, peak_dbfs = -8.43, rms_dbfs = -21.08, centroid_hz = 2741 }
 fanfare_clear = { pcm = "fnv64:3524487a71e4307f", frames = 280917, peak_dbfs = -6.17, rms_dbfs = -18.48, centroid_hz = 2927 }
-fanfare_finale = { pcm = "fnv64:3ab501c475a9aa8b", frames = 426247, peak_dbfs = -6.21, rms_dbfs = -18.75, centroid_hz = 3126 }
+fanfare_finale = { pcm = "fnv64:d4455547df264428", frames = 288792, peak_dbfs = -6.14, rms_dbfs = -18.77, centroid_hz = 3130 }
 game_over = { pcm = "fnv64:377fc8342b003989", frames = 358092, peak_dbfs = -6.95, rms_dbfs = -18.28, centroid_hz = 2539 }
 hackl = { pcm = "fnv64:12a9e9db3f6bcdb5", frames = 22050, peak_dbfs = -5.78, rms_dbfs = -15.35, centroid_hz = 2725 }
 hohes_c = { pcm = "fnv64:667bb229d64b7ca4", frames = 35280, peak_dbfs = -7.96, rms_dbfs = -10.74, centroid_hz = 4860 }

@@ -1,0 +1,41 @@
+# cue log of tests/replays/flow_m7_finale_ending_idle.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   236 sfx oblate I3
+   278 sfx oblate I3
+   321 sfx oblate I3
+   432 sfx jump P4
+   464 cut-sfx P W A
+   464 jingle fanfare_finale
+   561 sfx tally_tick I2
+   564 sfx tally_tick I2
+   567 sfx tally_tick I2
+   570 sfx tally_tick I2
+   573 sfx tally_tick I2
+   576 sfx tally_tick I2
+   579 sfx tally_tick I2
+   582 sfx tally_tick I2
+   585 sfx tally_tick I2
+   588 sfx tally_tick I2
+   591 sfx tally_tick I2
+   594 sfx tally_tick I2
+   597 sfx tally_tick I2
+   600 sfx tally_tick I2
+   603 sfx tally_tick I2
+   606 sfx tally_tick I2
+   609 sfx tally_tick I2
+   612 sfx tally_tick I2
+   614 sfx tally_end I6
+   794 jingle ending_map
+  1034 stop-jingle
+  1034 song kaffeehaus
+  1414 sfx kassa_zeile I4
+  1434 sfx kassa_zeile I4
+  1454 sfx kassa_zeile I4
+  1474 sfx muenze I4
+  1994 song credits
+  3074 stop-song
+  3074 jingle ende
+  3674 stop-jingle
+  3674 song title

@@ -1,0 +1,191 @@
+# QA MA (audio, audio-design §4: ZEIT 60 in the boss fight, Boss beaten):
+# the ZEIT-60 bells cut the Tusch. cafe_zauner_tour (title flow, Normal
+# boss win) with 6148 idle frames inserted at 172 (Resi waits at the
+# start), so the clock reaches 60 ten frames after the third hit: DONE at
+# 8561 (`jingle boss_defeat`), ZEIT 60 at 8571 (`jingle hurry`, which
+# replaces the playing jingle: the Tusch is cut after 10 frames) plus
+# `hold-song on`. Inputs end 2 frames after the hit, then idle (she does
+# not reach the Stollen). §4 says the bells play on SFX voice I over the
+# boss music in the fight; the Director plays them as a music jingle,
+# so they also cut boss_intro / boss_surprise / boss_defeat whenever they
+# coincide. Expected: the Tusch plays in full (bells on voice I, or the
+# bells wait / are dropped). The replay passes; accept its cue golden
+# only after the fix.
+# Fixed (E63, D-124): the bells wait for the Tusch's rendered end
+# (`8656 jingle hurry`, no hold: DONE counts as the fight until the café
+# piece resumes); the café piece waits for the bells too (game-designer
+# review: its cup clinks fell on a bell strike): `8752 song cafe_zauner`
+# = max(Tusch end + 60, bells' end 8656 + 96).
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 boss_hits=3 no_event=LevelComplete
+---
+- 20
+S 1
+- 150
+- 6148
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 108
+LBJ 12
+LB 2
+- 4
+RB 16
+- 180
+LBJ 12
+LB 2
+RB 4
+LB 8
+RBJ 36
+RB 21
+L 4
+LB 8
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 2
+RB 3
+LB 22
+RBJ 12
+RB 2
+RBJ 36
+RB 8
+R 3
+RB 8
+LB 8
+LBJ 21
+LB 17
+RBJ 25
+RB 13
+LB 14
+RB 4
+- 288
+LBJ 12
+LB 10
+RBJ 22
+- 300

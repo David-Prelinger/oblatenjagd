@@ -1,0 +1,34 @@
+# cue log of tests/replays/qa_m5_flow_time_up_on_scroll_end.replay (cargo xtask cues)
+     0 song wolfgangsee
+ 11989 sfx oblate I3
+ 12013 sfx jump P4
+ 12258 underwater on
+ 12600 jingle hurry
+ 12600 hold-song on
+ 12696 hold-song off
+ 13567 sfx oblate I3
+ 13588 sfx oblate I3
+ 13609 sfx oblate I3
+ 13631 sfx oblate I3
+ 13652 sfx oblate I3
+ 13673 sfx oblate I3
+ 13695 sfx oblate I3
+ 13716 sfx oblate I3
+ 14369 sfx checkpoint I7
+ 14369 duck on
+ 14396 duck off
+ 14399 sfx oblate I3
+ 14420 sfx oblate I3
+ 14441 sfx oblate I3
+ 15700 sfx oblate I3
+ 15721 sfx oblate I3
+ 15743 sfx oblate I3
+ 15764 sfx oblate I3
+ 15785 sfx oblate I3
+ 15807 sfx oblate I3
+ 15828 sfx oblate I3
+ 15849 sfx oblate I3
+ 16200 cut-sfx all
+ 16200 stop-song
+ 16200 jingle death
+ 16260 song wolfgangsee

@@ -21,7 +21,7 @@
    593 sfx tally_tick I2
    596 sfx tally_tick I2
    598 sfx tally_end I6
-   778 song route_map
+   864 song route_map
    943 stop-song
    943 stop-jingle
    943 sfx ui_start I6
