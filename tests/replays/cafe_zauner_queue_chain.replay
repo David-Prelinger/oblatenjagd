@@ -1,0 +1,51 @@
+# The queue as a stomp chain (D-105, M7 "Levels"): the solver's route to
+# Vitrine D (69-70, 3 high; landed at frame 442), she stops on it and jumps
+# onto the first Wartender (73) from its right edge, then bounces from head
+# to head over all nine (73, 76, ..., 97: 3 columns apart, the spec's
+# spacing) with JUMP held 8-11 frames after each stomp at walk speed (a
+# ~30-frame, 45-48 px hop): stomps at 529, 558, 588, 617, 647, 677, 709,
+# 741 (100, 200, 400, 800, 1000, 2000, 4000, 8000) and the ninth at 773
+# gives „+1 Leben" (ExtraLife, lives 3 -> 4). She lands on the floor at
+# 807 in front of the queue's head. Score 1700 before the queue + 16 500.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4 score=18200 player_x>=1580
+---
+RB 76
+RBJ 20
+RB 29
+RBJ 20
+RB 40
+RBJ 20
+RB 22
+RBJ 20
+RB 40
+RBJ 36
+RB 24
+RBJ 20
+RB 24
+RBJ 36
+RB 16
+L 8
+- 40
+RJ 6
+R 4
+RJ 36
+R 10
+RJ 19
+R 10
+RJ 20
+R 10
+RJ 19
+R 10
+RJ 20
+R 10
+RJ 20
+R 10
+RJ 25
+R 10
+RJ 21
+R 10
+RJ 22
+R 60
