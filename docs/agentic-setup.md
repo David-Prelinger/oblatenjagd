@@ -21,7 +21,7 @@ Status: **approved v1**. The agent and skill files already exist under `.claude/
 | `engine-engineer` | Implements Rust code in all crates and xtask, with tests | `crates/`, `xtask/` | all |
 | `qa-tester` | Runs verify, solver, replays, filmstrips; hunts bugs; writes bug reports and new replay tests | `tests/replays/` | Bash, Read, Write |
 | `code-reviewer` | Read-only review of diffs against architecture and determinism rules | nothing | Read, Grep, Glob, Bash (git diff, cargo) |
-| `sound-designer` | (created in milestone MA) synth patches and music patterns | `audio/` | — |
+| `sound-designer` | Writes `.sfx` patches, `.inst` instruments and `.song` patterns; renders, lints and checks its own audio through stats, spectrograms and piano rolls (MA) | `audio/` | Bash (xtask audio), Read/Write/Edit, WebSearch (PD editions) |
 
 ## Skills (`.claude/skills/`)
 
@@ -34,6 +34,7 @@ Status: **approved v1**. The agent and skill files already exist under `.claude/
 | `replay-testing` | qa-tester, level-designer, engine-engineer | replay format, solver, goldens, determinism checks |
 | `play-in-vnc` | anyone | launching the game on `:1`, recording human replays, X screenshots |
 | `german-satire-writing` | game-designer | tone, Austrian German, glossary, satire limits, text keys |
+| `sfx-authoring` | sound-designer, game-designer (audio review) | `.sfx`/`.inst`/`.song` formats, `xtask audio` commands, judging sound without ears, the audio review rubric |
 
 ## The work loop
 
