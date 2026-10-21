@@ -8,8 +8,9 @@
 //! ([`high_c_column`]), the lake enemies of Stage 6 (Schwan, Gelse,
 //! Regattaboot), the Ampel spawner and its cars of Stage 7
 //! ([`EntityKind::Ampel`], [`EnemyKind::Auto`]), the Offizier's drill and
-//! sabre zone ([`sabre_zone`]) and defeated enemies
-//! ([`EntityKind::Defeated`]),
+//! sabre zone ([`sabre_zone`]), the Oberkellner of Stage 9 and his bills
+//! ([`update_oberkellner`], [`EntityKind::Rechnung`], the arena lint
+//! [`arena_problems`]) and defeated enemies ([`EntityKind::Defeated`]),
 //! plus the rules that need the whole entity list (turning at other
 //! enemies, knocking enemies off a bumped block).
 //!
@@ -21,7 +22,7 @@
 //! Per-kind `state` values are the constants in [`state`]; the renderer
 //! reads them through [`Entity::pose`].
 
-use crate::entity::{EnemyKind, Entity, EntityKind, Popup, UpdateCtx, popup};
+use crate::entity::{EnemyKind, Entity, EntityKind, POPUP_STACK_PX, Popup, UpdateCtx, popup};
 use crate::fx::Fx;
 use crate::level::{Level, SpawnKind, TILE_PX, TileKind};
 use crate::physics::{Aabb, TILE, TileMap, YHit, tile_of};
@@ -158,6 +159,38 @@ pub mod state {
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
     pub const TUMBLE: u8 = 1;
+
+    /// The Oberkellner's states (D-106, [`super::update_oberkellner`]).
+    /// `count` = frames into the state, 1 on its first frame.
+    pub mod oberkellner {
+        /// Before the arena lock: polishing a glass at his spawn (no
+        /// contact, no movement).
+        pub const WAIT: u8 = 0;
+        /// „Hinten anstellen!" from the lock (no contact).
+        pub const INTRO: u8 = 1;
+        /// Tray high, facing the far wall (the dash's telegraph).
+        pub const TELEGRAPH: u8 = 2;
+        /// Running to the far wall; ends at its face.
+        pub const DASH: u8 = 3;
+        /// Verschnaufen at that wall: tray lowered, the smaller hitbox, the
+        /// only state in which a stomp or an axe hits him.
+        pub const BREATHE: u8 = 4;
+        /// „Zahlen, bitte!" (rounds 2–3 after a breather without a hit): he
+        /// stays at his wall, tray up, until his bills are gone.
+        pub const VOLLEY: u8 = 5;
+        /// After a hit: spinning (no contact).
+        pub const STUN: u8 = 6;
+        /// Beaten: bowing for good (no contact).
+        pub const DONE: u8 = 7;
+    }
+
+    /// A Rechnung's states (D-106, [`super::update_rechnung`]).
+    pub mod rechnung {
+        /// Hanging at the ceiling (harmless; `count` = frames of the hang).
+        pub const HANG: u8 = 0;
+        /// Fluttering down (hurts; `count` = frames of the fall).
+        pub const FALL: u8 = 1;
+    }
 }
 
 /// What an enemy (or a defeated one, or a projectile) looks like right
@@ -245,6 +278,23 @@ pub enum Pose {
     Wake,
     /// Kellner `bounce` (the tray dipped after a bounce, D-105).
     Bounce,
+    /// Oberkellner `anstellen` (the intro: „Hinten anstellen!"; waiting
+    /// at his spawn he is `Idle`, telegraphing `Telegraph`).
+    Anstellen,
+    /// Oberkellner `dash`.
+    Dash,
+    /// Oberkellner `verschnaufen` (the breather: tray lowered).
+    Verschnaufen,
+    /// Oberkellner `zahlen` (the volley).
+    Zahlen,
+    /// Oberkellner `stun` (after a hit).
+    Stun,
+    /// Oberkellner `verbeugen` (beaten: the bow).
+    Verbeugen,
+    /// Rechnung `hang` (at the ceiling, harmless).
+    Hang,
+    /// Rechnung `flutter` (falling).
+    Flutter,
 }
 
 impl Entity {
@@ -346,6 +396,20 @@ impl Entity {
                 state::PRESENT => Pose::Praesentiert,
                 _ => Pose::March,
             },
+            EntityKind::Enemy(EnemyKind::Oberkellner) => match self.state {
+                state::oberkellner::WAIT => Pose::Idle,
+                state::oberkellner::INTRO => Pose::Anstellen,
+                state::oberkellner::TELEGRAPH => Pose::Telegraph,
+                state::oberkellner::DASH => Pose::Dash,
+                state::oberkellner::BREATHE => Pose::Verschnaufen,
+                state::oberkellner::VOLLEY => Pose::Zahlen,
+                state::oberkellner::STUN => Pose::Stun,
+                _ => Pose::Verbeugen,
+            },
+            EntityKind::Rechnung => match self.state {
+                state::rechnung::HANG => Pose::Hang,
+                _ => Pose::Flutter,
+            },
             // The niche is empty from the drop until the refill.
             EntityKind::Steinschlag => steinschlag_pose(self, t)?,
             EntityKind::Stein => Pose::Fall,
@@ -383,13 +447,21 @@ impl Entity {
     }
 
     /// False for an enemy that can't touch the player right now (a
-    /// crashed E-Biker, a leaving Gelse, a Kurgast in his deck chair);
-    /// true for every other enemy.
+    /// crashed E-Biker, a leaving Gelse, a Kurgast in his deck chair, the
+    /// Oberkellner waiting, in his intro, stunned or beaten); true for
+    /// every other enemy.
     pub fn harmful(&self) -> bool {
         match self.kind {
             EntityKind::Enemy(EnemyKind::EBiker) => self.state != state::CRASH,
             EntityKind::Enemy(EnemyKind::Gelse) => self.state != state::LEAVE,
             EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(self),
+            EntityKind::Enemy(EnemyKind::Oberkellner) => matches!(
+                self.state,
+                state::oberkellner::TELEGRAPH
+                    | state::oberkellner::DASH
+                    | state::oberkellner::BREATHE
+                    | state::oberkellner::VOLLEY
+            ),
             _ => true,
         }
     }
@@ -512,6 +584,7 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
             update_kellner(e, ctx);
             None
         }
+        EnemyKind::Oberkellner => update_oberkellner(e, ctx),
         EnemyKind::Bienenschwarm => {
             let len = e
                 .spawn
@@ -1125,7 +1198,9 @@ fn on_foot(e: &Entity) -> bool {
         // Walking, or lying in his deck chair: walkers turn at it (D-095).
         | EntityKind::Enemy(EnemyKind::Kurgast)
         | EntityKind::Enemy(EnemyKind::Offizier)
-        | EntityKind::Enemy(EnemyKind::Kellner) => true,
+        | EntityKind::Enemy(EnemyKind::Kellner)
+        // In every state (no walker shares his arena: the arena lint).
+        | EntityKind::Enemy(EnemyKind::Oberkellner) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
         EntityKind::Enemy(EnemyKind::Fiaker) => e.state != state::CHARGE,
         EntityKind::Enemy(EnemyKind::Reisebus | EnemyKind::Regattaboot) => e.state != state::DRIVE,
@@ -1666,11 +1741,7 @@ pub(crate) fn defeat_popup(kind: EnemyKind, x: Fx, top: Fx) -> Option<Entity> {
         EnemyKind::Offizier => Popup::Abtreten,
         _ => return None,
     };
-    Some(popup(
-        p,
-        x,
-        top - Fx::from_px(crate::entity::POPUP_STACK_PX),
-    ))
+    Some(popup(p, x, top - Fx::from_px(POPUP_STACK_PX)))
 }
 
 /// A Regattaboot's two contact parts (D-080 refinement, E29): the
@@ -2247,15 +2318,473 @@ fn update_auto(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
-/// True while an undefeated Oberkellner is in `entities` (D-106, D-107):
-/// the `goal_stollen` is armed only when this is false.
-// E46: stub until the Oberkellner lands (E46 replaces the body under this
-// name; E49 removes this note). No boss exists yet, so a level is always
-// armed (a level without a boss is armed from the start). E46/E49: add the
-// game-level tests this stub can't have: an unarmed touch raises no
-// `LevelComplete` and doesn't suppress a hurt in the same frame.
-pub fn boss_undefeated(_entities: &[Entity]) -> bool {
-    false
+// ------------------------------------------------------------ M7 (D-106)
+
+/// The boss arena is the level's last this many columns (D-106: one
+/// screen; the side camera's right clamp locks it).
+pub const ARENA_COLS: i32 = 20;
+
+/// Bills hang in this row (D-106; row 8 is screen y 36 under the café's
+/// fixed camera, `camera_top = 92`).
+pub const BILL_ROW: i32 = 8;
+
+/// The volley's bill columns, counted from the arena's left edge: round 2
+/// (one hit taken) and round 3 (two hits taken). Over the floor only,
+/// at least 4 columns apart (D-106).
+pub const BILL_COLUMNS: [&[i32]; 2] = [&[4, 9, 14], &[3, 7, 11, 15]];
+
+/// Hits that beat the Oberkellner (D-106).
+pub const OBERKELLNER_HITS: u8 = 3;
+
+/// The first row of the arena that must be clear over its floor (D-106,
+/// game-design "Stage 9": rows 7–14 over the floor; rows 0–6 are the
+/// café's ceiling).
+pub const ARENA_CLEAR_FROM_ROW: i32 = 7;
+
+/// True once the camera stands at its maximum x (the level's width − one
+/// screen): the arena is locked (D-106). The camera is the one at the
+/// start of the frame, so the lock is the first frame of play that
+/// starts with the camera at its right clamp.
+fn arena_locked(ctx: &UpdateCtx) -> bool {
+    let max_x = (ctx.map.width_fx() - Fx::from_px(crate::camera::SCREEN_W)).max(Fx::ZERO);
+    ctx.screen_left >= max_x
+}
+
+/// The Oberkellner's round: the hits he has taken (0, 1 or 2) index the
+/// `oberkellner_*` round arrays.
+fn boss_round(e: &Entity) -> usize {
+    usize::from(e.hits.min(OBERKELLNER_HITS - 1))
+}
+
+/// The Oberkellner enters `next` on this frame (`count` 1): his hitbox
+/// is the breather's (16×30) in `BREATHE`, else the tray-up one (16×36),
+/// both with his feet and centre kept. `prev_y` moves with the top, so
+/// the stomp rule in `Game::interact` measures the middle of the box she
+/// touches at its previous position (the box changes size only, never
+/// moves vertically).
+fn enter_boss_state(e: &mut Entity, next: u8, t: &Tuning) {
+    let size = if next == state::oberkellner::BREATHE {
+        t.enemies.oberkellner_breathe_hitbox
+    } else {
+        t.enemies.oberkellner_hitbox
+    };
+    let top = e.y;
+    resize_at_feet(e, size);
+    e.prev_y += e.y - top;
+    e.state = next;
+    e.count = 1;
+    e.vx = Fx::ZERO;
+}
+
+/// True if a solid tile touches `e`'s side towards `dir` (the column just
+/// beyond its edge, in its rows).
+fn wall_ahead(e: &Entity, map: &TileMap, dir: i8) -> bool {
+    let col = if dir < 0 {
+        tile_of(e.x - Fx(1))
+    } else {
+        tile_of(e.right())
+    };
+    (tile_of(e.y)..=tile_of(e.y + e.h - Fx(1))).any(|r| map.kind_at(col, r) == TileKind::Solid)
+}
+
+/// Columns of floor between `e`'s side towards `dir` and the first solid
+/// tile in his rows that way (at most [`ARENA_COLS`]).
+fn free_columns(e: &Entity, map: &TileMap, dir: i8) -> i32 {
+    let mut probe = *e;
+    let step = TILE.mul_int(i32::from(dir));
+    let mut n = 0;
+    while n < ARENA_COLS && !wall_ahead(&probe, map, dir) {
+        probe.x += step;
+        n += 1;
+    }
+    n
+}
+
+/// A new round (D-106): the telegraph, facing the far wall (away from the
+/// nearer one; a tie faces left).
+fn start_round(e: &mut Entity, ctx: &UpdateCtx) {
+    enter_boss_state(e, state::oberkellner::TELEGRAPH, ctx.tuning);
+    let (left, right) = (free_columns(e, ctx.map, -1), free_columns(e, ctx.map, 1));
+    e.dir = if right > left { 1 } else { -1 };
+}
+
+/// One frame of the dash at the round's speed towards `dir`, with tile
+/// collision: it stops flush at the wall, and the frame he reaches its
+/// face starts the breather there.
+fn dash(e: &mut Entity, ctx: &UpdateCtx) {
+    let speed = ctx.tuning.enemies.oberkellner_dash[boss_round(e)];
+    e.vx = speed.mul_int(i32::from(e.dir));
+    let mut b = e.hitbox();
+    ctx.map.move_x(&mut b, e.vx);
+    e.x = b.x;
+    if wall_ahead(e, ctx.map, e.dir) {
+        enter_boss_state(e, state::oberkellner::BREATHE, ctx.tuning);
+    }
+}
+
+/// The Oberkellner (D-106). `WAIT` at his spawn until the **arena lock**
+/// (the first frame of play that starts with the camera at its maximum x;
+/// he is active by then, one screen ahead), then on frames of play only
+/// (entities don't update while frozen, paused or dying): `INTRO`
+/// (`oberkellner_intro` frames, facing her; returns the „Hinten
+/// anstellen!" popup on its first frame) → rounds by hits taken (0, 1, 2):
+/// `TELEGRAPH` (facing the far wall) → `DASH` (to that wall's face) →
+/// `BREATHE` → with a hit taken before, `VOLLEY` (the game spawns the
+/// round's bills on its first frame, [`volley`]; it ends on the first
+/// frame without a bill alive) → the next round's `TELEGRAPH`. A hit
+/// (`Game`, [`hit_oberkellner`]) stuns him (`STUN`, then the next round)
+/// or beats him (`DONE`). A respawn resets the level and so the fight.
+pub(crate) fn update_oberkellner(e: &mut Entity, ctx: &UpdateCtx) -> Option<Entity> {
+    use state::oberkellner::*;
+    let et = &ctx.tuning.enemies;
+    let round = boss_round(e);
+    // The timed states run `len` frames (count 1..=len), then the next one
+    // starts on the following frame.
+    let len = match e.state {
+        WAIT => {
+            if !arena_locked(ctx) {
+                return None;
+            }
+            enter_boss_state(e, INTRO, ctx.tuning);
+            let cx = e.x + e.w.div_int(2);
+            if ctx.player_cx != cx {
+                e.dir = (ctx.player_cx - cx).signum() as i8;
+            }
+            return Some(popup(
+                Popup::Anstellen,
+                cx,
+                e.y - Fx::from_px(POPUP_STACK_PX),
+            ));
+        }
+        DASH => {
+            e.count = e.count.saturating_add(1);
+            dash(e, ctx);
+            return None;
+        }
+        VOLLEY => {
+            if e.count > 1 && ctx.bills == 0 {
+                start_round(e, ctx);
+            } else {
+                e.count = e.count.saturating_add(1);
+            }
+            return None;
+        }
+        INTRO => et.oberkellner_intro,
+        TELEGRAPH => et.oberkellner_telegraph[round],
+        BREATHE => et.oberkellner_breathe[round],
+        STUN => et.oberkellner_stun,
+        _ => return None,
+    };
+    if e.count < len {
+        e.count += 1;
+        return None;
+    }
+    match e.state {
+        TELEGRAPH => {
+            enter_boss_state(e, DASH, ctx.tuning);
+            dash(e, ctx);
+        }
+        BREATHE if e.hits > 0 => enter_boss_state(e, VOLLEY, ctx.tuning),
+        _ => start_round(e, ctx),
+    }
+    None
+}
+
+/// A stomp or an axe hit the Oberkellner in his breather (`Game`): one hit
+/// more; the third beats him (`DONE`), else he is stunned (`STUN`, no
+/// contact, so one breather gives exactly one hit). Returns whether he is
+/// beaten; `None` (nothing happens) outside the breather.
+pub(crate) fn hit_oberkellner(e: &mut Entity, t: &Tuning) -> Option<bool> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Oberkellner) || e.state != state::oberkellner::BREATHE
+    {
+        return None;
+    }
+    e.hits = (e.hits + 1).min(OBERKELLNER_HITS);
+    let beaten = e.hits >= OBERKELLNER_HITS;
+    let next = if beaten {
+        state::oberkellner::DONE
+    } else {
+        state::oberkellner::STUN
+    };
+    enter_boss_state(e, next, t);
+    Some(beaten)
+}
+
+/// What touching the Oberkellner does (D-106; only while he is
+/// [`Entity::harmful`]): from above (the stomp rule) his breather is a
+/// hit ([`Contact::Stomp`]) and his raised tray (telegraph, dash, volley)
+/// a bounce without damage or points ([`Contact::Bounce`]); any other
+/// contact, and every contact while she swims, hurts.
+pub fn oberkellner_contact(e: &Entity, from_above: bool, swimming: bool) -> Contact {
+    if !from_above || swimming {
+        Contact::Hurt
+    } else if e.state == state::oberkellner::BREATHE {
+        Contact::Stomp
+    } else {
+        Contact::Bounce
+    }
+}
+
+/// **The query for the finale (E47)**: true while the entity list holds an
+/// Oberkellner that is not beaten (D-107: the `goal_stollen` is armed when
+/// this is false, so a level without a boss is armed from the start).
+pub fn boss_undefeated(entities: &[Entity]) -> bool {
+    entities.iter().any(|e| {
+        e.kind == EntityKind::Enemy(EnemyKind::Oberkellner)
+            && !e.removed
+            && e.state != state::oberkellner::DONE
+    })
+}
+
+/// The hits taken by the level's Oberkellner (the first one in the list,
+/// removed or not: the arena lint allows exactly one, and he never
+/// despawns), `None` without one (the replay expectation `boss_hits=N`).
+pub fn boss_hits(entities: &[Entity]) -> Option<u8> {
+    entities
+        .iter()
+        .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Oberkellner))
+        .map(|e| e.hits)
+}
+
+/// The bills of `e`'s volley (D-106): one per column of
+/// [`BILL_COLUMNS`] for his round (none in round 1), counted from the
+/// arena's left edge (the level's width − [`ARENA_COLS`]).
+pub(crate) fn volley(e: &Entity, level: &Level, t: &Tuning) -> Vec<Entity> {
+    let Some(columns) = usize::from(e.hits)
+        .checked_sub(1)
+        .and_then(|i| BILL_COLUMNS.get(i))
+    else {
+        return Vec::new();
+    };
+    let left = level.width - ARENA_COLS;
+    columns.iter().map(|&c| new_bill(left + c, t)).collect()
+}
+
+/// A bill hanging in column `col` of [`BILL_ROW`]: its hitbox centred on
+/// the column, its top on the row's top (so it falls ~104 px to a floor
+/// on row 15). `base_x` keeps that x, the centre of its sway.
+pub(crate) fn new_bill(col: i32, t: &Tuning) -> Entity {
+    let [w, h] = t.enemies.oberkellner_bill_hitbox;
+    let (w, h) = (Fx::from_px(w), Fx::from_px(h));
+    let x = TILE.mul_int(col) + TILE.div_int(2) - w.div_int(2);
+    let mut bill = Entity::new(EntityKind::Rechnung, x, TILE.mul_int(BILL_ROW), w, h);
+    bill.state = state::rechnung::HANG;
+    bill
+}
+
+/// A Rechnung (D-106): it hangs harmless for `oberkellner_bill_hang`
+/// frames (the frame it spawns counts), then falls at
+/// `oberkellner_bill_fall` with x = its column x + an integer sine of
+/// ±`oberkellner_bill_sway` px over `oberkellner_bill_sway_period` frames
+/// (ignoring tiles sideways). It is gone on the first solid or one-way
+/// tile it reaches and in water or a hazard; `Game` removes it when it
+/// hurts her and at the boss's defeat.
+pub(crate) fn update_rechnung(e: &mut Entity, map: &TileMap, t: &Tuning) {
+    let et = &t.enemies;
+    if e.state == state::rechnung::HANG {
+        e.count += 1;
+        if e.count < et.oberkellner_bill_hang {
+            return;
+        }
+        e.state = state::rechnung::FALL;
+        e.count = 0;
+    }
+    e.count = e.count.saturating_add(1);
+    e.x = e.base_x
+        + sine_offset(
+            u32::from(e.count),
+            et.oberkellner_bill_sway_period,
+            Fx::from_px(et.oberkellner_bill_sway),
+        );
+    e.vy = et.oberkellner_bill_fall;
+    let mut b = e.hitbox();
+    if map.move_y(&mut b, e.vy, false) == YHit::Floor || map.swallows(&b) {
+        e.removed = true;
+    }
+    e.y = b.y;
+}
+
+/// True for spawn kinds the arena may hold besides its Oberkellner (D-106:
+/// no other enemy, spawner, box, sign or platform): the start, goals,
+/// checkpoints, Oblaten and props. Exhaustive on purpose: classify every
+/// new kind here.
+const fn allowed_in_arena(kind: SpawnKind) -> bool {
+    match kind {
+        SpawnKind::PlayerStart
+        | SpawnKind::Goal
+        // The Zaunerstollen on the counter (D-107).
+        | SpawnKind::GoalStollen
+        | SpawnKind::Checkpoint
+        | SpawnKind::Oblate
+        | SpawnKind::Prop => true,
+        SpawnKind::Sign
+        | SpawnKind::SelfieTourist
+        | SpawnKind::Taube
+        | SpawnKind::TaubeSitting
+        | SpawnKind::MozartkugelVerkaeufer
+        | SpawnKind::Fiaker
+        | SpawnKind::Festungsbahn
+        | SpawnKind::NordicWalker
+        | SpawnKind::Blasmusiker
+        | SpawnKind::EBiker
+        | SpawnKind::Bienenschwarm
+        | SpawnKind::Gondel
+        | SpawnKind::Pilger
+        | SpawnKind::Gams
+        | SpawnKind::Steinschlag
+        | SpawnKind::Durchkriechstein
+        | SpawnKind::Operettensaenger
+        | SpawnKind::Souvenirstand
+        | SpawnKind::Schafbergbahn
+        | SpawnKind::Reisebus
+        | SpawnKind::Traundl
+        | SpawnKind::Dampfer
+        | SpawnKind::Schwan
+        | SpawnKind::Gelse
+        | SpawnKind::Regattaboot
+        | SpawnKind::Ampel
+        | SpawnKind::Kurgast
+        | SpawnKind::Fensterladen
+        | SpawnKind::Offizier
+        | SpawnKind::Kellner
+        | SpawnKind::Wartender
+        | SpawnKind::Oberkellner => false,
+    }
+}
+
+/// `levels lint` (D-106) for a level with an `oberkellner`: exactly one,
+/// inside the arena (the last [`ARENA_COLS`] columns), standing on its
+/// floor; the arena is a 3-high solid refuge at each end (every column
+/// left and right of the floor: solid in the 3 rows over the floor's
+/// row, air above) and a flat solid floor between them (one run of
+/// columns that are air from row [`ARENA_CLEAR_FROM_ROW`] down to a
+/// solid tile in the floor row: nothing solid or one-way above it in the
+/// play rows, and no water or hazard either); no other enemy, spawner, sign or platform
+/// ([`allowed_in_arena`]) and no box or brick in the arena; every bill
+/// column of [`BILL_COLUMNS`], swayed by `oberkellner_bill_sway`, over the
+/// floor. One problem per broken rule. Levels without one: nothing.
+pub fn arena_problems(level: &Level, t: &Tuning) -> Vec<String> {
+    let bosses: Vec<_> = level
+        .entities
+        .iter()
+        .filter(|s| s.kind == SpawnKind::Oberkellner)
+        .collect();
+    let Some(boss) = bosses.first() else {
+        return Vec::new();
+    };
+    let mut problems = Vec::new();
+    if bosses.len() > 1 {
+        problems.push(format!(
+            "{} oberkellner in the level: exactly one (D-106)",
+            bosses.len()
+        ));
+    }
+    let left = (level.width - ARENA_COLS).max(0);
+    let at = |s: &crate::level::EntitySpawn| format!("row {}, column {}", s.row + 1, s.col + 1);
+    if boss.col < left {
+        problems.push(format!(
+            "oberkellner at {}: not in the arena, the last {ARENA_COLS} columns ({}-{}) (D-106)",
+            at(boss),
+            left + 1,
+            level.width
+        ));
+        return problems;
+    }
+    let floor_row = boss.row + 1;
+    let solid = |c: i32, r: i32| level.tile(c, r).is_some_and(|t| t.kind == TileKind::Solid);
+    // Air only: no solid or one-way tile (nothing reads as a ledge, bills
+    // reach the floor), and no water or hazard either (he is on foot).
+    let clear = |c: i32, r: i32| level.tile(c, r).is_none_or(|t| t.kind == TileKind::Empty);
+    let arena = left..level.width;
+    let is_floor =
+        |c: i32| (ARENA_CLEAR_FROM_ROW..floor_row).all(|r| clear(c, r)) && solid(c, floor_row);
+    let is_refuge = |c: i32| {
+        (floor_row - 3..floor_row).all(|r| solid(c, r))
+            && (ARENA_CLEAR_FROM_ROW..floor_row - 3).all(|r| clear(c, r))
+    };
+    let floor: Vec<i32> = arena.clone().filter(|&c| is_floor(c)).collect();
+    let (Some(&first), Some(&last)) = (floor.first(), floor.last()) else {
+        problems.push(format!(
+            "oberkellner at {}: the arena has no floor on row {} (D-106)",
+            at(boss),
+            floor_row + 1
+        ));
+        return problems;
+    };
+    let gaps = (first..=last).filter(|c| !floor.contains(c)).count();
+    let refuges_ok = first > left
+        && last < level.width - 1
+        && arena
+            .clone()
+            .filter(|c| !(first..=last).contains(c))
+            .all(is_refuge);
+    if gaps > 0 || !refuges_ok {
+        problems.push(format!(
+            "oberkellner at {}: the arena (columns {}-{}) must be a 3-high solid refuge at each end (solid on rows {}-{}, nothing above from row {}) and one flat solid floor on row {} between them with only air above it from row {} (D-106)",
+            at(boss),
+            left + 1,
+            level.width,
+            floor_row - 2,
+            floor_row,
+            ARENA_CLEAR_FROM_ROW + 1,
+            floor_row + 1,
+            ARENA_CLEAR_FROM_ROW + 1
+        ));
+    }
+    if !(first..=last).contains(&boss.col) {
+        problems.push(format!(
+            "oberkellner at {}: he must stand on the arena floor (columns {}-{}, row {}) (D-106)",
+            at(boss),
+            first + 1,
+            last + 1,
+            floor_row + 1
+        ));
+    }
+    for s in level
+        .entities
+        .iter()
+        .filter(|s| arena.contains(&s.col) && !allowed_in_arena(s.kind))
+        .filter(|s| !std::ptr::eq(*s, *boss))
+    {
+        problems.push(format!(
+            "{} at {}: no other enemy, sign or platform in the oberkellner's arena (D-106)",
+            s.kind.name(),
+            at(s)
+        ));
+    }
+    for c in arena.clone() {
+        for r in 0..level.height {
+            if level
+                .tile(c, r)
+                .is_some_and(|t| t.block != crate::level::Block::None)
+            {
+                problems.push(format!(
+                    "box or brick at row {}, column {}: none in the oberkellner's arena (D-106)",
+                    r + 1,
+                    c + 1
+                ));
+            }
+        }
+    }
+    let [bw, _] = t.enemies.oberkellner_bill_hitbox;
+    let sway = t.enemies.oberkellner_bill_sway;
+    let (floor_x0, floor_x1) = (first * TILE_PX, (last + 1) * TILE_PX);
+    for (round, columns) in BILL_COLUMNS.iter().enumerate() {
+        for &c in columns.iter() {
+            let centre = (left + c) * TILE_PX + TILE_PX / 2;
+            let (x0, x1) = (centre - sway - bw / 2, centre + sway - bw / 2 + bw);
+            if x0 < floor_x0 || x1 > floor_x1 || BILL_ROW >= floor_row {
+                problems.push(format!(
+                    "oberkellner at {}: round {}'s bill at arena column {c} (column {}) would fall outside the floor (x {x0}-{x1}, floor x {floor_x0}-{floor_x1}, from row {}) (D-106)",
+                    at(boss),
+                    round + 2,
+                    left + c + 1,
+                    BILL_ROW + 1
+                ));
+            }
+        }
+    }
+    problems
 }
 
 #[cfg(test)]

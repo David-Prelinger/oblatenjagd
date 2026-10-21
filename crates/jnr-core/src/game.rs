@@ -1109,6 +1109,12 @@ impl Game {
             .filter(|e| e.kind == EntityKind::Enemy(EnemyKind::Auto) && !e.removed)
             .map(|e| (e.base_x, e.base_y))
             .collect();
+        // The Oberkellner's volley ends once his bills are gone (D-106).
+        let bills = self
+            .entities
+            .iter()
+            .filter(|e| e.kind == EntityKind::Rechnung && !e.removed)
+            .count();
         let ctx = UpdateCtx {
             map: &self.map,
             tuning: &self.tuning,
@@ -1122,6 +1128,7 @@ impl Game {
             globes: &globes,
             stage_clock: self.stage_clock(),
             cars: &cars,
+            bills,
         };
         let wakes = |e: &Entity| {
             !e.active && e.x < activate_x && (!climb || spawn_row_near(level, e, camera, margin_y))
@@ -1162,6 +1169,14 @@ impl Game {
                 && e.state == crate::enemies::state::SHATTERED
             {
                 spawned.extend(crate::enemies::globe_shards(e, ctx.tuning));
+            }
+            // The first frame of the Oberkellner's volley: his bills
+            // (D-106).
+            if e.kind == EntityKind::Enemy(EnemyKind::Oberkellner)
+                && e.state == crate::enemies::state::oberkellner::VOLLEY
+                && e.count == 1
+            {
+                spawned.extend(crate::enemies::volley(e, ctx.level, ctx.tuning));
             }
             if e.kind.is_platform() {
                 crate::platform::carry(
@@ -1294,7 +1309,22 @@ impl Game {
                     // from before this frame's movement).
                     let middle = e.prev_y + (part.y - e.y) + part.h.div_int(2);
                     let from_above = bounces && self.player.vy > Fx::ZERO && prev_bottom <= middle;
-                    match crate::enemies::contact(kind, from_above, swimming) {
+                    // The Oberkellner's contact depends on his state: his
+                    // breather is a hit, his tray a bounce (D-106, the
+                    // officer's state-dependent contact, D-096).
+                    let contact = if kind == EnemyKind::Oberkellner {
+                        crate::enemies::oberkellner_contact(&e, from_above, swimming)
+                    } else {
+                        crate::enemies::contact(kind, from_above, swimming)
+                    };
+                    match contact {
+                        // A hit on the Oberkellner: she bounces as from a
+                        // stomp; his points are outside the stomp chain
+                        // (it neither advances nor resets).
+                        Contact::Stomp if kind == EnemyKind::Oberkellner => {
+                            bounced = true;
+                            spawned.extend(self.hit_oberkellner(i));
+                        }
                         // A stomped Kurgast lies down in his deck chair
                         // instead (D-095): 100 in the chain on his first
                         // stomp only; a later one only bounces her (no
@@ -1348,6 +1378,17 @@ impl Game {
                 }
                 // A falling rock hurts on any contact, also from above.
                 EntityKind::Thrown | EntityKind::Note | EntityKind::Stein => hurt = true,
+                // A falling bill hurts on any contact and is gone when it
+                // does (D-106; it passes her while she blinks); a hanging
+                // one is harmless.
+                EntityKind::Rechnung => {
+                    if e.state == crate::enemies::state::rechnung::FALL {
+                        hurt = true;
+                        if self.player.invulnerable == 0 && !self.touches_goal() {
+                            self.entities[i].removed = true;
+                        }
+                    }
+                }
                 EntityKind::PoppedOblate
                 | EntityKind::Steinschlag
                 | EntityKind::Souvenirstand
@@ -1434,6 +1475,39 @@ impl Game {
             }
             None => self.add_life().then(|| popup(Popup::ExtraLife, x, y)),
         }
+    }
+
+    /// The Oberkellner `i` takes a hit in his breather (a stomp or an axe,
+    /// D-106): 1000 and „Unerhört!" on hits 1 and 2; on the third 5000 and
+    /// „Bitte sehr!", and every bill is gone. Returns the popups (score,
+    /// then the text stacked above it); none if he wasn't in his breather.
+    pub(crate) fn hit_oberkellner(&mut self, i: usize) -> Vec<Entity> {
+        let Some(e) = self.entities.get_mut(i) else {
+            return Vec::new();
+        };
+        let Some(beaten) = crate::enemies::hit_oberkellner(e, &self.tuning) else {
+            return Vec::new();
+        };
+        let e = *e;
+        let et = &self.tuning.enemies;
+        let (points, text) = if beaten {
+            (et.oberkellner_final_points, Popup::BitteSehr)
+        } else {
+            (et.oberkellner_hit_points, Popup::Unerhoert)
+        };
+        self.add_score(points);
+        if beaten {
+            for b in &mut self.entities {
+                if b.kind == EntityKind::Rechnung {
+                    b.removed = true;
+                }
+            }
+        }
+        let (fx, _) = e.feet();
+        vec![
+            popup(Popup::Score(points), fx, e.y),
+            popup(text, fx, e.y - Fx::from_px(crate::entity::POPUP_STACK_PX)),
+        ]
     }
 
     /// A projectile (the thrown Hackl, D-056) hit entity `i`: the outcome
@@ -1769,11 +1843,14 @@ impl Game {
                     | EntityKind::Fensterladen
                     | EntityKind::ThrownHackl
                     | EntityKind::Durchkriechstein
+                    | EntityKind::Rechnung
             ) {
+                // `hits`: the Oberkellner's (D-106), 0 for all others.
                 w.word(
                     u64::from(e.active)
                         | u64::from(e.state) << 8
                         | u64::from(e.dir as u8) << 16
+                        | u64::from(e.hits) << 24
                         | u64::from(e.count) << 32,
                 );
             }

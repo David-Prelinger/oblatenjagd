@@ -211,6 +211,8 @@ pub struct EntityLooks<'a> {
     offizier_lead: Option<&'a AtlasSprite>,
     kellner: Option<&'a AtlasSprite>,
     wartender: Option<&'a AtlasSprite>,
+    oberkellner: Option<&'a AtlasSprite>,
+    rechnung: Option<&'a AtlasSprite>,
     stein: Option<&'a AtlasSprite>,
     stein_debris: Option<&'a AtlasSprite>,
     kiesel: Option<&'a AtlasSprite>,
@@ -271,6 +273,8 @@ impl<'a> EntityLooks<'a> {
             offizier_lead: s("offizier_lead"),
             kellner: s(EnemyKind::Kellner.sprite()),
             wartender: s(WARTENDER_SPRITE),
+            oberkellner: s(EnemyKind::Oberkellner.sprite()),
+            rechnung: s("rechnung"),
             stein: s("stein"),
             stein_debris: s("stein_debris"),
             kiesel: s("kiesel"),
@@ -322,7 +326,9 @@ impl<'a> EntityLooks<'a> {
                 EnemyKind::Kurgast => self.kurgast,
                 EnemyKind::Offizier => self.offizier,
                 EnemyKind::Kellner => self.kellner,
+                EnemyKind::Oberkellner => self.oberkellner,
             },
+            EntityKind::Rechnung => self.rechnung,
             EntityKind::Thrown => self.thrown,
             EntityKind::Note => self.note,
             EntityKind::Gondel => self.gondel,
@@ -377,7 +383,11 @@ pub fn grey_box_colour(kind: EntityKind) -> u32 {
             // `d` like the Operettensänger (the palette has no colour
             // left); his box differs by its white apron and tray line.
             EnemyKind::Kellner => SLATE_DARK,
+            // `d` tails (D-106 grey box: a `d` box with an `i` tray line).
+            EnemyKind::Oberkellner => SLATE_DARK,
         },
+        // `w` paper.
+        EntityKind::Rechnung => WHITE,
         EntityKind::Steinschlag | EntityKind::Stein => FAR_DARK,
         EntityKind::SteinDebris => FAR_LIGHT,
         EntityKind::Thrown => LEATHER_DARK,
@@ -445,7 +455,8 @@ impl Layer {
             | EntityKind::Thrown
             | EntityKind::Stein
             | EntityKind::Note
-            | EntityKind::ThrownHackl => Layer::Enemies,
+            | EntityKind::ThrownHackl
+            | EntityKind::Rechnung => Layer::Enemies,
             _ => Layer::Middle,
         }
     }
@@ -510,7 +521,8 @@ fn draw_entity(
         | EntityKind::Thrown
         | EntityKind::Stein
         | EntityKind::Note
-        | EntityKind::ThrownHackl => draw_enemy(game, looks, atlas, fb, cam, e),
+        | EntityKind::ThrownHackl
+        | EntityKind::Rechnung => draw_enemy(game, looks, atlas, fb, cam, e),
         EntityKind::Steinschlag => draw_steinschlag(game, looks, atlas, fb, cam, e),
         EntityKind::Festungsbahn => draw_festungsbahn(game, looks, atlas, fb, cam, e),
         EntityKind::Gondel => draw_gondel(game, looks, atlas, fb, cam, e),
@@ -995,6 +1007,14 @@ pub fn pose_anim(pose: Pose) -> (&'static str, Option<usize>) {
         Pose::March => ("march", None),
         Pose::Habtacht => ("habtacht", None),
         Pose::Praesentiert => ("praesentiert", None),
+        Pose::Anstellen => ("anstellen", None),
+        Pose::Dash => ("dash", None),
+        Pose::Verschnaufen => ("verschnaufen", None),
+        Pose::Zahlen => ("zahlen", None),
+        Pose::Stun => ("stun", None),
+        Pose::Verbeugen => ("verbeugen", None),
+        Pose::Hang => ("hang", None),
+        Pose::Flutter => ("flutter", None),
         Pose::Bounce => ("bounce", None),
     }
 }
@@ -1225,6 +1245,9 @@ fn draw_enemy(
                 fb.fill_rect(bx + 1, by - 4, 3, 4, WHITE);
                 fb.fill_rect(bx + w - 4, by - 4, 3, 4, WHITE);
             }
+            if e.kind == EntityKind::Enemy(EnemyKind::Oberkellner) {
+                draw_tray_marks(fb, bx, by, w, pose, e.facing_left());
+            }
             let officer = e.kind == EntityKind::Enemy(EnemyKind::Offizier);
             if officer {
                 draw_officer_marks(game, fb, cam, e, pose, lead);
@@ -1235,6 +1258,25 @@ fn draw_enemy(
                 fb.fill_rect(bx + w - 1, by - 8, 3, 2, DIRNDL_RED);
             }
         }
+    }
+}
+
+/// The Oberkellner grey box's tray (no `oberkellner` sprite yet, D-106):
+/// an `i` line 2 px high and 4 px wider than the box on its top while the
+/// tray is up (intro, telegraph, dash, volley, stun: the top of his
+/// hitbox is the tray); in his breather the tray hangs lowered at his
+/// front side, a 2×10 `i` bar beside the box from its middle down. No
+/// tray while he waits (it stands on the counter) or bows.
+fn draw_tray_marks(fb: &mut Framebuffer, bx: i32, by: i32, w: i32, pose: Pose, left: bool) {
+    match pose {
+        Pose::Anstellen | Pose::Telegraph | Pose::Dash | Pose::Zahlen | Pose::Stun => {
+            fb.fill_rect(bx - 2, by, w + 4, 2, SILVER_LIGHT);
+        }
+        Pose::Verschnaufen => {
+            let x = if left { bx - 2 } else { bx + w };
+            fb.fill_rect(x, by + 15, 2, 10, SILVER_LIGHT);
+        }
+        _ => {}
     }
 }
 
@@ -2030,6 +2072,14 @@ mod tests {
             Pose::Habtacht,
             Pose::Praesentiert,
             Pose::Bounce,
+            Pose::Anstellen,
+            Pose::Dash,
+            Pose::Verschnaufen,
+            Pose::Zahlen,
+            Pose::Stun,
+            Pose::Verbeugen,
+            Pose::Hang,
+            Pose::Flutter,
         ]
         .into_iter()
         .map(|p| pose_anim(p).0)
@@ -2089,6 +2139,50 @@ mod tests {
         assert_eq!((w1, w2), (Some(WHITE), Some(WHITE)), "flashes");
         let (_, _, w1, _) = marks(Pose::Fotostopp { flash: false }, 0);
         assert_eq!(w1, Some(SLATE_DARK));
+    }
+
+    #[test]
+    fn the_grey_box_oberkellner_shows_his_tray_up_or_lowered() {
+        use jnr_core::Pose;
+        // A 16×36 box at (100, 100); facing left or right.
+        let tray = |pose: Pose, left: bool| {
+            let mut fb = Framebuffer::new();
+            draw_tray_marks(&mut fb, 100, 100, 16, pose, left);
+            fb
+        };
+        // Tray up: an `i` line on the box's top, 2 px wider on each side.
+        for pose in [
+            Pose::Anstellen,
+            Pose::Telegraph,
+            Pose::Dash,
+            Pose::Zahlen,
+            Pose::Stun,
+        ] {
+            let fb = tray(pose, true);
+            for x in 98..118 {
+                assert_eq!(fb.get(x, 100), Some(SILVER_LIGHT), "{pose:?} x {x}");
+            }
+            assert_ne!(fb.get(98, 115), Some(SILVER_LIGHT));
+        }
+        // The breather: lowered to his front side, from his middle down.
+        let fb = tray(Pose::Verschnaufen, true);
+        assert_ne!(fb.get(105, 100), Some(SILVER_LIGHT), "no tray on top");
+        assert_eq!(fb.get(98, 115), Some(SILVER_LIGHT), "facing left");
+        assert_eq!(fb.get(99, 124), Some(SILVER_LIGHT));
+        let fb = tray(Pose::Verschnaufen, false);
+        assert_eq!(fb.get(116, 115), Some(SILVER_LIGHT), "facing right");
+        // Waiting (the tray is on the counter) and bowing: none.
+        for pose in [Pose::Idle, Pose::Verbeugen] {
+            let fb = tray(pose, true);
+            assert_ne!(fb.get(105, 100), Some(SILVER_LIGHT), "{pose:?}");
+            assert_ne!(fb.get(98, 115), Some(SILVER_LIGHT), "{pose:?}");
+        }
+        assert_eq!(
+            grey_box_colour(EntityKind::Enemy(EnemyKind::Oberkellner)),
+            SLATE_DARK
+        );
+        assert_eq!(grey_box_colour(EntityKind::Rechnung), WHITE);
+        assert_eq!(Layer::of(EntityKind::Rechnung), Layer::Enemies);
     }
 
     /// A grey-box level with `marks` (row, col, legend char) on a 20x10

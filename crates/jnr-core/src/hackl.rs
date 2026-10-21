@@ -18,7 +18,10 @@
 //! - an immune one (the Fiaker) → [`AxeHit::Bounce`] (the axe is gone,
 //!   nothing else);
 //! - swarms, projectiles, items, spawners → [`AxeHit::Pass`] (flies on);
-//! - the falling Stein → [`AxeHit::Shatter`] (both gone, 50 points).
+//! - the falling Stein → [`AxeHit::Shatter`] (both gone, 50 points);
+//! - the Oberkellner by state (D-106): tray up → [`AxeHit::Bounce`], in his
+//!   breather → [`AxeHit::Hit`] (one hit, like a stomp), otherwise (wait,
+//!   intro, stun, done) harmless → [`AxeHit::Pass`]; his bills → `Pass`.
 //!
 //! `Game::axe_hits` removes the axe and applies every hit through
 //! `Game::defeat_by_projectile` / `enemies::hit_by_projectile`, which act on
@@ -53,6 +56,9 @@ pub enum AxeHit {
     Bounce,
     /// Both are destroyed for `hackl.rock_points` (the falling Stein).
     Shatter,
+    /// The target takes one hit, like a stomp (the Oberkellner in his
+    /// breather, D-106); the axe is gone.
+    Hit,
 }
 
 impl EnemyKind {
@@ -83,7 +89,9 @@ impl EnemyKind {
             | EnemyKind::Regattaboot
             | EnemyKind::Auto
             // The tray (D-105).
-            | EnemyKind::Kellner => AxeHit::Bounce,
+            | EnemyKind::Kellner
+            // His tray (D-106); in his breather `Entity::axe_hit` says Hit.
+            | EnemyKind::Oberkellner => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }
@@ -97,6 +105,11 @@ impl Entity {
     pub fn axe_hit(&self) -> AxeHit {
         match self.kind {
             EntityKind::Enemy(_) if !self.harmful() => AxeHit::Pass,
+            EntityKind::Enemy(EnemyKind::Oberkellner)
+                if self.state == crate::enemies::state::oberkellner::BREATHE =>
+            {
+                AxeHit::Hit
+            }
             EntityKind::Enemy(kind) => kind.axe_hit(),
             EntityKind::Thrown
             | EntityKind::Note
@@ -123,7 +136,9 @@ impl Entity {
             | EntityKind::SteinDebris
             | EntityKind::Souvenirstand
             | EntityKind::SchneekugelScherben
-            | EntityKind::Ampel => AxeHit::Pass,
+            | EntityKind::Ampel
+            // Paper (D-106).
+            | EntityKind::Rechnung => AxeHit::Pass,
             EntityKind::Stein => AxeHit::Shatter,
         }
     }

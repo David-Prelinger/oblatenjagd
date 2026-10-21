@@ -34,6 +34,13 @@
 //!
 //! Signs (M5, [`crate::signlint`], E33, D-088): no placed Oblate
 //! overlaps a sign board's drawn rectangle (known findings only warn).
+//!
+//! The boss arena (M7, D-106, `jnr_core::enemies::arena_problems`): a
+//! level with an `oberkellner` has exactly one, in its last 20 columns on
+//! the arena floor; a 3-high solid refuge at each end, one flat solid
+//! floor between them with only air above it from row 8 (1-based);
+//! no other enemy, sign, platform, box or brick in the arena; every bill
+//! column (with its sway) over the floor.
 
 use std::path::Path;
 use std::process::ExitCode;
@@ -59,7 +66,10 @@ Commands:
               spawner niches 4-6 tiles above their ground, Durchkriechstein
               tunnel/mouth/exit; warns about climb shafts wider than 9
               columns (warnings never fail); no placed Oblate on a sign
-              board (face and frame as drawn, posts left out)
+              board (face and frame as drawn, posts left out); a level
+              with an oberkellner: his arena (last 20 columns: refuges,
+              flat floor, nothing above it, no other enemy/sign/box, bill
+              columns over the floor)
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -178,6 +188,8 @@ pub fn lint(
             .into_iter()
             .chain(jnr_core::platform::recovery_problems(level, tuning))
             .chain(jnr_core::enemies::reisebus_lane_problems(level, tuning))
+            // The Oberkellner's arena (D-106).
+            .chain(jnr_core::enemies::arena_problems(level, tuning))
             // No solid on a swim surface in the columns the scroll shows.
             .chain(jnr_core::swim::problems(level, scroll_columns(level)))
         {

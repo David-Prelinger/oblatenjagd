@@ -393,6 +393,7 @@ impl Game {
             globes: &[],
             stage_clock: self.stage_clock(),
             cars: &[],
+            bills: 0,
         };
         for e in &mut self.entities {
             let cosmetic = matches!(

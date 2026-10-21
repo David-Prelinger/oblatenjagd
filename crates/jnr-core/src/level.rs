@@ -286,11 +286,14 @@ pub enum SpawnKind {
     /// that never walks (the `still` machine, legal in real levels); the
     /// renderer draws the `wartender` look by spawn column, facing right.
     Wartender,
+    /// Enemy `oberkellner` (the boss of Stage 9 in his arena, the level's
+    /// last 20 columns, D-106; no fields).
+    Oberkellner,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 37] = [
+    pub const ALL: [SpawnKind; 38] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -328,6 +331,7 @@ impl SpawnKind {
         SpawnKind::GoalStollen,
         SpawnKind::Kellner,
         SpawnKind::Wartender,
+        SpawnKind::Oberkellner,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -371,6 +375,7 @@ impl SpawnKind {
             SpawnKind::GoalStollen => "goal_stollen",
             SpawnKind::Kellner => "kellner",
             SpawnKind::Wartender => "wartender",
+            SpawnKind::Oberkellner => "oberkellner",
         }
     }
 

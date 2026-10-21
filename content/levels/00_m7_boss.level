@@ -1,0 +1,56 @@
+# Grey-box test level for the Oberkellner (M7 task E46, D-106; not part
+# of the journey): the boss arena alone, 40 x 17, side camera with
+# camera_top = 92 (the bottom clamp: the camera never moves vertically,
+# D-104). Rows 0-6 are the café's ceiling, the floor's top is row 15
+# (rows 15-16). Columns are 0-based and mirror the last 28 columns of
+# 09_cafe_zauner (col + 100).
+#   0-19  the approach: start 2, an H-box (hackl) at 7 row 12 (3 up, so
+#         the Hackl replay can jump onto it), the checkpoint at 12, the
+#         M-box at 17 row 11 (4 up; its Mozartkugel rolls right, turns at
+#         the refuge and comes back), a 1-high step 18-19.
+#   20-39 the arena (the level's last 20 columns, D-106): the left refuge
+#         (3 high, rows 12-14) at 20-21, the floor 22-36 (15 tiles, nothing
+#         above it from row 7), the right refuge (the counter, 3 high) at
+#         37-39 with the goal at 38 on its top. The Oberkellner at 34
+#         (arena column 14), facing left. The arena locks when the camera
+#         reaches x 320, her centre at x >= 465 (column 29). The goal is
+#         the `goal_stollen` (D-107): its trigger is its own cell, armed
+#         once he is beaten.
+# Bills: round 2 at columns 24, 29, 34, round 3 at 23, 27, 31, 35 (arena
+# columns 4, 9, 14 / 3, 7, 11, 15), hanging in row 8.
+# Replays: tests/replays/m7_boss_*.replay.
+
+[meta]
+id = "m7_boss"
+time_limit = 300
+camera_top = 92
+
+[legend]
+"#" = "solid"
+"H" = { tile = "oblaten_box", contains = "hackl" }
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"C" = { entity = "checkpoint" }
+"K" = { entity = "oberkellner" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal_stollen" }
+
+[map]
+grid = '''
+########################################
+########################################
+########################################
+########################################
+########################################
+########################################
+########################################
+........................................
+........................................
+........................................
+........................................
+.................M....................G.
+.......H............##...............###
+....................##...............###
+..P.........C.....####............K..###
+########################################
+########################################
+'''

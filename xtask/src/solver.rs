@@ -20,7 +20,8 @@
 //! **Climb levels** (`[meta] camera = "climb"`, D-054): "furthest right"
 //! can't see progress inside a vertical shaft, so nodes are ranked by
 //! [`search_progress`]: x plus the height the feet gained above the start's feet
-//! (both in subpixels; side levels: x alone). The jump-window recovery
+//! (both in subpixels; side levels: x alone; a level with an Oberkellner
+//! adds his hits × the level's width + 1, D-106). The jump-window recovery
 //! then also requires the feet to be at most [`CLIMB_FEET_TOLERANCE_PX`]
 //! lower than the original route's at the checkpoint, so a missed jump
 //! in the shaft that lands on the plank below no longer counts as
@@ -309,11 +310,15 @@ pub fn scroll_frames(level: &Level, tuning: &Tuning) -> u32 {
 
 /// How far a state has come, in subpixels: the player's x; in climb levels
 /// (D-054) plus the height her feet gained above the player start's feet
-/// (negative below it). The search ranks by it.
+/// (negative below it); in a level with an Oberkellner plus his hits ×
+/// (the level's width + 1 subpixel), so one more hit outranks any x
+/// (D-106, the climb pattern). The search ranks by it.
 pub fn search_progress(game: &Game) -> i32 {
     let p = game.player();
+    let boss = i32::from(jnr_core::enemies::boss_hits(game.entities()).unwrap_or(0))
+        * (game.map().width_fx().raw() + 1);
     match game.level().meta.camera {
-        CameraMode::Side | CameraMode::Autoscroll => p.x.raw(),
+        CameraMode::Side | CameraMode::Autoscroll => p.x.raw() + boss,
         CameraMode::Climb => {
             let start = game.level().player_start();
             let start_feet = jnr_core::Fx::from_px((start.row + 1) * jnr_core::level::TILE_PX);
@@ -2789,6 +2794,24 @@ mod tests {
         let g = Game::new(&ok, &t, 1);
         let x = g.player().x.to_px();
         assert!(recovers(g, Goal { x, feet: None }, 0, threads));
+    }
+
+    #[test]
+    fn a_hit_on_the_oberkellner_outranks_any_x() {
+        let t = tuning();
+        let level = content::find_level(&root(), "m7_boss").unwrap();
+        let text = std::fs::read_to_string(root().join("tests/replays/m7_boss_win_normal.replay"))
+            .unwrap();
+        let replay = jnr_core::Replay::parse(&text).unwrap();
+        let mut g = Game::new(&level, &t, 1);
+        assert_eq!(search_progress(&g), g.player().x.raw(), "no hit yet");
+        // The replay's first hit is at frame 579.
+        for input in replay.frames().take(600) {
+            g.step(input);
+        }
+        let width = g.map().width_fx().raw();
+        assert_eq!(search_progress(&g), g.player().x.raw() + width + 1);
+        assert!(search_progress(&g) > width, "beyond any x without a hit");
     }
 
     fn climb_test_level() -> Level {

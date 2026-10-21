@@ -1,0 +1,33 @@
+# A volley dodged on the floor (D-106: bills only from round 2, over the
+# floor, >= 4 columns apart, lanes >= 2 tiles wide). As m7_boss_win_normal
+# up to hit 1 (frame 579); in round 2 he breathes at the right wall
+# (764-823, missed), so the volley comes (824): three bills hang at arena
+# columns 4, 9, 14 (24, 29, 34), then flutter down. Resi has stepped off
+# the refuge and stands in the lane between the first two (x 438-449);
+# they sway past her to the floor and are gone (by 959), no hurt. Then
+# she walks back to the refuge's face and jumps onto it before his dash
+# left arrives (dash from 995, breather at 1084).
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt boss_hits=1 score=1000 player_y<=170 state=playing
+---
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 113
+R 75
+- 100
+L 60
+LJ 20
+L 40
