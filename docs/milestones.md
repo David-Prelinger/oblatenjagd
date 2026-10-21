@@ -308,7 +308,7 @@ Planning
 
 Engine
 - [x] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
-- [ ] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
+- [x] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
 - [ ] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
 - [ ] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
 - [ ] E58 Embedding through `jnr-assets/build.rs`; core `Event::Bounced` (output only, no hash change); the pure cue mapper (events + state diff → cues, exhaustive per `Event`) with D-113's voice rules; level `music` ids for the 9 journey levels with a `levels lint` check; cue-log goldens from replays
