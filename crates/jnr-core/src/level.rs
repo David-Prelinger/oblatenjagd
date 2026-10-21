@@ -61,7 +61,10 @@ impl TileKind {
     /// `see_wasser` (surface), `see_wasser_tief` (deep) and `steg_pfahl`
     /// (water with a pier post) are swim water (D-076). M6: the Bürglstein
     /// walkway `felssteg` is one-way, the gravel path `kies` solid, the side
-    /// street's mouth `einfahrt_bg` decorative.
+    /// street's mouth `einfahrt_bg` decorative. M7: the café's marble floor
+    /// `marmor` (and `marmor_punkt`, the same with a queue floor dot), the
+    /// stucco ceiling `stuck`, the cake display `vitrine` and the counter
+    /// `theke` are solid, the chandelier ring `luster` one-way.
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
@@ -72,11 +75,11 @@ impl TileKind {
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
             | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
-            | "strasse" | "seegrund" | "kai" | "poller" | "kies" => Some(TileKind::Solid),
+            | "strasse" | "seegrund" | "kai" | "poller" | "kies" | "marmor" | "marmor_punkt"
+            | "stuck" | "vitrine" | "theke" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" | "felssteg" => {
-                Some(TileKind::OneWay)
-            }
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" | "felssteg"
+            | "luster" => Some(TileKind::OneWay),
             "hazard" => Some(TileKind::Hazard),
             "salzach_water"
             | "salzach_water_deep"
@@ -273,6 +276,16 @@ pub enum SpawnKind {
     /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
     /// salute on the stage clock, D-096).
     Offizier,
+    /// The finale's goal (`goal_stollen`, D-107): the Zaunerstollen under
+    /// its glass bell; the trigger is its own cell, armed once no
+    /// undefeated Oberkellner is in the level.
+    GoalStollen,
+    /// Enemy `kellner` (a fast walker with a tray that bounces, D-105).
+    Kellner,
+    /// `wartender` (a queuer, D-105): in the simulation a Selfie-Tourist
+    /// that never walks (the `still` machine, legal in real levels); the
+    /// renderer draws the `wartender` look by spawn column, facing right.
+    Wartender,
     /// Enemy `oberkellner` (the boss of Stage 9 in his arena, the level's
     /// last 20 columns, D-106; no fields).
     Oberkellner,
@@ -280,7 +293,7 @@ pub enum SpawnKind {
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 35] = [
+    pub const ALL: [SpawnKind; 38] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -315,6 +328,9 @@ impl SpawnKind {
         SpawnKind::Kurgast,
         SpawnKind::Fensterladen,
         SpawnKind::Offizier,
+        SpawnKind::GoalStollen,
+        SpawnKind::Kellner,
+        SpawnKind::Wartender,
         SpawnKind::Oberkellner,
     ];
 
@@ -356,8 +372,16 @@ impl SpawnKind {
             SpawnKind::Kurgast => "kurgast",
             SpawnKind::Fensterladen => "fensterladen",
             SpawnKind::Offizier => "offizier",
+            SpawnKind::GoalStollen => "goal_stollen",
+            SpawnKind::Kellner => "kellner",
+            SpawnKind::Wartender => "wartender",
             SpawnKind::Oberkellner => "oberkellner",
         }
+    }
+
+    /// True for every goal kind (`goal`/`goal_maibaum`, `goal_stollen`).
+    pub const fn is_goal(self) -> bool {
+        matches!(self, SpawnKind::Goal | SpawnKind::GoalStollen)
     }
 
     /// Spawn kind for a legend name; `None` if unknown.
@@ -698,6 +722,10 @@ pub const PROP_SPRITES: &[&str] = &[
     "trafik",
     "zauner_fassade",
     "warteschlange",
+    "zauner_tuer",
+    "garderobe",
+    "kuchentheke",
+    "luster_deko",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -1748,6 +1776,12 @@ P.sSC.tfG
             assert_eq!(SpawnKind::from_name(k.name()), Some(k));
         }
         assert_eq!(SpawnKind::from_name("goal_maibaum"), Some(SpawnKind::Goal));
+        assert_eq!(
+            SpawnKind::from_name("goal_stollen"),
+            Some(SpawnKind::GoalStollen)
+        );
+        assert!(SpawnKind::GoalStollen.is_goal() && SpawnKind::Goal.is_goal());
+        assert!(!SpawnKind::Checkpoint.is_goal());
         for s in [SignStyle::Street, SignStyle::Bus, SignStyle::Ortsende] {
             assert_eq!(SignStyle::from_name(s.name()), Some(s));
         }
@@ -1953,6 +1987,30 @@ P.sSC.tfG
             "{ entity = \"goal\", still = true }",
         );
         assert!(err(&on_fiaker).contains("field \"still\""));
+    }
+
+    #[test]
+    fn a_wartender_and_a_kellner_take_no_fields() {
+        // D-105: `wartender` and `kellner` are plain names; a Wartender is
+        // still by its kind, not by a `still` field.
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"t\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pt--..")
+        };
+        for (name, kind) in [
+            ("wartender", SpawnKind::Wartender),
+            ("kellner", SpawnKind::Kellner),
+        ] {
+            let l = Level::parse(&with(&format!("{{ entity = \"{name}\" }}"))).unwrap();
+            let s = l.entities.iter().find(|e| e.kind == kind).unwrap();
+            assert!(!s.still, "{name}");
+            let fielded = with(&format!("{{ entity = \"{name}\", still = true }}"));
+            assert!(err(&fielded).contains("field \"still\""), "{name}");
+        }
     }
 
     #[test]
@@ -2326,6 +2384,59 @@ P.sSC.tfG
             "zauner_fassade",
             "warteschlange",
         ] {
+            assert!(PROP_SPRITES.contains(&prop), "{prop}");
+        }
+    }
+
+    #[test]
+    fn m7_tiles_and_props_parse_with_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("marmor", Solid),
+            ("marmor_punkt", Solid),
+            ("stuck", Solid),
+            ("vitrine", Solid),
+            ("theke", Solid),
+            ("luster", OneWay),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        // A level using the six tiles and M7 props on both layers.
+        let text = SMALL
+            .replace(
+                "\"G\" = { entity = \"goal\" }",
+                "\"G\" = { entity = \"goal\" }\n\"m\" = \"marmor\"\n\"d\" = \"marmor_punkt\"\n\"s\" = \"stuck\"\n\"v\" = \"vitrine\"\n\"t\" = \"theke\"\n\"l\" = \"luster\"\n\"z\" = { entity = \"prop\", sprite = \"zauner_tuer\", layer = \"back\" }\n\"k\" = { entity = \"prop\", sprite = \"luster_deko\", layer = \"back\" }\n\"g\" = { entity = \"prop\", sprite = \"garderobe\" }",
+            )
+            .replace("......G", "szgk.vG")
+            .replace(".P.--..", ".P.ll.t")
+            .replace("###^###", "mmd^###");
+        let l = Level::parse(&text).unwrap();
+        let named = |col, row| {
+            let t = l.tile(col, row).unwrap();
+            (l.tile_names[t.name as usize].clone(), t.kind)
+        };
+        assert_eq!(named(0, 0), ("stuck".to_string(), Solid));
+        assert_eq!(named(5, 0), ("vitrine".to_string(), Solid));
+        assert_eq!(named(3, 1), ("luster".to_string(), OneWay));
+        assert_eq!(named(4, 1), ("luster".to_string(), OneWay));
+        assert_eq!(named(6, 1), ("theke".to_string(), Solid));
+        assert_eq!(named(0, 2), ("marmor".to_string(), Solid));
+        assert_eq!(named(2, 2), ("marmor_punkt".to_string(), Solid));
+        let props: Vec<(&str, PropLayer, i32)> = l
+            .entities
+            .iter()
+            .filter(|e| e.kind == SpawnKind::Prop)
+            .map(|e| (e.sprite.as_deref().unwrap(), e.layer, e.col))
+            .collect();
+        assert_eq!(
+            props,
+            [
+                ("zauner_tuer", PropLayer::Back, 1),
+                ("garderobe", PropLayer::Front, 2),
+                ("luster_deko", PropLayer::Back, 3)
+            ]
+        );
+        for prop in ["zauner_tuer", "garderobe", "kuchentheke", "luster_deko"] {
             assert!(PROP_SPRITES.contains(&prop), "{prop}");
         }
     }

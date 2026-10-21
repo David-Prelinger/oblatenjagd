@@ -9,11 +9,11 @@
 # 951 (right wall) and 1154 (left wall), 1000 + 1000 + 5000; right after
 # the first hit a second axe flies through the stunned waiter (735, no
 # hit). Every breather is hit, so no volley comes. Then the counter: the
-# plain goal (1343).
+# armed goal_stollen (1343, 10 000).
 level  = m7_boss
 seed   = 1
 source = handwritten
-expect = complete frames=1343..1343 deaths=0 no_event=Hurt event=AxeHit boss_hits=3 power=hackl score=8100
+expect = complete frames=1343..1343 deaths=0 no_event=Hurt event=AxeHit boss_hits=3 power=hackl score=18000
 ---
 R 54
 - 30

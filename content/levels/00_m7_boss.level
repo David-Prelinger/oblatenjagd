@@ -13,12 +13,11 @@
 #         above it from row 7), the right refuge (the counter, 3 high) at
 #         37-39 with the goal at 38 on its top. The Oberkellner at 34
 #         (arena column 14), facing left. The arena locks when the camera
-#         reaches x 320, her centre at x >= 465 (column 29).
+#         reaches x 320, her centre at x >= 465 (column 29). The goal is
+#         the `goal_stollen` (D-107): its trigger is its own cell, armed
+#         once he is beaten.
 # Bills: round 2 at columns 24, 29, 34, round 3 at 23, 27, 31, 35 (arena
 # columns 4, 9, 14 / 3, 7, 11, 15), hanging in row 8.
-# Until E47 the goal is a plain `goal` (its trigger is the whole column 38
-# above the counter): the replays use only the left refuge and touch the
-# goal after the fight.
 # Replays: tests/replays/m7_boss_*.replay.
 
 [meta]
@@ -33,7 +32,7 @@ camera_top = 92
 "C" = { entity = "checkpoint" }
 "K" = { entity = "oberkellner" }
 "P" = { entity = "player_start" }
-"G" = { entity = "goal" }
+"G" = { entity = "goal_stollen" }
 
 [map]
 grid = '''

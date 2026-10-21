@@ -603,6 +603,56 @@ fn the_third_hit_gives_5000_bitte_sehr_removes_the_bills_and_he_bows() {
     assert_eq!(g.hit_oberkellner(boss_index(&g)), Vec::new());
 }
 
+/// The player standing on the counter in the `goal_stollen`'s cell (38,
+/// row 11: x 608, feet 192).
+fn on_the_bell(g: &mut Game) {
+    g.player.x = Fx::from_px(610);
+    g.player.y = Fx::from_px(192) - g.player.h;
+    g.player.vx = Fx::ZERO;
+    g.player.vy = Fx::ZERO;
+    g.player.on_ground = true;
+}
+
+#[test]
+fn the_bell_is_armed_only_once_he_is_beaten() {
+    // E47's stub note: an unarmed touch raises no `LevelComplete`.
+    let mut g = locked();
+    assert!(!g.goal_armed(0));
+    for _ in 0..30 {
+        on_the_bell(&mut g);
+        let events = tick(&mut g, "-");
+        assert!(!events.contains(&Event::LevelComplete));
+        assert_eq!(g.mode(), Mode::Playing);
+    }
+    // Beaten (DONE): the next touch completes the stage.
+    let b = boss_mut(&mut g);
+    b.state = st::DONE;
+    b.hits = 3;
+    assert!(g.goal_armed(0));
+    on_the_bell(&mut g);
+    let events = tick(&mut g, "-");
+    assert!(events.contains(&Event::LevelComplete), "{events:?}");
+}
+
+#[test]
+fn an_unarmed_bell_does_not_suppress_a_hurt() {
+    // E47's stub note: a hurt in the frame she touches the unarmed bell
+    // still happens (only an armed goal wins over a hit, D-027).
+    let t = tuning();
+    let mut g = locked();
+    on_the_bell(&mut g);
+    let mut bill = crate::enemies::new_bill(38, &t);
+    bill.state = rechnung::FALL;
+    bill.base_x = g.player.x;
+    bill.x = g.player.x;
+    bill.y = g.player.y;
+    g.entities.push(bill);
+    g.player.invulnerable = 0;
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Died), "{events:?}");
+    assert!(!events.contains(&Event::LevelComplete));
+}
+
 #[test]
 fn boss_undefeated_is_false_without_an_oberkellner() {
     let g = Game::new(&flat(30), &tuning(), 1);

@@ -1,0 +1,25 @@
+# M7 flow (D-107, E47): the finale and the whole ending without a single
+# input after the clear. The grey box `m7_finale` stands on the journey's
+# last station (Café Zauner), so its clear in the real flow (start = title)
+# runs the ending. Title → START (21) → intro → play from 171; three
+# Oblaten, a jump onto the counter touches the armed goal_stollen in the
+# air (464: 10 000 + „Zaunerstollen!"), she lands (468), the Serve (90
+# frames, to 558), the tally (56 s left, to 614), the clear panel (180),
+# then the ending: Map 794, Scene 1034, Bill 1394, Credits 1994 (6 pages
+# of 180), Ende 3074, and after its 600 frames the title (3674) with the
+# run reset and the „durchgespielt" mark.
+level  = m7_finale
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl bad_ischl m7_finale
+expect = complete frames=464..464 deaths=0 event=OblateCollected
+expect = state=title cleared=true stage=cafe_zauner score=0 lives=3 oblaten=0 power=normal
+---
+- 20
+S 1       # frame 21: START → intro
+- 150     # play from 171
+R 260
+RJ 20     # onto the counter
+R 30      # goal_stollen at 464
+- 3300    # Serve, tally, clear, the whole ending, the title (3674)

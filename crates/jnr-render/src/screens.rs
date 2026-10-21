@@ -25,6 +25,10 @@ pub const TITLE_NAME_KEY: &str = "title.name";
 pub const SUBTITLE_KEY: &str = "title.subtitle";
 /// `title.press_start`.
 pub const PRESS_START_KEY: &str = "title.press_start";
+/// `title.cleared` („Durchgespielt! Mahlzeit!", the marked title, D-107).
+pub const CLEARED_KEY: &str = "title.cleared";
+/// `title.press_start_again` (the marked title's prompt, D-107).
+pub const PRESS_START_AGAIN_KEY: &str = "title.press_start_again";
 /// `ui.pause`.
 pub const PAUSE_KEY: &str = "ui.pause";
 /// `ui.game_over`.
@@ -51,10 +55,60 @@ pub const TITLE_LOGO_SPRITE: &str = "title_logo";
 /// Every text key the engine uses by name (not counting level signs, which
 /// `cargo xtask levels lint` checks). Per-stage keys are listed for the
 /// fallback stage; the route map's keys are [`crate::map`]'s.
-pub const TEXT_KEYS: [&str; 40] = [
+pub const TEXT_KEYS: [&str; 86] = [
     TITLE_NAME_KEY,
     SUBTITLE_KEY,
     PRESS_START_KEY,
+    CLEARED_KEY,
+    PRESS_START_AGAIN_KEY,
+    match Popup::Stollen.text_key() {
+        Some(k) => k,
+        None => "",
+    },
+    crate::map::ENDING_TITLE_KEY,
+    crate::map::ENDING_ROUTE_KEY,
+    crate::map::ENDING_NOTE_KEY,
+    crate::ending::SCENE_KEYS[0],
+    crate::ending::SCENE_KEYS[1],
+    crate::ending::SCENE_KEYS[2],
+    crate::ending::BILL_TITLE_KEY,
+    crate::ending::BILL_KEYS[0],
+    crate::ending::BILL_KEYS[1],
+    crate::ending::BILL_KEYS[2],
+    crate::ending::BILL_KEYS[3],
+    crate::ending::BILL_KEYS[4],
+    crate::ending::END_KEYS[0],
+    crate::ending::END_KEYS[1],
+    crate::ending::END_KEYS[2],
+    // The credits pages as shipped (`ending::credits_lines` looks every
+    // `credits.pageN.{title,line1..4}` up and skips the missing ones).
+    "credits.page1.title",
+    "credits.page1.line1",
+    "credits.page1.line2",
+    "credits.page2.title",
+    "credits.page2.line1",
+    "credits.page2.line2",
+    "credits.page2.line3",
+    "credits.page2.line4",
+    "credits.page3.title",
+    "credits.page3.line1",
+    "credits.page3.line2",
+    "credits.page3.line3",
+    "credits.page3.line4",
+    "credits.page4.title",
+    "credits.page4.line1",
+    "credits.page4.line2",
+    "credits.page4.line3",
+    "credits.page4.line4",
+    "credits.page5.title",
+    "credits.page5.line1",
+    "credits.page5.line2",
+    "credits.page5.line3",
+    "credits.page5.line4",
+    "credits.page6.line1",
+    "credits.page6.line2",
+    "credits.page6.line3",
+    "credits.page6.line4",
     hud::LABEL_KEYS[0],
     hud::LABEL_KEYS[1],
     hud::LABEL_KEYS[2],
@@ -117,6 +171,10 @@ pub const TEXT_KEYS: [&str; 40] = [
         Some(k) => k,
         None => "",
     },
+    match Popup::KommGleich.text_key() {
+        Some(k) => k,
+        None => "",
+    },
     crate::map::NEXT_STOP_KEY,
     crate::map::CONTINUE_KEY,
     crate::map::STATION_KEYS[0],
@@ -138,6 +196,11 @@ const TITLE_NAME_Y: i32 = 20;
 const SUBTITLE_Y: i32 = 60;
 /// Top of the title prompt line (also the band `cargo xtask wasm-smoke` watches).
 pub const PRESS_START_Y: i32 = 128;
+/// The marked title's line (D-107: y ≈ 100).
+pub const CLEARED_Y: i32 = 100;
+/// The served plate on the marked title: this far right of Resi's centre,
+/// on her ground line.
+const TELLER_DX: i32 = 16;
 const INTRO_TITLE_Y: i32 = 64;
 const INTRO_TAGLINE_Y: i32 = 80;
 const INTRO_LIVES_Y: i32 = 112;
@@ -201,10 +264,26 @@ pub fn draw_title(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, frames
         ),
     }
     centred(ctx, fb, &ctx.texts().get(SUBTITLE_KEY), SUBTITLE_Y, WHITE);
+    // The session's „durchgespielt" mark (D-107): the plate at Resi's
+    // feet, the line at y 100 and the other prompt.
+    let prompt_key = if game.cleared() {
+        let p = game.player();
+        let cam = game.camera();
+        let feet_x = (p.x + p.w.div_int(2)).to_px() - cam.x;
+        let feet_y = (p.y + p.h).to_px() - cam.y;
+        scene::draw_teller(ctx, fb, (feet_x + TELLER_DX, feet_y), 0);
+        let text = ctx.texts().get(CLEARED_KEY);
+        let x = (WIDTH as i32 - ctx.font().measure(&text)) / 2;
+        ctx.font()
+            .draw_text_outlined(fb, ctx.atlas(), &text, x, CLEARED_Y, MOZART_YELLOW, OUTLINE);
+        PRESS_START_AGAIN_KEY
+    } else {
+        PRESS_START_KEY
+    };
     if blink_on(u32::from(frames)) {
         // Full `k` outline, not the drop shadow: the prompt crosses the
         // cream Dom façade of the Salzburg rooftops (D-035).
-        let prompt = ctx.texts().get(PRESS_START_KEY);
+        let prompt = ctx.texts().get(prompt_key);
         let x = (WIDTH as i32 - ctx.font().measure(&prompt)) / 2;
         ctx.font()
             .draw_text_outlined(fb, ctx.atlas(), &prompt, x, PRESS_START_Y, WHITE, OUTLINE);

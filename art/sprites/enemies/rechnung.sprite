@@ -1,0 +1,66 @@
+# Rechnung (M7, D-106): the Oberkellner's bill ("Zahlen, bitte!").
+# A white w slip with m item lines, a short r total and a torn zigzag
+# bottom, i shade on the right; k outline. flutter: tilting left/right while
+# it falls. hang: the 30-frame hang at the ceiling (the volley's telegraph),
+# a slow wobble. Built with a scratch script (1 px shear tilts +
+# automatic k outline), frozen to text here.
+sprite = rechnung
+size   = 12x12
+origin = 6,12
+hitbox = 2,2,8,8
+mirror = none
+anim   = flutter frames=2 ticks=8 loop
+anim   = hang    frames=2 ticks=12 loop
+---
+frame flutter 0
+............
+..kkkkkk....
+.kwwwwwwk...
+.kwmmmwwk...
+.kwwwwwwk...
+..kwmmmmwk..
+..kwwwwwik..
+..kwmmwwik..
+...kwwrrrik.
+...kwwrrrik.
+...kwkwkwk..
+....k.k.k...
+frame flutter 1
+............
+....kkkkkk..
+...kwwwwwwk.
+...kwmmmwwk.
+...kwwwwwwk.
+..kwmmmmwk..
+..kwwwwwik..
+..kwmmwwik..
+.kwwrrrik...
+.kwwrrrik...
+.kwkwkwk....
+..k.k.k.....
+frame hang 0
+............
+...kkkkkk...
+..kwwwwwwk..
+..kwmmmwwk..
+..kwwwwwwk..
+..kwmmmmwk..
+..kwwwwwik..
+..kwmmwwik..
+..kwwrrrik..
+..kwwrrrik..
+..kwkwkwk...
+...k.k.k....
+frame hang 1
+............
+...kkkkkk...
+..kwwwwwwk..
+..kwmmmwwk..
+..kwwwwwwk..
+..kwmmmmwk..
+..kwwwwwik..
+..kwmmwwik..
+...kwwrrrik.
+...kwwrrrik.
+...kwkwkwk..
+....k.k.k...

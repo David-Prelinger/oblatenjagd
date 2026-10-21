@@ -6,11 +6,11 @@
 # she jumps up out of him in his breather and comes down on his head
 # (hit 1 at 737), lands beside the stunned waiter and hops onto the
 # refuge. Hits 2 and 3 as in m7_boss_win_normal (1273, 1751), then the
-# counter: the plain goal (2111).
+# counter: the armed goal_stollen (2111, 10 000).
 level  = m7_boss
 seed   = 1
 source = handwritten
-expect = complete frames=2111..2111 deaths=0 event=PowerUp event=Hurt boss_hits=3 power=normal score=8100
+expect = complete frames=2111..2111 deaths=0 event=PowerUp event=Hurt boss_hits=3 power=normal score=18000
 ---
 R 150
 RJ 20

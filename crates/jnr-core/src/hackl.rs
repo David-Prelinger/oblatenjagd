@@ -88,6 +88,8 @@ impl EnemyKind {
             | EnemyKind::Reisebus
             | EnemyKind::Regattaboot
             | EnemyKind::Auto
+            // The tray (D-105).
+            | EnemyKind::Kellner
             // His tray (D-106); in his breather `Entity::axe_hit` says Hit.
             | EnemyKind::Oberkellner => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,

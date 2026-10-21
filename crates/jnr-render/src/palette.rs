@@ -27,6 +27,10 @@ pub const SKY_BLUE: u32 = 0x64aee6ff;
 pub const NAVY: u32 = 0x2a3878ff;
 /// `i` silver_light (the stage tagline).
 pub const SILVER_LIGHT: u32 = 0xa2abbeff;
+/// `d` slate_dark (the bill's labels on `ending_zettel`, D-107).
+pub const SLATE_DARK: u32 = 0x343a50ff;
+/// `R` wine_dark (the bill's title and thanks on `ending_zettel`, D-107).
+pub const WINE_DARK: u32 = 0x8a2340ff;
 
 #[cfg(test)]
 mod tests {
@@ -58,6 +62,8 @@ mod tests {
             ('B', NAVY),
             ('S', SKY_BLUE),
             ('i', SILVER_LIGHT),
+            ('d', SLATE_DARK),
+            ('R', WINE_DARK),
         ] {
             assert_eq!(value, palette_colour(src, ch), "palette `{ch}`");
         }

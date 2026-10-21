@@ -293,17 +293,16 @@ fn playing_start_and_lone_levels_keep_the_m1_ending() {
 }
 
 #[test]
-fn the_last_station_has_no_map() {
+fn the_last_station_has_no_map_but_the_ending() {
     let levels: Vec<Level> = (0..9).map(|i| stage(&format!("s{i}"), 300)).collect();
     let mut g = run(levels, 8, Start::Title);
     assert_eq!(g.station(), Some(8));
     start_playing(&mut g);
     until(&mut g, "R", 600, |g| g.mode() == Mode::StageClear);
-    until(&mut g, "-", 2000, |g| {
-        g.stage_clear()
-            .is_none_or(|c| c.phase == ClearPhase::ToBeContinued)
-    });
-    assert_eq!(g.mode(), Mode::StageClear, "no map after the finale");
+    until(&mut g, "-", 2000, |g| g.mode() != Mode::StageClear);
+    // D-107: no map and no „Fortsetzung folgt …" after the last station.
+    assert_eq!(g.mode(), Mode::Ending);
+    assert!(g.route_map().is_none() && g.stage_clear().is_none());
 }
 
 #[test]
@@ -324,12 +323,12 @@ fn after_the_finale_the_title_starts_the_route_again() {
     assert_eq!(g.station(), Some(8));
     hold(&mut g, "-", intro_frames());
     clear_stage(&mut g);
-    assert!(
-        matches!(g.mode(), Mode::Title { .. }),
-        "no map after the finale"
-    );
+    assert_eq!(g.mode(), Mode::Ending, "no map after the finale (D-107)");
+    until(&mut g, "-", 4000, |g| g.mode() != Mode::Ending);
+    assert!(matches!(g.mode(), Mode::Title { .. }));
     assert_eq!((g.station(), g.level().meta.id.as_str()), (Some(0), "s0"));
     assert_eq!(g.score(), 0);
+    assert!(g.cleared());
 }
 
 #[test]

@@ -150,6 +150,11 @@ pub mod state {
     /// scores nothing.
     pub const RESTED: u8 = 3;
 
+    // Kellner (D-105): walking is `WALK` (0).
+    /// Kellner: walking just after a tray bounce (`count` = frames since
+    /// it; the `bounce` pose, looks only).
+    pub const TRAY_BOUNCE: u8 = 1;
+
     /// Defeated: squished in place.
     pub const SQUISHED: u8 = 0;
     /// Defeated: tumbling down off the screen.
@@ -271,6 +276,8 @@ pub enum Pose {
     Liegen,
     /// Kurgast's wake telegraph in the chair (`wake`).
     Wake,
+    /// Kellner `bounce` (the tray dipped after a bounce, D-105).
+    Bounce,
     /// Oberkellner `anstellen` (the intro: „Hinten anstellen!"; waiting
     /// at his spawn he is `Idle`, telegraphing `Telegraph`).
     Anstellen,
@@ -378,6 +385,10 @@ impl Entity {
             EntityKind::Enemy(EnemyKind::Kurgast) => match self.state {
                 state::LIE => Pose::Liegen,
                 state::WAKE => Pose::Wake,
+                _ => Pose::Walk,
+            },
+            EntityKind::Enemy(EnemyKind::Kellner) => match self.state {
+                state::TRAY_BOUNCE => Pose::Bounce,
                 _ => Pose::Walk,
             },
             EntityKind::Enemy(EnemyKind::Offizier) => match self.state {
@@ -567,6 +578,10 @@ pub(crate) fn update_enemy(e: &mut Entity, kind: EnemyKind, ctx: &UpdateCtx) -> 
         }
         EnemyKind::Offizier => {
             update_offizier(e, ctx);
+            None
+        }
+        EnemyKind::Kellner => {
+            update_kellner(e, ctx);
             None
         }
         EnemyKind::Oberkellner => update_oberkellner(e, ctx),
@@ -1183,6 +1198,7 @@ fn on_foot(e: &Entity) -> bool {
         // Walking, or lying in his deck chair: walkers turn at it (D-095).
         | EntityKind::Enemy(EnemyKind::Kurgast)
         | EntityKind::Enemy(EnemyKind::Offizier)
+        | EntityKind::Enemy(EnemyKind::Kellner)
         // In every state (no walker shares his arena: the arena lint).
         | EntityKind::Enemy(EnemyKind::Oberkellner) => true,
         EntityKind::Enemy(EnemyKind::Gams) => e.state != state::HOP,
@@ -1194,7 +1210,7 @@ fn on_foot(e: &Entity) -> bool {
     }
 }
 
-/// Selfie-Tourists, Nordic-Walkers, Pilger, Offiziere and walking
+/// Selfie-Tourists, Nordic-Walkers, Pilger, Offiziere, Kellner and walking
 /// Kurgäste that overlap another enemy on foot turn away from it (after
 /// everything moved; the direction is set, not flipped, so two that
 /// overlap for several frames don't flip back and forth). A lying Kurgast
@@ -1209,12 +1225,14 @@ pub(crate) fn turn_at_enemies(entities: &mut [Entity], t: &Tuning) {
                 EnemyKind::SelfieTourist
                 | EnemyKind::NordicWalker
                 | EnemyKind::Pilger
-                | EnemyKind::Offizier,
+                | EnemyKind::Offizier
+                | EnemyKind::Kellner,
             ) => true,
             EntityKind::Enemy(EnemyKind::Kurgast) => !in_chair(&a),
             _ => false,
         };
-        // `dir == 0`: a `still` tourist (test levels) never turns.
+        // `dir == 0`: a `still` tourist (test levels) or a Wartender
+        // (D-105) never turns.
         if !a.active || a.removed || a.dir == 0 || !walks {
             continue;
         }
@@ -1247,8 +1265,9 @@ fn turn_box(e: &Entity, t: &Tuning) -> Aabb {
 }
 
 /// A block at (`col`, `row`) was bumped from below: every stompable enemy
-/// standing on it (feet exactly on its top, overlapping the cell) is
-/// knocked off (defeated, tumbling), a Kurgast also from his deck chair.
+/// and every Kellner (D-105: his tray only stops stomps) standing on it
+/// (feet exactly on its top, overlapping the cell) is knocked off
+/// (defeated, tumbling), a Kurgast also from his deck chair.
 /// Rolling items standing on it hop. Returns the knocked enemies' kind,
 /// feet (for points and popups) and whether they score
 /// ([`scores_on_defeat`]).
@@ -1266,7 +1285,9 @@ pub(crate) fn knock_off_block(
             continue;
         }
         match e.kind {
-            EntityKind::Enemy(kind) if kind.stompable() && on_foot(e) => {
+            EntityKind::Enemy(kind)
+                if (kind.stompable() || kind == EnemyKind::Kellner) && on_foot(e) =>
+            {
                 let scores = scores_on_defeat(e);
                 defeat(e, kind, true, t);
                 knocked.push((kind, e.x + e.w.div_int(2), e.y, scores));
@@ -2064,6 +2085,46 @@ pub fn sabre_zone(e: &Entity, t: &Tuning) -> Option<Aabb> {
     })
 }
 
+// ------------------------------------------------------------ M7 (D-105)
+
+/// The Kellner (D-105): the Nordic-Walker's walk at `kellner_speed`
+/// (towards the player at activation, turning at walls, ledges and, in
+/// [`turn_at_enemies`], enemies on foot); he never stops. After a tray
+/// bounce ([`tray_bounce`]) he shows the `bounce` pose for
+/// `kellner_bounce_pose` frames (`TRAY_BOUNCE`, `count` = frames since the
+/// bounce), which changes nothing but his looks.
+fn update_kellner(e: &mut Entity, ctx: &UpdateCtx) {
+    let et = &ctx.tuning.enemies;
+    if e.state == state::TRAY_BOUNCE {
+        e.count = e.count.saturating_add(1);
+        if e.count >= et.kellner_bounce_pose {
+            e.state = state::WALK;
+            e.count = 0;
+        }
+    }
+    walk_turning_at_ledges(e, ctx, et.kellner_speed);
+}
+
+/// The player bounced off Kellner `e`'s tray (`Game::interact`, the
+/// generic roof bounce, D-105): starts his `bounce` pose and returns the
+/// „Komm' gleich!" popup, centred on him and stacked [`POPUP_STACK_PX`]
+/// above his tray (where „Bravo!" stands over a score popup; a bounce
+/// scores nothing). `None` for every other enemy.
+///
+/// [`POPUP_STACK_PX`]: crate::entity::POPUP_STACK_PX
+pub(crate) fn tray_bounce(e: &mut Entity) -> Option<Entity> {
+    if e.kind != EntityKind::Enemy(EnemyKind::Kellner) {
+        return None;
+    }
+    e.state = state::TRAY_BOUNCE;
+    e.count = 0;
+    Some(popup(
+        Popup::KommGleich,
+        e.x + e.w.div_int(2),
+        e.y - Fx::from_px(crate::entity::POPUP_STACK_PX),
+    ))
+}
+
 /// **Defeat by projectile** (the one path for the thrown Hackl, D-056,
 /// D-060): what a projectile does to entity `e`, by its
 /// [`Entity::axe_hit`] class. Every `Defeat` enemy is knocked off (tumbling
@@ -2551,6 +2612,8 @@ const fn allowed_in_arena(kind: SpawnKind) -> bool {
     match kind {
         SpawnKind::PlayerStart
         | SpawnKind::Goal
+        // The Zaunerstollen on the counter (D-107).
+        | SpawnKind::GoalStollen
         | SpawnKind::Checkpoint
         | SpawnKind::Oblate
         | SpawnKind::Prop => true,
@@ -2583,6 +2646,8 @@ const fn allowed_in_arena(kind: SpawnKind) -> bool {
         | SpawnKind::Kurgast
         | SpawnKind::Fensterladen
         | SpawnKind::Offizier
+        | SpawnKind::Kellner
+        | SpawnKind::Wartender
         | SpawnKind::Oberkellner => false,
     }
 }
