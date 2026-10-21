@@ -567,6 +567,16 @@ impl Game {
         Some((from * TILE_PX, to * TILE_PX))
     }
 
+    /// A side level's top clamp (`[meta] camera_top`, D-103): the camera's
+    /// y never above it. Without the key (and in climb and auto-scroll
+    /// levels, which reject it) nothing changes.
+    pub(crate) fn clamp_camera_top(&mut self) {
+        if let Some(top) = self.level.meta.camera_top {
+            let level_h = self.map.height_fx().to_px();
+            self.camera.clamp_top(top, level_h);
+        }
+    }
+
     /// True while the auto-scroll camera scrolls (also during its hold):
     /// the left edge pushes, the right clamp holds and D-051 is off.
     fn scrolling(&self) -> bool {
@@ -627,6 +637,7 @@ impl Game {
         }
         if !self.climb() {
             self.camera.follow(self.player.center_px(), w, h, t);
+            self.clamp_camera_top();
             return;
         }
         let p = &self.player;
@@ -825,7 +836,7 @@ impl Game {
 
     /// The camera on the player at the start, on respawn and on a stage
     /// change (climb: at the settle target at once, D-054; auto-scroll: at
-    /// its rest, D-086).
+    /// its rest, D-086; side: never above `camera_top`, D-103).
     fn place_camera(&mut self) {
         let (w, h) = (self.map.width_fx().to_px(), self.map.height_fx().to_px());
         let t = &self.tuning.camera;
@@ -846,10 +857,12 @@ impl Game {
             self.settle_feet = 0;
             self.slack_x = 0;
         }
+        // D-103: start, respawn, stage change and the side title framing.
+        self.clamp_camera_top();
         // Auto-scroll (D-075): framed as in side levels; inside the zone
         // the scroll waits `autoscroll_hold` frames.
         self.scroll = match self.autoscroll_zone() {
-            Some(zone) => Autoscroll::placed(self.camera.x, zone, t),
+            Some(zone) => Autoscroll::placed(self.camera.x, zone, &self.tuning.camera),
             None => Autoscroll::default(),
         };
     }
@@ -1897,6 +1910,11 @@ fn level_parts(level: &Level, tuning: &Tuning) -> (Arc<TileMap>, Arc<[Aabb]>, u6
 
     let mut h = Fnv::new();
     map.hash(&mut h);
+    // D-103: only when present, so a level without it keeps its hash.
+    if let Some(top) = level.meta.camera_top {
+        h.bytes(b"camera_top");
+        h.i32(top);
+    }
     h.u32(goals.len() as u32);
     for g in &goals {
         for v in [g.x, g.y, g.w, g.h] {

@@ -1,6 +1,7 @@
 # Stage 8: Bad Ischl (docs/game-design.md "Stage 8: Bad Ischl", D-092 ...
 # D-098; as built: the D-096 "Stage 8 as built" addendum). 300 columns x
-# 17 rows, side camera; the street top is row 15 (rows 15-16), the goal
+# 17 rows, side camera with camera_top 76 (D-103: the street, row 15, stays
+# on screen); the street top is row 15 (rows 15-16), the goal
 # square row 16. Columns are 0-based.
 #   1 Katrin       0-39    kies. Start 2, Bus 150 / jetzt leer 5, Oblaten
 #                          8-12 (row 13, clear of the bus board), M-box 14
@@ -99,6 +100,7 @@ id = "bad_ischl"
 title_key = "stage.bad_ischl.title"
 time_limit = 210
 min_jump_window = 4
+camera_top = 76
 background = [
   { sprite = "bg_sky_salzburg", factor = 0 },
   { sprite = "bg_katrin", factor = 3 },

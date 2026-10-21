@@ -171,7 +171,7 @@ next = "Weiter nach Bad Ischl."
 # Level signs (entity `sign`), in the order of the stage.
 sign_bus = "Bus 150\nfährt durch"
 sign_willkommen = "Willkommen,\nDurchfahrer!"
-sign_zimmer = "Zimmer frei\nab 7 Nächte"
+sign_zimmer = "Zimmer frei\nab 7 Nächten"
 sign_lueften = "Lüften\n10–12 Uhr"
 sign_umsteigen = "Umsteigen\nin den 546"
 sign_checkpoint = "Bus 150\nhält! Voll."
