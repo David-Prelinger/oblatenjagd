@@ -55,6 +55,9 @@ pub enum Popup {
     Kurruhe,
     /// `popup.abtreten` („Abtreten!"), a defeated Offizier (D-096).
     Abtreten,
+    /// `popup.stollen` („Zaunerstollen!"), touching the armed
+    /// `goal_stollen` (D-107).
+    Stollen,
 }
 
 impl Popup {
@@ -72,6 +75,7 @@ impl Popup {
             Popup::Beleidigt => Some("popup.beleidigt"),
             Popup::Kurruhe => Some("popup.kurruhe"),
             Popup::Abtreten => Some("popup.abtreten"),
+            Popup::Stollen => Some("popup.stollen"),
         }
     }
 }
@@ -446,6 +450,8 @@ impl EntityKind {
                 Popup::Beleidigt => h.u8(8),
                 Popup::Kurruhe => h.u8(9),
                 Popup::Abtreten => h.u8(10),
+                // 11: reserved; 12: E45's „Komm' gleich!"; 13–16: E46.
+                Popup::Stollen => h.u8(17),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -539,7 +545,9 @@ impl Entity {
         let feet_y = tile.mul_int(s.row + 1);
         let e = &t.enemies;
         let mut entity = match s.kind {
-            SpawnKind::PlayerStart | SpawnKind::Goal | SpawnKind::Prop => return None,
+            SpawnKind::PlayerStart | SpawnKind::Goal | SpawnKind::GoalStollen | SpawnKind::Prop => {
+                return None;
+            }
             SpawnKind::Oblate => {
                 // Centred in its cell.
                 let [w, h] = t.items.oblate_hitbox;
@@ -1227,6 +1235,13 @@ mod tests {
         ten.u8(EntityKind::Popup(Popup::Abtreten).hash_tag());
         ten.u8(10);
         assert_eq!(h.finish(), ten.finish());
+        // M7 (E47, D-107): „Zaunerstollen!" sub-tag 17.
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::Stollen).hash(&mut h);
+        let mut seventeen = crate::hash::Fnv::new();
+        seventeen.u8(EntityKind::Popup(Popup::Stollen).hash_tag());
+        seventeen.u8(17);
+        assert_eq!(h.finish(), seventeen.finish());
     }
 
     use super::*;

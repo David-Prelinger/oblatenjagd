@@ -38,7 +38,7 @@
 use std::path::Path;
 use std::process::ExitCode;
 
-use jnr_core::{PROP_SPRITES, SpawnKind, Texts, Tuning};
+use jnr_core::{PROP_SPRITES, Texts, Tuning};
 
 use crate::content::{self, LevelFile};
 
@@ -169,8 +169,10 @@ pub fn lint(
                 ));
             }
         }
-        if !level.entities.iter().any(|e| e.kind == SpawnKind::Goal) {
-            problems.push(format!("{shown}: no goal (add a `goal` entity)"));
+        if !level.entities.iter().any(|e| e.kind.is_goal()) {
+            problems.push(format!(
+                "{shown}: no goal (add a `goal` or `goal_stollen` entity)"
+            ));
         }
         for p in jnr_core::platform::track_problems(level, tuning)
             .into_iter()
@@ -325,7 +327,7 @@ mod tests {
                 "b.level: meta.id `a` is also used by a.level",
                 "b.level: title_key `stage.nope` is missing in content/text/de.toml",
                 "b.level: sign at row 1, column 3: text key `stage.a.sign` is missing in content/text/de.toml",
-                "b.level: no goal (add a `goal` entity)",
+                "b.level: no goal (add a `goal` or `goal_stollen` entity)",
                 "c.level: unknown grid character '?' at row 1, column 2 (not in [legend])",
             ]
         );

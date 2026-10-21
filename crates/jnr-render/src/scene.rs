@@ -27,9 +27,11 @@ use crate::background::{self, BackgroundLayer};
 use crate::blit::{draw_sprite, draw_sprite_frame};
 use crate::entities::{self, EntityLooks};
 use crate::font::Font;
-use crate::palette::{DIRNDL_RED, MEADOW, MOZART_YELLOW, OUTLINE, WHITE};
+use crate::palette::{
+    DIRNDL_RED, LEATHER_DARK, MEADOW, MOZART_YELLOW, OUTLINE, SILVER_LIGHT, WHITE,
+};
 use crate::tiles::{self, TileLooks};
-use crate::{Framebuffer, HEIGHT, hud, map, screens};
+use crate::{Framebuffer, HEIGHT, ending, hud, map, screens};
 
 /// Sprite name of the player.
 pub const PLAYER_SPRITE: &str = "player";
@@ -46,6 +48,13 @@ pub const HACKL_FALLBACK_SWAP: (u32, u32) = (DIRNDL_RED, entities::PINE_DARK);
 pub const MAIBAUM_POLE_SPRITE: &str = "maibaum_pole";
 /// The Maibaum top (wreath, ribbons, Wurstkranz), on top of the pole.
 pub const MAIBAUM_TOP_SPRITE: &str = "maibaum_top";
+/// The finale's goal (D-107): the Zaunerstollen under its glass bell,
+/// 16×32, origin 8,32 on the `goal_stollen` cell's bottom centre; anims
+/// `zu` (unarmed), `offen` (armed), `leer` (taken).
+pub const STOLLEN_GLOCKE_SPRITE: &str = "stollen_glocke";
+/// The served Zaunerstollen on its plate, 16×12, origin 8,12: above
+/// Resi's head in the Serve, at her feet on the marked title (D-107).
+pub const STOLLEN_TELLER_SPRITE: &str = "stollen_teller";
 /// Prefix of tile sprites: a tile named `ground` in the legend uses `tile_ground`.
 pub const TILE_SPRITE_PREFIX: &str = "tile_";
 
@@ -211,6 +220,14 @@ pub struct RenderContext<'a> {
     pub(crate) map_backdrop: Option<&'a AtlasSprite>,
     /// `map_station` (route-map station marker).
     pub(crate) map_station: Option<&'a AtlasSprite>,
+    /// `stollen_glocke` (the `goal_stollen`, D-107).
+    stollen_glocke: Option<&'a AtlasSprite>,
+    /// `stollen_teller` (the Serve and the marked title, D-107).
+    pub(crate) stollen_teller: Option<&'a AtlasSprite>,
+    /// `ending_cafe` (the ending's Scene, D-107).
+    pub(crate) ending_cafe: Option<&'a AtlasSprite>,
+    /// `ending_zettel` (the ending's Bill, D-107).
+    pub(crate) ending_zettel: Option<&'a AtlasSprite>,
     /// The stage's text keys, in [`screens::STAGE_SUFFIXES`] order:
     /// `stage.<level id>.<suffix>` if de.toml has the title, else the
     /// [`screens::FALLBACK_STAGE`]'s; `[meta].title_key` overrides the title.
@@ -284,6 +301,10 @@ impl<'a> RenderContext<'a> {
             hud_oblate: with_anims(hud::OBLATE_ICON_SPRITE),
             map_backdrop: with_anims(map::BACKDROP_SPRITE),
             map_station: with_anims(map::STATION_SPRITE),
+            stollen_glocke: with_anims(STOLLEN_GLOCKE_SPRITE),
+            stollen_teller: with_anims(STOLLEN_TELLER_SPRITE),
+            ending_cafe: with_anims(ending::CAFE_SPRITE),
+            ending_zettel: with_anims(ending::ZETTEL_SPRITE),
             stage_keys,
             background: Vec::new(),
             background_covers: false,
@@ -421,6 +442,7 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         Mode::GameOver { frames } => return screens::draw_game_over(game, ctx, fb, frames),
         Mode::StageClear if to_be_continued => return screens::draw_to_be_continued(ctx, fb),
         Mode::RouteMap => return map::draw_route_map(game, ctx, fb),
+        Mode::Ending => return ending::draw_ending(game, ctx, fb),
         Mode::Playing | Mode::Paused | Mode::Dying { .. } | Mode::StageClear => {}
     }
     let cam = game.camera();
@@ -549,12 +571,14 @@ fn draw_props(ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera, tick: u32,
 fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camera) {
     let height = game.tuning().goal.zone_heights[3];
     let tick = game.frame();
-    for e in &game.level().entities {
-        if e.kind != SpawnKind::Goal {
-            continue;
-        }
+    let goals = game.level().entities.iter().filter(|e| e.kind.is_goal());
+    for (i, e) in goals.enumerate() {
         let foot_x = e.col * TILE_PX + TILE_PX / 2 - cam.x;
         let foot_y = (e.row + 1) * TILE_PX - cam.y;
+        if e.kind == SpawnKind::GoalStollen {
+            draw_glocke(game, ctx, fb, i, (foot_x, foot_y));
+            continue;
+        }
         let top = foot_y - height;
         match ctx.maibaum_pole {
             Some(s) => {
@@ -572,6 +596,59 @@ fn draw_goals(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Camer
                 fb.fill_rect(foot_x - 9, top + 2, 8, 6, DIRNDL_RED);
                 fb.outline_rect(foot_x - 9, top + 2, 8, 6, OUTLINE);
             }
+        }
+    }
+}
+
+/// The bell's state (D-107): `zu` while unarmed, `leer` once taken (the
+/// goal sequence runs), else `offen`.
+pub fn glocke_anim(game: &Game, goal: usize) -> &'static str {
+    if cleared_goal(game) == Some(goal) {
+        "leer"
+    } else if game.goal_armed(goal) {
+        "offen"
+    } else {
+        "zu"
+    }
+}
+
+/// The `goal_stollen` number `goal` with its origin at `foot` (screen):
+/// `stollen_glocke` in [`glocke_anim`]'s anim; missing sprite: a grey-box
+/// plate (`w`), the Stollen (`l`, not when taken) and the bell's outline
+/// (`i`), lifted 6 px while armed.
+fn draw_glocke(
+    game: &Game,
+    ctx: &RenderContext,
+    fb: &mut Framebuffer,
+    goal: usize,
+    foot: (i32, i32),
+) {
+    let look = glocke_anim(game, goal);
+    let (x, y) = foot;
+    if let Some((s, a)) = ctx
+        .stollen_glocke
+        .and_then(|s| s.anim(look).map(|a| (s, a)))
+    {
+        draw_sprite(fb, ctx.atlas, s, a, game.frame(), x, y, false);
+        return;
+    }
+    fb.fill_rect(x - 6, y - 2, 12, 2, WHITE);
+    if look != "leer" {
+        fb.fill_rect(x - 4, y - 6, 8, 4, LEATHER_DARK);
+    }
+    let lift = if look == "offen" { 6 } else { 0 };
+    fb.outline_rect(x - 7, y - 14 - lift, 14, 12, SILVER_LIGHT);
+}
+
+/// The served plate (D-107) with its origin at `foot` (screen):
+/// `stollen_teller`, else a grey-box plate (`w`) with the Stollen (`l`).
+pub(crate) fn draw_teller(ctx: &RenderContext, fb: &mut Framebuffer, foot: (i32, i32), tick: u32) {
+    let (x, y) = foot;
+    match ctx.stollen_teller {
+        Some(s) => draw_sprite(fb, ctx.atlas, s, &s.anims[0], tick, x, y, false),
+        None => {
+            fb.fill_rect(x - 6, y - 2, 12, 2, WHITE);
+            fb.fill_rect(x - 4, y - 6, 8, 4, LEATHER_DARK);
         }
     }
 }
@@ -624,6 +701,43 @@ fn draw_player(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, cam: Came
         .stage_clear()
         .is_some_and(|c| c.phase == ClearPhase::Slide);
     draw_resi(ctx, fb, cam, p, game.tuning(), sliding, game.frame());
+    if serving(game) {
+        // Held up above her head: 1 px clear of her drawn look (16×24,
+        // or 16×32 big), not of the hitbox.
+        let power = player_shown_power(p, &game.tuning().player);
+        let x = (p.x + p.w.div_int(2)).to_px() - cam.x;
+        let y = (p.y + p.h).to_px() - cam.y - map::resi_height(power) - 1;
+        draw_teller(ctx, fb, (x, y), game.frame());
+    }
+}
+
+/// True while Resi holds the plate up (D-107): the Serve of a
+/// `goal_stollen`, and on through its Tally and Clear (she stays where
+/// she stood; as built, E47).
+pub fn serving(game: &Game) -> bool {
+    let Some(c) = game.stage_clear() else {
+        return false;
+    };
+    match c.phase {
+        ClearPhase::Serve => true,
+        ClearPhase::Tally | ClearPhase::Clear => cleared_goal(game)
+            .and_then(|i| game.goal_spawn(i))
+            .is_some_and(|e| e.kind == SpawnKind::GoalStollen),
+        _ => false,
+    }
+}
+
+/// The goal (index into `Game::goals`) the running goal sequence started
+/// at: the one whose cell centre and bottom are its `pole_x` and `base_y`.
+pub fn cleared_goal(game: &Game) -> Option<usize> {
+    let c = game.stage_clear()?;
+    game.level()
+        .entities
+        .iter()
+        .filter(|e| e.kind.is_goal())
+        .position(|e| {
+            e.col * TILE_PX + TILE_PX / 2 == c.pole_x && (e.row + 1) * TILE_PX == c.base_y
+        })
 }
 
 /// [`draw_player`] without the blinking: Resi as `p` says, at `tick`.

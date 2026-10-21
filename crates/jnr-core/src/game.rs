@@ -15,9 +15,11 @@
 //! also has a [`Route`]: after a stage clear in the real flow it shows the
 //! route map and then plays the next stage's level (D-042, D-047).
 
+mod ending;
 mod flow;
 mod power;
 
+pub use ending::{BILL_LINES, Ending, EndingPhase};
 pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
@@ -184,6 +186,11 @@ pub enum Mode {
     /// route): Resi walks to the next station, then its stage intro (or
     /// the teaser and the title). [`Game::route_map`] has the details.
     RouteMap,
+    /// The ending after the journey's last station (only with
+    /// [`Start::Title`] and a route, D-107): map, scene, bill, credits,
+    /// „Ende", then the title with the „durchgespielt" mark.
+    /// [`Game::ending`] has the details.
+    Ending,
     /// No lives left. START (after `game.game_over_frames`) restarts the
     /// stage from its start with full lives, score 0 and Oblaten 0.
     GameOver {
@@ -255,6 +262,9 @@ pub struct Game {
     multi: Vec<MultiBlock>,
     pub(crate) score: u32,
     pub(crate) oblaten: u8,
+    /// Every Oblate collected since the run started or the last continue
+    /// (D-107); unlike `oblaten` it never wraps. Shown on the ending's bill.
+    pub(crate) oblaten_total: u32,
     pub(crate) lives: u8,
     /// Seconds left.
     pub(crate) time: u16,
@@ -282,6 +292,11 @@ pub struct Game {
     first_stage: u8,
     /// The route map while `Mode::RouteMap`.
     route_map: Option<RouteMap>,
+    /// The ending while `Mode::Ending` (D-107).
+    ending: Option<Ending>,
+    /// The session's „durchgespielt" mark (D-107): set when the ending
+    /// ends, never cleared (it survives `end_run` and every new run).
+    cleared: bool,
     /// Hash of everything that never changes during a game (start grid,
     /// goals, spawns, tuning), computed per level (`level_parts`).
     static_hash: u64,
@@ -357,6 +372,7 @@ impl Game {
             multi: Vec::new(),
             score: 0,
             oblaten: 0,
+            oblaten_total: 0,
             lives: tuning.game.lives_start,
             time: 0,
             time_frames: 0,
@@ -370,6 +386,8 @@ impl Game {
             stage,
             first_stage: stage,
             route_map: None,
+            ending: None,
+            cleared: false,
             static_hash,
             events: Vec::new(),
         };
@@ -437,6 +455,10 @@ impl Game {
             Mode::RouteMap => {
                 self.player.jump_held = input.jump();
                 self.step_route_map(start_pressed);
+            }
+            Mode::Ending => {
+                self.player.jump_held = input.jump();
+                self.step_ending(start_pressed);
             }
             Mode::GameOver { frames } => {
                 self.player.jump_held = input.jump();
@@ -526,7 +548,7 @@ impl Game {
             return;
         }
         self.check_checkpoints();
-        if let Some(goal) = self.goals.iter().position(|g| g.overlaps(&hb)) {
+        if let Some(goal) = self.touched_goal(&hb) {
             self.touch_goal(goal);
         }
         // Also on the frame the scroll hands over to the lead-out.
@@ -809,6 +831,7 @@ impl Game {
         self.lives = self.tuning.game.lives_start;
         self.score = 0;
         self.oblaten = 0;
+        self.oblaten_total = 0;
         self.checkpoint = None;
         self.clear = None;
         self.death_cause = None;
@@ -1386,10 +1409,9 @@ impl Game {
         }
     }
 
-    /// True if the player's hitbox overlaps a goal.
+    /// True if the player's hitbox overlaps an armed goal.
     fn touches_goal(&self) -> bool {
-        let hb = self.player.hitbox();
-        self.goals.iter().any(|g| g.overlaps(&hb))
+        self.touched_goal(&self.player.hitbox()).is_some()
     }
 
     /// Points (or a life) for a stomp in the current chain; returns its
@@ -1488,6 +1510,7 @@ impl Game {
     fn collect_oblate(&mut self, x: Fx, y: Fx) -> Option<Entity> {
         self.add_score(self.tuning.score.oblate);
         self.oblaten = self.oblaten.saturating_add(1);
+        self.oblaten_total = self.oblaten_total.saturating_add(1);
         self.events.push(Event::OblateCollected);
         if self.oblaten >= self.tuning.game.oblaten_per_life {
             self.oblaten = 0;
@@ -1606,6 +1629,7 @@ impl Game {
             }
             Mode::Paused => h.u8(6),
             Mode::RouteMap => h.u8(7),
+            Mode::Ending => h.u8(8),
         }
         // Only runs with a route have these (lone-level hashes stay as
         // they were before routes existed).
@@ -1650,6 +1674,17 @@ impl Game {
         h.u16(self.checkpoint.unwrap_or(u16::MAX));
         h.u32(self.score);
         h.u8(self.oblaten);
+        // D-107: the run's Oblaten total, the ending and the title mark
+        // (E47 re-pinned the testbed's FINISH_HASH with them).
+        h.u32(self.oblaten_total);
+        match &self.ending {
+            None => h.u8(0),
+            Some(e) => {
+                h.u8(1);
+                e.hash(&mut h);
+            }
+        }
+        h.bool(self.cleared);
         h.u8(self.lives);
         h.u16(self.time);
         h.u8(self.time_frames);
@@ -1822,6 +1857,45 @@ impl Game {
     pub fn oblaten(&self) -> u8 {
         self.oblaten
     }
+
+    /// Every Oblate collected since the run started or the last continue
+    /// (never wraps, D-107).
+    pub fn oblaten_total(&self) -> u32 {
+        self.oblaten_total
+    }
+
+    /// The ending (while `Mode::Ending`, D-107).
+    pub fn ending(&self) -> Option<&Ending> {
+        self.ending.as_ref()
+    }
+
+    /// The session's „durchgespielt" mark: the ending has been seen (D-107).
+    pub fn cleared(&self) -> bool {
+        self.cleared
+    }
+
+    /// The level spawn of goal number `goal` (index into [`Game::goals`]).
+    pub fn goal_spawn(&self, goal: usize) -> Option<&crate::level::EntitySpawn> {
+        self.level
+            .entities
+            .iter()
+            .filter(|e| e.kind.is_goal())
+            .nth(goal)
+    }
+
+    /// Whether goal number `goal` can be touched: a Maibaum always, a
+    /// `goal_stollen` once no undefeated Oberkellner is in the level
+    /// (D-107; unarmed it is decoration).
+    pub fn goal_armed(&self, goal: usize) -> bool {
+        self.goal_spawn(goal).is_some_and(|s| {
+            goal_kind_armed(s.kind, crate::enemies::boss_undefeated(&self.entities))
+        })
+    }
+
+    /// The first armed goal `hb` overlaps.
+    fn touched_goal(&self, hb: &Aabb) -> Option<usize> {
+        (0..self.goals.len()).find(|&i| self.goals[i].overlaps(hb) && self.goal_armed(i))
+    }
     /// Lives left (counting the current one).
     pub fn lives(&self) -> u8 {
         self.lives
@@ -1877,6 +1951,12 @@ impl Game {
     }
 }
 
+/// Whether a goal of `kind` can be touched (D-107): a Maibaum always, a
+/// `goal_stollen` only while no Oberkellner is undefeated.
+pub(crate) fn goal_kind_armed(kind: SpawnKind, boss_undefeated: bool) -> bool {
+    kind != SpawnKind::GoalStollen || !boss_undefeated
+}
+
 /// D-054: in a climb level an entity activates only while its spawn cell
 /// (or, for entities without a spawn, its hitbox's top row) is within
 /// `margin` px of the screen vertically ([`Camera::row_near`]).
@@ -1892,19 +1972,28 @@ pub fn spawn_row_near(level: &Level, e: &Entity, camera: Camera, margin: i32) ->
 /// goal boxes and the hash of everything that never changes while playing
 /// it (grid, goals, spawns, tuning).
 ///
-/// A goal occupies its cell's column from one level height above the top
-/// of the level down to the cell's bottom edge.
+/// A Maibaum occupies its cell's column from one level height above the
+/// top of the level down to the cell's bottom edge; a `goal_stollen` only
+/// its cell (D-107).
 fn level_parts(level: &Level, tuning: &Tuning) -> (Arc<TileMap>, Arc<[Aabb]>, u64) {
     let map = Arc::new(TileMap::from_level(level));
     let goals: Vec<Aabb> = level
         .entities
         .iter()
-        .filter(|e| e.kind == SpawnKind::Goal)
-        .map(|e| Aabb {
-            x: TILE.mul_int(e.col),
-            y: -TILE.mul_int(level.height),
-            w: TILE,
-            h: TILE.mul_int(level.height + e.row + 1),
+        .filter(|e| e.kind.is_goal())
+        .map(|e| match e.kind {
+            SpawnKind::GoalStollen => Aabb {
+                x: TILE.mul_int(e.col),
+                y: TILE.mul_int(e.row),
+                w: TILE,
+                h: TILE,
+            },
+            _ => Aabb {
+                x: TILE.mul_int(e.col),
+                y: -TILE.mul_int(level.height),
+                w: TILE,
+                h: TILE.mul_int(level.height + e.row + 1),
+            },
         })
         .collect();
 

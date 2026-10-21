@@ -2149,6 +2149,7 @@ mod tests {
             Popup::Hoppala,
             Popup::Kurruhe,
             Popup::Abtreten,
+            Popup::Stollen,
         ] {
             let key = p.text_key().unwrap();
             assert!(texts.contains(key), "{key}");

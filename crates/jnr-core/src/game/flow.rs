@@ -21,6 +21,14 @@
 //!    to the stage start; M1 behaviour, kept for `Start::Playing` and lone
 //!    levels).
 //!
+//! A `goal_stollen` (the finale, D-107) has its own start instead of 1–4:
+//! 10 000 points (`score.stollen`) and „Zaunerstollen!", then
+//! [`ClearPhase::Serve`] where she stands (if she is in the air she first
+//! falls with the player's gravity) for `goal.serve_frames` frames from
+//! the frame she stands; then 5 and 6 as above, and after them, in the
+//! real flow on the journey's last station, the ending (`Mode::Ending`,
+//! module `ending`) instead of 7.
+//!
 //! The route map (D-043) is a phase machine too ([`MapPhase`]): Arrive
 //! (`map.arrive_frames`) → Walk (`map.walk_px` px per frame along the path
 //! to the next station) → Wait (until START, at most `map.wait_frames`) →
@@ -36,6 +44,7 @@ use crate::entity::{EntityKind, Popup, popup};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::level::{SpawnKind, TILE_PX};
+use crate::physics::YHit;
 use crate::player::Facing;
 use crate::route::{self, MapPhase, RouteMap};
 use crate::tuning::GoalTuning;
@@ -86,6 +95,9 @@ pub enum ClearPhase {
     Clear,
     /// „Fortsetzung folgt …" (M1: one stage only).
     ToBeContinued,
+    /// The finale (`goal_stollen`, D-107): she holds the plate up where
+    /// she stands (falling there first if she is in the air).
+    Serve,
 }
 
 /// The state of the goal sequence (`Game::stage_clear`).
@@ -116,6 +128,7 @@ impl StageClear {
             ClearPhase::Tally => 3,
             ClearPhase::Clear => 4,
             ClearPhase::ToBeContinued => 5,
+            ClearPhase::Serve => 6,
         });
         h.u16(self.timer);
         h.i32(self.pole_x);
@@ -136,17 +149,15 @@ pub fn maibaum_points(height_px: i32, g: &GoalTuning) -> (u32, bool) {
 impl Game {
     /// The player touched goal number `goal` (index into `goals`).
     pub(super) fn touch_goal(&mut self, goal: usize) {
-        let Some(spawn) = self
-            .level
-            .entities
-            .iter()
-            .filter(|e| e.kind == SpawnKind::Goal)
-            .nth(goal)
-        else {
+        let Some(&crate::level::EntitySpawn { kind, col, row, .. }) = self.goal_spawn(goal) else {
             return;
         };
-        let pole_x = spawn.col * TILE_PX + TILE_PX / 2;
-        let base_y = (spawn.row + 1) * TILE_PX;
+        if kind == SpawnKind::GoalStollen {
+            self.touch_stollen(col, row);
+            return;
+        }
+        let pole_x = col * TILE_PX + TILE_PX / 2;
+        let base_y = (row + 1) * TILE_PX;
         let feet = self.player.y + self.player.h;
         let height_px = (Fx::from_px(base_y) - feet).to_px().max(0);
         let (points, wurstkranz) = maibaum_points(height_px, &self.tuning.goal);
@@ -182,6 +193,61 @@ impl Game {
             bonus: 0,
         });
         self.events.push(Event::LevelComplete);
+    }
+
+    /// The player touched the armed `goal_stollen` in cell (`col`, `row`)
+    /// (D-107): 10 000 points and „Zaunerstollen!" above her, enemies and
+    /// the timer stop, and the Serve starts where she is (no horizontal
+    /// speed; in the air she keeps her vertical speed and falls).
+    fn touch_stollen(&mut self, col: i32, row: i32) {
+        let points = self.tuning.score.stollen;
+        self.add_score(points);
+        let (fx, _) = self.player.feet();
+        let top = self.player.y;
+        self.entities.push(popup(Popup::Score(points), fx, top));
+        self.entities
+            .push(popup(Popup::Stollen, fx, top - Fx::from_px(10)));
+        let p = &mut self.player;
+        p.vx = Fx::ZERO;
+        p.skidding = false;
+        p.jump_rising = false;
+        p.invulnerable = 0;
+        self.mode = Mode::StageClear;
+        self.clear = Some(StageClear {
+            phase: ClearPhase::Serve,
+            timer: 0,
+            pole_x: col * TILE_PX + TILE_PX / 2,
+            base_y: (row + 1) * TILE_PX,
+            height_px: 0,
+            height_points: points,
+            bonus: 0,
+        });
+        self.events.push(Event::LevelComplete);
+    }
+
+    /// One frame of falling in the Serve (player gravity, stopped by solid
+    /// and one-way tiles; the level's bottom edge holds her too, a café
+    /// has no pits). Returns true once she stands.
+    fn serve_fall(&mut self) -> bool {
+        let t = self.tuning.player;
+        let bottom = self.map.height_fx();
+        let p = &mut self.player;
+        p.vy = (p.vy + t.gravity).min(t.max_fall_speed);
+        let mut b = p.hitbox();
+        let hit = self.map.move_y(&mut b, p.vy, false);
+        p.y = b.y;
+        if hit != YHit::None {
+            p.vy = Fx::ZERO;
+        }
+        if p.y + p.h >= bottom {
+            p.y = bottom - p.h;
+            p.vy = Fx::ZERO;
+            p.on_ground = true;
+        }
+        if hit == YHit::Floor {
+            p.on_ground = true;
+        }
+        p.on_ground
     }
 
     /// One frame of the goal sequence.
@@ -242,8 +308,20 @@ impl Game {
                 }
                 (self.time == 0).then_some(ClearPhase::Clear)
             }
+            ClearPhase::Serve => {
+                // Counted from the frame she stands.
+                if !self.player.on_ground {
+                    self.serve_fall();
+                    c.timer = 0;
+                }
+                (self.player.on_ground && c.timer >= g.serve_frames).then_some(if self.time > 0 {
+                    ClearPhase::Tally
+                } else {
+                    ClearPhase::Clear
+                })
+            }
             ClearPhase::Clear => {
-                if c.timer >= g.clear_frames && self.enter_route_map() {
+                if c.timer >= g.clear_frames && (self.enter_ending() || self.enter_route_map()) {
                     return;
                 }
                 (c.timer >= g.clear_frames).then_some(ClearPhase::ToBeContinued)
@@ -260,7 +338,7 @@ impl Game {
         };
         if matches!(
             c.phase,
-            ClearPhase::Slide | ClearPhase::Hop | ClearPhase::Walk
+            ClearPhase::Slide | ClearPhase::Hop | ClearPhase::Walk | ClearPhase::Serve
         ) {
             let level_h = self.map.height_fx().to_px();
             let t = &self.tuning.camera;
@@ -436,7 +514,7 @@ impl Game {
 
     /// After the teaser: the title screen, the run reset to its first
     /// stage (score 0, full lives, Oblaten 0, Normal).
-    fn end_run(&mut self) {
+    pub(super) fn end_run(&mut self) {
         self.route_map = None;
         if self.stage != self.first_stage {
             if let Some(level) = self
@@ -452,5 +530,34 @@ impl Game {
         self.reset_run();
         self.mode = Mode::Title { frames: 0 };
         self.frame_title();
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// E47's reserved tag (D-107): `ClearPhase::Serve` hashes as 6.
+    #[test]
+    fn serve_hashes_with_its_reserved_tag() {
+        let c = StageClear {
+            phase: ClearPhase::Serve,
+            timer: 3,
+            pole_x: 1,
+            base_y: 2,
+            height_px: 0,
+            height_points: 10_000,
+            bonus: 0,
+        };
+        let mut h = Fnv::new();
+        c.hash(&mut h);
+        let mut six = Fnv::new();
+        six.u8(6);
+        six.u16(3);
+        six.i32(1);
+        six.i32(2);
+        six.i32(0);
+        six.u32(10_000);
+        six.u32(0);
+        assert_eq!(h.finish(), six.finish());
     }
 }

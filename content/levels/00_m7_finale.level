@@ -1,0 +1,33 @@
+# Test-only level (not part of the journey, E47): the finale in grey box
+# (D-107). A short floor with three Oblaten, then a 2-high counter
+# (columns 26-28) with the `goal_stollen` on its top at column 27. No
+# Oberkellner, so the goal is armed from the start. The flow replays
+# `tests/replays/flow_m7_finale_*.replay` put it on the journey's last
+# station (`route = salzburg … bad_ischl m7_finale`), so its clear runs the
+# ending in the real flow (D-107).
+
+[meta]
+id = "m7_finale"
+time_limit = 60
+
+[legend]
+"#" = "solid"
+"o" = { entity = "oblate" }
+"P" = { entity = "player_start" }
+"S" = { entity = "goal_stollen" }
+
+[map]
+grid = '''
+................................
+................................
+................................
+................................
+................................
+................................
+................................
+...........................S....
+..........................###...
+..P.....o...o...o.........###...
+################################
+################################
+'''

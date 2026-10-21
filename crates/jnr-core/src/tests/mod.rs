@@ -7,6 +7,7 @@ mod boats;
 mod climb;
 mod enemies;
 mod feel;
+mod finale;
 mod flow;
 mod goal;
 mod hackl;
