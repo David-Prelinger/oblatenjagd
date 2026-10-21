@@ -546,7 +546,7 @@ mod tests {
 
     /// D-036: each stage tour is the title intro, then the stage's solver
     /// route unchanged, then 800 idle frames for the Maibaum sequence (and
-    /// the route map); Café Zauner's tour idles 3381 frames instead, through
+    /// the route map); Café Zauner's tour idles 3348 frames instead, through
     /// the finale and the whole ending to the marked title (M7). A re-solve
     /// that changes a route must be copied into its tour.
     #[test]
@@ -567,7 +567,7 @@ mod tests {
             ("wolfgangsee", 800),
             ("strobl", 800),
             ("bad_ischl", 800),
-            ("cafe_zauner", 3381),
+            ("cafe_zauner", 3348),
         ] {
             let route = frames(&format!("{stage}_solver.replay"));
             let expected = [intro.clone(), route.clone(), vec![none; outro]].concat();
@@ -578,7 +578,7 @@ mod tests {
                 } else if i < intro.len() + route.len() {
                     "the solver route"
                 } else {
-                    "the outro (`- 800`; Café Zauner `- 3381`)"
+                    "the outro (`- 800`; Café Zauner `- 3348`)"
                 };
                 panic!(
                     "tests/replays/{stage}_tour.replay differs at frame {i}, in {part} (tour {} \

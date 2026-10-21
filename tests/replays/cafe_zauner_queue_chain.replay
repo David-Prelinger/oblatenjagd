@@ -9,6 +9,9 @@
 # 800 in front of the queue's head, never on the 5-wide chandeliers L3-L6
 # (row 10, out of reach of every bounce, D-110). Score 1700 before the
 # queue + 16 500.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten

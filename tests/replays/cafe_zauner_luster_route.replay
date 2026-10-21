@@ -10,6 +10,9 @@
 # frame; judged on the expectations and, cut 40 frames after the landing,
 # on standing on the target band): Vitrine D -> L3 10 (-5..4, the walk
 # before it limits), L3 -> L4 13, L4 -> L5 13, L5 -> L6 12. All >= 8.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten

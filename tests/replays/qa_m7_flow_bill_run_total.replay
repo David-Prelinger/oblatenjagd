@@ -4,6 +4,8 @@
 # run's Oblaten total does not wrap: 105 at the touch (9236). The bill shows
 # Punkte 66050, Oblaten gesammelt 105, Leben übrig 4 (shot at 10369 checked
 # by hand). Ends in the ending's Bill phase.
+# Re-cut for D-111 (level-designer): the relaxed run's first 270 frames of
+# play as in qa_m7_cafe_zauner_relaxed (the same state from then on).
 level  = strobl
 seed   = 1
 source = handwritten
@@ -109,12 +111,13 @@ RBJ 36
 RB 56
 - 910
 - 90
-- 90
-RB 76
-RBJ 20
-R 4
-L 10
-- 70
+- 40
+R 130
+RJ 24
+R 8
+- 20
+R 5
+- 43
 R 16
 - 4
 RJ 16

@@ -8,22 +8,23 @@
 # in Wait and the Café Zauner intro (32024) with the run carried over
 # (Hackl, lives 7, score 154150, 22 Oblaten on the HUD).
 # Café Zauner (play from 32174; clock = frame - 32174): the café inputs of
-# cafe_zauner_boss_win_hackl.replay unchanged (its frames 2166-4714, so
-# every café frame is that replay's + 8): an axe off Kellner #1's tray
-# (32554, no points), the tray bounces up to L1, a stomp on Kurgast #1,
-# Vitrine D, an axe on the third Wartender (33193, 100), L3 and six
-# Wartende stomped, the checkpoint, the arena lock (33835), an axe off the
-# Oberkellner's tray in his telegraph (33952), the dashes jumped, one axe
-# per breather (hits 34098, 34319, 34522) and one through the stun
-# (34103), the goal_stollen (34711, 10 000). Idle: the Serve, the tally
-# (34801), the clear panel (34959), the ending (Map 35139, Scene 35379,
-# Bill 35739, Credits 36339, Ende 37419) and the title (38019): the run
-# reset to Salzburg (score 0, 3 lives, Normal) with the mark; the replay
-# ends on it (38049). Shot: the marked title in the real game (38037,
-# the Salzburg backdrop with „Nochmal? Drück START").
-# Nine LevelCompletes, no death, no hurt, all deterministic. A new
-# time_limit for Café Zauner changes its tally and moves every frame
-# after 34801 (the shot too).
+# cafe_zauner_boss_win_hackl.replay unchanged (its frames 2166-4558, so
+# every café frame is that replay's + 8): under the boxes onto the first
+# vitrine, an axe off Kellner #1's tray (32416, no points), tray bounces
+# off both Kellner, a stomp on Kurgast #1, Vitrine D, an axe on the third
+# Wartender (33039, 100), seven Wartende stomped, the checkpoint, the
+# arena lock (33680), an axe off the Oberkellner's tray in his telegraph
+# (33796), the dashes jumped, one axe per breather (hits 33942, 34164,
+# 34366) and one through the stun (33947), the goal_stollen (34555,
+# 10 000). Idle: the Serve, the tally (34645), the clear panel (34806),
+# the ending (Map 34986, Scene 35226, Bill 35586, Credits 36186, Ende
+# 37266) and the marked title (37866): the run reset to Salzburg (score
+# 0, 3 lives, Normal) with the mark; no START on it (E50); the replay
+# ends on it (37896). Shot: the marked title in the real game (37884,
+# the Salzburg backdrop with „Nochmal? Drück START"; D-111 observation
+# 2: the marked title's shot comes from a run that starts in Salzburg).
+# Nine LevelCompletes, no death, no hurt, all deterministic. Re-cut for
+# D-111 with the Hackl café replays.
 #
 # qa_m6_accept_full_route's notes:
 #   QA M6 acceptance: the whole playable journey in one run of the real game,
@@ -63,7 +64,7 @@ source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt no_event=GameOver event=AxeHit event=ExtraLife event=CheckpointReached event=Stroke
 expect = state=title cleared=true stage=salzburg power=normal score=0 lives=3 oblaten=0
-shots  = 38037:title_cleared
+shots  = 37884:title_cleared
 ---
 - 20
 S 1
@@ -1060,75 +1061,77 @@ BJR 36
 BR 18
 - 910    # tally, route map -> Cafe Zauner (Wait), the Cafe Zauner intro (32024)
 - 90      # the Café Zauner intro: play from 32174
-# --- Café Zauner as Hackl: cafe_zauner_boss_win_hackl's café inputs (its frames 2166-4714; goal 34711) ---
-R 130
-RJ 36
+# --- Café Zauner as Hackl: cafe_zauner_boss_win_hackl's café inputs (its frames 2166-4558; goal 34555) ---
+R 140
+RJ 20
 R 6
-- 160
+- 36
+B 1
+- 45
+R 72
+RJ 20
+R 2
+RJ 1
+R 10
+RJ 36
+R 10
+RJ 36
+R 50
+RJ 20
+R 10
+RJ 20
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 20
+R 2
+RJ 20
+R 2
+RJ 19
+- 30
 B 1
 - 50
-R 28
-RJ 12
-R 2
-RJ 36
-R 2
-RJ 36
-R 2
+R 24
 RJ 36
 R 10
 RJ 36
 R 2
+RJ 12
+R 2
+RJ 36
+R 2
+- 4
+RJ 36
+R 2
+RJ 36
+R 2
+RJ 36
+R 2
 - 16
 RJ 36
 R 2
 RJ 36
-R 2
+R 130
 RJ 20
 R 2
-RJ 36
-R 2
-RJ 36
-R 2
-RJ 36
-R 2
-RJ 20
-R 2
-RJ 36
-R 18
-RJ 36
-R 2
-RJ 17
-- 30
-B 1
-- 50
-R 20
-RJ 12
-R 66
 RJ 1
 R 2
-RJ 36
+RJ 1
 R 2
-RJ 36
-R 2
-RJ 36
-R 2
-RJ 20
-R 2
-- 16
-RJ 36
-R 2
-RJ 36
-R 2
-RJ 12
-R 2
-RJ 36
-R 114
-RJ 36
+RJ 1
 R 2
 RJ 6
 R 2
-RJ 34
-R 50
+RJ 35
+R 49
 - 105
 B 1
 - 59
@@ -1152,4 +1155,4 @@ B 1
 R 120
 RJ 20
 R 30
-- 3326    # Serve, tally, clear, the whole ending, the marked title (38019)
+- 3329    # Serve, tally, clear, the whole ending, the marked title (37866)

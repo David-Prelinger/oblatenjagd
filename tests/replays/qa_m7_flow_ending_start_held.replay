@@ -4,6 +4,8 @@
 # length (Map 240, Scene 360, Bill 600, Credits 6 x 180, Ende 600 = 2880
 # frames, 4017 -> 6897), then the marked title. Score 30450 = 23300 + the
 # time bonus 143 x 50.
+# Re-cut for D-111 (level-designer): the relaxed run's first 270 frames of
+# play as in qa_m7_cafe_zauner_relaxed (the same state from then on).
 level  = cafe_zauner
 seed   = 1
 source = handwritten
@@ -14,12 +16,13 @@ expect = state=title cleared=true score=0 lives=3 oblaten=0
 - 10
 S 1
 - 150
-- 90
-RB 76
-RBJ 20
-R 4
-L 10
-- 70
+- 40
+R 130
+RJ 24
+R 8
+- 20
+R 5
+- 43
 R 16
 - 4
 RJ 16

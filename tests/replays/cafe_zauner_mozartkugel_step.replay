@@ -7,6 +7,9 @@
 # it rolls back left to Resi, who waits under the box (x 1837), and
 # she grows (PowerUp at 844). It never climbs the step or reaches the
 # arena (col 120).
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten

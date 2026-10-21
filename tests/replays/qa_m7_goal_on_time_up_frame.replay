@@ -4,6 +4,9 @@
 # the armed goal_stollen at 12000, the frame idling there would die of
 # time-up (one more idle frame: Died at 12000). Expected and actual: the goal
 # wins, no death (as the Maibaum, qa_m6a_strobl_goal_on_time_up_frame).
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten

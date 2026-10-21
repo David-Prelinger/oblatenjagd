@@ -3,6 +3,9 @@
 # respawn brings him back unbeaten, so the bell is closed again: she walks
 # from the checkpoint through the waiting/intro boss onto the counter and
 # across the goal_stollen cell (12480-12510): no LevelComplete.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten

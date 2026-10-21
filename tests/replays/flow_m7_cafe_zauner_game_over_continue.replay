@@ -126,9 +126,9 @@ RB 56
 # --- 90 more frames of the Café Zauner intro: play from 5793 ---
 - 90
 # --- life 1: cafe_zauner_boss_win_normal to its frame 1316, then m7_boss_death_reset (death 7364) ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

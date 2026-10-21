@@ -5,6 +5,9 @@
 # (112), so she respawns at the stage start (602, x 34, the player start
 # at col 2) with one life less and the score kept; the queue is whole
 # again.
+# Re-cut for D-111 (level-designer): the first 123 frames of play are the
+# re-solved route's (RB 88, RBJ 20, RB 15: no ?-box at 17 to clear); from
+# frame 183 of play on the state and every frame are as before.
 level  = cafe_zauner
 seed   = 1
 source = handwritten
