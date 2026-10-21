@@ -20,8 +20,8 @@ Both write a machine-readable report to `$CARGO_TARGET_DIR/reports/{check,verify
 ### L1 Static (check)
 - `cargo fmt --check`
 - `cargo clippy --workspace --all-targets -- -D warnings`
-- Native build + `cargo build -p jnr-app --target wasm32-unknown-unknown`
-- **Architecture lint**: `jnr-core` and `jnr-render` must not depend on macroquad; no `f32`/`f64` in `jnr-core` (except in tests); no `HashMap` in `jnr-core`; no `std::time`/`std::fs` in core; tooling-only functions (`Game::teleport_player`) are called only from xtask and tests. Implemented as a simple dependency-tree + grep check in xtask.
+- Native build + `cargo build -p jnr-app -p jnr-audio --target wasm32-unknown-unknown`
+- **Architecture lint**: `jnr-core`, `jnr-render` and `jnr-audio` must not depend on macroquad (`jnr-audio` also not on quad-snd or rand; only on `jnr-core` in the workspace; `jnr-render` not on `jnr-audio`); no `f32`/`f64` in `jnr-core` or `jnr-audio` (except in tests); no `HashMap` there; no `std::time`/`std::fs` there; tooling-only functions (`Game::teleport_player`) are called only from xtask and tests. Implemented as a simple dependency-tree + grep check in xtask.
 
 ### L2 Unit tests (check)
 - `cargo test --workspace`: physics, collision, entity behaviour, level parsing, sprite parsing.

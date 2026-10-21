@@ -1,0 +1,21 @@
+# E55 test fixture for jnr-audio (not a game sound; the sound-designer authors those in audio/).
+range = ["e1", "f4"]
+
+[[layer]]
+wave = "triangle"
+attack_ms = 15
+decay_ms = 120
+sustain_pct = 70
+release_ms = 60
+volume_pct = 60
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+detune_cents = 1200
+attack_ms = 10
+decay_ms = 80
+sustain_pct = 30
+release_ms = 40
+volume_pct = 10
+lowpass_hz = 1500

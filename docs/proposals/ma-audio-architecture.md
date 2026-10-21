@@ -433,3 +433,72 @@ Deviations and details:
 - **Licence**: quad-snd 0.2.8 ships no licence file; `web/audio.js.LICENSE-MIT` is the MIT text of `gl.js.LICENSE-MIT` (same author, crate licence `MIT/Apache-2.0`).
 - The panic message goes to stderr. A quad-snd panic on the main thread (an undecodable WAV in `Sound::load`) is deliberately **not** swallowed: our WAVs come from our own writer, and such a panic is a bug.
 - `Audio::calls()` counts gated backend calls; a unit test already proves `--mute` makes 0 calls (E59 extends it to real cues).
+
+## As built (E55)
+
+`crates/jnr-audio` (modules `patch`, `note`, `synth`, `tables`, `render`, `wav`, `error`); the
+formats are documented in `docs/architecture.md` ("jnr-audio"). Deviations from the design
+above:
+
+- **Layers: 1..=8, not 1..=3.** `docs/audio-design.md` (D-113) asks for patches like the
+  church bell (5 partials + a noise strike) and `boss_hit` (6 ticks + a whistle).
+- **Added for D-113's SFX table** (each cheap and integer-only): `bandpass = { hz, to_hz,
+  q_pct }` (Chamberlin state-variable filter, 2× oversampled, unity gain at the centre,
+  the centre glides in cents over the sound; centre ≤ 10 kHz, Q 1..=20, the range where it
+  stays stable), `highpass_hz` (one-pole, next to `lowpass_hz`), `tremolo = { depth_pct,
+  rate_hz }` (the spinning axe, crawling), and `repeat = { count, every_ms }` (a clap's
+  bursts, debris ticks; `.sfx` and kit patches only).
+- **Instrument keys**: melodic layers use `detune_cents` and `slide_cents` + `slide_ms`
+  instead of `freq_hz`/`slide_to_hz`, and an ADSR (`attack_ms`, `decay_ms`, `sustain_pct`,
+  `release_ms`) instead of `hold_ms`/`decay_ms`-to-silence. Kits are
+  `[kit] K = "kick"` plus `[[patch.kick.layer]]` (`.sfx` keys).
+- **Required keys**: `wave`, `volume_pct`, and `freq_hz` in `.sfx` layers (no hidden default
+  loudness). Everything else has a default (see the table in `architecture.md`).
+- **Noise pitch**: the LFSR steps on every half period of `freq_hz` (so `freq_hz = 20000`
+  ≈ white noise at 44.1 kHz). One LFSR mode (15-bit, taps 0 and 1); no "short/metallic" mode.
+- **Pulse** is zero-mean and peak-normalised for every duty (high = (100−d)/max(d,100−d),
+  low = −d/max(d,100−d) of full scale), so a 12 % pulse has no DC offset.
+- **Pitch** updates every 32 samples (0.73 ms); envelopes, oscillators and filters run per
+  sample. Envelopes are linear (no exponential decay curve yet).
+- **Clamp** is symmetric (±32767); `-32768` counts as clamped. `Render { pcm, clamped }`.
+- **Golden fingerprint**: `Pcm::fnv64()` (FNV-1a 64 over the rate and the LE samples), for
+  E56's `fnv64:` lines.
+- **No `jnr-core` dependency yet** (the arch-lint already allows exactly that one, for E58's
+  cues). `check`'s wasm build now builds `-p jnr-app -p jnr-audio`.
+- **Determinism**: the pinned-hash test's patch (every wave and feature) and a 60 s
+  4-channel note sequence hashed identically from a native release build and a
+  `wasm32-unknown-unknown` release build run in Node 24.
+- **Render cost** (release, aarch64, 14 cores under a load average of ~10 from other
+  agents): a 60 s sequence of 16ths at 140 bpm on 4 channels (2-layer lead with
+  vibrato and low-pass, 2-layer tuba, a kit with a band-passed snare; ~24 M voice-samples)
+  in **50 ms native, 66 ms wasm** (Node 24); ~2 ns per voice-sample, the band-pass ~8 ns.
+  E57's "90 s, 6 channels < 50 ms" will need the song renderer to reuse identical
+  pattern renders (see the notes for E57 below) or a lighter target.
+
+### E55 review fixes
+
+- `vibrato` gained `delay_ms`, `to_depth_cents` and `ramp_ms` (delayed, growing and fading
+  vibrato from `docs/audio-design.md` §2.1/§6); layers gained `slide_delay_ms`.
+- **API changes**: `Vibrato` has three more fields (`delay_ms`, `to_depth_cents`,
+  `ramp_ms`) and `Layer` one (`slide_delay_ms`); `synth::Voice` has `slide_start`. Code
+  that builds these structs literally needs the new fields (`Vibrato` is `Default`). New:
+  `render::add_sfx_until`, `render::add_note_until`, `render::CUT_FADE` (existing
+  signatures unchanged).
+- Behaviour: a note's gate now counts from its onset including a layer's `delay_ms`; an
+  ADSR release from level 0 has no samples (a gate-0 note is silent and as long as its
+  delay).
+- Fixtures moved to `crates/jnr-audio/tests/fixtures/`; `audio/` has only a README.
+- Arch-lint: `as_float`, `Value::Float` and `toml::Value` are forbidden in jnr-audio.
+- The pinned hash changed (its patch now also uses vibrato delay/ramp and slide delay); it
+  still matches a wasm32 build run in Node.
+
+Notes for E56/E57:
+
+- E56: `render_sfx(&Sfx) -> Render` gives the PCM and the clamp count; `wav::write` the
+  file; `Pcm::fnv64` the golden. `ms_to_samples` (floor of ms × 44.1) is the one rounding
+  rule for every time.
+- E57: build songs with `render::add_note(&mut mix, start, layers, note, gate, volume_pct)`
+  and `render::add_sfx` for kit hits (`InstrumentKind::Kit { hits }`), then `to_pcm`. A note
+  sounds `gate + release` samples, so the loop-wrap tail is `mix[loop_len..]` folded back
+  onto the start; `add_note_until` cuts a note early with a 2 ms fade. Identical (instrument, note, gate, volume) voices render identically, so a
+  per-song cache of rendered notes or whole pattern instances is safe and the obvious speed-up.

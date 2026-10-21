@@ -6,6 +6,7 @@ members = [
     "crates/jnr-artkit",
     "crates/jnr-assets",
     "crates/jnr-app",
+    "crates/jnr-audio",
     "xtask",
 ]
 
@@ -21,6 +22,7 @@ jnr-core = { path = "crates/jnr-core" }
 jnr-render = { path = "crates/jnr-render" }
 jnr-artkit = { path = "crates/jnr-artkit" }
 jnr-assets = { path = "crates/jnr-assets" }
+jnr-audio = { path = "crates/jnr-audio" }
 
 # External crates (permissive licences only, see docs/validation.md)
 # Only jnr-app may depend on macroquad (enforced by `cargo xtask check`).
@@ -34,6 +36,11 @@ png = "0.17"
 # simulation millions of times. Optimising jnr-core and xtask in dev builds
 # makes the testbed solve ~3x faster (2.0 s -> 0.6 s) at a small build cost.
 [profile.dev.package.jnr-core]
+opt-level = 2
+
+# The integer synth renders millions of samples per song (D-117); debug
+# builds would be ~15x slower.
+[profile.dev.package.jnr-audio]
 opt-level = 2
 
 [profile.dev.package.xtask]

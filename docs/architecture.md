@@ -32,7 +32,7 @@ jumpnrun/
 │  ├─ jnr-render/             # software renderer: (&Game, &Assets) -> Framebuffer (RGBA, 320x180)
 │  ├─ jnr-artkit/             # palette + .sprite parser, procedural generators, art lints
 │  ├─ jnr-assets/             # build.rs compiles art/ + content/ into embedded data
-│  ├─ jnr-audio/              # (later milestone) synth for SFX + music, renders to PCM/WAV
+│  ├─ jnr-audio/              # integer synth: .sfx/.inst parser, renderer to 44.1 kHz mono i16, WAV (MA)
 │  └─ jnr-app/                # macroquad binary: native + wasm. Thin shell.
 ├─ xtask/                     # dev tool: check, verify, sprites, levels, solve, replay, golden, wasm, vnc
 ├─ art/
@@ -40,6 +40,7 @@ jumpnrun/
 │  ├─ sprites/**/*.sprite
 │  ├─ generators/*.toml       # parameters for procedural art (parallax, water, tiles)
 │  └─ sprites/ui/font.sprite  # bitmap font incl. ÄÖÜäöüß„“– (see jnr-render)
+├─ audio/                     # sound sources (MA): sfx/*.sfx, jingles/*.sfx, instruments/*.inst, music/*.song
 ├─ content/
 │  ├─ levels/01_salzburg.level
 │  ├─ text/de.toml            # all player-visible German text, keyed
@@ -59,8 +60,11 @@ jnr-app ──► jnr-render ──► jnr-core
    └──► jnr-assets ──► jnr-artkit   (runtime: atlas data types only)
             ▲              │
             └─ (build.rs) ◄┘          (build time: parse, lint, pack, codegen)
+jnr-audio ──► (jnr-core only, from E58 for the cues)
 xtask ──► everything (never the other way round)
 ```
+
+- `jnr-audio` is pure and wasm-safe like `jnr-core` (`serde` + `toml` only; never macroquad, quad-snd, rand) and under the same determinism source scan (D-117); it also may not mention `as_float`, `Value::Float` or `toml::Value` (every audio number is an integer key). `jnr-render` never depends on it.
 
 - `jnr-artkit` depends by default only on `serde` + `toml` (generator params; pure and wasm-safe, like jnr-core) and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
 
@@ -183,6 +187,79 @@ Implemented (MA, E54): audio platform (`src/audio.rs`, the only code that touche
 - `jnr-assets/build.rs` calls `jnr-artkit` to compile all art into one packed RGBA atlas: raw pixels (`include_bytes!`, borrowed without copying) plus generated Rust code for the metadata. At runtime `jnr_assets::atlas()` builds the `jnr_artkit::atlas::Atlas` once via `OnceLock` (D-010), so `jnr-assets` depends on `jnr-artkit` at runtime for these data types. A broken sprite = a **build error** with file:line:col.
 - Levels and text are embedded as strings and parsed by `jnr-core` (`Level::parse(&str)`), so tests and tools can load them directly.
 - Generated files are **not committed**; sources are the single truth. Previews go to `target/preview/`.
+
+## jnr-audio: integer synth (MA, D-114, D-117)
+
+Pure crate (E55): text patches → 44 100 Hz mono `i16` PCM, bit-identical on native and wasm (integer maths only, checked by the arch-lint's determinism scan; a test pins the FNV-1a hash of a patch that uses every feature, and the same hash was measured from a wasm32 build in Node). Debug builds compile it with `opt-level = 2`.
+
+- `patch`: `Sfx::parse(file, text)` and `Instrument::parse(file, text)`; the id is the file stem (`[a-z][a-z0-9_]*`). Errors are `file:line:col: error[<kind>]: message` with kinds `syntax`, `schema` (unknown/missing key, wrong type, any float), `key` (a key not allowed in this file kind or on this wave), `range`, `wave`, `layers`, `note`, `kit`, `id`.
+- `synth`: one layer = one voice. A `u32` phase accumulator whose increment is recomputed every 32 samples from the pitch in cents (slide + vibrato + arpeggio + detune) via `tables::scale_by_cents` (Q30 semitone and cent tables). Oscillators in Q15: `pulse` (zero-mean and peak-normalised for any duty), `triangle`, `saw`, `sine` (256-entry table, linear interpolation), `noise` (15-bit LFSR, taps 0/1, seed 1, stepping twice per period of `freq_hz`). Envelopes are linear Q16 segments whose boundaries are `ms_to_samples` of the cumulative times (exact to the sample). Filters: one-pole low-pass and high-pass (`a = w/(1+w)`, `w = 2π·fc/fs`), and a band-pass (Chamberlin state-variable filter, 2× oversampled, unity gain at the centre, centre glides in cents over the sound). Tremolo scales the gain.
+- `render`: voices are summed into an `i32` buffer (`add_sfx`, `add_note`; for songs, E57), then `to_pcm` clamps to ±32767 and **counts** clamped samples (`Render { pcm, clamped }`). `Pcm::fnv64()` is the golden fingerprint. `FRAMES_PER_TICK = 735`.
+- `wav`: `write(&Pcm)` (44-byte RIFF header, PCM 16-bit mono) and `read` (skips unknown chunks; for tests and tools).
+
+### `.sfx` (`audio/sfx/*.sfx`, `audio/jingles/*.sfx`)
+
+TOML, integers only, units in the key names. 1–8 `[[layer]]`s, summed:
+
+| Key | Values | Default | Notes |
+|---|---|---|---|
+| `wave` | `pulse` `triangle` `saw` `sine` `noise` | required | |
+| `duty_pct` | 1..=99 | 50 | pulse only |
+| `freq_hz` | 20..=20000 | required | noise: the LFSR steps at 2 × `freq_hz` (20000 ≈ white) |
+| `slide_to_hz` | 20..=20000 | none | glide in cents (exponential in Hz) |
+| `slide_ms` | 0..=10000 | the rest of the sound | only with `slide_to_hz` |
+| `slide_delay_ms` | 0..=10000 | 0 | the glide starts this long after the layer's start (e.g. a 1-up's last step); only with a slide |
+| `attack_ms`, `hold_ms`, `decay_ms` | 0..=10000 each | 0 | linear 0 → peak → peak → 0; at least one > 0 |
+| `volume_pct` | 0..=100 | required | of full scale; layers add up, clamps are counted |
+| `vibrato` | `{ depth_cents = 0..=1200, rate_hz = 0..=50, delay_ms = 0..=10000, to_depth_cents = 0..=1200, ramp_ms = 0..=10000 }` | off; `delay_ms` 0, `to_depth_cents` = `depth_cents`, `ramp_ms` 0 | off before `delay_ms` (the LFO starts at phase 0 there), then the depth goes linearly from `depth_cents` to `to_depth_cents` over `ramp_ms` (with `ramp_ms = 0`: `to_depth_cents` at once). A delayed vibrato: `{ depth_cents = 20, rate_hz = 6, delay_ms = 200 }`; growing: `depth_cents = 0, to_depth_cents = 50, ramp_ms = 500`; fading: `depth_cents = 100, to_depth_cents = 0, ramp_ms = 200`. `rate_hz` ≥ 1 when either depth > 0 |
+| `arp` | `{ every_ms = 1..=1000, semitones = [-24..=24; ≤ 8] }` | off | cycles through the list |
+| `tremolo` | `{ depth_pct = 0..=100, rate_hz = 1..=50 }` | off | gain × (1 − depth·(1+sin)/2) |
+| `lowpass_hz`, `highpass_hz` | 20..=20000 | off | one-pole; high-pass < low-pass |
+| `bandpass` | `{ hz = 20..=10000, to_hz = 20..=10000, q_pct = 100..=2000 }` | off | `to_hz` defaults to `hz`; Q = `q_pct`/100. Unity gain holds for a tone at the centre; it is no peak bound for broadband noise, whose peaks can exceed the input's, so check the clamp count. A **low-pass sweep** is approximated with a Q 1 band-pass sweep (`q_pct = 100`); `lowpass_hz` itself is fixed |
+| `delay_ms` | 0..=10000 | 0 | the layer starts later |
+| `repeat` | `{ count = 1..=64, every_ms = 1..=10000 }` | off | the whole layer again, `every_ms` apart |
+
+The sound's length is the longest layer's `delay + attack + hold + decay` (+ repeats).
+
+Cutting early (E57's notes, SFX retriggers): `render::add_sfx_until` and `add_note_until` take an absolute sample `until`; the voice is unchanged before it, fades out linearly over `CUT_FADE` = 88 samples (2 ms) from it, and adds nothing after; a voice starting at or after `until` adds nothing.
+
+The crate's test fixtures (example `.sfx`/`.inst` files) are in `crates/jnr-audio/tests/fixtures/`; `audio/` holds only game sounds.
+
+```toml
+# audio/sfx/jump.sfx
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 294
+slide_to_hz = 880
+slide_ms = 120
+attack_ms = 2
+hold_ms = 8
+decay_ms = 140
+volume_pct = 35
+```
+
+### `.inst` (`audio/instruments/*.inst`)
+
+**Melodic**: `range = ["e1", "f4"]` (note names `c4`, `f#3`, `bb2`, octaves 0..=8; `a4` = 440 Hz, equal temperament) and 1–8 `[[layer]]`s with the `.sfx` keys except `freq_hz`, `slide_to_hz`, `hold_ms` and `repeat`, plus `detune_cents` (−2400..=2400), `slide_cents` (−4800..=4800, needs `slide_ms`), and an ADSR: `attack_ms`, `decay_ms` (to sustain), `sustain_pct` (default 100), `release_ms`. A note's `gate` (samples) is counted from its onset, a layer's `delay_ms` included, so every layer of a note sounds `gate + release` samples from the onset (a layer whose delay is ≥ the gate stays silent). A release before the end of attack or decay starts from the level reached; a release from level 0 (e.g. a gate of 0) has no samples.
+
+**Kit**: a `[kit]` table mapping single letters (A–Z, a–z) to patch names, and one `[[patch.<name>.layer]]` list per patch with `.sfx` keys. No `range` or top-level `[[layer]]`; every patch must be used.
+
+```toml
+# audio/instruments/kit.inst
+[kit]
+K = "kick"
+
+[[patch.kick.layer]]
+wave = "sine"
+freq_hz = 120
+slide_to_hz = 50
+slide_ms = 60
+attack_ms = 1
+hold_ms = 20
+decay_ms = 120
+volume_pct = 70
+```
 
 ## Content formats
 
