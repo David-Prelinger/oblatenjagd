@@ -1,0 +1,78 @@
+# Hurt, „Schrumpf" (audio-design §6.2): pulse 50 % falling arpeggio G6 E6 C6 G5 E5 C5 G4,
+# 70 ms each, every note bending down 50 cents (deflating). One layer per note so each
+# note carries its own bend. 500 ms.
+[[layer]]
+wave = "pulse"
+freq_hz = 1568
+slide_to_hz = 1523
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 1319
+slide_to_hz = 1281
+delay_ms = 70
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 1047
+slide_to_hz = 1017
+delay_ms = 140
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 784
+slide_to_hz = 762
+delay_ms = 210
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 659
+slide_to_hz = 640
+delay_ms = 280
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 523
+slide_to_hz = 508
+delay_ms = 350
+attack_ms = 1
+hold_ms = 45
+decay_ms = 24
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 392
+slide_to_hz = 381
+delay_ms = 420
+attack_ms = 1
+hold_ms = 30
+decay_ms = 49
+volume_pct = 50
+lowpass_hz = 7000

@@ -1,0 +1,21 @@
+# Enemy stomped, „Patsch" (audio-design §6.2): pulse 50 % A4 -> A3 over 70 ms plus 25 ms
+# of noise through a 1 kHz low-pass. 110 ms.
+[[layer]]
+wave = "pulse"
+freq_hz = 440
+slide_to_hz = 220
+slide_ms = 70
+attack_ms = 1
+hold_ms = 30
+decay_ms = 79
+volume_pct = 26
+lowpass_hz = 7000
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+lowpass_hz = 1000
+highpass_hz = 100
+attack_ms = 1
+decay_ms = 24
+volume_pct = 15

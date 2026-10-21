@@ -1,0 +1,21 @@
+# Oblate collected, „Knusper" (audio-design §6.2): a 12 ms noise click above 3 kHz (the
+# wafer's crunch), then pulse 25 % E6 for 45 ms and A6 for the rest. 180 ms.
+# Items family: bright pulse 25 % notes, a crisp click or bell on top.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+highpass_hz = 3000
+attack_ms = 1
+decay_ms = 11
+volume_pct = 12
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1319
+arp = { every_ms = 45, semitones = [0, 5, 5, 5] }
+attack_ms = 1
+hold_ms = 40
+decay_ms = 139
+volume_pct = 26
+lowpass_hz = 7000

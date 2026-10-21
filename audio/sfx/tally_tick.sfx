@@ -1,0 +1,10 @@
+# Bonus tally tick (audio-design §6.3): pulse 12.5 % (12 %: whole percent) B6, 25 ms, soft.
+[[layer]]
+wave = "pulse"
+duty_pct = 12
+freq_hz = 1976
+attack_ms = 1
+hold_ms = 10
+decay_ms = 14
+volume_pct = 18
+lowpass_hz = 7000

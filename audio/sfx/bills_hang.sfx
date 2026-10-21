@@ -1,0 +1,23 @@
+# Oberkellner volley, „Zahlen, bitte!" (audio-design §6.3): paper rustle, four noise
+# bursts of 60 ms with 20 ms gaps, high-passed at 3 kHz; the last one settles out. 400 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+highpass_hz = 3000
+lowpass_hz = 6000
+attack_ms = 5
+hold_ms = 25
+decay_ms = 30
+volume_pct = 33
+repeat = { count = 3, every_ms = 80 }
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+highpass_hz = 3000
+lowpass_hz = 6000
+delay_ms = 240
+attack_ms = 5
+hold_ms = 25
+decay_ms = 130
+volume_pct = 33

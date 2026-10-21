@@ -1,0 +1,21 @@
+# Block bumped from below, „Klopf" (audio-design §6.2): triangle 140 -> 80 Hz over 60 ms
+# plus an 8 ms noise click band-passed at 1.2 kHz (knocking on wood). 90 ms.
+# World family: low pulse 50 % / triangle bodies with short noise transients.
+[[layer]]
+wave = "triangle"
+freq_hz = 140
+slide_to_hz = 80
+slide_ms = 60
+attack_ms = 1
+hold_ms = 20
+decay_ms = 69
+volume_pct = 36
+lowpass_hz = 1000
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 1200, q_pct = 200 }
+attack_ms = 1
+decay_ms = 7
+volume_pct = 12
