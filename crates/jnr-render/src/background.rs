@@ -13,7 +13,8 @@
 //!
 //! Factor 0 is a static sky, 16 moves with the playfield. The flat sky fill
 //! (palette `s`) is drawn first unless the first layer covers the whole
-//! screen (fully opaque and at least as tall as the screen), so partial
+//! screen (fully opaque, at least as tall as the screen and fixed to its
+//! bottom: [`covers_screen`]), so partial
 //! layer lists never show stale pixels.
 //!
 //! [`RenderContext::with_background`]: crate::RenderContext::with_background
@@ -70,9 +71,15 @@ pub fn sink_px(camera_y: i32, max_camera_y: i32, factor_y16: u32) -> i32 {
 }
 
 /// True if `layer` hides everything behind it on a `screen_h` tall screen:
-/// at least that tall and every pixel of every frame opaque.
+/// at least that tall, every pixel of every frame opaque, and fixed to the
+/// screen bottom (`y` 0 and `factor_y` 0: a raised or sinking layer would
+/// leave a strip uncovered). Any scroll factor qualifies, since the copies
+/// tile the whole width (e.g. M7's `bg_zauner_salon` at factor 16, the
+/// café's back wall moving with the room).
 pub fn covers_screen(atlas: &Atlas, layer: &BackgroundLayer, screen_h: u32) -> bool {
     layer.sprite.height >= screen_h
+        && layer.y_offset == 0
+        && layer.factor_y16 == 0
         && layer
             .anim
             .frames
@@ -287,6 +294,50 @@ mod tests {
             "transparent pixel shows the layer behind"
         );
         assert_eq!(fb.get(5, 0), Some(C));
+    }
+
+    #[test]
+    fn an_opaque_full_height_layer_at_factor_16_covers_every_column() {
+        // M7 (`bg_zauner_salon`): the only layer, moving with the room.
+        // A 7 px wide opaque column pattern (7 does not divide the screen
+        // width) tiles the whole screen for every camera x, so the flat sky
+        // is never needed and never shows.
+        let cols = ["a", "b", "c", "a", "b", "c", "c"];
+        let rows: Vec<String> = (0..HEIGHT).map(|_| cols.concat()).collect();
+        let rows: Vec<&str> = rows.iter().map(String::as_str).collect();
+        let atlas = testutil::atlas(&[testutil::sprite(
+            "bg_salon",
+            (0, 0),
+            false,
+            vec![("idle", 0, vec![image(&rows)])],
+        )]);
+        let layers = resolve(&atlas, &[("bg_salon", 16, 0, 0)]);
+        assert!(covers_screen(&atlas, &layers[0], HEIGHT as u32));
+        let colour = |i: i32| match cols[i.rem_euclid(7) as usize] {
+            "a" => A,
+            "b" => B,
+            _ => C,
+        };
+        for camera_x in [0, 1, 6, 7, 100, 333, 2000] {
+            let mut fb = testutil::fb();
+            fb.clear(0x0102_0304);
+            draw(&mut fb, &atlas, &layers, true, (camera_x, 92), 92, 0);
+            for x in 0..WIDTH as i32 {
+                for y in [0, HEIGHT as i32 / 2, HEIGHT as i32 - 1] {
+                    assert_eq!(
+                        fb.get(x, y),
+                        Some(colour(x + camera_x)),
+                        "{camera_x} {x} {y}"
+                    );
+                }
+            }
+        }
+        // Raised (`y`) or sinking (`factor_y`), the same layer leaves a strip
+        // free, so the flat sky stays behind it.
+        for (y, fy) in [(1, 0), (0, 8)] {
+            let moved = resolve(&atlas, &[("bg_salon", 16, y, fy)]);
+            assert!(!covers_screen(&atlas, &moved[0], HEIGHT as u32), "{y} {fy}");
+        }
     }
 
     #[test]

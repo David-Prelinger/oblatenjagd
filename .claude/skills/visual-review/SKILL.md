@@ -10,7 +10,8 @@ Status: approved v1.
 ## Rendering review images
 | Purpose | Command | Output |
 |---|---|---|
-| all sprites at a glance | `cargo xtask sprites sheet` | `target/preview/contact_sheet.png` |
+| all sprites at a glance | `cargo xtask sprites sheet` | pages `target/preview/contact_sheet_1.png`, `_2.png`, … (each ≤ 16 000 px tall, groups in order; the command prints each page with its first and last sprite) |
+| one group | `cargo xtask sprites sheet --group <name>` | `target/preview/contact_sheet_<name>.png` (one file) |
 | one sprite, scaled | `cargo xtask sprites preview <name>` | `target/preview/sprites/<name>.png` |
 | animation | `cargo xtask sprites anim <name>` | `target/preview/anim/<name>.png` (+ one `<name>_<anim>.gif` per animation) |
 | in context | `cargo xtask scene <level> --x <px>` (camera left edge at x, player on the floor) | `target/preview/scenes/<level>_<px>.png` (+ `_x4`) |
@@ -18,7 +19,7 @@ Status: approved v1.
 | motion over time | `cargo xtask filmstrip <replay> [--every N]` | `target/preview/filmstrips/<replay>.png` |
 | golden mismatch | (from verify) | `target/reports/golden/<name>_{actual,expected,diff}.png` |
 
-Use the Read tool to look at the PNGs. Always look at the asset **in a scene** too, not only in isolation.
+Use the Read tool to look at the PNGs; a full-sheet page is large, so read it in crops (e.g. `convert page.png -crop 2600x2000+0+<y> +repage crop.png`) or a downscaled copy for the overview. Always look at the asset **in a scene** too, not only in isolation.
 
 ## Rubric
 1. **Readability**: the silhouette is clear at 1× against its real background; the player always stands out most.

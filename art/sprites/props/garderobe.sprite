@@ -1,0 +1,78 @@
+# The cloakroom coat stand (Stage 9, back layer, no k): a bentwood
+# stand O/l/o with a curved crest and scroll finials, three posts that
+# continue the oneway_wood shelf's posts (prop x 2-3, 23-24, 44-45) to
+# curled feet. The shelf itself is the tile (rows 16-31 of the prop =
+# tile row 12 with the prop on the floor 3 tiles below): a black d/m
+# Homburg and a green G Tyrolean hat with a w feather sit on it; under
+# it o hooks with a Lodenmantel G/j/g (o buttons), a camel coat o/O
+# and a closed B/b umbrella on an O crook.
+sprite = garderobe
+size   = 48x64
+origin = 24,64
+anim   = idle frames=1
+---
+frame idle 0
+................................................
+.oo....................oo....................oo.
+oOOl..................oOOl..................oOOl
+.OllO.................OOlO.................OOOl.
+..OllOO.............OOlOllOO.............OOlOl..
+..Ol.llOOO.......OOOll.Ol.llOOO.......OOOll.Ol..
+..Ol...lllOOOOOOOlll...Ol...lllOOOOOOOlll...Ol..
+..Ol......lllllll......Ol......lllllll......Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol............w......Ol..
+..Ol......dddddd.......Ol.......GGGGGwg.....Ol..
+..Ol.....dmmddddd......Ol......GgGGGGGG.....Ol..
+..Ol.....dmdddddd......Ol......GGGGGGGj.....Ol..
+..Ol.....llllllll......Ol......llllllll.....Ol..
+..Ol...mddddddddddd....Ol.....GGGGGGGGGj....Ol..
+................................................
+................................................
+................................................
+................................................
+................................................
+................................................
+.........o.....o...........OO..o.....o..........
+.........o.....o..........O..O.o.....o..........
+.........vvGGvvoo.........O....oo..ooOOoo.......
+........vvvGGvvG..........O.......ooooOoooO.....
+.......vvvvvvvvvG.........d......oooooOoooO.....
+.......vvvvvvvvvG.........bB.....oooooOoooO.....
+......vvvvvvGvvvvG........bB.....oooooOoooO.....
+......vvvvvvGvvvvG........bBB....oooooOoooO.....
+......vvvvvoGvvvvG........bBB.....ooooOoooO.....
+......vvvvvoGvvvvG........bbBB....ooooOoooO.....
+..Ol..vvvvvvGvvvvG.....Ol.bbBB....ooooOoooO.Ol..
+..Ol...vvvvvGvvvG......Ol.bbBB....ooooOoooO.Ol..
+..Ol...vvvvvGvvvG......Ol.bbBB....ooooOoooO.Ol..
+..Ol...vvvvoGvvvG......Ol..bB.....ooooOooOO.Ol..
+..Ol...vvvvoGvvvG......Ol..bB.....OOOOOOOOO.Ol..
+..Ol...vvvvvGvvvG......Ol..bB...............Ol..
+..Ol...vvvvvGvvvG......Ol..bB...............Ol..
+..Ol...vvvvvGvvvG......Ol...d...............Ol..
+..Ol...vvvvoGvvvG......Ol...d...............Ol..
+..Ol...vvvvoGvvvG......Ol...................Ol..
+..Ol...vvvvvGvvvG......Ol...................Ol..
+..Ol...vvvvGGvvvG......Ol...................Ol..
+..Ol...vvvvGGvvvG......Ol...................Ol..
+..Ol...vvvvGGvvGG......Ol...................Ol..
+..Ol...GGGGGGGGGG......Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol...................Ol...................Ol..
+..Ol............................................
+.OOll.................OOll.................OOll.
+.O..l.................O..l.................O..l.

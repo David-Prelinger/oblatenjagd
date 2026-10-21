@@ -81,7 +81,9 @@ impl EnemyKind {
             EnemyKind::Fiaker
             | EnemyKind::Reisebus
             | EnemyKind::Regattaboot
-            | EnemyKind::Auto => AxeHit::Bounce,
+            | EnemyKind::Auto
+            // The tray (D-105).
+            | EnemyKind::Kellner => AxeHit::Bounce,
             EnemyKind::Bienenschwarm => AxeHit::Pass,
         }
     }

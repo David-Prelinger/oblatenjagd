@@ -58,6 +58,9 @@ pub enum Popup {
     /// `popup.stollen` („Zaunerstollen!"), touching the armed
     /// `goal_stollen` (D-107).
     Stollen,
+    /// `popup.komm_gleich` („Komm' gleich!"), a bounce off a Kellner's
+    /// tray (D-105).
+    KommGleich,
 }
 
 impl Popup {
@@ -76,11 +79,13 @@ impl Popup {
             Popup::Kurruhe => Some("popup.kurruhe"),
             Popup::Abtreten => Some("popup.abtreten"),
             Popup::Stollen => Some("popup.stollen"),
+            Popup::KommGleich => Some("popup.komm_gleich"),
         }
     }
 }
 
-/// The enemy types of Stages 1–8.
+/// The enemy types of Stages 1–9. (A Stage 9 Wartender is a
+/// `SelfieTourist` that never walks: [`SpawnKind::Wartender`], D-105.)
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -133,6 +138,10 @@ pub enum EnemyKind {
     /// `offizier`: marches, halts and presents sabres on the stage clock;
     /// the sabre zone ([`crate::enemies::sabre_zone`]) hurts (D-096).
     Offizier,
+    /// `kellner`: a fast walker (the Nordic-Walker's turn rules); not
+    /// stompable, his tray (the hitbox top) only bounces (D-105,
+    /// [`crate::enemies::update_kellner`]).
+    Kellner,
 }
 
 impl EnemyKind {
@@ -146,6 +155,7 @@ impl EnemyKind {
                 | EnemyKind::Reisebus
                 | EnemyKind::Regattaboot
                 | EnemyKind::Auto
+                | EnemyKind::Kellner
         )
     }
 
@@ -175,7 +185,9 @@ impl EnemyKind {
             // Walking or lying in his deck chair (D-097).
             | EnemyKind::Kurgast
             // D-097: an officer sinks like a walker.
-            | EnemyKind::Offizier => true,
+            | EnemyKind::Offizier
+            // On foot (D-105).
+            | EnemyKind::Kellner => true,
             EnemyKind::Taube
             | EnemyKind::TaubeSitting
             | EnemyKind::Fiaker
@@ -233,6 +245,7 @@ impl EnemyKind {
             EnemyKind::Auto => "auto",
             EnemyKind::Kurgast => "kurgast",
             EnemyKind::Offizier => "offizier",
+            EnemyKind::Kellner => "kellner",
         }
     }
 
@@ -260,6 +273,8 @@ impl EnemyKind {
             EnemyKind::Kurgast => 19,
             // M6: 21–22 are reserved for the Offizier (E39).
             EnemyKind::Offizier => 21,
+            // M7: 23–24 are reserved for the Kellner (E45).
+            EnemyKind::Kellner => 23,
         }
     }
 }
@@ -450,7 +465,8 @@ impl EntityKind {
                 Popup::Beleidigt => h.u8(8),
                 Popup::Kurruhe => h.u8(9),
                 Popup::Abtreten => h.u8(10),
-                // 11: reserved; 12: E45's „Komm' gleich!"; 13–16: E46.
+                // M7: 12 is the Kellner's (E45); 13–16: E46; 17: E47.
+                Popup::KommGleich => h.u8(12),
                 Popup::Stollen => h.u8(17),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
@@ -788,6 +804,20 @@ impl Entity {
                 feet_y,
                 e.offizier_hitbox,
             ),
+            SpawnKind::Kellner => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Kellner),
+                feet_x,
+                feet_y,
+                e.kellner_hitbox,
+            ),
+            // A Wartender is a Selfie-Tourist that never walks (D-105; its
+            // `dir` is set to 0 below); only the renderer tells them apart.
+            SpawnKind::Wartender => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::SelfieTourist),
+                feet_x,
+                feet_y,
+                e.selfie_tourist_hitbox,
+            ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
                 let len = tile.mul_int(i32::from(s.len));
@@ -803,8 +833,10 @@ impl Entity {
         entity.active = false;
         entity.spawn = Some(index as u16);
         if let EntityKind::Enemy(kind) = entity.kind {
-            // A `still` tourist has no direction: it never walks (D-026).
-            entity.dir = if s.still { 0 } else { -1 };
+            // A `still` tourist and a Wartender have no direction: they
+            // never walk (D-026, D-105).
+            let still = s.still || s.kind == SpawnKind::Wartender;
+            entity.dir = if still { 0 } else { -1 };
             entity.state = crate::enemies::initial_state(kind);
             if kind == EnemyKind::Bienenschwarm {
                 // `dir` is its run direction (0..=7), placed at `phase`.
@@ -1187,6 +1219,7 @@ mod tests {
                 EnemyKind::Auto => 17,
                 EnemyKind::Kurgast => 18,
                 EnemyKind::Offizier => 19,
+                EnemyKind::Kellner => 20,
             }
         }
         let enemies = [
@@ -1210,6 +1243,7 @@ mod tests {
             EnemyKind::Auto,
             EnemyKind::Kurgast,
             EnemyKind::Offizier,
+            EnemyKind::Kellner,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1242,6 +1276,15 @@ mod tests {
         seventeen.u8(EntityKind::Popup(Popup::Stollen).hash_tag());
         seventeen.u8(17);
         assert_eq!(h.finish(), seventeen.finish());
+        // M7 ranges (parallel tasks): E45's Kellner 23 (23–24 reserved),
+        // its „Komm' gleich!“ sub-tag 12.
+        assert_eq!(EnemyKind::Kellner.id(), 23);
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::KommGleich).hash(&mut h);
+        let mut twelve = crate::hash::Fnv::new();
+        twelve.u8(EntityKind::Popup(Popup::KommGleich).hash_tag());
+        twelve.u8(12);
+        assert_eq!(h.finish(), twelve.finish());
     }
 
     use super::*;

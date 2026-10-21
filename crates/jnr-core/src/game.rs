@@ -1328,6 +1328,9 @@ impl Game {
                         Contact::Bounce => {
                             bounced = true;
                             rest_on = Some(rest_on.map_or(e.y, |top| top.min(e.y)));
+                            // A Kellner's tray: „Komm' gleich!" on every
+                            // bounce, and his `bounce` pose (D-105).
+                            spawned.extend(crate::enemies::tray_bounce(&mut self.entities[i]));
                         }
                         // A swarm (and anything while she swims) hurts
                         // even in the grace after a bounce; a non-stompable

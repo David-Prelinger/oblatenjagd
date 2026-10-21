@@ -16,8 +16,10 @@ Commands:
                                 ~1600 px per row; mirrored copies below), default scale 4
                                 -> preview/sprites/<name>.png
   sheet [--group <name>]        contact sheet of all sprites (or one group) with names,
-                                at most ~2000 px wide
-                                -> preview/contact_sheet.png (contact_sheet_<group>.png)
+                                at most ~2000 px wide; the full sheet is split into
+                                pages of at most 16000 px height
+                                -> preview/contact_sheet_1.png, _2.png, ...
+                                   (one group: preview/contact_sheet_<group>.png)
   anim <name> [--scale N]       filmstrip (one row per animation) + one GIF per animation
                                 -> preview/anim/<name>.png, preview/anim/<name>_<anim>.gif
 ";
@@ -30,6 +32,12 @@ const MAX_FRAMES_PER_ROW: u32 = 16;
 const MAX_PREVIEW_ROW_PX: u32 = 1600;
 /// The contact sheet's rows wrap before they get wider than this.
 const MAX_SHEET_W: u32 = 2000;
+/// Pages of the full contact sheet stay at most this tall (ImageMagick's
+/// default 16K px policy limit).
+const MAX_SHEET_PAGE_H: u32 = 16_000;
+/// Group order of the full contact sheet: the order of
+/// `docs/sprite-catalog.md`. Other groups (the `test` fixtures) follow.
+const CATALOG_GROUPS: [&str; 7] = ["player", "enemies", "items", "tiles", "props", "ui", "bg"];
 /// Padding around each sheet cell.
 const SHEET_PAD: u32 = 12;
 /// Point size of the sheet labels.
@@ -225,6 +233,7 @@ fn sprite_preview(s: &CompiledSprite, scale: u32, background: Option<[u8; 4]>) -
 /// A written preview: sprite name and file.
 struct Preview {
     name: String,
+    group: String,
     path: PathBuf,
 }
 
@@ -249,6 +258,7 @@ fn preview(
         println!("{}", path.display());
         written.push(Preview {
             name: s.sprite.name.clone(),
+            group: s.sprite.group.clone(),
             path,
         });
     }
@@ -270,8 +280,8 @@ fn preview(
 /// Writes one contact-sheet cell to `out`: the preview at its own size
 /// (no resampling of pixel art) above its name, centred, as wide as the
 /// wider of the two (ImageMagick sizes the `label:`, so long names are never
-/// cut), with [`SHEET_PAD`] around. Returns the cell's width.
-fn sheet_cell(preview: &Path, name: &str, out: &Path) -> Result<u32, String> {
+/// cut), with [`SHEET_PAD`] around. Returns the cell's width and height.
+fn sheet_cell(preview: &Path, name: &str, out: &Path) -> Result<(u32, u32), String> {
     let mut cmd = Command::new("convert");
     cmd.args(["-background", SHEET_BACKGROUND])
         .arg(preview)
@@ -291,7 +301,7 @@ fn sheet_cell(preview: &Path, name: &str, out: &Path) -> Result<u32, String> {
     let reader = png::Decoder::new(std::io::BufReader::new(file))
         .read_info()
         .map_err(|e| format!("{}: {e}", out.display()))?;
-    Ok(reader.info().width)
+    Ok((reader.info().width, reader.info().height))
 }
 
 /// Flows cells (by width) into rows, in order: a new row starts before
@@ -314,34 +324,114 @@ fn flow_rows(cell_ws: &[u32], max_w: u32) -> Vec<usize> {
     rows
 }
 
-fn sheet(root: &Path, group: Option<&str>) -> Result<(), String> {
-    let previews = preview(root, "", group, 4)?;
-    let out_name = match group {
-        Some(g) => format!("contact_sheet_{g}.png"),
-        None => "contact_sheet.png".to_owned(),
+/// Lays cells of `(width, height)` out into pages of rows of cell
+/// indices, in order: rows flow by width ([`flow_rows`], `max_w`), a row is
+/// as tall as its tallest cell, and pages flow by row height (`max_h`), so
+/// a page break only ever falls between rows and no cell is split. A row
+/// taller than `max_h` gets a page of its own (still too tall for
+/// ImageMagick then, which no real sprite comes near). `max_h = u32::MAX` gives a
+/// single page.
+fn sheet_pages(cells: &[(u32, u32)], max_w: u32, max_h: u32) -> Vec<Vec<Vec<usize>>> {
+    let widths: Vec<u32> = cells.iter().map(|c| c.0).collect();
+    let mut rows: Vec<Vec<usize>> = Vec::new();
+    let mut next = 0;
+    for count in flow_rows(&widths, max_w) {
+        rows.push((next..next + count).collect());
+        next += count;
+    }
+    let row_hs: Vec<u32> = rows
+        .iter()
+        .map(|r| r.iter().map(|&i| cells[i].1).max().unwrap_or(0))
+        .collect();
+    let mut rows = rows.into_iter();
+    flow_rows(&row_hs, max_h)
+        .into_iter()
+        .map(|count| rows.by_ref().take(count).collect())
+        .collect()
+}
+
+/// Sheet order of two sprites given as `(group, name)`: groups in
+/// [`CATALOG_GROUPS`] order (unknown groups after them, by name), then by
+/// sprite name.
+fn catalog_cmp(a: (&str, &str), b: (&str, &str)) -> std::cmp::Ordering {
+    let rank = |g: &str| {
+        CATALOG_GROUPS
+            .iter()
+            .position(|&c| c == g)
+            .unwrap_or(CATALOG_GROUPS.len())
     };
-    let out = preview_dir(root, "")?.join(out_name);
+    (rank(a.0), a.0, a.1).cmp(&(rank(b.0), b.0, b.1))
+}
+
+/// `contact_sheet_<n>.png` (n = 1, 2, ...): a page of the full sheet.
+fn is_sheet_page(file_name: &str) -> bool {
+    file_name
+        .strip_prefix("contact_sheet_")
+        .and_then(|rest| rest.strip_suffix(".png"))
+        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// Writes the contact sheet: one file for a group, pages of at most
+/// [`MAX_SHEET_PAGE_H`] px for all sprites (old pages and the old
+/// single-file sheet are removed first, so no stale page is left behind).
+fn sheet(root: &Path, group: Option<&str>) -> Result<(), String> {
+    let mut previews = preview(root, "", group, 4)?;
+    previews.sort_by(|a, b| catalog_cmp((&a.group, &a.name), (&b.group, &b.name)));
+    let dir = preview_dir(root, "")?;
     let cells_dir = preview_dir(root, "sheet_cells")?;
     // One labelled cell per sprite, at its own size.
     let mut cells = Vec::new();
-    let mut cell_ws = Vec::new();
+    let mut sizes = Vec::new();
     for p in &previews {
         let cell = cells_dir.join(format!("{}.png", p.name));
-        cell_ws.push(sheet_cell(&p.path, &p.name, &cell)?);
+        sizes.push(sheet_cell(&p.path, &p.name, &cell)?);
         cells.push(cell);
     }
-    // Cells side by side (top-aligned) per row, rows stacked (left-aligned).
-    let mut cmd = Command::new("convert");
-    cmd.args(["-background", SHEET_BACKGROUND, "-gravity", "NorthWest"]);
-    let mut rest = cells.as_slice();
-    for count in flow_rows(&cell_ws, MAX_SHEET_W) {
-        let (row, tail) = rest.split_at(count);
-        rest = tail;
-        cmd.arg("(").args(row).args(["+append", ")"]);
+    let (pages, outs): (_, Vec<PathBuf>) = match group {
+        Some(g) => (
+            sheet_pages(&sizes, MAX_SHEET_W, u32::MAX),
+            vec![dir.join(format!("contact_sheet_{g}.png"))],
+        ),
+        None => {
+            let entries = fs::read_dir(&dir).map_err(|e| format!("read {}: {e}", dir.display()))?;
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                let name = name.to_string_lossy();
+                if name == "contact_sheet.png" || is_sheet_page(&name) {
+                    fs::remove_file(entry.path())
+                        .map_err(|e| format!("remove {}: {e}", entry.path().display()))?;
+                }
+            }
+            let pages = sheet_pages(&sizes, MAX_SHEET_W, MAX_SHEET_PAGE_H);
+            let outs = (1..=pages.len())
+                .map(|n| dir.join(format!("contact_sheet_{n}.png")))
+                .collect();
+            (pages, outs)
+        }
+    };
+    println!("contact sheet:");
+    for (page, out) in pages.iter().zip(&outs) {
+        // Cells side by side (top-aligned) per row, rows stacked (left-aligned).
+        let mut cmd = Command::new("convert");
+        cmd.args(["-background", SHEET_BACKGROUND, "-gravity", "NorthWest"]);
+        for row in page {
+            cmd.arg("(");
+            cmd.args(row.iter().map(|&i| &cells[i]));
+            cmd.args(["+append", ")"]);
+        }
+        cmd.args(["-append", "+repage"]).arg(out);
+        run_tool(cmd, "convert")?;
+        let first = &previews[page[0][0]];
+        let last = &previews[*page.last().and_then(|r| r.last()).unwrap_or(&0)];
+        println!(
+            "{}  ({}/{} .. {}/{})",
+            out.display(),
+            first.group,
+            first.name,
+            last.group,
+            last.name
+        );
     }
-    cmd.args(["-append", "+repage"]).arg(&out);
-    run_tool(cmd, "convert")?;
-    println!("{}", out.display());
     Ok(())
 }
 
@@ -515,6 +605,78 @@ mod tests {
     }
 
     #[test]
+    fn sheet_pages_stay_under_the_height_limit_in_order() {
+        // Rows of 100 px cells, 20 per 2000 px row; heights vary per cell.
+        let cells: Vec<(u32, u32)> = (0..600u32).map(|i| (100, 40 + (i * 53) % 900)).collect();
+        let pages = sheet_pages(&cells, 2000, 16_000);
+        assert!(pages.len() > 1, "the sheet needs several pages");
+        let flat: Vec<usize> = pages.iter().flatten().flatten().copied().collect();
+        // Every cell exactly once, in order (so groups stay in catalog order).
+        assert_eq!(flat, (0..cells.len()).collect::<Vec<_>>());
+        let page_h = |page: &Vec<Vec<usize>>| -> u32 {
+            page.iter()
+                .map(|r| r.iter().map(|&i| cells[i].1).max().unwrap())
+                .sum()
+        };
+        for (n, page) in pages.iter().enumerate() {
+            assert!(!page.is_empty());
+            assert!(page_h(page) <= 16_000, "page {n} too tall");
+            // Each page took as many rows as fit: the next row would not.
+            if let Some(next) = pages.get(n + 1) {
+                let next_h = next[0].iter().map(|&i| cells[i].1).max().unwrap();
+                assert!(page_h(page) + next_h > 16_000);
+            }
+            // Rows still respect the width limit.
+            for row in page {
+                assert!(row.len() <= 20);
+            }
+        }
+        // A row taller than the limit gets a page of its own.
+        let pages = sheet_pages(&[(100, 50), (100, 20_000), (2000, 50)], 2000, 16_000);
+        assert_eq!(pages, vec![vec![vec![0, 1]], vec![vec![2]]]);
+        // No height limit (a group sheet): one page.
+        assert_eq!(sheet_pages(&cells, 2000, u32::MAX).len(), 1);
+        assert!(sheet_pages(&[], 2000, 16_000).is_empty());
+    }
+
+    #[test]
+    fn sheet_orders_groups_like_the_catalog() {
+        let mut sprites = vec![
+            ("bg", "a_sky"),
+            ("test", "box"),
+            ("player", "resi"),
+            ("tiles", "tile_b"),
+            ("enemies", "zwerg"),
+            ("tiles", "tile_a"),
+            ("enemies", "bus"),
+            ("ui", "font"),
+        ];
+        sprites.sort_by(|a, b| catalog_cmp(*a, *b));
+        assert_eq!(
+            sprites,
+            vec![
+                ("player", "resi"),
+                ("enemies", "bus"),
+                ("enemies", "zwerg"),
+                ("tiles", "tile_a"),
+                ("tiles", "tile_b"),
+                ("ui", "font"),
+                ("bg", "a_sky"),
+                ("test", "box"),
+            ]
+        );
+    }
+
+    #[test]
+    fn sheet_page_names() {
+        assert!(is_sheet_page("contact_sheet_1.png"));
+        assert!(is_sheet_page("contact_sheet_12.png"));
+        assert!(!is_sheet_page("contact_sheet_.png"));
+        assert!(!is_sheet_page("contact_sheet_ui.png"));
+        assert!(!is_sheet_page("contact_sheet.png"));
+    }
+
+    #[test]
     fn sheet_cells_fit_preview_or_label() {
         let dir = crate::target_dir(&Path::new(env!("CARGO_MANIFEST_DIR")).join(".."))
             .join("tmp/xtask-sheet-cell-test");
@@ -538,12 +700,13 @@ mod tests {
         };
         // A wide preview: the cell is the preview plus padding.
         let wide = png("wide.png", 400);
-        let w = sheet_cell(&wide, "font", &dir.join("cell_font.png")).unwrap();
+        let (w, h) = sheet_cell(&wide, "font", &dir.join("cell_font.png")).unwrap();
         assert_eq!(w, 400 + 2 * SHEET_PAD);
+        assert!(h > 8 + 2 * SHEET_PAD, "preview, label and padding");
         // A long name under a small preview: the whole label fits.
         let name = "zartkugel_thrown_long_name";
         let small = png("small.png", 4);
-        let w = sheet_cell(&small, name, &dir.join("cell_long.png")).unwrap();
+        let (w, _) = sheet_cell(&small, name, &dir.join("cell_long.png")).unwrap();
         assert!(label_w(name) > 4 + 2 * SHEET_PAD, "the label is the wider");
         assert_eq!(w, label_w(name) + 2 * SHEET_PAD);
     }

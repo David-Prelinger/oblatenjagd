@@ -1,0 +1,22 @@
+# The tray lifts her to the chandelier (D-105): after a first bounce she
+# waits on the refuge (3 up, at the right wall) until the Kellner walks
+# under it, drops through it (DOWN + JUMP) onto his tray with JUMP held (a
+# full bounce: no coyote jump, the refuge is a one-way) and drifts left onto
+# the 4-up chandelier for its 3 Oblaten (200 each), standing on it at the end.
+level  = m7_kellner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped oblaten=3 score=600 player_y<=106
+---
+R 66
+RJ 6
+R 8
+- 20
+R 100
+RJ 14
+R 10
+- 119
+DJ 2
+LJ 40
+L 24
+- 20

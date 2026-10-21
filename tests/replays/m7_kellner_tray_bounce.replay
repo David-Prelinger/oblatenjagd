@@ -1,0 +1,16 @@
+# The tray is a bounce pad (D-105): Resi hops onto the 2-high wall at 10
+# and steps off it onto the Kellner's tray as he reaches the wall: a bounce
+# without damage or points („Komm' gleich!"), then she lands ahead of him,
+# outruns him and jumps out of the pen over the wall at 25.
+level  = m7_kellner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 power=normal player_x>=420
+---
+R 66
+RJ 6
+R 8
+- 20
+R 130
+RJ 20
+R 30
