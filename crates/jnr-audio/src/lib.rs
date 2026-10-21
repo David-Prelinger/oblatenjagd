@@ -8,14 +8,11 @@
 //!   one-pole low/high-pass, volume.
 //! - [`render`]: patches to 44 100 Hz mono `i16` [`Pcm`], with clamp counting.
 //! - [`wav`]: RIFF/WAVE bytes from and to [`Pcm`].
-<<<<<<< HEAD
-//! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
-=======
 //! - [`song`]: the `.song` music format (TOML header + tracker-style
 //!   scores), [`song_render`]: songs to PCM (loop alignment, wrapped tails,
 //!   a voice cache), [`music_lint`]: what can be checked from the text,
 //!   [`quote`]: melody fixtures of quoted tunes.
->>>>>>> ma-audio
+//! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
 //!
 //! The crate follows the `jnr-core` determinism rules (integers only, no
 //! `HashMap` iteration, no time/fs/threads/global RNG; enforced by

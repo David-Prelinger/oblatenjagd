@@ -702,7 +702,7 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
   OK is asked at the MA review).
 - **Stage songs have no intro bars**: D-114 songs loop from sample 0, so "the stage piece
   from bar 1 (intro bars included)" (audio-design §4) becomes the loop from its start; the
-  design's intro bars are either part of the loop or dropped (E57's song format decides),
+  design's intro bars are either part of the loop or dropped (E57's format has no `intro`),
   and the stage intro screen stays silent as in §4.
 - **The map's START fires `ui_start`**: a START press that leaves the title, „Weiter?", the
   route map (a skip in Arrive/Walk or the press in Wait) or an ending phase gives `ui_start`
