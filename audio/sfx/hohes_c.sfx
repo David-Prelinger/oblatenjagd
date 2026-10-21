@@ -1,0 +1,22 @@
+# Operettensänger sings, „Das hohe C" (audio-design §6.3): pulse 50 % C6, attack 60 /
+# release 80, vibrato ±35 cents from 150 ms (6 Hz: rates are whole Hz), plus C5 12 dB
+# lower (the chest). 800 ms, the 48 SING frames; cut at once if he is defeated.
+[[layer]]
+wave = "pulse"
+freq_hz = 1047
+vibrato = { depth_cents = 35, rate_hz = 6, delay_ms = 150 }
+attack_ms = 60
+hold_ms = 660
+decay_ms = 80
+volume_pct = 32
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+freq_hz = 523
+vibrato = { depth_cents = 35, rate_hz = 6, delay_ms = 150 }
+attack_ms = 60
+hold_ms = 660
+decay_ms = 80
+volume_pct = 8
+lowpass_hz = 7000

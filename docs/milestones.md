@@ -309,7 +309,7 @@ Planning
 Engine
 - [x] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
 - [x] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
-- [ ] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
+- [x] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
 - [ ] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
 - [ ] E58 Embedding through `jnr-assets/build.rs`; core `Event::Bounced` (output only, no hash change); the pure cue mapper (events + state diff → cues, exhaustive per `Event`) with D-113's voice rules; level `music` ids for the 9 journey levels with a `levels lint` check; cue-log goldens from replays
 - [ ] E59 App wiring: SFX at startup, songs per stage (lazy, unloaded), pause, ducking, jingles, underwater swap; `vnc-smoke` audio capture assertions
@@ -317,7 +317,7 @@ Engine
 - [ ] E61 Docs (architecture, validation, agentic-setup), the `sound-designer` agent and the `sfx-authoring` skill
 
 Sound (sound-designer, game-designer review)
-- [ ] S1 The 25 must SFX (audio-design §6), stats in range
+- [x] S1 The 25 must SFX (audio-design §6), stats in range
 - [ ] S2 Must music in the order of audio-design's task list (title, death, clear, hurry, game over, map, Salzburg, boss set, café, finale, ending set, Stages 2–8, underwater), each quote transcribed from its PD edition with its header filled in
 - [ ] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows
 - [ ] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table

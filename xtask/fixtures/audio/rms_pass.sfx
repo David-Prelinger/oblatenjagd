@@ -1,0 +1,8 @@
+# Lint fixture for `rms` (xtask/src/audio/lint.rs): A jingle, a held sine at 20 %: RMS about −17 dBFS.
+[[layer]]
+wave = "sine"
+freq_hz = 440
+attack_ms = 2
+hold_ms = 380
+decay_ms = 18
+volume_pct = 20

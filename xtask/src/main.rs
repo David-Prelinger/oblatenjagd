@@ -6,6 +6,7 @@
 //! placeholder steps in `steps.rs`.
 
 mod archlint;
+mod audio;
 mod climblint;
 mod content;
 mod cues;
@@ -36,14 +37,16 @@ cargo xtask <command>
 
 Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
-            sprites lint, levels lint
-  verify    full validation: check + solver, replays, goldens, cue logs,
+            sprites lint, levels lint, audio lint
+  verify    full validation: check + solver, replays, goldens, cue logs, audio goldens,
             wasm-smoke, vnc-smoke; `verify --no-cache` solves every level even if the
             solver cache has its result (D-091)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
   levels    lint [id]
+  audio     render <id>|<file.sfx>|--all | lint [id] | golden [--accept <id>|--all|--prune]
+            (see `cargo xtask audio help`; files under $CARGO_TARGET_DIR/preview/audio)
   solve     <level-id|--all> [--write] [--shots]  solver bot + difficulty report
             (see `cargo xtask solve help`)
   replay    <file|name|--all> [--shots] [--cue-log]
@@ -77,6 +80,7 @@ fn main() -> ExitCode {
             run_suite("verify", steps::verify_steps())
         }
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
+        Some("audio") => audio::run(&workspace_root(), &args[1..]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("levels") => levels::run(&workspace_root(), &args[1..]),
         Some("solve") => solver::run(&workspace_root(), &args[1..]),

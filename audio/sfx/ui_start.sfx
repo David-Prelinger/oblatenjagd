@@ -1,0 +1,24 @@
+# START accepted, „Los!" (audio-design §6.3): pulse 25 %, C5+G5 as a chip-chord arpeggio
+# for 60 ms, then C6 for 140 ms. 200 ms.
+# UI family: pulse 25 % chimes and sine bells (the till, the spoon, the coin).
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 523
+arp = { every_ms = 15, semitones = [0, 7] }
+attack_ms = 1
+hold_ms = 58
+decay_ms = 1
+volume_pct = 35
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1047
+delay_ms = 60
+attack_ms = 1
+hold_ms = 40
+decay_ms = 99
+volume_pct = 35
+lowpass_hz = 7000

@@ -8,7 +8,7 @@ use std::process::Command;
 use std::time::Instant;
 
 use crate::report::{EXCERPT_LINES, Status, Step, excerpt};
-use crate::{archlint, golden, levels, replay, solver, sprites, vnc, wasm};
+use crate::{archlint, audio, golden, levels, replay, solver, sprites, vnc, wasm};
 
 pub type StepFn = fn(&Path) -> Step;
 
@@ -22,6 +22,7 @@ pub fn check_steps() -> Vec<StepFn> {
         arch_lint,
         sprites_lint,
         levels_lint,
+        audio_lint,
     ]
 }
 
@@ -33,6 +34,7 @@ pub fn verify_steps() -> Vec<StepFn> {
         replays,
         goldens,
         cue_logs,
+        audio_goldens,
         wasm_smoke,
         vnc_smoke,
     ]);
@@ -113,6 +115,12 @@ fn levels_lint(root: &Path) -> Step {
     )
 }
 
+fn audio_lint(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = audio::lint_report(root, None);
+    finish("audio-lint", "cargo xtask audio lint", started, ok, &output)
+}
+
 // ---------------------------------------------------------------- verify (L4-L8)
 
 fn solver(root: &Path) -> Step {
@@ -143,6 +151,18 @@ fn cue_logs(root: &Path) -> Step {
     let started = Instant::now();
     let (ok, output) = crate::cues::check_report(root);
     finish("cue-logs", "cargo xtask cues", started, ok, &output)
+}
+
+fn audio_goldens(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = audio::golden_report(root);
+    finish(
+        "audio-goldens",
+        "cargo xtask audio golden",
+        started,
+        ok,
+        &output,
+    )
 }
 
 /// L8 (native): the real app window on the X display, see `vnc.rs`.

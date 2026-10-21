@@ -1,0 +1,23 @@
+# Pause, „Löffel am Häferl" (audio-design §6.3): a spoon on a cup (Jausenpause), sines
+# 2637 + 3951 + 5274 Hz, attack 1 / decay 250. 260 ms. (Leaving the pause is the same
+# strike two semitones lower in the design; that needs a second id or a pitch offset.)
+[[layer]]
+wave = "sine"
+freq_hz = 2637
+attack_ms = 1
+decay_ms = 259
+volume_pct = 17
+
+[[layer]]
+wave = "sine"
+freq_hz = 3951
+attack_ms = 1
+decay_ms = 200
+volume_pct = 11
+
+[[layer]]
+wave = "sine"
+freq_hz = 5274
+attack_ms = 1
+decay_ms = 140
+volume_pct = 6

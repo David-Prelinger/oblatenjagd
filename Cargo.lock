@@ -613,7 +613,9 @@ dependencies = [
  "jnr-core",
  "jnr-render",
  "png",
+ "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]

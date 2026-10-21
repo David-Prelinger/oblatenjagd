@@ -1,0 +1,29 @@
+# Audio goldens (docs/validation.md, "Audio"; D-117): the FNV-1a 64 hash of
+# each sound's rendered PCM, plus its stats at acceptance (for the report).
+# Written only by `cargo xtask audio golden --accept <id>` after a
+# game-designer APPROVED verdict. Do not edit by hand.
+axe_hit = { pcm = "fnv64:8601ed332dc27d9e", frames = 4410, peak_dbfs = -8.32, rms_dbfs = -12.98, centroid_hz = 3468 }
+bills_hang = { pcm = "fnv64:6b8f3ffed7f374d2", frames = 17640, peak_dbfs = -11.69, rms_dbfs = -21.84, centroid_hz = 9208 }
+boss_breathe = { pcm = "fnv64:0ed6fd5991787cf5", frames = 26460, peak_dbfs = -10.04, rms_dbfs = -24.44, centroid_hz = 1305 }
+boss_hit = { pcm = "fnv64:91b5509ef73dcd7a", frames = 22050, peak_dbfs = -5.98, rms_dbfs = -16.66, centroid_hz = 3582 }
+boss_telegraph = { pcm = "fnv64:7bee7b7be7f19c8a", frames = 29414, peak_dbfs = -8.63, rms_dbfs = -20.38, centroid_hz = 4142 }
+brick = { pcm = "fnv64:ad04d2b1ebd72634", frames = 9702, peak_dbfs = -6.94, rms_dbfs = -20.60, centroid_hz = 5135 }
+bump = { pcm = "fnv64:402816abe52b8520", frames = 3969, peak_dbfs = -9.21, rms_dbfs = -16.83, centroid_hz = 525 }
+checkpoint = { pcm = "fnv64:848491dbf8fd16a4", frames = 19845, peak_dbfs = -8.20, rms_dbfs = -18.72, centroid_hz = 1995 }
+hackl = { pcm = "fnv64:12a9e9db3f6bcdb5", frames = 22050, peak_dbfs = -5.78, rms_dbfs = -15.35, centroid_hz = 2725 }
+hohes_c = { pcm = "fnv64:667bb229d64b7ca4", frames = 35280, peak_dbfs = -7.96, rms_dbfs = -10.74, centroid_hz = 4860 }
+hurt = { pcm = "fnv64:36195c0b06625083", frames = 22050, peak_dbfs = -6.02, rms_dbfs = -7.87, centroid_hz = 4762 }
+jump = { pcm = "fnv64:30b2de86a785329d", frames = 6615, peak_dbfs = -9.12, rms_dbfs = -18.57, centroid_hz = 4075 }
+kassa_zeile = { pcm = "fnv64:af747a660505813d", frames = 11025, peak_dbfs = -10.13, rms_dbfs = -21.83, centroid_hz = 2766 }
+muenze = { pcm = "fnv64:f8a416db71d394b8", frames = 6615, peak_dbfs = -11.98, rms_dbfs = -22.71, centroid_hz = 3691 }
+oblate = { pcm = "fnv64:6db8ba224b43a1d1", frames = 7938, peak_dbfs = -8.34, rms_dbfs = -20.85, centroid_hz = 6412 }
+oneup = { pcm = "fnv64:ea03bc5dec49325f", frames = 30870, peak_dbfs = -6.02, rms_dbfs = -12.42, centroid_hz = 5730 }
+pause = { pcm = "fnv64:e0db4ff58b05c0cd", frames = 11466, peak_dbfs = -10.21, rms_dbfs = -21.74, centroid_hz = 3356 }
+roof_bounce = { pcm = "fnv64:062b7cbbad834fcf", frames = 7056, peak_dbfs = -7.96, rms_dbfs = -11.16, centroid_hz = 3941 }
+stomp = { pcm = "fnv64:424e0c7e582809fa", frames = 4851, peak_dbfs = -8.43, rms_dbfs = -14.71, centroid_hz = 3631 }
+stroke = { pcm = "fnv64:c1124349295fd23e", frames = 3969, peak_dbfs = -14.43, rms_dbfs = -23.09, centroid_hz = 2892 }
+tally_end = { pcm = "fnv64:5da48c93350e1af3", frames = 22050, peak_dbfs = -8.49, rms_dbfs = -20.64, centroid_hz = 2458 }
+tally_tick = { pcm = "fnv64:bcd8500959e144fe", frames = 1102, peak_dbfs = -16.23, rms_dbfs = -28.53, centroid_hz = 7004 }
+throw = { pcm = "fnv64:7e4956a360112229", frames = 6174, peak_dbfs = -10.20, rms_dbfs = -23.69, centroid_hz = 3284 }
+ui_start = { pcm = "fnv64:783c83cedfe6eb44", frames = 8820, peak_dbfs = -9.12, rms_dbfs = -16.36, centroid_hz = 4614 }
+zucker = { pcm = "fnv64:763884506a963b26", frames = 22050, peak_dbfs = -6.02, rms_dbfs = -7.10, centroid_hz = 5053 }

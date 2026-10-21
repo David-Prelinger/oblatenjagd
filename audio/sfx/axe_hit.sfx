@@ -1,0 +1,22 @@
+# Thrown axe hits, „Tschak" (audio-design §6.2): 30 ms of noise through a 3 kHz low-pass
+# (the crack), then pulse 50 % 180 -> 90 Hz for 70 ms (the thud). 100 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+lowpass_hz = 3000
+highpass_hz = 100
+attack_ms = 1
+decay_ms = 29
+volume_pct = 30
+
+[[layer]]
+wave = "pulse"
+freq_hz = 180
+slide_to_hz = 90
+slide_ms = 70
+delay_ms = 25
+attack_ms = 1
+hold_ms = 20
+decay_ms = 54
+volume_pct = 36
+lowpass_hz = 4000

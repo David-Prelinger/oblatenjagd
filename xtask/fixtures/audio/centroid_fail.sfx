@@ -1,0 +1,9 @@
+# Lint fixture for `centroid` (xtask/src/audio/lint.rs): A 440 Hz square (centroid about 6.1 kHz: a naive square's harmonics and aliases) against a 0.5–2 kHz band.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 35

@@ -1,0 +1,9 @@
+# Lint fixture for `rms` (xtask/src/audio/lint.rs): A jingle, a held square at 50 %: RMS about −6.5 dBFS, far over −17 ± 2.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 380
+decay_ms = 18
+volume_pct = 50

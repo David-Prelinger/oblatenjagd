@@ -1,0 +1,20 @@
+# Swim stroke, „Blub" (audio-design §6.2): sine 280 -> 560 Hz over 60 ms (the bubble)
+# plus 40 ms of noise through a 1.5 kHz low-pass. 90 ms, soft.
+[[layer]]
+wave = "sine"
+freq_hz = 280
+slide_to_hz = 560
+slide_ms = 60
+attack_ms = 2
+hold_ms = 30
+decay_ms = 58
+volume_pct = 13
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+lowpass_hz = 1500
+highpass_hz = 100
+attack_ms = 1
+decay_ms = 39
+volume_pct = 9
