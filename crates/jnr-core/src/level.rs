@@ -276,6 +276,10 @@ pub enum SpawnKind {
     /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
     /// salute on the stage clock, D-096).
     Offizier,
+    /// The finale's goal (`goal_stollen`, D-107): the Zaunerstollen under
+    /// its glass bell; the trigger is its own cell, armed once no
+    /// undefeated Oberkellner is in the level.
+    GoalStollen,
     /// Enemy `kellner` (a fast walker with a tray that bounces, D-105).
     Kellner,
     /// `wartender` (a queuer, D-105): in the simulation a Selfie-Tourist
@@ -286,7 +290,7 @@ pub enum SpawnKind {
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 36] = [
+    pub const ALL: [SpawnKind; 37] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -321,6 +325,7 @@ impl SpawnKind {
         SpawnKind::Kurgast,
         SpawnKind::Fensterladen,
         SpawnKind::Offizier,
+        SpawnKind::GoalStollen,
         SpawnKind::Kellner,
         SpawnKind::Wartender,
     ];
@@ -363,9 +368,15 @@ impl SpawnKind {
             SpawnKind::Kurgast => "kurgast",
             SpawnKind::Fensterladen => "fensterladen",
             SpawnKind::Offizier => "offizier",
+            SpawnKind::GoalStollen => "goal_stollen",
             SpawnKind::Kellner => "kellner",
             SpawnKind::Wartender => "wartender",
         }
+    }
+
+    /// True for every goal kind (`goal`/`goal_maibaum`, `goal_stollen`).
+    pub const fn is_goal(self) -> bool {
+        matches!(self, SpawnKind::Goal | SpawnKind::GoalStollen)
     }
 
     /// Spawn kind for a legend name; `None` if unknown.
@@ -1760,6 +1771,12 @@ P.sSC.tfG
             assert_eq!(SpawnKind::from_name(k.name()), Some(k));
         }
         assert_eq!(SpawnKind::from_name("goal_maibaum"), Some(SpawnKind::Goal));
+        assert_eq!(
+            SpawnKind::from_name("goal_stollen"),
+            Some(SpawnKind::GoalStollen)
+        );
+        assert!(SpawnKind::GoalStollen.is_goal() && SpawnKind::Goal.is_goal());
+        assert!(!SpawnKind::Checkpoint.is_goal());
         for s in [SignStyle::Street, SignStyle::Bus, SignStyle::Ortsende] {
             assert_eq!(SignStyle::from_name(s.name()), Some(s));
         }

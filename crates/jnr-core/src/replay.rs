@@ -126,6 +126,8 @@ pub enum EndState {
     GameOver,
     /// [`Mode::RouteMap`].
     RouteMap,
+    /// [`Mode::Ending`] (any phase, D-107).
+    Ending,
 }
 
 impl EndState {
@@ -140,6 +142,7 @@ impl EndState {
             EndState::StageIntro => "stage_intro",
             EndState::Paused => "paused",
             EndState::RouteMap => "route_map",
+            EndState::Ending => "ending",
         }
     }
 
@@ -154,6 +157,7 @@ impl EndState {
             Mode::StageIntro { .. } => EndState::StageIntro,
             Mode::Paused => EndState::Paused,
             Mode::RouteMap => EndState::RouteMap,
+            Mode::Ending => EndState::Ending,
         }
     }
 
@@ -167,6 +171,7 @@ impl EndState {
             EndState::StageIntro,
             EndState::Paused,
             EndState::RouteMap,
+            EndState::Ending,
         ]
         .into_iter()
         .find(|v| v.name() == s)
@@ -192,7 +197,7 @@ pub enum Expect {
     PlayerYAtLeast(i32),
     /// `player_y<=PX`: the player's hitbox top edge is at most PX at the end.
     PlayerYAtMost(i32),
-    /// `state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>`
+    /// `state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map|ending>`
     /// at the end.
     State(EndState),
     /// `stage=<station id>`: the game is at that station of its route at
@@ -220,14 +225,17 @@ pub enum Expect {
     /// `swimming=<true|false>`: whether the player swims at the end
     /// (`Player::swimming`, D-076).
     Swimming(bool),
+    /// `cleared=<true|false>`: whether the session's „durchgespielt" mark
+    /// is set at the end (`Game::cleared`, D-107).
+    Cleared(bool),
 }
 
 /// What the expectation grammar supports (shown in "not supported yet" errors).
 const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at frames=a..b, \
                          player_x>=PX, player_y>=PX, player_y<=PX, \
-                         state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>, \
+                         state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map|ending>, \
                          stage=<station id>, event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
-                         lives>=N, power=<normal|big|hackl>, swimming=<true|false>";
+                         lives>=N, power=<normal|big|hackl>, swimming=<true|false>, cleared=<true|false>";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -261,7 +269,7 @@ impl Expect {
                 Expect::State(EndState::parse(s).ok_or_else(|| {
                     format!(
                         "unknown state `{s}` (expected playing, dying, stage_clear, game_over, \
-                         title, stage_intro, paused or route_map)"
+                         title, stage_intro, paused, route_map or ending)"
                     )
                 })?)
             } else if let Some(id) = w.strip_prefix("stage=") {
@@ -291,6 +299,12 @@ impl Expect {
                     "true" => true,
                     "false" => false,
                     _ => return Err(format!("swimming must be true or false, not `{b}`")),
+                })
+            } else if let Some(b) = w.strip_prefix("cleared=") {
+                Expect::Cleared(match b {
+                    "true" => true,
+                    "false" => false,
+                    _ => return Err(format!("cleared must be true or false, not `{b}`")),
                 })
             } else if let Some(name) = w.strip_prefix("no_event=") {
                 Expect::NoEvent(parse_event(name)?)
@@ -333,6 +347,7 @@ impl Expect {
             Expect::LivesAtLeast(n) => o.lives >= n,
             Expect::Power(p) => o.power == p,
             Expect::Swimming(b) => o.swimming == b,
+            Expect::Cleared(b) => o.cleared == b,
         };
         if ok {
             return Ok(());
@@ -382,6 +397,9 @@ impl Expect {
             Expect::Swimming(_) => {
                 format!("expected {self} at the end, got swimming={}", o.swimming)
             }
+            Expect::Cleared(_) => {
+                format!("expected {self} at the end, got cleared={}", o.cleared)
+            }
         })
     }
 }
@@ -409,6 +427,7 @@ impl fmt::Display for Expect {
             Expect::LivesAtLeast(n) => write!(f, "lives>={n}"),
             Expect::Power(p) => write!(f, "power={}", p.name()),
             Expect::Swimming(b) => write!(f, "swimming={b}"),
+            Expect::Cleared(b) => write!(f, "cleared={b}"),
         }
     }
 }
@@ -739,6 +758,8 @@ pub struct Outcome {
     pub power: Power,
     /// Whether the player swims at the end.
     pub swimming: bool,
+    /// Whether the session's „durchgespielt" mark is set at the end.
+    pub cleared: bool,
 }
 
 impl Outcome {
@@ -759,6 +780,7 @@ impl Outcome {
             stage: game.station().map(|i| i as u8),
             power: game.player().power,
             swimming: game.player().swimming,
+            cleared: game.cleared(),
         }
     }
 
@@ -788,6 +810,7 @@ impl Outcome {
         self.stage = game.station().map(|i| i as u8);
         self.power = game.player().power;
         self.swimming = game.player().swimming;
+        self.cleared = game.cleared();
     }
 
     /// "deaths at frames 10, 20" or "no deaths".
@@ -1056,6 +1079,7 @@ RBJ 2
             stage: Some(1),
             power: Power::Big,
             swimming: false,
+            cleared: false,
         }
     }
 

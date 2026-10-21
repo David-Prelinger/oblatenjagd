@@ -2247,6 +2247,17 @@ fn update_auto(e: &mut Entity, ctx: &UpdateCtx) {
     }
 }
 
+/// True while an undefeated Oberkellner is in `entities` (D-106, D-107):
+/// the `goal_stollen` is armed only when this is false.
+// E46: stub until the Oberkellner lands (E46 replaces the body under this
+// name; E49 removes this note). No boss exists yet, so a level is always
+// armed (a level without a boss is armed from the start). E46/E49: add the
+// game-level tests this stub can't have: an unarmed touch raises no
+// `LevelComplete` and doesn't suppress a hurt in the same frame.
+pub fn boss_undefeated(_entities: &[Entity]) -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

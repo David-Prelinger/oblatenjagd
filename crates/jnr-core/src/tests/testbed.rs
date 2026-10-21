@@ -64,5 +64,7 @@ const FINISH_FRAME: u32 = 731;
 /// hashed stage clock; M6 E36: the `enemies.ampel_*` and `auto_*` keys;
 /// M6 E39: the `enemies.offizier_*` keys; M6 E42: `enemies.kurgast_berth`
 /// and `offizier_sabre = [8, 10]`; M7 E45: the `enemies.kellner_*` keys;
-/// route and frame unchanged).
-const FINISH_HASH: u64 = 0x2353_c166_f617_fccd;
+/// M7 E47: `score.stollen`, `goal.serve_frames`, the `[ending]` keys and
+/// the hashed Oblaten total, ending state and „durchgespielt" mark; route
+/// and frame unchanged).
+const FINISH_HASH: u64 = 0xfe5b_c824_18b3_3f37;

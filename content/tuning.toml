@@ -88,6 +88,7 @@ brick = 50
 stomp_chain = [100, 200, 400, 800, 1000, 2000, 4000, 8000]  # then +1 life per stomp
 bump_enemy = 100          # an enemy standing on a block that is bumped from below
 time_bonus = 50           # per second left at the goal, tallied 1 s per frame
+stollen = 10000           # touching the armed goal_stollen, the finale (D-107)
 popup_frames = 30         # score popups float up 16 px over 30 frames
 popup_rise = 16
 
@@ -263,6 +264,7 @@ slide_speed = 512         # 2 px/frame down the pole
 hop_speed = 512           # 2 px/frame up when hopping off at the base (gravity as the player's)
 clear_frames = 180        # stage-clear texts after the time-bonus tally
 to_be_continued_frames = 180  # „Fortsetzung folgt …", then the title screen (M1)
+serve_frames = 90         # finale (goal_stollen, D-107): she holds the plate up, counted from the frame she stands
 
 [map]
 arrive_frames = 40        # route map: Resi idle on the cleared station (D-043)
@@ -302,3 +304,16 @@ stroke_speed = 448        # a JUMP press below the band: 1.75 px/frame up, rises
 accel = 16                # 0.0625 px/frame² towards ±speed with LEFT/RIGHT ...
 decel = 8                 # ... 0.03125 px/frame² towards 0 without ...
 speed = 320               # ... 1.25 px/frame, RUN makes no difference (faster than the auto-scroll's 0.75)
+
+[ending]
+# The ending after the last station (D-107); START is a new press.
+map_frames = 240          # the route map, every station done
+scene_frames = 360        # the café scene
+bill_frames = 600         # the bill, at most ...
+bill_start_frames = 60    # ... START ends it from this frame on
+bill_line_frames = 20     # the bill's lines after its title appear one every this many frames
+credits_pages = 6         # credits.page1 … page6
+credits_page_frames = 180 # per page
+end_frames = 600          # „Ende", at most ...
+end_start_frames = 60     # ... START ends it from this frame on
+start_ignore_frames = 30  # START ignored this long at the start of the map, the scene and every credits page

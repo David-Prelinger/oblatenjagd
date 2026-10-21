@@ -21,6 +21,7 @@
 //! - [`bounds`]: drawn rectangles of sprites and sign boards, for tooling
 //! - [`hud`]: the HUD (score, Oblaten, lives, time)
 //! - [`map`]: the route map between stages
+//! - [`ending`]: the ending after the last station (D-107)
 //! - [`screens`]: title, stage intro, pause, game over, stage clear and the
 //!   other flow texts, plus the list of the engine's text keys
 //! - [`tiles`]: the tile grid, incl. autotiling (D-020)
@@ -29,6 +30,7 @@
 pub mod background;
 pub mod blit;
 pub mod bounds;
+pub mod ending;
 pub mod entities;
 pub mod font;
 pub mod hud;

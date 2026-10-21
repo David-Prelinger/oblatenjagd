@@ -184,22 +184,7 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
 
     let done_frame = game.tuning().map.done_frame;
     for (i, st) in STATIONS.iter().enumerate() {
-        let look = marker(m, i, done_frame);
-        let anim = ctx
-            .map_station
-            .and_then(|s| s.anim(look.anim()).map(|a| (s, a)));
-        match anim {
-            Some((s, a)) => draw_sprite(fb, atlas, s, a, tick, st.dot.0, st.dot.1, false),
-            None => {
-                let fill = match look {
-                    Marker::Done => DIRNDL_RED,
-                    Marker::Next if blink_on(tick) => MOZART_YELLOW,
-                    Marker::Next | Marker::Todo => STONE_GREY,
-                };
-                fb.fill_rect(st.dot.0 - 2, st.dot.1 - 2, 5, 5, fill);
-                fb.outline_rect(st.dot.0 - 2, st.dot.1 - 2, 5, 5, OUTLINE);
-            }
-        }
+        draw_marker(ctx, fb, st, marker(m, i, done_frame), tick);
     }
 
     let (font, texts) = (ctx.font(), ctx.texts());
@@ -238,6 +223,92 @@ pub fn draw_route_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
 
     if m.phase != MapPhase::Arrive {
         draw_map_panel(ctx, fb, m);
+    }
+}
+
+/// A station marker: `map_station` in the look's anim, else a 5×5 square
+/// (done `r`, next blinking `Y`, else `m`).
+fn draw_marker(ctx: &RenderContext, fb: &mut Framebuffer, st: &Station, look: Marker, tick: u32) {
+    let anim = ctx
+        .map_station
+        .and_then(|s| s.anim(look.anim()).map(|a| (s, a)));
+    match anim {
+        Some((s, a)) => draw_sprite(fb, ctx.atlas(), s, a, tick, st.dot.0, st.dot.1, false),
+        None => {
+            let fill = match look {
+                Marker::Done => DIRNDL_RED,
+                Marker::Next if blink_on(tick) => MOZART_YELLOW,
+                Marker::Next | Marker::Todo => STONE_GREY,
+            };
+            fb.fill_rect(st.dot.0 - 2, st.dot.1 - 2, 5, 5, fill);
+            fb.outline_rect(st.dot.0 - 2, st.dot.1 - 2, 5, 5, OUTLINE);
+        }
+    }
+}
+
+/// `ending.map_title` („Ziel erreicht!").
+pub const ENDING_TITLE_KEY: &str = "ending.map_title";
+/// `ending.map_route` („Salzburg – Café Zauner").
+pub const ENDING_ROUTE_KEY: &str = "ending.map_route";
+/// `ending.map_note` („Zu Fuß. Ohne Bus 150.").
+pub const ENDING_NOTE_KEY: &str = "ending.map_note";
+
+/// The ending's Map phase (D-107): the route map with every station done,
+/// the whole route walked (bold), every label reached (`w`, in the slots of
+/// the Bad Ischl → Café Zauner screen, D-098), Resi idle on the last dot,
+/// and the panel „Ziel erreicht!" (`w`), „Salzburg – Café Zauner" (`Y`),
+/// „Zu Fuß. Ohne Bus 150." (`w`, steady).
+pub fn draw_ending_map(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
+    let (atlas, tick) = (ctx.atlas(), game.frame());
+    let last = STATIONS.len() - 1;
+    fb.clear(MEADOW);
+    if let Some(s) = ctx.map_backdrop {
+        draw_sprite(fb, atlas, s, &s.anims[0], tick, 0, 0, false);
+    }
+    // The last walk done: every path before the last station is bold.
+    let walked = RouteMap {
+        phase: MapPhase::Wait,
+        timer: 0,
+        from: (last - 1) as u8,
+        walked: route::path_len(last - 1).clamp(0, i32::from(u16::MAX)) as u16,
+        teaser: false,
+    };
+    draw_route(fb, &walked);
+    for st in &STATIONS {
+        draw_marker(ctx, fb, st, Marker::Done, tick);
+    }
+    let (font, texts) = (ctx.font(), ctx.texts());
+    let power = game.player().power;
+    for (i, st) in STATIONS.iter().enumerate() {
+        let text = texts.get(STATION_KEYS[i]);
+        let (lx, ly) = screen_label_pos(st, font.measure(&text), last - 1, power);
+        font.draw_text_outlined(fb, atlas, &text, lx, ly, WHITE, OUTLINE);
+    }
+    let dot = STATIONS[last].dot;
+    scene::draw_player_pose(
+        ctx,
+        fb,
+        power,
+        &game.tuning().player,
+        PlayerAnim::Idle,
+        (dot.0, dot.1 + RESI_DY),
+        tick,
+        false,
+    );
+    let lines = [
+        (ENDING_TITLE_KEY, NEXT_STOP_Y, WHITE),
+        (ENDING_ROUTE_KEY, NAME_Y, MOZART_YELLOW),
+        (ENDING_NOTE_KEY, PROMPT_Y, WHITE),
+    ];
+    let widest = lines
+        .iter()
+        .map(|(key, _, _)| font.measure(&texts.get(key)))
+        .max()
+        .unwrap_or(0);
+    let w = (widest + 1 + 2 * (1 + PANEL_PADDING) + 1) / 2 * 2;
+    screens::draw_panel(fb, ((WIDTH as i32 - w) / 2, PANEL_Y, w, PANEL_H));
+    for (key, y, colour) in lines {
+        screens::centred(ctx, fb, &texts.get(key), y, colour);
     }
 }
 
