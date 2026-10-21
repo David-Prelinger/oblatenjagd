@@ -32,8 +32,9 @@
 //! where the edge pushes (E31, D-085), and a checkpoint in the zone on a
 //! deck tile.
 //!
-//! Music (MA, D-113): a journey stage (`01_`…`99_`) has `[meta] music`,
-//! and every `music` names a known stage song.
+//! Music (MA, D-113, E58b): a journey stage (`01_`…`99_`) has `[meta]
+//! music`, and every `music` names a stage song that is embedded
+//! (`audio/music/<id>.song`) or still pending (`jnr_audio::cues::PENDING_MUSIC`).
 //!
 //! Signs (M5, [`crate::signlint`], E33, D-088): no placed Oblate
 //! overlaps a sign board's drawn rectangle (known findings only warn).
@@ -73,7 +74,8 @@ Commands:
               with an oberkellner: his arena (last 20 columns: refuges,
               flat floor, nothing above it, no other enemy/sign/box, bill
               columns over the floor); a journey stage (01_..99_) has
-              [meta] music, and every music id is a known stage song
+              [meta] music, and every music id is a stage song that is
+              embedded (audio/music/<id>.song) or still pending
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -248,26 +250,47 @@ fn journey_level(path: &Path) -> bool {
         && !name.starts_with("00_")
 }
 
-/// `[meta] music` (MA, D-113): a journey stage names its piece, and any
-/// `music` is a known stage song (`jnr_audio::cues::Music::level_song`;
-/// E58b checks it against the embedded `.song` files).
+/// `[meta] music` (MA, D-113, E58b): a journey stage names its piece, and
+/// any `music` is a stage song (`jnr_audio::cues::Music::level_song`) that
+/// exists in the embedded bank (`audio/music/<id>.song`) or is still in
+/// `jnr_audio::cues::PENDING_MUSIC`.
 fn music_problems(path: &Path, level: &jnr_core::Level) -> Vec<String> {
+    use jnr_audio::cues::PENDING_MUSIC;
+    let available = |m| jnr_assets::audio_bank().has_music(m) || PENDING_MUSIC.contains(&m);
+    music_problems_with(path, level, &available)
+}
+
+/// [`music_problems`] with `available` deciding whether a song exists.
+fn music_problems_with(
+    path: &Path,
+    level: &jnr_core::Level,
+    available: &dyn Fn(jnr_audio::cues::Music) -> bool,
+) -> Vec<String> {
+    use jnr_audio::cues::Music;
     match &level.meta.music {
-        Some(id) if jnr_audio::cues::Music::level_song(id).is_none() => {
-            let known: Vec<&str> = jnr_audio::cues::Music::ALL
-                .into_iter()
-                .map(|m| m.id())
-                .filter(|id| jnr_audio::cues::Music::level_song(id).is_some())
-                .collect();
-            vec![format!(
-                "music `{id}` is not a known stage song (one of {})",
-                known.join(", ")
-            )]
-        }
+        Some(id) => match Music::level_song(id) {
+            None => {
+                let known: Vec<&str> = Music::ALL
+                    .into_iter()
+                    .map(|m| m.id())
+                    .filter(|id| Music::level_song(id).is_some())
+                    .collect();
+                vec![format!(
+                    "music `{id}` is not a known stage song (one of {})",
+                    known.join(", ")
+                )]
+            }
+            Some(m) if !available(m) => {
+                vec![format!(
+                    "music `{id}`: no audio/music/{id}.song (and not in jnr_audio::cues::PENDING_MUSIC)"
+                )]
+            }
+            Some(_) => Vec::new(),
+        },
         None if journey_level(path) => {
             vec!["no music (a journey stage needs `music = \"<id>\"` in [meta], docs/audio-design.md §5)".to_owned()]
         }
-        _ => Vec::new(),
+        None => Vec::new(),
     }
 }
 
@@ -435,6 +458,15 @@ mod tests {
             problems[2].starts_with("00_d.level: music `polka`"),
             "{problems:?}"
         );
+        // A known song that is neither embedded nor pending.
+        let (path, lvl) = &levels[2];
+        assert_eq!(
+            music_problems_with(path, lvl.as_ref().unwrap(), &|_| false),
+            [
+                "music `salzburg`: no audio/music/salzburg.song (and not in jnr_audio::cues::PENDING_MUSIC)"
+            ]
+        );
+        assert!(music_problems_with(path, lvl.as_ref().unwrap(), &|_| true).is_empty());
         assert!(!journey_level(Path::new("a.level")));
         assert!(journey_level(Path::new(
             "content/levels/09_cafe_zauner.level"

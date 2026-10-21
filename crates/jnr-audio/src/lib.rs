@@ -12,6 +12,8 @@
 //!   scores), [`song_render`]: songs to PCM (loop alignment, wrapped tails,
 //!   a voice cache), [`music_lint`]: what can be checked from the text,
 //!   [`quote`]: melody fixtures of quoted tunes.
+//! - [`bank`]: every `audio/` source parsed and checked, and the renders
+//!   the game asks for (all SFX at startup, a song on demand).
 //! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
 //! - [`mix`]: a cue timeline played offline into one buffer (D-114 playback).
 //!
@@ -20,6 +22,7 @@
 //! `cargo xtask arch-lint`), so a render is bit-identical on native and wasm
 //! and its hash can serve as a golden.
 
+pub mod bank;
 pub mod cues;
 pub mod error;
 pub mod mix;

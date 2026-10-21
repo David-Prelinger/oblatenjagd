@@ -244,24 +244,6 @@ mod tests {
         assert!(!log.contains(" song "), "the testbed has no music: {log}");
     }
 
-    /// The cues' SFX ids are exactly the authored `audio/sfx/*.sfx` files
-    /// (S1; E58b checks them against the embedded bank).
-    #[test]
-    fn every_sfx_id_has_an_authored_file() {
-        let mut files: Vec<String> = content::files_with_ext(&root().join("audio/sfx"), "sfx")
-            .expect("audio/sfx is readable")
-            .iter()
-            .map(|p| content::replay_name(p))
-            .collect();
-        files.sort();
-        let mut ids: Vec<String> = jnr_audio::cues::Sfx::ALL
-            .iter()
-            .map(|s| s.id().to_owned())
-            .collect();
-        ids.sort();
-        assert_eq!(ids, files);
-    }
-
     #[test]
     fn accept_refuses_a_failing_replay() {
         let root = root();
