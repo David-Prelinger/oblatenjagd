@@ -39,6 +39,8 @@ Both write a machine-readable report to `$CARGO_TARGET_DIR/reports/{check,verify
   - Solver (M5, E27): the jump-window metric counts `Jumped` (incl. jump-outs of swim water) and skips a JUMP hold whose press swims a `Stroke` (D-076). E30 (D-084): a window's checkpoint that the route spends off the ground, swimming before it stands again, moves to that next frame on the ground; a shifted jump into swim water re-plans from its first swimming step and must still stand on the ground (no extra time): a surface swimmer never counts as standing; the lake bed is ground.
   - Sign boards (M5, E33, `xtask/src/signlint.rs`, D-088): signs are drawn behind items, so no placed `oblate` entity may share a pixel with a sign's board. The board is computed as the renderer draws it (`jnr_render::signs::board_box`): the board face with its frame from the real sign sprite (the leading rows of its frame that are at least half its width opaque; the posts and the bus pole are left out; the grey box: 80×24), widened by any text line (from `de.toml`, measured with the real font, `\n` = two lines, shadow included) that overflows it. The Oblate's rectangle is the union of the opaque boxes of its `spin` frames at its spawn feet (`jnr_render::bounds::body_box`); `?`-box and brick contents are not placed and not checked. `signlint::MARGIN_PX` (0) grows the board: 0 means they may touch but share no pixel. Messages give the Oblate's and the sign's cells (1-based), the text and the shared pixels. Findings listed in `signlint::KNOWN` (level id, Oblate row and column) only warn: the 12 in Stages 2–5 when the lint came (St. Gilgen 15/7, 15/8; Brunnwinkl 15/7, 15/8; Falkenstein 11/166, 11/167, 38/31, 38/32, 40/8; St. Wolfgang 13/47, 13/51, 15/8); a stale entry is an error, and every new overlap is an error.
 
+- `cargo xtask audio lint [id]` (step `audio-lint`, E56): every sound in `audio/sfx/` and `audio/jingles/` is rendered and checked against its entry in `audio/targets.toml` (see "Audio (L3 + L6)" below).
+
 ### L4 Level completability (verify)
 - **Solver bot** (`cargo xtask solve <level>`): a beam search over the real `jnr-core` simulation. It clones `Game`, tries macro-actions (e.g. run right 8 frames, run+jump held N frames, wait), keeps the most promising states (furthest right, alive, highest score) and stops when `LevelComplete` happens.
 - Output: a replay file that proves the level can be finished. A level the bot can't finish fails verification, with a report of the furthest point reached and a screenshot there.
@@ -85,6 +87,31 @@ R 40
 - `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` re-renders the shots (deterministic, so identical to the reviewed previews) and writes them into `tests/golden/`; it refuses replays that fail their expectations or are not deterministic.
 - Updating goldens: `cargo xtask golden --accept <name>` is allowed only after an `art-director` APPROVED verdict for that change, and the commit message must state it.
 
+### Audio (L3 + L6; E56, D-117, D-119)
+Nobody can listen, so every sound is checked as numbers and pictures (`xtask/src/audio/`; the analysis uses f64 there, never in `jnr-audio`).
+
+- **Render** — `cargo xtask audio render <id>|<file.sfx>|--all` writes to `$CARGO_TARGET_DIR/preview/audio/`: `<id>.wav` (44.1 kHz mono 16 bit), `<id>.json` (stats: `frames`, `duration_ms`, `peak_dbfs`, `rms_dbfs` (unweighted), `clipped_samples`, `dc_offset_pct` (signed), `onset_ms` and `silent_tail_ms` (time before the first / after the last sample ≥ −40 dBFS), `spectral_centroid_hz` (magnitude-weighted over Hann-windowed 1024-point frames), `first_sample`, `last_sample`, and the golden fingerprint `pcm`), `<id>_wave.png` (min/max and RMS per column, red line = −1 dBFS ceiling, dotted green = the target peak band) and `<id>_spec.png` (40 Hz – 20.48 kHz on a log axis, 24 rows per octave, dotted lines at 100 Hz, 1 kHz, 10 kHz; black = −80 dB under a full-scale sine, yellow-white = 0 dB). Both images share the time axis: 1 ms per column up to 1 s (longer sounds: ⌈s⌉ ms per column), dotted lines every 50 ms (every second when a column is > 5 ms). `--all` also writes the reviewer overview `sheet_spectrograms.png` (per sound the waveform above the spectrogram, labelled, four per row, all at the same time scale; cells in `sheet_cells/`). A path ending in `.sfx` renders a file outside `audio/` (a draft, a fixture). An empty `audio/` is fine ("nothing to do").
+- **Targets** — `audio/targets.toml` has one table per sound id: `class` (required: `loud`, `normal`, `soft`, `ambience`, `jingle`, from `docs/audio-design.md` section 3), optional `peak_dbfs` (the SFX table's peak, overrides the class), `duration_ms`, `centroid_hz = [lo, hi]`, and `placeholder = true` for a stand-in.
+- **Lints** — `cargo xtask audio lint [id]` (`check` step `audio-lint`; every one is an error; thresholds are constants in `xtask/src/audio/lint.rs`; each has a failing and a passing fixture in `xtask/fixtures/audio/`, tested by `every_lint_has_a_failing_and_a_passing_fixture`):
+
+  | Lint | Rule | Source |
+  |---|---|---|
+  | `clamp` | no sample clamped by the renderer | proposal, rendering rules |
+  | `ceiling` | peak ≤ −1 dBFS | audio-design §3 (master) |
+  | `peak` | peak within `peak_dbfs` ± 1 dB, else the class band: loud −7 … −5, normal −10 … −8, soft −17 … −13, ambience −27 … −23, jingle −20 … −6 dBFS | §3, §6 |
+  | `rms` | jingles: RMS −19 … −15 dBFS (−17 ± 2) | §3 |
+  | `dc` | \|DC offset\| < 0.5 % of full scale | §3 |
+  | `onset` | first sample ≥ −40 dBFS within 10 ms | proposal (responsiveness) |
+  | `tail` | ≤ 50 ms below −40 dBFS at the end | proposal |
+  | `edges` | first and last sample within ±33 (−60 dBFS): starts and ends at zero, no click | §3 |
+  | `length` | SFX classes 20 … 1500 ms; jingles 200 … 10 000 ms | proposal (jingle limit raised from 6 s for §5's 8 s `game_over`) |
+  | `duration` | `duration_ms` ± 10 ms, if set | §9 |
+  | `centroid` | spectral centroid inside `centroid_hz`, if set | §9 |
+
+  Wiring (also errors): every sound has a target, every target a sound, ids are unique across `audio/`, `class = "jingle"` exactly for `audio/jingles/`. A source that does not parse is an error with `file:line:col`.
+- **Goldens** — `tests/golden/audio.toml`, one line per id: `jump = { pcm = "fnv64:<16 hex>", frames = …, peak_dbfs = …, rms_dbfs = …, centroid_hz = … }` (`jnr_audio::Pcm::fnv64` of the render; the stats are only for the failure report). `cargo xtask audio golden` (`verify` step `audio-goldens`) renders every sound: every sound that is not a placeholder must have a matching line, a placeholder must have none, and a line without a sound fails. A failure writes the actual review set (`<id>.wav`, `.json`, `_wave.png`, `_spec.png`) and the stored line (`<id>_expected.toml`) to `$CARGO_TARGET_DIR/reports/audio-golden/` and names them; a hash change prints the old and new frames, peak, RMS and centroid. Only the hash is stored, so there is no expected WAV or spectrogram (render the old source from git for that).
+- **Accepting** — `cargo xtask audio golden --accept <id>|--all` writes the current hashes (`--all`: every non-placeholder sound). It refuses placeholders and sounds that fail `audio lint`. Allowed only after a **game-designer APPROVED** verdict on the review set from `audio render` (D-117); the commit message states it. `cargo xtask audio golden --prune` only removes lines (sounds that are gone, placeholders) and needs no verdict. The `guard-golden.sh` hook blocks direct edits of `tests/golden/audio.toml` like those of the screenshots.
+
 ### L7 Visual review (per visual change)
 - The `art-director` agent reviews contact sheets, filmstrips and replay screenshots with a fixed rubric (readability, palette, silhouette, light direction, scale consistency, tile seams, HUD clipping, German spelling, "is the joke visible?").
 - `cargo xtask filmstrip <replay>` makes a contact sheet of every 30th frame of a replay, so motion problems (jitter, clipping into walls) can be seen in one image.
@@ -106,7 +133,7 @@ R 40
 |---|---|
 | `PostToolUse` on Edit/Write of `*.rs` | `rustfmt` on that file |
 | `Stop` | runs `cargo xtask check`; on failure it blocks the stop and returns the summary, so the agent must fix the problem first. Guarded with `stop_hook_active` to avoid endless loops. |
-| `PreToolUse` on Edit/Write in `tests/golden/` | blocked; goldens change only through `cargo xtask golden --accept` |
+| `PreToolUse` on Edit/Write in `tests/golden/` | blocked; goldens change only through `cargo xtask golden --accept` (screenshots) and `cargo xtask audio golden --accept` (`audio.toml`) |
 
 ## Definition of done (per task)
 

@@ -1,0 +1,4 @@
+# Audio goldens (docs/validation.md, "Audio"; D-117): the FNV-1a 64 hash of
+# each sound's rendered PCM, plus its stats at acceptance (for the report).
+# Written only by `cargo xtask audio golden --accept <id>` after a
+# game-designer APPROVED verdict. Do not edit by hand.

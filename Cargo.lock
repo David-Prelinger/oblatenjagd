@@ -511,10 +511,13 @@ version = "0.1.0"
 dependencies = [
  "jnr-artkit",
  "jnr-assets",
+ "jnr-audio",
  "jnr-core",
  "jnr-render",
  "png",
+ "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]

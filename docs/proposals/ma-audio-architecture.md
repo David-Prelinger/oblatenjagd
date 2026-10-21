@@ -468,3 +468,59 @@ Notes for E56/E57:
   sounds `gate + release` samples, so the loop-wrap tail is `mix[loop_len..]` folded back
   onto the start. Identical (instrument, note, gate, volume) voices render identically, so a
   per-song cache of rendered notes or whole pattern instances is safe and the obvious speed-up.
+
+## As built (E56)
+
+`xtask/src/audio/` (`mod.rs` commands and sources, `stats.rs` f64 analysis and FFT, `plot.rs`
+images, `lint.rs`, `targets.rs`, `golden.rs`); usage in `docs/validation.md` ("Audio"),
+decision D-119.
+
+- **Commands**: `cargo xtask audio render <id>|<file.sfx>|--all`, `audio lint [id]` (`check`
+  step `audio-lint`), `audio golden [--accept <id>|--all]` and `audio golden --prune`
+  (`verify` step `audio-goldens`, right after the screenshot `goldens`). The proposal's
+  `--accept <id>|--all` is kept; `--prune` is new (it only removes lines, so it needs no
+  verdict, and the guard hook blocks hand edits).
+- **Outputs** (`$CARGO_TARGET_DIR/preview/audio/`): `<id>.wav`, `<id>.json`, `<id>_wave.png`,
+  `<id>_spec.png`, and with `--all` the overview `sheet_spectrograms.png` (waveform above
+  spectrogram per sound, labelled with `montage`, four per row, one shared time scale of
+  1 ms per column up to 1 s). JSON keys as proposed, except `loop_frames`/`loop_aligned`
+  (songs, E57) and plus `frames`, `first_sample`, `last_sample`, `pcm`. Silent head and tail
+  use the proposal's −40 dBFS. The centroid is magnitude-weighted over Hann-windowed
+  1024-point frames; naive (not band-limited) pulses alias, so a 440 Hz square measures
+  ~6.1 kHz. Centroid bands in `audio/targets.toml` must be set from measured renders, not
+  from the fundamental.
+- **Targets** live in `audio/targets.toml` (class, optional `peak_dbfs`, `duration_ms`,
+  `centroid_hz`, `placeholder`), not in the `.sfx` files (D-119): `jnr-audio` is unchanged.
+- **Lints** (all errors): `clamp`, `ceiling` (−1 dBFS), `peak` (class band or
+  `peak_dbfs` ± 1 dB), `rms` (jingles −17 ± 2), `dc` (< 0.5 %), `onset` (≤ 10 ms),
+  `tail` (≤ 50 ms), `edges` (first and last sample within −60 dBFS: no click), `length`
+  (SFX 20–1500 ms, jingles 200–10 000 ms; the proposal's 6 s jingle limit was raised for
+  the design's 8 s `game_over`), `duration` (± 10 ms), `centroid`; plus wiring (target per
+  sound and vice versa, unique ids, `jingle` class exactly for `audio/jingles/`). Fixtures:
+  `xtask/fixtures/audio/<lint>_{pass,fail}.sfx` with their own `targets.toml`; each `_fail`
+  fails only its lint (`clamp_fail` also `ceiling`).
+- **Goldens**: `tests/golden/audio.toml` lines carry the hash plus frames, peak, RMS and
+  centroid at acceptance (`jump = { pcm = "fnv64:…", frames = 6615, … }`), since the old PCM
+  is not kept: a mismatch prints old → new stats and writes the actual review set and the
+  stored line to `reports/audio-golden/`. There is no expected WAV or spectrogram (deviation
+  from the proposal's "actual and expected spectrograms"). Every non-placeholder sound must
+  have a golden; placeholders must not, and `--accept` refuses them and any sound that fails
+  its lints. The goldens list is empty at the end of E56.
+- **`.claude/hooks/guard-golden.sh`** already covered `tests/golden/`; it now names the audio
+  rule (game-designer verdict) for `audio.toml`.
+
+Notes for E57 and the sound-designer:
+
+- E57: add `Kind::Song` (`audio/music/*.song`) in `xtask/src/audio/mod.rs`: its directory in
+  `Kind::files`, the render arm in `render`, a target in `target_for` (songs have no
+  `targets.toml` entry: add a `Class::Song` with peak ≤ −8 dBFS, RMS −20 ± 2 dBFS, length
+  20–90 s to `lint.rs`, or read targets from the song's `[meta]`), the piano roll in
+  `write_review`'s per-kind `match`, and `loop_frames`/`loop_aligned` in `stats::to_json`.
+  `wiring` checks targets only for `.sfx` kinds. `plot::ms_per_column` already scales long
+  sounds to ~1000 columns. Music lints that work on the parsed song (not the PCM) can go in
+  a separate function called from `lint_all`.
+- Sound-designer: every new `.sfx` needs a `[id]` table in `audio/targets.toml` (at least
+  `class`; copy the SFX table's peak into `peak_dbfs` where it differs from the class, its
+  duration into `duration_ms`). Review with `cargo xtask audio render --all` and the sheet,
+  then ask the game-designer for a verdict before `audio golden --accept <id>`.
+- E58: `jnr-assets/build.rs` should skip `audio/targets.toml` (review data, not a source).

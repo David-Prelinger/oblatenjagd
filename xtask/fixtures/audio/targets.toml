@@ -1,0 +1,77 @@
+# Targets of the lint fixtures (same format as audio/targets.toml).
+# Each `<lint>_fail` fixture fails exactly its lint (`clamp_fail` also
+# `ceiling`: a clamped sample is at 0 dBFS); each `<lint>_pass` passes it.
+
+[clamp_fail]
+class = "normal"
+peak_dbfs = 0
+
+[clamp_pass]
+class = "normal"
+peak_dbfs = -2
+
+[ceiling_fail]
+class = "normal"
+peak_dbfs = 0
+
+[ceiling_pass]
+class = "normal"
+peak_dbfs = -1
+
+[peak_fail]
+class = "normal"
+
+[peak_pass]
+class = "normal"
+
+[rms_fail]
+class = "jingle"
+
+[rms_pass]
+class = "jingle"
+
+[dc_fail]
+class = "normal"
+
+[dc_pass]
+class = "normal"
+
+[onset_fail]
+class = "normal"
+
+[onset_pass]
+class = "normal"
+
+[tail_fail]
+class = "normal"
+
+[tail_pass]
+class = "normal"
+
+[edges_fail]
+class = "normal"
+
+[edges_pass]
+class = "normal"
+
+[length_fail]
+class = "normal"
+
+[length_pass]
+class = "normal"
+
+[duration_fail]
+class = "normal"
+duration_ms = 120
+
+[duration_pass]
+class = "normal"
+duration_ms = 150
+
+[centroid_fail]
+class = "normal"
+centroid_hz = [500, 2000]
+
+[centroid_pass]
+class = "normal"
+centroid_hz = [4000, 8000]

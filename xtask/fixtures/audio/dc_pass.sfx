@@ -1,0 +1,9 @@
+# Lint fixture for `dc` (xtask/src/audio/lint.rs): A square at 35 % (zero-mean).
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 35
