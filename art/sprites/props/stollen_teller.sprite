@@ -1,0 +1,23 @@
+# The served Zaunerstollen (Stage 9 finale, D-107): the zaunerstollen
+# item's look (a chocolate log l with an O glaze highlight, the cut
+# end c/o showing the wafer layers) on a white plate w/i, a small
+# fork i/m lying on the plate. k outline (an item). Drawn above
+# Resi's head in Serve and at her feet on the title after the ending.
+sprite = stollen_teller
+size   = 16x12
+origin = 8,12
+anim   = idle frames=1
+---
+frame idle 0
+..........kikik.
+..........kiiik.
+....kkkkkkkkik..
+...klOOOOOOkmk..
+..klcclOOllllk..
+.klccccllllllk..
+.kloooollllllk..
+.klccccllllllk..
+.kkkkkkkkkkkkk..
+kwwwwwwwwwwwwwwk
+.kiiiiiiiiiiiik.
+..kkkkkkkkkkkk..

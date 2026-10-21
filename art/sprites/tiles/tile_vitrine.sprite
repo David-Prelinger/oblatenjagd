@@ -1,0 +1,285 @@
+# Cake vitrine (solid, Stage 9): a flat marble lid c/w/i on an l rail
+# (only on top), a glass case h with w/s corner glints, dark-wood O/l
+# posts at the ends, cakes on i glass shelves (Gugelhupf o/O with w
+# sugar, pink Punschkrapfen p/E, Sachertorte O/l, a Zaunerstollen slice
+# l/O with a c/o cut), a dark-wood O/l base with Y/o brass feet (only at
+# the bottom). 2x2 shows all four cakes. No k (static solid).
+# Autotiled (D-020): anim `auto`, frame = neighbour mask
+# (1 = same tile above, 2 = right, 4 = below, 8 = left; level edge = same).
+sprite = tile_vitrine
+size   = 16x16
+origin = 0,0
+anim   = auto frames=16 ticks=1
+---
+frame auto 0
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+OlwwhhwwwwhhssOl
+OlwhhwwoowwhhsOl
+OlhhooOooOoohhOl
+OlhoOooOooOoOhOl
+OlhoOooOooOoOhOl
+OlhiiiiiiiiiihOl
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+lOOOOOOOOOOOOOOl
+llllllllllllllll
+.YYo........YYo.
+..o..........o..
+frame auto 1
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhOOOOOOOOhhOl
+OlhOOllllllllhOl
+OlhOllllllllhhOl
+OlhOlllllllllhOl
+OlhiiiiiiiiiihOl
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+lOOOOOOOOOOOOOOl
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+.YYo........YYo.
+..o..........o..
+frame auto 2
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+Olwwhhhwwwwhhhhh
+Olwhhhwwoowwhhhh
+OlhhhooOooOoohhh
+OlhhoOooOooOoOhh
+OlhhoOooOooOoOhh
+Olhhiiiiiiiiiihh
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+lOOOOOOOOOOOOOOO
+llllllllllllllll
+.YYo............
+..o.............
+frame auto 3
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+OlhhhOOOOOOOOhhh
+OlhhOOllllllllhh
+OlhhOllllllllhhh
+OlhhOlllllllllhh
+Olhhiiiiiiiiiihh
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+lOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+.YYo............
+..o.............
+frame auto 4
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+OlwwhhhhhhhhssOl
+OlwhhhhhhhhhhsOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhwwwwhhhhOl
+OlhhhwwoowwhhhOl
+OlhhooOooOoohhOl
+OlhoOooOooOoOhOl
+OlhoOooOooOoOhOl
+OlhiiiiiiiiiihOl
+frame auto 5
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlhhhhhhhhhhhhOl
+OlpppppphpppphOl
+OlpppppEhpppEhOl
+OlppppEEhppEEhOl
+OliiiiiiiiiiihOl
+frame auto 6
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+Olwwhhhhhhhhhhhh
+Olwhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhwwwwhhhhh
+Olhhhhwwoowwhhhh
+OlhhhooOooOoohhh
+OlhhoOooOooOoOhh
+OlhhoOooOooOoOhh
+Olhhiiiiiiiiiihh
+frame auto 7
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhhhhhhhhhhhhhh
+Olhpppppphpppphh
+OlhpppppEhpppEhh
+OlhppppEEhppEEhh
+Olhiiiiiiiiiiihh
+frame auto 8
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+hhhhhhhhhhhhssOl
+hhhhhhhhhhhhhsOl
+hpppppphpppphhOl
+hpppppEhpppEhhOl
+hppppEEhppEEhhOl
+hiiiiiiiiiiihhOl
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+............YYo.
+.............o..
+frame auto 9
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhllllOOlhhhhOl
+hhlccllOOllhhhOl
+hloooolllllhhhOl
+hlcccclllllhhhOl
+hiiiiiiiiiiihhOl
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+OOOOOOOOOOOOOOOl
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+............YYo.
+.............o..
+frame auto 10
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+hhhhhhhhhhhhhhhh
+hhhhllllOOlhhhhh
+hhhlccllOOllhhhh
+hhloooolllllhhhh
+hhlcccclllllhhhh
+hhiiiiiiiiiiihhh
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+................
+................
+frame auto 11
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhwwwwhhhhhh
+hhhhhwwoowwhhhhh
+hhhhooOooOoohhhh
+hhhoOooOooOoOhhh
+hhhoOooOooOoOhhh
+hhhiiiiiiiiiihhh
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+OOOOOOOOOOOOOOOO
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+................
+................
+frame auto 12
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+hhhhhhhhhhhhssOl
+hhhhhhhhhhhhhsOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hpppppphpppphhOl
+hpppppEhpppEhhOl
+hppppEEhppEEhhOl
+hiiiiiiiiiiihhOl
+frame auto 13
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhhhhhhhhhhhhOl
+hhhllllOOlhhhhOl
+hhlccllOOllhhhOl
+hloooolllllhhhOl
+hlcccclllllhhhOl
+hiiiiiiiiiiihhOl
+frame auto 14
+cccccccccccccccc
+wwwwwwwwwwwwwwww
+iiiiiiiiiiiiiiii
+llllllllllllllll
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhllllOOlhhhhh
+hhhlccllOOllhhhh
+hhloooolllllhhhh
+hhlcccclllllhhhh
+hhiiiiiiiiiiihhh
+frame auto 15
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhhhhhhhhhhhhh
+hhhhOOOOOOOOhhhh
+hhhOOllllllllhhh
+hhhOllllllllhhhh
+hhhOlllllllllhhh
+hhhiiiiiiiiiihhh
