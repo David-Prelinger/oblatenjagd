@@ -313,7 +313,7 @@ Engine
 - [x] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
 - [x] E58 Embedding through `jnr-assets/build.rs`; core `Event::Bounced` (output only, no hash change); the pure cue mapper (events + state diff → cues, exhaustive per `Event`) with D-113's voice rules; level `music` ids for the 9 journey levels with a `levels lint` check; cue-log goldens from replays
 - [ ] E59 App wiring: SFX at startup, songs per stage (lazy, unloaded), pause, ducking, jingles, underwater swap; `vnc-smoke` audio capture assertions
-- [ ] E60 `xtask replay <file> --audio` (offline mix, spectrogram, cue timeline, clipping/ceiling check)
+- [x] E60 `xtask replay <file> --audio` (offline mix, spectrogram, cue timeline, clipping/ceiling check)
 - [ ] E61 Docs (architecture, validation, agentic-setup), the `sound-designer` agent and the `sfx-authoring` skill
 
 Sound (sound-designer, game-designer review)

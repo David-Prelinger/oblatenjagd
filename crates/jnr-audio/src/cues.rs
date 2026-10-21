@@ -428,7 +428,8 @@ pub enum Cut {
 }
 
 impl Cut {
-    fn hits(self, v: Voice) -> bool {
+    /// True if this cut stops voice `v`.
+    pub fn hits(self, v: Voice) -> bool {
         match self {
             Cut::All => true,
             Cut::KeepItems => v != Voice::I,

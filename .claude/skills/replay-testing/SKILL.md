@@ -32,6 +32,8 @@ Semantics (D-013): frame N = the state after N steps (`Game::frame()`; frame 0 =
 - `cargo xtask filmstrip <file> [--every N]` – every 30th (Nth) frame plus the last in one image
 - `cargo xtask golden` – compare all shots with `tests/golden/<replay>_<shot>.png` (the `goldens` verify step)
 - `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` – accept new goldens (**only** after art-director APPROVED)
+- `cargo xtask replay <file> --cue-log` – print the run's sound cues (`frame cue`); goldens: `cargo xtask cues [--accept <replay>]`
+- `cargo xtask replay <file> --audio [out.wav]` – the run's offline soundtrack, mixed as the app plays it (D-114): `$CARGO_TARGET_DIR/preview/replays/<replay>.wav`, `<replay>_audio.png` (cue labels over waveform and spectrogram on one time axis) and `<replay>_audio.json` (peak and where, clamps, time over −1 dBFS, RMS per second, detected onsets, cue timeline). Fails if the mix clamps or crosses −1 dBFS and names the sounds playing there. Songs without a source yet are silent and listed. Use it for "does the stomp land on the stomp frame?" and loudness questions (details: `docs/validation.md` L6c); the verify step `audio-mix` lints every replay with a cue-log golden.
 - Human recording: see `play-in-vnc` (`--record <file>`)
 
 ## Bug reproduction

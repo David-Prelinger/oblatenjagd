@@ -18,6 +18,7 @@ mod par;
 mod popup_clearance;
 mod pulse;
 mod replay;
+mod replay_audio;
 mod report;
 mod scrolllint;
 mod signlint;
