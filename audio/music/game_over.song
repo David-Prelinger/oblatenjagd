@@ -25,7 +25,7 @@ drums  = { instrument = "schlagwerk", volume_pct = 9 }
 [pattern.A]
 score = '''
 lead   | bb4/2 db5     | f5/2 eb5          | db5/2 c5          | d5!/4       |
-second | f4/2 bb4      | db5/2 bb4         | bb4/2 a4          | bb4/4       |
+second | db4/2 bb4     | db5/2 gb4         | bb4/2 a4          | bb4/4       |
 bass   | bb1/2 f2      | bb1/2 eb2         | gb2/2 f2          | bb1/4       |
 chords | [bb3,db4,f4]/4 | [bb3,db4,f4]/2 [eb4,gb4,bb4]/2 | [gb3,bb3,db4]/2 [f3,a3,eb4]/2 | [bb3,d4!,f4]/4 |
 drums  | M/2 M         | M/2 M             | M/2 M             | M/2 r       |

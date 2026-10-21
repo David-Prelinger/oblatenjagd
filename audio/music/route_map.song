@@ -29,13 +29,13 @@ score = '''
 lead   | f4/1 a4 c5 bb4/3  | a4/2 c5 c6        | bb5/2 g5 e5       | f5/4 c5/2         |
 second | d4/1 f4 f4 g4/3   | f4/2 a4 a5        | g5/2 e5 c5        | a4/4 a4/2         |
 bass   | f2/2 r/4          | f2/2 r/4          | c3/2 r/4          | f2/2 r/4          |
-chords | r/2 [bb3,d4,f4]' [bb3,d4,f4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
+chords | r/2 [a3,c4,f4]' [bb3,d4,f4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
 drums  | K/2 r/4           | K/2 r/4           | K/2 r/4           | K/2 r/4           |
 
 lead   | g4/1 bb4 d5 c5/3  | e5/2 c5 c6        | bb5/2 g5 e5       | f5/4 r/2          |
 second | e4/1 g4 bb4 g4/3  | c5/2 g4 g5        | g5/2 e5 c5        | a4/4 r/2          |
 bass   | g2/2 r/4          | c3/2 r/4          | c3/2 r/4          | f2/2 r/4          |
-chords | r/2 [g3,bb3,d4]' [g3,bb3,d4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
+chords | r/2 [g3,bb3,d4]' [bb3,c4,e4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
 drums  | K/2 r/4           | K/2 r/4           | K/2 r/4           | K/2 r/4           |
 '''
 

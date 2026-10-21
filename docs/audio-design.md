@@ -21,14 +21,14 @@ Nobody can listen during development. Everything below is written to be checked 
 | Ch | Role | Default patch | Notes |
 |---|---|---|---|
 | M1 | **Melodie** (lead) | `fluegelhorn`: pulse 25 %, A 8 / D 80 / S 0.7 / R 60; a scoop from −30 cents to 0 over 20 ms at each note start (brass attack); vibrato 5 Hz ±15 cents after 200 ms | per piece also `klarinette` (pulse 50 %, lowpass 2.5 kHz: odd harmonics like a real clarinet), `stehgeiger` (saw, lowpass 3 kHz, vibrato 6 Hz ±25 cents from 40 ms, A 40), `zither` (pulse 12.5 %, A 2 / D 400 / S 0 / R 200, two voices ±6 cents), `spieluhr` (triangle + sine bell an octave up at −12 dB, A 2 / D 600 / S 0) |
-| M2 | **Zweite Stimme** (thirds/sixths below M1, or counter-melody) | `tenorhorn`: pulse 25 %, 3 dB under M1, no scoop | `klavier` in the café (pulse 12.5 %, A 1 / D 250 / S 0.2 / R 80) |
+| M2 | **Zweite Stimme** (thirds/sixths below M1, or counter-melody) | `tenorhorn`: pulse 25 %, 3 dB under M1, no scoop. *As built (S2a review, accepted)*: the `fluegelhorn` uses duty 75 %, the 25 % pulse inverted (identical harmonics, opposite polarity), so lead and second-voice onsets don't stack their peaks | `klavier` in the café (pulse 12.5 %, A 1 / D 250 / S 0.2 / R 80) |
 | M3 | **Bass „Helikon"** | `helikon`: triangle, lowpass 1.2 kHz, A 5 / D 120 / S 0.4 / R 40 (staccato) | `pizzicato` in the café (triangle, A 1 / D 80 / S 0) |
 | M4 | **Nachschlag** (the "pah" of oom-pah) | `begleitung`: pulse 50 %, the chord as a frame-rate arpeggio (root, third, fifth, 16.7 ms per note, the chip-tune chord), staccato 90 ms | `orgel` in Falkenstein (square 50 % + octave, sustained, no arpeggio) |
 | M5 | **Schlagwerk** (noise and drums) | `grosse_trommel` (sine 120 → 50 Hz in 60 ms + noise 10 ms), `kleine_trommel` (noise bandpass 1.5 kHz 150 ms + sine 180 Hz body 40 ms), `becken` (noise highpass 6 kHz, D 400), `klatschen` (4 noise bursts 10 ms apart, bandpass 1.2 kHz: a hand clap), `triangel` (sine 4.2 kHz, D 300), `glocke` (see `hurry`) | one hit at a time; a new hit cuts the old |
 | M6 | optional: ornament / echo | – | only if the engine has the voice; nothing in the "must" list needs it |
 
 **Accompaniment patterns** (the default unless a piece says otherwise):
-- **2/4 Polka/Marsch**: M3 on beats 1 and 2 (root, then fifth), M4 on the off-beats ("&" of 1 and 2), M5 `grosse_trommel` on 1 and 2, `becken` with the first beat of each section, `kleine_trommel` roll (32nds) in the last half bar before a new section.
+- **2/4 Polka/Marsch**: M3 on beats 1 and 2 (root, then fifth), M4 on the off-beats ("&" of 1 and 2), M5 `grosse_trommel` on 1 and 2, `becken` with the first beat of each section, `kleine_trommel` roll (32nds) in the last half bar before a new section. *As built (S2a review)*: rolls are 16ths on the songs' sixteenth grid (129 ms apart at 116 BPM); accepted, the chip-style roll reads as a roll and a 32nd grid would double every pattern's step counts.
 - **3/4 Ländler/Walzer**: M3 on 1, M4 on 2 and 3 (um-pa-pa), M5 `grosse_trommel` on 1 only; in Ländler B sections `klatschen` on 2 and 3 (the Salzkammergut Ländler is danced with singing and clapping, Austria-Forum „Landlertanz").
 - **6/8**: M3 on 1 and 4, M4 on 3 and 6.
 
@@ -72,7 +72,7 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | **Playing** begins (after the intro; in `start = playing` games: the first frame and every `Respawned`) | the stage piece from **bar 1** (intro bars included), normal tempo |
 | **Pause** (START) | music **pauses in place** (no duck, silence), every SFX voice is cut (10 ms), SFX `pause`; on resume `pause` (2 semitones lower is nice, section 6.3) and the music continues from where it stopped |
 | **ZEIT drops to 60** (the HUD turns red; the first frame of play with `time_left == 60` after a frame with 61) | music cue `hurry` (the piece pauses for 1.6 s, then resumes where it was); **nice**: from then on the piece plays **+12 % tempo** (until the next respawn or stage). In the boss fight the bells play on SFX voice I over the boss music instead (no pause mid-fight) |
-| **Died** | music cut at once, all SFX voices cut, cue `death` (1.0 s + 0.3 s release; the Dying phase is 60 frames) |
+| **Died** | music cut at once, all SFX voices cut, cue `death` (1.25 s in all, release included; the Dying phase is 60 frames) |
 | **GameOver** event | cue `game_over` (cuts any tail of `death`); after it, silence until START |
 | **LevelComplete** (Maibaum) | music cut, all SFX cut except voice I, cue `fanfare_clear`; then the SFX `tally_tick` / `tally_end`; the Clear panel is silent |
 | **LevelComplete** (`goal_stollen`) | cue `fanfare_finale` |
@@ -84,7 +84,7 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | **Ending** | Map: `ending_map` (once); Scene and Bill: `kaffeehaus` (one continuous loop across both phases); Credits: `credits`; Ende: `ende` (once); then the marked title with `title`. A START skip starts the next phase's cue at once (100 ms crossfade); a credits page skip doesn't touch the music |
 | Death in the arena | as every death; after the respawn at the checkpoint the café piece starts from bar 1, and the boss cues come again at the next lock |
 
-**Loops**: every piece loops at a bar line from its last bar to its **loop point** (the first bar after its intro). The last bar must lead into the loop bar (usually a dominant). The seam is sample-continuous (no gap, no click; checked, section 9).
+**Loops**: every piece loops at a bar line from its last bar to its **loop point** (the first bar after its intro). The last bar must lead into the loop bar (usually a dominant). *As built (D-114, accepted in the S2a review)*: a loop plays from sample 0, so the loop point is always bar 1 and a piece's intro bars come round once per loop (`title`: the post-horn call every 37 s, like a Postbus at its stop; `salzburg`: a 2-bar um-pa-pa breath before the K. 606 strain). No separate intro jingles are made; the last bar leads into bar 1. The seam is sample-continuous (no gap, no click; checked, section 9).
 
 **Zuckerschock and Hackl**: no own music (they aren't timed states, and swapping pieces on every power change would be noise). **Nice**: a percussion layer on M5 while big: `zucker_shaker` (noise highpass 7 kHz, 30 ms) on every eighth for Zuckerschock; a woodblock `hackl_tock` (sine 900 Hz + noise 10 ms, D 60) on beat 1 for Hackl.
 
@@ -96,9 +96,9 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 
 | ID | Used for | Meter | BPM | Key | Bars (intro + loop) | Loop length | Source | Prio |
 |---|---|---|---|---|---|---|---|---|
-| `title` | title | 2/4 | 116 | B♭, Trio E♭ | 4 + 32 | 33.1 s | original | must |
+| `title` | title | 2/4 | 116 | B♭, Trio E♭ | 36 (intro inside the loop, D-114) | 37.2 s | original | must |
 | `route_map` | route map | 3/4 | 132 | F | 0 + 16 | 21.8 s | original | must |
-| `salzburg` | Stage 1 | 3/4 | 144 | B♭ | 2 + 40 | 50.0 s | Mozart K. 606 No. 1, K. 525 | must |
+| `salzburg` | Stage 1 | 3/4 | 144 | B♭ | 42 (intro inside the loop, D-114) | 52.5 s | Mozart K. 606 No. 1, K. 525 | must |
 | `st_gilgen` | Stage 2 | 2/4 | 126 | E♭, Trio A♭ | 4 + 40 | 38.1 s | original | must |
 | `brunnwinkl` | Stage 3 | 3/4 | 120 | G | 2 + 32 | 48.0 s | original + „Summ, summ, summ" (trad.) | must |
 | `falkenstein` | Stage 4 | 3/4 | 96 | D minor → F | 4 + 32 | 60.0 s | original | must |
@@ -114,7 +114,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 | `boss_defeat` | third hit | – | – | C | once | 1.5 s | Tusch (original) | must |
 | `fanfare_clear` | Maibaum | 6/8 | ♩. = 96 | F | once, ~5 bars | ~6.3 s | Mozart K. 596 | must |
 | `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 80 | F | once, ~6 bars | ~9 s | Mozart K. 596 + leitmotif | must |
-| `death` | Died | – | – | – | once | 1.0 s (+0.3) | original | must |
+| `death` | Died | – | – | – | once | 1.25 s | original | must |
 | `game_over` | GameOver | 2/4 | 60 | B♭ minor → B♭ | once, 4 bars | 8.0 s | original | must |
 | `hurry` | ZEIT 60 | – | – | bells | once | 1.6 s | original | must |
 | `ending_map` | ending Map | 2/4 | 100 | B♭ | once, 3 bars | ~3.6 s | Tusch + leitmotif | must |
@@ -123,10 +123,10 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 | `ende` | ending Ende | 3/4 | 84 | B♭ | once, 2 bars | ~4 s | leitmotif | must |
 
 ### `title` „Oblatenjagd-Marsch" (must)
-- 2/4, 116 BPM (bar 1.034 s), B♭ major, Trio in E♭ (the classic march form goes to the subdominant for the Trio). Intro 4 + A 16 + Trio 16 = 36 bars; **loop point bar 5**.
+- 2/4, 116 BPM (bar 1.034 s), B♭ major, Trio in E♭ (the classic march form goes to the subdominant for the Trio). Intro 4 + A 16 + Trio 16 = 36 bars; **loop point bar 1** (D-114; the call recurs every loop, 37.2 s).
 - **Intro (1–4)**: a **post-horn call** on M1 alone (the post horn is the Post's emblem, and Postbus 150 is the running gag): natural harmonics of B♭ only (B♭3, F4, B♭4, D5, F5). Bar 1 F4 B♭4 D5 (♪ ♪ ♩), bar 2 F5 (𝅗𝅥), bar 3 D5 B♭4 F4 D5 (four ♬), bar 4 B♭4 (♩) + rest, under it a `kleine_trommel` roll crescendo in bar 4.
 - **A (5–20)**: the march tune, opening with the leitmotif B♭4 D5 F5 E♭5; 8 + 8 bars, the first ending on a half cadence (F), the second on B♭. M2 thirds below. Full accompaniment (2/4 pattern).
-- **Trio (21–36)**: E♭ major, softer (M1 −3 dB, M5 kick only on 1), a broad cantabile tune with the leitmotif in augmentation (♩ ♩ ♩ 𝅗𝅥) at bar 21; bar 36 is a B♭7 bar leading back to bar 5.
+- **Trio (21–36)**: E♭ major, softer (M1 −3 dB, M5 kick only on 1), a broad cantabile tune with the leitmotif in augmentation (♩ ♩ ♩ 𝅗𝅥) at bar 21; bar 36 is an **F7** bar (back in B♭: its dominant) leading into the post-horn call's B♭ in bar 1. (v1 said B♭7, which is the Trio's own dominant and would lead to E♭; corrected in the S2a review.)
 - **Character**: cheeky and determined: „Bus voll? Dann marschier' ma." The tune the whole game is built on.
 
 ### `route_map` „Wanderkarte-Landler" (must)
@@ -136,11 +136,11 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 - **Nice**: the piece is transposed up one semitone per station already walked (the journey "climbs"); a tuning param, no new patterns.
 
 ### `salzburg` „Mozart-Landler, eh klar" (must)
-- 3/4, 144 BPM (bar 1.25 s), **B♭ major** (the key of Mozart's K. 606). Intro 2 + A 16 + B 16 + C 8 = 42 bars; **loop point bar 3**.
+- 3/4, 144 BPM (bar 1.25 s), **B♭ major** (the key of Mozart's K. 606). Intro 2 + A 16 + B 16 + C 8 = 42 bars = 52.5 s; **loop point bar 1** (D-114: the vamp recurs every loop and carries K. 606's pickup in bar 2; bar 42's F leads into it). 52.5 s is over the 40 s typical of the other stages, accepted: the form fixes 42 bars at 144 BPM, and the song lint allows 20–90 s.
 - **Intro (1–2)**: um-pa-pa alone (M3 + M4).
 - **A (3–18)**: **Mozart, *6 Ländlerische Tänze* K. 606, No. 1, the first strain**, transcribed from the old complete edition (AMA, Breitkopf 1886) and arranged for the band: bars 3–10 the strain as written (M1 Flügelhorn), bars 11–18 its repeat with M2 in thirds and `klatschen` on 2 and 3. If the strain is not 8 bars long, repeat it to fill 16 (record the bar count).
 - **B (19–34)**: original "Getreidegasse" strain in F major: busy eighth-note runs (the crowd), a 2-bar stop-and-start in bars 27–28 (the selfie stop: M1 holds one note while M4 drops out).
-- **C (35–42)**: „Eine kleine Nachtmusik im Ländlertakt": **K. 525, 1st movement, bars 1–4 of the first violin**, transposed to B♭, its 4/4 bars squeezed into 3/4 (the joke: Salzburg's most-sold melody forced into the local dance and limping a little). M1 alone with M3; bar 42 ends with a cymbal choke (`becken` cut after 60 ms) and leads back to bar 3.
+- **C (35–42)**: „Eine kleine Nachtmusik im Ländlertakt": **K. 525, 1st movement, bars 1–4 of the first violin**, transposed to B♭, its 4/4 bars squeezed into 3/4 (the joke: Salzburg's most-sold melody forced into the local dance and limping a little; as built, each of a bar's six notes and rests becomes one eighth, and the quote lint compares pitches only). M1 alone with M3, played twice; bar 42 ends with a cymbal choke (`becken` cut after 60 ms) and leads back to bar 1. The K. 606 strain reaches D6 on the Flügelhorn (the violin's octave): accepted over the "leads ≤ C6" rule for quote fidelity (eighth notes only; the patch is low-passed at 5 kHz).
 - **Stage identity**: the only stage built on Mozart himself. Satire target: Mozart on every chocolate box. Sound of Music is deliberately absent; the „Do-Re-Mi / Fotopunkt" sign makes that joke silently.
 
 ### `st_gilgen` „Platzkonzert-Polka" (must)
@@ -227,19 +227,19 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 
 ### `fanfare_clear` „Komm, lieber Mai" (must)
 - On `LevelComplete` at a Maibaum. 6/8, ♩. = 96 (bar 1.25 s), **F major** (the song's key).
-- **Mozart, *Sehnsucht nach dem Frühling* K. 596 („Komm, lieber Mai, und mache"), the voice part's first phrase** (pickup to the first cadence, about 4 bars; record the exact count from the AMA score), M1 Flügelhorn, M2 thirds, M3 + M4 in 6/8 pattern, `becken` on its first downbeat; then **one bar of Tusch** (held F major + snare roll + final hit). About 6.3 s; it covers Slide, Hop and Walk and may overlap the first Tally ticks (they are SFX, they mix).
+- **Mozart, *Sehnsucht nach dem Frühling* K. 596 („Komm, lieber Mai, und mache"), the voice part's first phrase** (pickup to the first cadence, about 4 bars; record the exact count from the AMA score), M1 Flügelhorn, M2 thirds, M3 + M4 in 6/8 pattern, `becken` on its first downbeat; then **one bar of Tusch** (held F major + snare roll + final hit). *As built (S2a review, accepted)*: pickup + 4 bars (AMA, Serie VII No. 37); bar 1 is an oom-pa vamp that carries the pickup (a jingle must not open on 5/6 of a bar of silence), and the Tusch is the cadence bar itself (the lead holds „grün" A4 over the held F major, the roll and the final bass drum + choked cymbal), so the cue stays at 5 bars = 6.25 s. About 6.3 s; it covers Slide, Hop and Walk and may overlap the first Tally ticks (they are SFX, they mix).
 - The Maibaum is a May custom, and Mozart wrote the May song four months before he died. **Nice**: a Wurstkranz touch adds the first 300 ms of `oneup` (the Juchizer) over the fanfare.
 
 ### `fanfare_finale` (must)
 - On `LevelComplete` at the `goal_stollen`. The same K. 596 phrase at ♩. = 80, full band with M2 in sixths and the `becken` on every phrase start, then a 2-bar coda: the **leitmotif** in augmentation (F A C B♭ → F) and a 1.5 s Tusch. About 9 s: it covers the Serve (1.5 s) and the Tally.
 
 ### `death` „Autsch-Jodler" (must)
-- 1 000 ms + 300 ms release, on the music channels (the piece is cut).
+- 1 000 ms + 300 ms release, on the music channels (the piece is cut). *As built (S2a review, accepted)*: 1 250 ms in all (600 ms yodel, 100 ms rest, the 300 ms slide, then its ring-out and release); it ends inside the 60-frame Dying phase plus the respawn and still reads as one fall.
 - M1 pulse 25 %, legato, a **yodel falling apart**: G5 G4 F5 F4 E5 E4, 100 ms each (octave flips falling by step: the yodel's throat-break gone wrong), 100 ms rest, then M3 triangle **C3 sliding to G2** over 300 ms with a `grosse_trommel` hit at its start („plumps"). Peak −6 dBFS.
 
 ### `game_over` „A schöne Leich'" (must)
 - 2/4, 60 BPM (bar 2 s), B♭ minor, 4 bars = 8 s, once, then silence.
-- A brass-band funeral march (the Viennese love of a beautiful funeral, *a schöne Leich'*): M1 the **leitmotif in minor and augmented** (B♭4 D♭5 F5 E♭5 as ♩ ♩ ♩ ♩), M2 thirds, M3 on every beat, M4 sustained chords, M5 a muffled drum (`grosse_trommel` with D 400 and lowpass 300 Hz) on every beat. The **last chord turns major** (B♭ major, the *Picardy third*): „Weiter?" is a hopeful question. START cuts it (`ui_start`).
+- A brass-band funeral march (the Viennese love of a beautiful funeral, *a schöne Leich'*): M1 the **leitmotif in minor and augmented** (B♭4 D♭5 F5 E♭5 as ♩ ♩ ♩ ♩), M2 thirds, M3 on every beat, M4 sustained chords, M5 a muffled drum (`grosse_trommel` with D 400 and lowpass 300 Hz) on every beat. The **last chord turns major** (B♭ major, the *Picardy third*): „Weiter?" is a hopeful question. START cuts it (`ui_start`). *As built (S2a review, accepted)*: the leitmotif fixture is checked by pitches only (four even quarters are not a ×2 augmentation of ♪ ♪ ♪ ♩); M4's sustained chords are chip chords arpeggiated at 17 ms (three in-phase held voices overshoot the jingle peak).
 
 ### `hurry` „Kirchturmuhr" (must)
 - Three strikes of a church bell, 500 ms apart, the last rings out: 1.6 s. Bell = sines at ratios 0.5 (hum), 1.0 (prime), 1.19 (minor third, the bell's *tierce*), 1.5 (fifth), 2.0 (nominal) of A4 = 440 Hz, decays 1.6 s / 1.2 s / 0.9 s / 0.7 s / 0.6 s, strike transient: noise 5 ms bandpass 3 kHz. Peak −8 dBFS.
@@ -361,7 +361,7 @@ Everything else is derived. No other core change is needed for MA.
 | Melody | Used in | Composer († year) / origin | PD reasoning | Sources |
 |---|---|---|---|---|
 | *6 Ländlerische Tänze* K. 606, No. 1 (1791, B♭) | `salzburg` A | W. A. Mozart († 1791) | composer † 235 years; edition AMA (Breitkopf 1886) | [IMSLP K. 606](https://imslp.org/wiki/6_L%C3%A4ndlerische_T%C3%A4nze,_K.606_(Mozart,_Wolfgang_Amadeus)) |
-| *Eine kleine Nachtmusik* K. 525, I., bars 1–4 (1787) | `salzburg` C | Mozart | as above; AMA (Breitkopf 1883) | [IMSLP K. 525](https://imslp.org/wiki/Eine_kleine_Nachtmusik,_K.525_(Mozart,_Wolfgang_Amadeus)) |
+| *Eine kleine Nachtmusik* K. 525, I., bars 1–4 (1787) | `salzburg` C | Mozart | as above; transcribed from **Mozart's autograph** (Vienna, 10 Aug 1787; IMSLP #562645), accepted in the S2a review: the AMA file (IMSLP #01776) was captcha-gated, and a manuscript carries no editorial layer at all, so it satisfies the PD rule at least as well | [IMSLP K. 525](https://imslp.org/wiki/Eine_kleine_Nachtmusik,_K.525_(Mozart,_Wolfgang_Amadeus)) |
 | *Sehnsucht nach dem Frühling* K. 596 (14 Jan 1791, F) | `fanfare_clear`, `fanfare_finale` | Mozart (text Overbeck † 1821, not used) | as above; AMA Serie VII | [IMSLP K. 596](https://imslp.org/wiki/Sehnsucht_nach_dem_Fr%C3%BChling,_K.596_(Mozart,_Wolfgang_Amadeus)) |
 | Symphony No. 94 „Surprise", Andante theme + the *fortissimo* G major chord (1791, premiered London 1792) | `boss_intro`, `boss_surprise` | Joseph Haydn († 1809) | † 217 years; Rietz/Breitkopf c. 1855 | [IMSLP Hob. I:94](https://imslp.org/wiki/Symphony_No.94_in_G_major,_Hob.I:94_(Haydn,_Joseph)), [Wikipedia](https://en.wikipedia.org/wiki/Symphony_No._94_(Haydn)) |
 | „Gott erhalte Franz den Kaiser" Hob. XXVIa:43 (1797), bars 1–4 | `bad_ischl` C (nice, restricted) | Haydn | as above; text Haschka not used. Restricted use (section 5) because the tune is also Germany's anthem | [IMSLP Kaiserlied](https://imslp.org/wiki/Das_Kaiserlied,_Hob.XXVIa:43_(Haydn,_Joseph)), [Wikipedia](https://en.wikipedia.org/wiki/Gott_erhalte_Franz_den_Kaiser), [Kaisermesse Bad Ischl, 18 Aug](https://www.salzkammergut.at/oesterreich-veranstaltung/detail/430078154/kaisermesse.html) |
