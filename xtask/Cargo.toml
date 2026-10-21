@@ -12,5 +12,7 @@ jnr-artkit = { workspace = true, features = ["png"] }
 jnr-core.workspace = true
 jnr-render.workspace = true
 jnr-assets.workspace = true
+# Cue logs (`xtask cues`, `replay --cue-log`).
+jnr-audio.workspace = true
 # Decoding golden screenshots.
 png.workspace = true

@@ -112,6 +112,7 @@
 
 [meta]
 id = "falkenstein"
+music = "falkenstein"
 title_key = "stage.falkenstein.title"
 time_limit = 255
 camera = "climb"

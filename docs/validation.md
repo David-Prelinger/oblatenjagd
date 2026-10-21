@@ -85,6 +85,12 @@ R 40
 - `cargo xtask golden --accept <replay>_<shot>|<replay>|--all` re-renders the shots (deterministic, so identical to the reviewed previews) and writes them into `tests/golden/`; it refuses replays that fail their expectations or are not deterministic.
 - Updating goldens: `cargo xtask golden --accept <name>` is allowed only after an `art-director` APPROVED verdict for that change, and the commit message must state it.
 
+### L6b Cue logs (verify, MA)
+- The sound cues of a replay (`jnr_audio::cues::Director`, pure) as text, one `frame cue` line each: `cargo xtask replay <file> --cue-log` prints them (frame 0 = the game's first frame). Example lines: `   954 jingle boss_intro`, `  1044 sfx boss_telegraph W7`, `  1500 sfx pause I9 -2`, `   991 duck on`.
+- Goldens: `tests/golden/cues/<replay>.cues` (testbed_route, salzburg_tour, cafe_zauner_boss_win_normal, wolfgangsee_gelse_dive, flow_game_over, qa_flow_pause_stops_timer, qa_m7_time_up_in_fight, flow_m7_cafe_zauner_ending_skip, m4_enemies_axe_singer). `cargo xtask cues` (the `cue-logs` verify step, also the xtask test `every_cue_golden_matches`) compares them; a mismatch names the first differing line and writes the actual log to `$CARGO_TARGET_DIR/reports/cues/<replay>.cues`.
+- `cargo xtask cues --accept <replay>` writes (or adds) one golden, `--accept --all` rewrites every existing one. No reviewer gate (D-119): they are text, and their diff is the review; the commit message says which logs changed and why.
+- `cargo test` also pins the rules: every `Event` decided, every cue id in `docs/audio-design.md`, the voice policy, and `testbed_route`'s 7 `jump` cues on its 7 jump presses.
+
 ### L7 Visual review (per visual change)
 - The `art-director` agent reviews contact sheets, filmstrips and replay screenshots with a fixed rubric (readability, palette, silhouette, light direction, scale consistency, tile seams, HUD clipping, German spelling, "is the joke visible?").
 - `cargo xtask filmstrip <replay>` makes a contact sheet of every 30th frame of a replay, so motion problems (jitter, clipping into walls) can be seen in one image.

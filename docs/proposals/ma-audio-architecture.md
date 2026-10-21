@@ -502,3 +502,95 @@ Notes for E56/E57:
   sounds `gate + release` samples, so the loop-wrap tail is `mix[loop_len..]` folded back
   onto the start; `add_note_until` cuts a note early with a 2 ms fade. Identical (instrument, note, gate, volume) voices render identically, so a
   per-song cache of rendered notes or whole pattern instances is safe and the obvious speed-up.
+
+## As built (E58a)
+
+E58 was split: **E58a** (this part) is the core event, the cue director, cue logs and the
+level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio/` bank in
+`jnr-assets` and checks the cue ids and level `music` against the embedded files.
+
+- **`Event::Bounced`** (D-113) in `jnr-core`: pushed right after `Stomped` on a step whose
+  bounce came only from `Contact::Bounce` tops (no `Contact::Stomp`: no enemy, no Kurgast,
+  no boss hit). Output only; `Event::ALL` has 19 entries. Every replay, solver route and
+  golden stayed bit-identical (`verify`).
+- **Water line**: no core change. The app and the director read it through the existing
+  public API, `jnr_core::swim::swim_surface(game.player(), game.map(), &game.tuning().swim)`;
+  "under water" = that surface is `Some(s)` and the hitbox top `player.y > s` (equivalent to
+  swimming and not in the surface band, so floating counts as above water). Everything else
+  the director derives is public too (`Game::{mode, stage_clear, route_map, ending,
+  time_left, entities, camera, level, player, events, tuning}`, `Entity::{state, spawn}`).
+- **`jnr_audio::cues`** (pure, `jnr-audio` now depends on `jnr-core`):
+  - `Sfx` (25: exactly the must SFX of audio-design §6) with id, voice, priority and the
+    design's length in ms. Pitched variants are not ids: a cue carries a `Play { sfx,
+    semitones }`, and `cues::PITCHED` lists every variant the cues use (the jump a fourth
+    lower, −5, for Big and Hackl; the pause sound two semitones lower, −2, on leaving the
+    pause), which the app (E59/E58b) renders as extra WAVs at startup (quad-snd can't
+    re-pitch a sound); the stomp chain's steps (nice) would be more entries there.
+    `Music` (25: §5's overview table, songs and
+    jingles, with the jingles' design lengths); `Music::level_song` (the ids a level may
+    name) and `Music::underwater_twin` (`wolfgangsee` → `unterwasser`).
+  - `sfx_for(Event, Power) -> EventSound { Sfx, Music, Silent }`, an exhaustive `match`.
+  - `Voices`: the §6.1 rules. Per step: duplicates of an id count once; per voice the
+    highest priority request wins (first on a tie); it starts if the voice is free or plays
+    a sound of lower or equal priority (a retrigger restarts), else it is dropped. A voice
+    is busy for the sound's design length (E58b may swap in rendered lengths).
+  - `Director::begin(&Game)` once, then `Director::step(&Game, InputFrame)` after every
+    `Game::step`; both return `Vec<Cue>`. The input is only used to tell a START press
+    (`ui_start`) from a timed transition.
+- **Cues** (what E59 does with them): `Sfx(s)` stop what the app last started on
+  `s.sfx.voice()`, then play `s.sfx` at `s.semitones`; `StopSfx(id)` stop that id now
+  (used for `boss_telegraph` when the dash starts and `hohes_c` when the singer is defeated); `CutSfx(All | KeepItems)`; `Song(m)` stop the
+  song, start `m` looping from sample 0 at the current hold/duck volume and above water (for
+  `wolfgangsee` also start `unterwasser`, or the low-passed fallback, muted on the same
+  frame); `StopSong`; `Jingle(m)` stop the jingle, play `m` once; `StopJingle`;
+  `Hold(bool)` song volume 0 / back (the loop keeps running: pause and the ZEIT-60 bells);
+  `Duck(bool)` music −6 dB; `Underwater(bool)` swap the song and its twin's volumes. Mute
+  (M) stays app state and never reaches the director.
+- **Music rules as built**: Title → `title`; START on the title, „Weiter?", the map or the
+  ending → `ui_start`; StageIntro (not after a death) → stop song and jingle (silence);
+  Playing from anything but Paused → the level's piece from sample 0 (also every respawn and
+  the first frame of `start = playing` games; a level without `music` is silent); Paused →
+  cut all SFX, stop the jingle, `pause`, `Hold(true)`; resume → `pause` at −2 semitones, `Hold(false)`;
+  `Died` → cut all, stop song, `death`; `GameOver` → cut all, `game_over`; `LevelComplete`
+  → stop song, cut P/W/A, `fanfare_clear` (or `fanfare_finale` when the clear starts in
+  `Serve`); tally ticks on every 3rd Tally frame while the bonus grows, `tally_end` on the
+  first Clear frame; the route map → `route_map` (once per visit); the ending: Map →
+  `ending_map` jingle, Scene → `kaffeehaus` (runs on through the Bill), Credits →
+  `credits`, Ende → `ende` jingle, then `title`; the bill's lines 1–3 → `kassa_zeile`,
+  line 4 (Trinkgeld) → `muenze`, at `ending.bill_line_frames` steps.
+- **ZEIT 60**: `hurry` jingle on the first Playing frame with `time_left` 60 after 61; outside
+  the boss fight it also holds the piece for the jingle's 96 frames. In the fight (the
+  Oberkellner neither `WAIT` nor `DONE`) the jingle plays over the boss music without a hold
+  (**deviation**: the design puts the bells on SFX voice I there; as a jingle they take no
+  SFX voice, which changes nothing audible but keeps one bell render).
+- **Boss**: `WAIT → INTRO` stop song, `boss_intro`; `INTRO → TELEGRAPH` `boss_surprise` and
+  `boss` from 36 frames later (the chord's 600 ms); every `TELEGRAPH` start
+  `boss_telegraph` (stopped when the `DASH` starts), `BREATHE` `boss_breathe`, `STUN`
+  `boss_hit` (replacing that step's `stomp`/`axe_hit`), `VOLLEY` `bills_hang`; `DONE` stop
+  song, `boss_defeat`, and the level's piece 150 frames later (the 1.5 s Tusch + 1 s of
+  silence; from sample 0, not from a loop point: D-114 songs have none). A death resets him
+  to `WAIT`, so the cues come again at the next lock.
+- **Operettensänger**: `hohes_c` on the first `SING` frame (on screen only), `StopSfx` when a
+  singer that was singing is defeated or gone.
+- **Under water**: only while the song has an underwater twin and in Playing; 20
+  consecutive frames below (above) the water line swap in (out); every `Song` resets it.
+- **Off-screen rule**: applied to the entity-derived SFX (boss, singer); event SFX are the
+  player's own.
+- **Cue logs**: `cargo xtask replay <file> --cue-log` prints `frame cue` lines (`frame` 0 =
+  `begin`); `cargo xtask cues [--accept <replay>|--all]` compares/writes
+  `tests/golden/cues/<replay>.cues` (verify step `cue-logs`, also an xtask unit test).
+  Goldens: `testbed_route`, `salzburg_tour`, `cafe_zauner_boss_win_normal`,
+  `wolfgangsee_gelse_dive`, `flow_game_over`, `qa_flow_pause_stops_timer`,
+  `qa_m7_time_up_in_fight`, `flow_m7_cafe_zauner_ending_skip`, `m4_enemies_axe_singer`. No reviewer gate (D-119): they are
+  text and their diffs read like the design's tables; a commit that changes one says why
+  (the game-designer reviews the Stage 1 tour and the boss win as part of MA's review task).
+- **Level music**: `music = "<id>"` in the 9 journey levels (the level ids are the §5 ids);
+  `levels lint` requires it in every journey level (`01_`…`99_`) and accepts only
+  `Music::level_song` ids. `music` is not hashed (the replays and the solver are unchanged).
+- **Nice-to-haves not done** (all derivable later from the same snapshot): `land`, `crawl`,
+  stomp chain pitch, `axe_pling`, `tray_ding`, `station_gong`, `boss_dash`, `bills_fall`,
+  `einatmen`, `applaus`, Ampel/Postbus/bus/Fiaker/Schwan/Regattaboot/Steinschlag/Schneekugel/
+  Offizier/Blasmusiker/E-Biker/Schafbergbahn/Dampfer/Mozartkugel-Verkäufer cues, `selfie`,
+  `sprout`, `ballast`, `liegestuhl`, `platsch`, `stempel`, `seite`, the ambience loops
+  (`gelse`, `summen`, `dampf`), the music layers, the hurry +12 % tempo, the boss tempo
+  steps, the map transposition and the climb layer; fades (cuts only, D-114).

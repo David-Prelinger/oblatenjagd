@@ -1,0 +1,18 @@
+# cue log of tests/replays/qa_flow_pause_stops_timer.replay (cargo xtask cues)
+     0 song title
+     1 stop-song
+     1 sfx ui_start I6
+   500 cut-sfx all
+   500 sfx pause I9
+   500 hold on
+   500 duck on
+   516 duck off
+  1500 sfx pause I9 -2
+  1500 hold off
+  1500 duck on
+  1516 duck off
+  3552 jingle hurry
+  3552 hold on
+  3648 hold off
+  7152 cut-sfx all
+  7152 jingle death

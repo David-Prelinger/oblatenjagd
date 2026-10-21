@@ -232,6 +232,7 @@ dependencies = [
 name = "jnr-audio"
 version = "0.1.0"
 dependencies = [
+ "jnr-core",
  "serde",
  "toml",
 ]
@@ -608,6 +609,7 @@ version = "0.1.0"
 dependencies = [
  "jnr-artkit",
  "jnr-assets",
+ "jnr-audio",
  "jnr-core",
  "jnr-render",
  "png",

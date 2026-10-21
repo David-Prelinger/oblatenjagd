@@ -28,7 +28,14 @@ pub fn check_steps() -> Vec<StepFn> {
 /// Full validation: `check` plus the slower layers.
 pub fn verify_steps() -> Vec<StepFn> {
     let mut steps = check_steps();
-    steps.extend([solver as StepFn, replays, goldens, wasm_smoke, vnc_smoke]);
+    steps.extend([
+        solver as StepFn,
+        replays,
+        goldens,
+        cue_logs,
+        wasm_smoke,
+        vnc_smoke,
+    ]);
     steps
 }
 
@@ -129,6 +136,13 @@ fn goldens(root: &Path) -> Step {
     let started = Instant::now();
     let (ok, output) = golden::check_report(root);
     finish("goldens", "cargo xtask golden", started, ok, &output)
+}
+
+/// L6b: the cue logs of the replays with a golden (`xtask/src/cues.rs`).
+fn cue_logs(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = crate::cues::check_report(root);
+    finish("cue-logs", "cargo xtask cues", started, ok, &output)
 }
 
 /// L8 (native): the real app window on the X display, see `vnc.rs`.

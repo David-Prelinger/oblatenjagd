@@ -99,6 +99,7 @@
 
 [meta]
 id = "wolfgangsee"
+music = "wolfgangsee"
 title_key = "stage.wolfgangsee.title"
 time_limit = 270
 min_jump_window = 5

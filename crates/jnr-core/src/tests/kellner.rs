@@ -205,6 +205,7 @@ fn the_tray_bounces_her_without_damage_or_points_with_komm_gleich() {
     let t = tuning();
     let (g, events) = bounced("-");
     assert!(events.contains(&Event::Stomped), "the bounce: {events:?}");
+    assert!(events.contains(&Event::Bounced), "a tray: {events:?}");
     assert!(!events.contains(&Event::Hurt));
     let k = first(&g, KELLNER);
     assert!(k.active && !k.removed, "he walks on");

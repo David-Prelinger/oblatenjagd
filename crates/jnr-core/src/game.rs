@@ -107,13 +107,19 @@ pub enum Event {
     /// The player swam a stroke (a JUMP press under water, D-076); a
     /// jump-out from the surface is a `Jumped` instead.
     Stroke,
+    /// The step's bounce came only from non-stompable tops (Fiaker, bus,
+    /// car, Regattaboot masthead, Kellner or Oberkellner tray): nothing was
+    /// stomped, no Kurgast laid down, no boss hit (D-113). Always comes
+    /// with `Stomped`, which stays as it was (emitted on every bounce). An
+    /// output for audio only: no state and no hash depend on it.
+    Bounced,
 }
 
 impl Event {
     /// Every event, in declaration order. Keep in sync with the enum: a new
     /// variant fails the build in [`Event::name`] (exhaustive `match`), which
     /// is the reminder to list it here too.
-    pub const ALL: [Event; 18] = [
+    pub const ALL: [Event; 19] = [
         Event::Jumped,
         Event::Landed,
         Event::Died,
@@ -132,6 +138,7 @@ impl Event {
         Event::AxeHit,
         Event::CrawlStarted,
         Event::Stroke,
+        Event::Bounced,
     ];
 
     /// The variant name (`"Died"`), as used in replay files (`no_event=Died`).
@@ -155,6 +162,7 @@ impl Event {
             Event::AxeHit => "AxeHit",
             Event::CrawlStarted => "CrawlStarted",
             Event::Stroke => "Stroke",
+            Event::Bounced => "Bounced",
         }
     }
 
@@ -1257,6 +1265,9 @@ impl Game {
     /// the goal wins (D-027).
     fn interact(&mut self, prev_bottom: Fx, input: InputFrame) {
         let mut bounced = false;
+        // A real stomp this step (an enemy, a Kurgast, a boss hit): then
+        // the bounce is no `Bounced` (D-113).
+        let mut stomped = false;
         let mut hurt = false;
         // Top of the highest non-stompable enemy bounced off this frame.
         let mut rest_on: Option<Fx> = None;
@@ -1352,6 +1363,7 @@ impl Game {
                         // (it neither advances nor resets).
                         Contact::Stomp if kind == EnemyKind::Oberkellner => {
                             bounced = true;
+                            stomped = true;
                             spawned.extend(self.hit_oberkellner(i));
                         }
                         // A stomped Kurgast lies down in his deck chair
@@ -1361,6 +1373,7 @@ impl Game {
                         // „Kurruhe!" stacks above the score popup.
                         Contact::Stomp if kind == EnemyKind::Kurgast => {
                             bounced = true;
+                            stomped = true;
                             let scores = crate::enemies::scores_on_defeat(&e);
                             crate::enemies::lie_down(&mut self.entities[i], &self.tuning);
                             let mut top = e.y;
@@ -1372,6 +1385,7 @@ impl Game {
                         }
                         Contact::Stomp => {
                             bounced = true;
+                            stomped = true;
                             crate::enemies::defeat(
                                 &mut self.entities[i],
                                 kind,
@@ -1452,6 +1466,9 @@ impl Game {
                 self.rest_feet_on(top);
             }
             self.events.push(Event::Stomped);
+            if !stomped {
+                self.events.push(Event::Bounced);
+            }
         }
         self.entities.extend(spawned);
     }

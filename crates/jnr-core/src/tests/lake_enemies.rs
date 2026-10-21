@@ -855,6 +855,7 @@ fn the_masthead_bounces_without_damage_or_points() {
     drop_onto(&mut g, b);
     let events = g.step(input("-")).to_vec();
     assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(events.contains(&Event::Bounced), "{events:?}");
     assert!(!events.contains(&Event::Hurt) && g.deaths() == 0);
     assert_eq!(g.score(), 0, "no points");
     assert_eq!(first(&g, BOAT).kind, BOAT, "not defeated");

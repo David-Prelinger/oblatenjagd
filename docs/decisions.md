@@ -1024,3 +1024,10 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 
 ## D-118 Container: PulseAudio null sink for audio smoke tests (orchestrator, MA planning; proposal D-117)
 - `pulseaudio`, `pulseaudio-utils` and `libasound2-plugins` in the Dockerfile. xtask starts a null sink on demand; `vnc-smoke` records it and asserts sound when Pulse runs, and passes with "audio not exercised" when it doesn't. An ALSA `null` device was rejected (the audio thread spins at 100 % CPU).
+
+## D-119 Cue director as built: pitch offsets, cue-log goldens without a gate (engine-engineer, E58a; D-113, D-114)
+- **Cues are commands, not sounds**: `jnr_audio::cues::Director` turns each step (events, a snapshot of the previous step, the game state, the START press) into `Cue`s the app only executes (play on a voice, stop an id, cut voices, song, jingle, hold, duck, underwater). All of D-113's rules live in the pure crate, so a replay's cues are a deterministic text log.
+- **Pitched variants are offsets, not ids**: a cue plays `Play { sfx, semitones }`; `cues::PITCHED` lists every variant (the Big/Hackl jump −5, leaving the pause −2), which the app renders as extra WAVs at startup (quad-snd can't re-pitch). The SFX ids are exactly audio-design §6's 25 must ids.
+- **Cut is a cue**: `StopSfx(id)` (the boss telegraph at the dash, the high C when the singer is defeated) and `CutSfx(All | KeepItems)`.
+- **Cue-log goldens** (`tests/golden/cues/*.cues`) change through `cargo xtask cues --accept` without a reviewer verdict: they are text whose diff is the review, unlike images and PCM hashes. The commit message names the changed logs.
+- **Level music** is `[meta] music` (not hashed); journey levels must have it.

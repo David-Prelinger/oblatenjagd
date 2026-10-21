@@ -208,6 +208,7 @@ fn a_stomp_lays_him_in_his_deck_chair_for_100_with_kurruhe_above() {
     drop_onto(&mut g, k);
     let events = g.step(input("-")).to_vec();
     assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(!events.contains(&Event::Bounced), "laid down: {events:?}");
     assert!(!events.contains(&Event::Hurt));
     assert!(g.player().vy < Fx::ZERO, "she bounces");
     assert_eq!(g.score(), 100);

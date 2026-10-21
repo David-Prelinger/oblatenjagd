@@ -8,12 +8,14 @@
 //!   one-pole low/high-pass, volume.
 //! - [`render`]: patches to 44 100 Hz mono `i16` [`Pcm`], with clamp counting.
 //! - [`wav`]: RIFF/WAVE bytes from and to [`Pcm`].
+//! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
 //!
 //! The crate follows the `jnr-core` determinism rules (integers only, no
 //! `HashMap` iteration, no time/fs/threads/global RNG; enforced by
 //! `cargo xtask arch-lint`), so a render is bit-identical on native and wasm
 //! and its hash can serve as a golden.
 
+pub mod cues;
 pub mod error;
 pub mod note;
 pub mod patch;

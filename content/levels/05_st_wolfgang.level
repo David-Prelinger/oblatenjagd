@@ -134,6 +134,7 @@
 
 [meta]
 id = "st_wolfgang"
+music = "st_wolfgang"
 title_key = "stage.st_wolfgang.title"
 time_limit = 260
 min_jump_window = 5
