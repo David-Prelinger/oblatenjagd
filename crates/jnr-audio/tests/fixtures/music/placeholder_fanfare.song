@@ -1,0 +1,28 @@
+# PLACEHOLDER (E57 test fixture; the sound-designer authors the real music).
+# A jingle quoting Haydn's Surprise theme (like `boss_intro`, D-113).
+[meta]
+id = "placeholder_fanfare"
+kind = "jingle"
+tempo_bpm = 160
+meter = "2/4"
+steps_per_beat = 2
+key = "c major"
+bars = 2
+order = ["A"]
+source = "Joseph Haydn, Symphony No. 94, II. Andante, bars 1-2"
+edition = "Breitkopf & Haertel, ed. J. Rietz, c. 1855 (IMSLP)"
+
+[channels]
+lead = { instrument = "lead", volume_pct = 44 }
+bass = { instrument = "bass", volume_pct = 45 }
+
+[pattern.A]
+score = '''
+lead | c4/1 c4 e4 e4 | g4 g4 e4/2 |
+bass | c3/2 r        | c3/2 r     |
+'''
+
+[[quote]]
+fixture = "haydn_94_andante"
+channel = "lead"
+bar = 1

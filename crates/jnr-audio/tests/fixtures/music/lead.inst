@@ -1,0 +1,16 @@
+# PLACEHOLDER (E57 test fixture; the sound-designer authors the real instruments in audio/).
+# A plain lead: a square (pulse 50 %) with a short scoop.
+range = ["f3", "c7"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+slide_cents = 30
+slide_ms = 20
+detune_cents = -30
+attack_ms = 8
+decay_ms = 80
+sustain_pct = 70
+release_ms = 60
+volume_pct = 30
+vibrato = { depth_cents = 12, rate_hz = 5 }

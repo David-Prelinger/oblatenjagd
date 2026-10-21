@@ -87,6 +87,8 @@ pub fn class_peak(class: Class) -> (f64, f64) {
         Class::Ambience => (-26.0 - PEAK_TOL_DB, -24.0 + PEAK_TOL_DB),
         // "peak ≤ −6 dBFS"; the RMS band sets the loudness.
         Class::Jingle => (-20.0, -6.0),
+        // The music bus: "sample peak ≤ −8 dBFS".
+        Class::Song => (-20.0, -8.0),
     }
 }
 
@@ -94,6 +96,8 @@ pub fn class_peak(class: Class) -> (f64, f64) {
 pub fn class_rms(class: Class) -> Option<(f64, f64)> {
     match class {
         Class::Jingle => Some((-19.0, -15.0)),
+        // "RMS over one full loop −20 ± 2 dBFS".
+        Class::Song => Some((-22.0, -18.0)),
         Class::Loud | Class::Normal | Class::Soft | Class::Ambience => None,
     }
 }
@@ -105,6 +109,7 @@ pub fn class_length_ms(class: Class) -> (f64, f64) {
     match class {
         Class::Loud | Class::Normal | Class::Soft | Class::Ambience => (20.0, 1500.0),
         Class::Jingle => (200.0, 10_000.0),
+        Class::Song => (20_000.0, 90_000.0),
     }
 }
 
@@ -117,8 +122,21 @@ pub fn peak_band(t: &Target) -> (f64, f64) {
     }
 }
 
+/// Whether `lint` applies to `class`. A loop (`song`) has no start or end
+/// (it wraps sample-continuously, E57), so `onset`, `tail` and `edges`
+/// don't apply to it; every other lint applies to every class.
+pub fn applies(lint: Lint, class: Class) -> bool {
+    !(class == Class::Song && matches!(lint, Lint::Onset | Lint::Tail | Lint::Edges))
+}
+
 /// Every lint that fails for `st` against `t`.
 pub fn check(st: &Stats, t: &Target) -> Vec<Finding> {
+    let mut found = check_all(st, t);
+    found.retain(|f| applies(f.lint, t.class));
+    found
+}
+
+fn check_all(st: &Stats, t: &Target) -> Vec<Finding> {
     let mut out = Vec::new();
     let mut fail = |lint, message: String| out.push(Finding { lint, message });
 
@@ -193,7 +211,8 @@ pub fn check(st: &Stats, t: &Target) -> Vec<Finding> {
             ),
         );
     }
-    let edge = dbfs_to_sample(EDGE_MAX_DBFS);
+    // Rounded (−60 dBFS = 32.8 → 33), so the message's bound is the real one.
+    let edge = dbfs_to_sample(EDGE_MAX_DBFS).round();
     for (which, v) in [("first", st.first_sample), ("last", st.last_sample)] {
         if (v as f64).abs() > edge {
             fail(
@@ -309,6 +328,55 @@ mod tests {
                 assert!(names.contains(&stem), "stray fixture {}", path.display());
             }
         }
+    }
+
+    #[test]
+    fn edges_allow_exactly_the_printed_bound() {
+        let r = render_sfx_file(&fixtures().join("edges_pass.sfx")).unwrap();
+        let mut st = stats::analyse(&r.pcm, r.clamped);
+        let t = Target {
+            class: Class::Normal,
+            peak_dbfs: None,
+            duration_ms: None,
+            centroid_hz: None,
+            placeholder: false,
+        };
+        let edges = |st: &Stats| {
+            check_all(st, &t)
+                .into_iter()
+                .filter(|f| f.lint == Lint::Edges)
+                .count()
+        };
+        st.first_sample = 33;
+        st.last_sample = -33;
+        assert_eq!(edges(&st), 0);
+        st.first_sample = 34;
+        assert_eq!(edges(&st), 1);
+    }
+
+    #[test]
+    fn loops_skip_the_start_and_end_lints() {
+        let r = render_sfx_file(&fixtures().join("edges_fail.sfx")).unwrap();
+        let st = stats::analyse(&r.pcm, r.clamped);
+        let t = Target {
+            class: Class::Song,
+            peak_dbfs: None,
+            duration_ms: None,
+            centroid_hz: None,
+            placeholder: false,
+        };
+        let found = check(&st, &t);
+        assert!(
+            found
+                .iter()
+                .all(|f| !matches!(f.lint, Lint::Edges | Lint::Onset | Lint::Tail)),
+            "{found:?}"
+        );
+        assert!(
+            found.iter().any(|f| f.lint == Lint::Length),
+            "a short sound is no loop: {found:?}"
+        );
+        assert_eq!(class_rms(Class::Song), Some((-22.0, -18.0)));
     }
 
     #[test]
