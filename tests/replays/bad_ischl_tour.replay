@@ -4,12 +4,16 @@
 # unchanged from frame 171 (re-copy them after `cargo xtask solve
 # bad_ischl --write`; the xtask tour coupling test checks it), then 800
 # idle frames: the Maibaum sequence at Café Zauner (no Ortsende, D-097),
-# the tally, the route map Bad Ischl -> Café Zauner (2508), which has no
-# level yet, so the teaser („Fortsetzung folgt …", 2572) and the title
-# (2752) with the run reset. D-102 (E42): re-copied from the re-solved
+# the tally, the route map Bad Ischl -> Café Zauner (2508): since M7
+# Stage 9 is playable, so the map waits there („Weiter mit START",
+# D-108) and the replay ends on it (2822; without START the Café Zauner
+# intro would follow at 2872). D-102 (E42): re-copied from the re-solved
 # route (solver frames 918-1545 changed); time_limit 210 (was 270)
-# shortens the tally by 60 frames, so the map, the teaser shot (2700 ->
-# 2640) and the title come 60 frames earlier.
+# shortens the tally by 60 frames, so the map and its shot (2700 -> 2640)
+# come 60 frames earlier. Re-cut for D-108 (M7): the shot `teaser` (the
+# M6 „Fortsetzung folgt …" on the map) became `route_map` at the same
+# frame (Resi on the Café Zauner dot, the map in Wait), and the replay
+# ends on the map instead of the title (same inputs).
 # Play frame = tour frame - 171 (stage clock likewise until the goal).
 # Shots, per section:
 #   1 Katrin          60 intro, 260 the Kaiser statue with the pigeon on
@@ -25,14 +29,14 @@
 #                     drill frame 205; Resi on the 3-high step past it)
 #   6 Pfarrgasse      2022 Maibaum, 2100 the goal sequence: Resi walks
 #                     past the queue at Café Zauner (D-101 condition),
-#                     2200 tally, 2640 the teaser on the route map (Café
+#                     2200 tally, 2640 the route map in Wait (Café
 #                     Zauner, primary label slots), Normal form.
 level  = bad_ischl
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=2022..2022 deaths=0 state=title score=0 lives=3 oblaten=0
-shots  = 0:title 60:intro 260:kaiser_taube 384:liegestuhl 527:file_a 958:esplanade 1144:checkpoint 1438:file_b 1640:kongresshaus 1817:praesentiert 2022:maibaum 2100:zauner_queue 2200:tally 2640:teaser
+expect = complete frames=2022..2022 deaths=0 state=route_map stage=bad_ischl score=18300 lives=3 oblaten=41
+shots  = 0:title 60:intro 260:kaiser_taube 384:liegestuhl 527:file_a 958:esplanade 1144:checkpoint 1438:file_b 1640:kongresshaus 1817:praesentiert 2022:maibaum 2100:zauner_queue 2200:tally 2640:route_map
 ---
 - 20
 S 1       # START: stage intro
@@ -87,4 +91,4 @@ RBJ 36
 RB 18
 RBJ 36
 RB 56
-- 800     # Maibaum sequence, tally, route map
+- 800     # Maibaum sequence, tally, route map Bad Ischl -> Café Zauner (Wait)

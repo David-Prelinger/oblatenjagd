@@ -23,14 +23,19 @@
 #        Oblaten on its top), pen C 51-63: Kurgast 60, Selfie-Tourist 62,
 #        L2 (row 10, 5 up) 56-58 with 3 Oblaten on row 8, ?-box (52, row
 #        11) (spec 53: in front of the second mirror's frame, as above),
-#        Kein Platz 52, Erst essen 61. Vitrine C 64-66 (3 Oblaten on top).
-#   3 Die Schlange 70-109: Vitrine D 69-70 (3 high, 2 Oblaten on top),
-#        Abstand halten 72, nine Wartende at 73, 76, ..., 97 on
-#        marmor_punkt dots (3 apart: the chain works at walk speed), L3
-#        75-77, L4 82-84, L5 89-91, L6 96-98 (row 10) with 3 Oblaten each
-#        on row 9 and 2 on row 8 over each gap (79-80, 86-87, 93-94),
-#        Wartezeit 80, vordrängeln 101, ?-box (108, row 11) (spec 105: in
-#        front of the window's sill) over the Oblaten 107-111 (row 13).
+#        Kein Platz 52, Wartezeit 61 (D-110: was 80, behind Wartender
+#        79). Vitrine C 64-66 (3 Oblaten on top).
+#   3 Die Schlange 70-109: Abstand halten 68 (D-110: was 72, inside the
+#        first Wartender's outline), Vitrine D 69-70 (3 high, 2 Oblaten
+#        on top), nine Wartende at 73, 76, ..., 97 on marmor_punkt dots (3
+#        apart: the chain works at walk speed), L3 74-78, L4 81-85, L5
+#        88-92, L6 95-99 (row 10, 5 wide on the chain centres 76, 83, 90,
+#        97, D-110; 2-tile gaps) with 3 Oblaten each on row 9 over the
+#        centres and 2 on row 8 over each gap (79-80, 86-87, 93-94); no
+#        board in the queue. Vordrängeln 101, ?-box (108, row 11) (spec
+#        105: in front of the window's sill) over the Oblaten 107-111 (row
+#        12: on row 13 they sat on the board at 109), Erst essen, / dann
+#        posten 109 (D-110: was 61).
 #   4 Vor der Theke 110-119: checkpoint 112, Reserviert / seit 1832
 #        (street) 115, M-box (115, row 11) (spec 117: E46's 2 px band for
 #        a big Resi under the box onto the step; at 116 the Mozartkugel
@@ -49,19 +54,20 @@
 # the planned columns (D-104 art exception 2).
 # Oblaten: 46 placed + 3 in ?-boxes = 49 (target 50 +- 10).
 # time_limit 200 provisional (D-045: QA's relaxed run sets it).
-# Solver (with the boss, E46 ranking): complete 2283, 15 jumps, narrowest
-# counted window 18 (frame 288, x 719: from pen B over Vitrine B onto the
-# ?-box top at 52; and 392, x 979: from pen C's floor over Vitrine C onto
-# Vitrine D), all others 25 or route-bounded; gate min_jump_window = 5.
-# Named timings (D-073 style, the full list in the D-104 addendum):
+# Solver (with the boss, E46 ranking; re-solved for D-110): complete 2278,
+# 15 jumps, narrowest counted window 12 (frame 388, x 969: from pen C's
+# floor over Vitrine C onto Vitrine D), the others 14+ (route-bounded)
+# and 21-25; gate min_jump_window = 5 (the 6-9 target is withdrawn,
+# D-110). Named timings (the D-104 and D-110 addenda have the full list):
 # Kellner #1 walks from the first frame and reaches the vitrine's face
 # (x 320) at frame ~128: the solver drops off the vitrine onto his tray
 # at 129 („Komm' gleich!"). The queue: the solver bounces over 6 heads at
-# run speed (no counted press; its release windows 7 / 12 / 13 / 21 by
-# the D-100 shift); the walk-speed chain over all nine 4-7 (one 4), the
-# chandelier hops (4-tile gaps under the ceiling, a jump at the edge of a
-# 3-wide band) 3-4. The arena: the solver jumps over the step and the
-# vitrine at 744 (window 25), the lock is 824, hits 1283 / 1790 / 2251.
+# run speed (no counted press; release windows 13 / 15 / 13 / 25 by the
+# D-100 shift); one at a time (queue_walk) 6-11 per press, 10-50 per hop;
+# the nine-head chain 5-8 (optional, the 1-up); the chandelier route at
+# walk speed 10 / 13 / 13 / 12 (big 10 / 8 / 7 / 8). The arena: the solver
+# jumps over the step and the vitrine at 740 (window 25), the lock is
+# 824, hits 1283 / 1792 / 2250.
 # Replays: tests/replays/cafe_zauner_*.replay.
 
 [meta]
@@ -122,11 +128,11 @@ grid = '''
 ............................................................................................................................................
 ..........4.........................4...o.........4.....ooo....................oo.....oo.....oo............................4......4.........
 .......................................ooo.................................ooo....ooo....ooo....ooo.........................................
-.......................ooo..............................---................---....---....---....---.........................................
+.......................ooo..............................---...............-----..-----..-----..-----........................................
 ............M....?.....................---..........?................oo.....................................?......M......................G.
-.......ooooo...........+++......................ooo.............ooo..VV.................................................VV...............TTT
-..................VV............VVV.............VVV.............VVV..VV....................................ooooo........VV...............TTT
-.1P.a......b......VV.c..2...k..dVVV..e......kf..VVV.g.......uht.VVV..VV.iw..w..wj.w..w..w..w..w..w...l..........C..n..==VV............K.3TTT
+.......ooooo...........+++......................ooo.............ooo..VV....................................ooooo........VV...............TTT
+..................VV............VVV.............VVV.............VVV..VV.................................................VV...............TTT
+.1P.a......b......VV.c..2...k..dVVV..e......kf..VVV.g.......ujt.VVV.iVV..w..w..w..w..w..w..w..w..w...l.......h..C..n..==VV............K.3TTT
 =========================================================================:==:==:==:==:==:==:==:==:==========================================
 ============================================================================================================================================
 '''
