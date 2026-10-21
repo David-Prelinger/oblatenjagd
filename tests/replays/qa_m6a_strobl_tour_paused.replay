@@ -1,0 +1,59 @@
+# QA M6 acceptance (pause): strobl_tour's inputs with a 301-frame pause
+# (START at 900, START again 300 frames later) at the Dorfplatz: the
+# shutters, the Postbus and the Ampeln resume exactly; LevelComplete 301
+# frames later (1900 -> 2201), no hurt.
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2201..2201 deaths=0 no_event=Hurt
+---
+- 20
+S 1
+- 150
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+S 1
+- 299
+S 1
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+- 800

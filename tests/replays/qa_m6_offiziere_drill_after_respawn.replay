@@ -1,0 +1,67 @@
+# QA M6: the officers' drill and the Kurgaeste after a respawn (D-096/D-099:
+# the stage clock restarts at 0, the world is rebuilt). The first 150
+# frames of bad_ischl_solver (onto the street at col 26), then she stands:
+# Kurgast #1 walks into her (death). Respawn at the start at 440 (clock
+# 0). From 440 the whole bad_ischl_solver replay unchanged: files A, B and
+# C wake and drill exactly as in a fresh game (the solver's stomps on file
+# A, the chain over file B, the leap over singer #2 and file C all work),
+# and the stage completes at 440 + 1851 = 2291.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=1 event=Respawned complete frames=2291..2291 lives=2
+---
+RB 96
+RBJ 20
+RB 34
+- 290
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56

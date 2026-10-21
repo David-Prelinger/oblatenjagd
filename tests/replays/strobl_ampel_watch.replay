@@ -1,0 +1,46 @@
+# Stage 7 Ampel #1 (D-093) watched from the Gastgarten terrace: as
+# strobl_postbus_shelter to the checkpoint, on along the road and up
+# through the terrace (147-154, row 12) from below. Once she stands on its
+# right part the spawner cell (162) is fully on screen and its counter
+# starts (1450): red and amber, then two cars (1479, 1519) drive left
+# beneath her (car roofs 14 px above the road, her feet 48). After the
+# blinks and the amber it is red (from 1653, 196 frames); she drops down
+# and walks past the mouth in red, and stomps Selfie-Tourist #4 there.
+# Shot (M6 flow task): `car_stream` (1560), Ampel #1's two cars under
+# the terrace with Resi on it (the tour's route walks the street).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped player_x>=2620 state=playing
+shots  = 1560:car_stream
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40

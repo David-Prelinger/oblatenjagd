@@ -1,0 +1,31 @@
+# The Fiaker charges beneath Resi on the Kaiservilla steps (game-design
+# "Stage 8" New mechanics, reuse): the solver's opening to the villa steps
+# (Kurgast #1 and #2 stomped, file A chained), then she stops on the
+# 3-high steps (cols 85-87): within 8 tiles of the parked Fiaker (col 93)
+# it telegraphs 40 frames and charges left at 2 px/frame under the steps
+# (its 28 px stay 20 px below her feet), through the garden and past
+# Kurgast #2's deck chair, and off screen. Then she walks on down the
+# avenue.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt player_x>=1440
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 36
+RB 104
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 20
+RB 18
+L 14
+- 200
+R 60

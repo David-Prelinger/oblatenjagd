@@ -1,24 +1,24 @@
-# QA M5 flow (D-047, D-072, D-081; re-cut for D-087): Hackl Resi through St. Wolfgang and the
-# Wolfgangsee, then the teaser to Strobl and the title. Title flow with the
-# run started at St. Wolfgang: the first 6470 frames of
-# qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee (the qa_st_wolfgang_relaxed
-# inputs, Hackl from 4305, Maibaum 5491, the map in Wait, the Wolfgangsee
-# intro at 6320 drawing `player_hackl`), then from 6470 a route through
-# the Wolfgangsee found by a scratch beam search that keeps the Hackl
-# (never hurt): Wolfgangsee clear at 10885 as Hackl, the tally, the route
-# map Wolfgangsee -> Strobl (11391), which has no level yet, so the teaser
-# („Fortsetzung folgt …", from ~11467, with `player_hackl` on the map and
-# St. Wolfgang's raised label, D-072), then the title (11647) with the run
-# reset to its first stage, Normal, score 0. Shots: the teaser as Hackl
-# (11535). The Normal-form teaser is wolfgangsee_tour's `teaser` shot.
+# Stage 7 Hackl (D-097, D-081): the Hackl carried into Strobl, axes on the
+# Postbus and on a car (both Bounce). Title flow with the run started at St.
+# Wolfgang: qa_m5_flow_hackl_wolfgangsee_to_strobl's inputs (St. Wolfgang
+# and the Wolfgangsee as Hackl, Wolfgangsee clear at 10885), then idle: the
+# tally, the route map Wolfgangsee -> Strobl in Wait (from ~11391) and the
+# Strobl intro (~11777, `player_hackl`); play starts at 11928 as Hackl.
+# In Strobl (clock = frame - 11927): an axe defeats Nordic-Walker #1 (clock
+# 345); a route found by a scratch beam search over the shutters and the
+# annex to the Dorfplatz (850); onto shelter B, the Postbus triggers and
+# halts at 115-118; down to the street, an axe at the halted bus bounces
+# off it (1218); back up onto the shelter while it drives on. On along the
+# road under the Gastgarten terrace: Ampel #1 starts (1880), an axe thrown
+# just before its first car leaves the mouth bounces off the car (1939)
+# while she jumps up onto the terrace; she keeps the Hackl throughout.
 level  = st_wolfgang
 seed   = 1
 source = handwritten
 start  = title
-expect = complete frames=5491..5491 deaths=0 no_event=Hurt event=LevelComplete
-expect = state=title score=0 lives=3 oblaten=0
-shots  = 11535:teaser
+expect = deaths=0 no_event=Hurt event=AxeHit state=playing stage=strobl power=hackl
 ---
+# --- qa_m5_flow_hackl_wolfgangsee_to_strobl's inputs to the Wolfgangsee clear ---
 # --- the first 6470 frames of qa_m4_flow_st_wolfgang_hackl_to_wolfgangsee ---
 - 20
 S 1
@@ -539,4 +539,66 @@ RJ 8
 - 8
 RJ 8
 L 8
-- 900     # tally, map, teaser, title
+- 1041     # tally, route map Wolfgangsee -> Strobl (Wait), Strobl intro; play from 11928
+# --- Strobl as Hackl (frames below: Strobl clock) ---
+R 160
+RJ 18
+R 4
+- 20
+- 60
+RJ 20
+R 32
+RB 2
+R 48
+LJ 16
+RBJ 24
+RB 4
+RBJ 24
+RB 4
+J 16
+LJ 16
+RBJ 4
+RB 4
+L 8
+R 8
+RBJ 36
+RB 4
+L 8
+RBJ 36
+RB 4
+J 32
+RJ 10
+R 20
+RB 8
+L 8
+RJ 16
+R 4
+RJ 24
+R 4
+RBJ 36
+RB 4
+RJ 36
+R 28
+RJ 36
+R 4
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 90
+L 20
+- 16
+R 34
+- 10
+B 2
+- 6
+J 20
+- 230
+R 200
+R 228
+- 30
+B 2
+- 4
+J 20
+- 40

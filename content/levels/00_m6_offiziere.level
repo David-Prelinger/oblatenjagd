@@ -1,0 +1,49 @@
+# Grey-box test level for the Offiziere (M6 task E39, D-096; not part of
+# the journey; side camera). The street: feet on row 11 (y 192), ground in
+# rows 12-13. Sections (columns): start 0-5; steps 1/2 at 6/7 up to a
+# terrace (8-19, top on row 9, 3 tiles above the street; the Kaiserpark
+# terrace of game-design "Stage 8") with an `M`-box over it at 12 (row 6,
+# 3 tiles above the terrace: a standing jump bumps it).
+# File A (intro, D-096: seen from above): the flag bearer (`lead`) at 24
+# and an officer at 25, penned on the street 20-29 between the terrace's
+# 3-high face and a 2-high wall at 30. From the terrace edge Resi watches
+# them march, halt („Habt Acht!") and present sabres: the sabre zone
+# reaches 38 px above the street, her feet are 48 px up. File B: three
+# officers at 44-46 (`lead` on the left one) on the lawn 37-53 between
+# 2-high walls at 36 and 54: they wake one after another as the camera
+# comes (staggered activation) and still march and salute in step (the
+# stage clock); a stomp chain over all three (200, 400, 800) in a march
+# phase. Officer C alone at 66 in a pen 61-71 (2-high walls at 60 and 72):
+# a stomp during „Habt Acht!", or a sabre hurt. Goal at 100. Every officer
+# has `phase` 0, so all of them share the drill (f = stage clock mod 240).
+# Replays: tests/replays/m6_offiziere_*.replay.
+
+[meta]
+id = "m6_offiziere"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"L" = { entity = "offizier", lead = true }
+"o" = { entity = "offizier" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+........................................................................................................
+........................................................................................................
+........................................................................................................
+........................................................................................................
+........................................................................................................
+........................................................................................................
+............M...........................................................................................
+........................................................................................................
+........................................................................................................
+........############....................................................................................
+.......#############..........#.....#.................#.....#...........#...............................
+..P...##############....Lo....#.....#.......Loo.......#.....#.....o.....#...........................G...
+########################################################################################################
+########################################################################################################
+'''

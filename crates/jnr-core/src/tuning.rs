@@ -211,6 +211,20 @@ pub struct PlatformTuning {
     /// Px the wheel zone's top lies above the hull's bottom (the water
     /// line); the rest of its height is below it.
     pub dampfer_wheel_rise: i32,
+    /// Fensterladen body `[w, h]` in whole pixels (D-094): whole tiles
+    /// wide, at most a tile high; left-aligned in its spawn cell with its
+    /// top on the cell's top edge.
+    pub fensterladen_size: [i32; 2],
+    /// The last frames of a Fensterladen's open phase that rattle (the
+    /// closing telegraph, drawn by the renderer only; the body never
+    /// moves). At most the shortest open phase
+    /// ([`crate::level::FENSTERLADEN_MIN_OPEN`]).
+    pub fensterladen_rattle: u16,
+    /// The last frames of a Fensterladen's closed phase that show the
+    /// landlady at the window (the opening telegraph, renderer only). At
+    /// most the shortest closed phase
+    /// ([`crate::level::FENSTERLADEN_MIN_CLOSED`]).
+    pub fensterladen_warn: u16,
 }
 
 /// Player movement constants (SMB-style).
@@ -656,6 +670,58 @@ pub struct EnemyTuning {
     pub regattaboot_telegraph: u16,
     /// ... then races left at this speed, ignoring tiles.
     pub regattaboot_speed: Fx,
+    /// Ampel (D-093): counter frames of red and amber (the telegraph) at
+    /// the start of each cycle ...
+    pub ampel_telegraph: u16,
+    /// ... then green with a car every this many frames (`cars` of them)
+    /// ...
+    pub ampel_gap: u16,
+    /// ... then four green blinks over this many frames (each an eighth on,
+    /// an eighth off) ...
+    pub ampel_blink: u16,
+    /// ... then amber, then red for the rest of the period. Each at most
+    /// its `level::AMPEL_*` value, so a level's period and phase rules
+    /// hold for any tuning.
+    pub ampel_amber: u16,
+    /// At most this many of an Ampel's cars are alive at once.
+    pub ampel_max_alive: u16,
+    /// Auto, the car (D-093).
+    pub auto_hitbox: [i32; 2],
+    /// A car's hitbox starts this many px into its spawner cell (left
+    /// edge), its bottom on the cell's bottom.
+    pub auto_spawn_dx: i32,
+    /// It drives left at this speed, ignoring tiles.
+    pub auto_speed: Fx,
+    /// Kurgast walking (D-095).
+    pub kurgast_hitbox: [i32; 2],
+    /// He walks at this speed (the Nordic-Walker's turn rules).
+    pub kurgast_speed: Fx,
+    /// Stomped, his hitbox becomes this deck chair `[w, h]` px: centred on
+    /// him, its bottom on his feet, a one-way top platform.
+    pub kurgast_chair: [i32; 2],
+    /// He rests this many frames in the chair ...
+    pub kurgast_rest: u16,
+    /// ... then shows the wake telegraph for this many frames before he
+    /// stands up; both counters pause while the player stands on him.
+    pub kurgast_wake: u16,
+    /// The berth at a lying Kurgast (D-102), px: walkers turn at him once
+    /// their hitbox overlaps his chair widened by this on each side (same
+    /// rows), so they stay clear of a rider hanging past the chair.
+    pub kurgast_berth: i32,
+    /// Offizier (D-096).
+    pub offizier_hitbox: [i32; 2],
+    /// Marching speed.
+    pub offizier_speed: Fx,
+    /// Frames of the drill; its frame is (stage clock + level `phase`)
+    /// mod this. March for the first `offizier_march` frames ...
+    pub offizier_cycle: u16,
+    /// ... frames 0..this march ...
+    pub offizier_march: u16,
+    /// ... then this many frames halt for „Habt Acht!" (the telegraph);
+    /// the rest of the cycle is „Präsentiert!" with the sabre zone up.
+    pub offizier_attention: u16,
+    /// The sabre zone `[w, h]` px: centred on him, from his hitbox top up.
+    pub offizier_sabre: [i32; 2],
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -676,6 +742,28 @@ pub fn gams_airtime(up: Fx, gravity: Fx, max_fall: Fx) -> Option<u32> {
 }
 
 impl PlatformTuning {
+    /// The Fensterladen keys (D-094): a body whole tiles wide and at most a
+    /// tile high (its top on the cell's top edge, so it stays in its cell
+    /// row), and telegraphs that fit the shortest open and closed phases a
+    /// level may give it.
+    fn validate_fensterladen(&self) -> Result<(), ParseError> {
+        use crate::level::{FENSTERLADEN_MIN_CLOSED, FENSTERLADEN_MIN_OPEN};
+        let [w, h] = self.fensterladen_size;
+        if !(TILE_PX..=64).contains(&w) || w % TILE_PX != 0 || !(1..=TILE_PX).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: platforms.fensterladen_size must be whole tiles 16..=64 px wide and 1..=16 px high",
+            ));
+        }
+        if !(1..=FENSTERLADEN_MIN_OPEN).contains(&self.fensterladen_rattle)
+            || !(1..=FENSTERLADEN_MIN_CLOSED).contains(&self.fensterladen_warn)
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need platforms.fensterladen_rattle 1..={FENSTERLADEN_MIN_OPEN} (the shortest open phase) and fensterladen_warn 1..={FENSTERLADEN_MIN_CLOSED} (the shortest closed phase)"
+            )));
+        }
+        Ok(())
+    }
+
     /// The M5 boat keys (Traundl, Dampfer; D-077).
     fn validate_boats(&self, scroll_speed: Fx) -> Result<(), ParseError> {
         // A Traundl's whole cycle fits the u16 frame counter (as the
@@ -926,6 +1014,136 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The M6 traffic keys (Ampel and Auto, D-093).
+    fn validate_traffic(&self) -> Result<(), ParseError> {
+        use crate::level::{AMPEL_AMBER, AMPEL_BLINK, AMPEL_GAP, AMPEL_TELEGRAPH};
+        for (name, v, max) in [
+            (
+                "enemies.ampel_telegraph",
+                self.ampel_telegraph,
+                AMPEL_TELEGRAPH,
+            ),
+            ("enemies.ampel_gap", self.ampel_gap, AMPEL_GAP),
+            ("enemies.ampel_blink", self.ampel_blink, AMPEL_BLINK),
+            ("enemies.ampel_amber", self.ampel_amber, AMPEL_AMBER),
+        ] {
+            if !(1..=max).contains(&v) {
+                return Err(ParseError::new(format!(
+                    "tuning.toml: {name} must be 1..={max} frames (the level rules' Ampel cycle, D-093)"
+                )));
+            }
+        }
+        if !self.ampel_blink.is_multiple_of(8) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.ampel_blink must be a multiple of 8 (four blinks, each an eighth on and an eighth off)",
+            ));
+        }
+        if !(1..=8).contains(&self.ampel_max_alive) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.ampel_max_alive must be 1..=8",
+            ));
+        }
+        let [w, h] = self.auto_hitbox;
+        if !(1..=32).contains(&w) || !(1..=TILE_PX).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_hitbox must be 1..=32 px wide and 1..=16 px high",
+            ));
+        }
+        if !(0..TILE_PX).contains(&self.auto_spawn_dx) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_spawn_dx must be 0..=15 px",
+            ));
+        }
+        if self.auto_speed <= Fx::ZERO || self.auto_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.auto_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        // The cars of one green never overlap: each has driven its own
+        // length before the next one spawns.
+        if self.auto_speed.mul_int(i32::from(self.ampel_gap)) < Fx::from_px(w) {
+            return Err(ParseError::new(
+                "tuning.toml: need enemies.ampel_gap × auto_speed >= auto_hitbox width (the cars of one green must not overlap)",
+            ));
+        }
+        Ok(())
+    }
+
+    /// The M6 Kurgast's keys (D-095).
+    fn validate_kurgast(&self) -> Result<(), ParseError> {
+        let [w, h] = self.kurgast_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        // The chair is a platform as wide as a tile at most twice, and no
+        // taller than he stands (standing up only grows him upwards).
+        let [cw, ch] = self.kurgast_chair;
+        if !(1..=2 * TILE_PX).contains(&cw) || !(1..=h).contains(&ch) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_chair must be 1..=32 px wide and 1..=kurgast_hitbox's height high",
+            ));
+        }
+        if self.kurgast_speed <= Fx::ZERO || self.kurgast_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        // At most two tiles: a walker turns before it reaches a rider, but
+        // never from across a whole gap.
+        if !(0..=2 * TILE_PX).contains(&self.kurgast_berth) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kurgast_berth must be 0..=32 px",
+            ));
+        }
+        for (name, v) in [
+            ("enemies.kurgast_rest", self.kurgast_rest),
+            ("enemies.kurgast_wake", self.kurgast_wake),
+        ] {
+            if v == 0 {
+                return Err(ParseError::new(format!("tuning.toml: {name} must be >= 1")));
+            }
+        }
+        Ok(())
+    }
+
+    /// The Offizier's keys (D-096): a hitbox and sabre that fit his 16×32
+    /// sprite, a positive speed, and a drill with a march, a „Habt Acht!"
+    /// and at least one „Präsentiert!" frame, at most 240 frames long (the
+    /// level's `phase` is 0..=239).
+    fn validate_offizier(&self) -> Result<(), ParseError> {
+        let [w, h] = self.offizier_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        let [sw, sh] = self.offizier_sabre;
+        if !(1..=TILE_PX).contains(&sw) || !(1..=32).contains(&sh) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_sabre must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        if self.offizier_speed <= Fx::ZERO || self.offizier_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.offizier_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        let max_cycle = crate::level::OFFIZIER_MAX_PHASE + 1;
+        if self.offizier_march == 0
+            || self.offizier_attention == 0
+            || u32::from(self.offizier_march) + u32::from(self.offizier_attention)
+                >= u32::from(self.offizier_cycle)
+            || self.offizier_cycle > max_cycle
+        {
+            return Err(ParseError::new(format!(
+                "tuning.toml: need enemies.offizier_march >= 1, offizier_attention >= 1, march + attention < offizier_cycle <= {max_cycle}"
+            )));
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1106,6 +1324,9 @@ impl Tuning {
         self.enemies.validate_singer_and_stand()?;
         self.enemies.validate_reisebus()?;
         self.enemies.validate_lake()?;
+        self.enemies.validate_traffic()?;
+        self.enemies.validate_kurgast()?;
+        self.enemies.validate_offizier()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -1298,6 +1519,7 @@ impl Tuning {
         }
         self.platforms
             .validate_boats(self.camera.autoscroll_speed)?;
+        self.platforms.validate_fensterladen()?;
         let n = e.blasmusiker_notes;
         if n[0] < e.blasmusiker_inhale
             || n.windows(2).any(|w| w[0] >= w[1])
@@ -1687,6 +1909,39 @@ mod tests {
     }
 
     #[test]
+    fn fensterladen_numbers_are_validated() {
+        let t = Tuning::parse(REAL).unwrap();
+        let pl = &t.platforms;
+        assert_eq!(pl.fensterladen_size, [32, 8]);
+        assert_eq!((pl.fensterladen_rattle, pl.fensterladen_warn), (30, 20));
+        let with = |old: &str, new: &str| {
+            assert!(REAL.contains(old), "{old}");
+            Tuning::parse(&REAL.replace(old, new))
+        };
+        let size = "fensterladen_size = [32, 8]";
+        for ok in ["[16, 1]", "[64, 16]", "[48, 8]"] {
+            assert!(
+                with(size, &format!("fensterladen_size = {ok}")).is_ok(),
+                "{ok}"
+            );
+        }
+        for bad in ["[24, 8]", "[0, 8]", "[80, 8]", "[32, 0]", "[32, 17]"] {
+            let e = with(size, &format!("fensterladen_size = {bad}"))
+                .unwrap_err()
+                .to_string();
+            assert!(e.contains("fensterladen_size"), "{bad}: {e}");
+        }
+        let rattle = "fensterladen_rattle = 30";
+        assert!(with(rattle, "fensterladen_rattle = 60").is_ok());
+        assert!(with(rattle, "fensterladen_rattle = 61").is_err());
+        assert!(with(rattle, "fensterladen_rattle = 0").is_err());
+        let warn = "fensterladen_warn = 20";
+        assert!(with(warn, "fensterladen_warn = 30").is_ok());
+        assert!(with(warn, "fensterladen_warn = 31").is_err());
+        assert!(with(warn, "fensterladen_warn = 0").is_err());
+    }
+
+    #[test]
     fn boat_numbers_are_validated() {
         let t = Tuning::parse(REAL).unwrap();
         let pl = &t.platforms;
@@ -1980,6 +2235,49 @@ mod tests {
         assert!(err.contains("reisebus_restart"), "{err}");
     }
     #[test]
+    fn traffic_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        assert_eq!(
+            (t.ampel_telegraph, t.ampel_gap, t.ampel_blink, t.ampel_amber),
+            (30, 40, 64, 30),
+            "D-093's cycle"
+        );
+        assert_eq!(t.ampel_max_alive, 4);
+        assert_eq!((t.auto_hitbox, t.auto_spawn_dx), ([28, 14], 2));
+        assert_eq!(t.auto_speed, Fx(512), "2.0 px/frame");
+        for (field, bad) in [
+            ("ampel_telegraph", "0"),
+            ("ampel_telegraph", "31"),
+            ("ampel_gap", "0"),
+            ("ampel_gap", "41"),
+            ("ampel_blink", "0"),
+            ("ampel_blink", "72"),
+            ("ampel_blink", "60"),
+            ("ampel_amber", "0"),
+            ("ampel_amber", "31"),
+            ("ampel_max_alive", "0"),
+            ("ampel_max_alive", "9"),
+            ("auto_hitbox", "[33, 14]"),
+            ("auto_hitbox", "[28, 0]"),
+            ("auto_hitbox", "[28, 17]"),
+            ("auto_spawn_dx", "-1"),
+            ("auto_spawn_dx", "16"),
+            ("auto_speed", "0"),
+            ("auto_speed", "3072"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+        // Two cars of one green must not overlap: 10 frames × 2 px < 28 px.
+        let text = REAL.replace("ampel_gap = ", "ampel_gap = 10 #");
+        let err = Tuning::parse(&text).unwrap_err().to_string();
+        assert!(err.contains("must not overlap"), "{err}");
+        let text = REAL.replace("ampel_gap = ", "ampel_gap = 14 #");
+        assert!(Tuning::parse(&text).is_ok(), "14 × 2 px = 28 px");
+    }
+
+    #[test]
     fn swim_keys_are_validated() {
         let s = Tuning::parse(REAL).unwrap().swim;
         assert_eq!((s.chest_px, s.surface_band), (8, 8));
@@ -2029,6 +2327,36 @@ mod tests {
         let missing = format!("{head}[swim]{}", tail.replace("\ndecel = ", "\n#decel = "));
         let err = Tuning::parse(&missing).unwrap_err().to_string();
         assert!(err.contains("decel"), "{err}");
+    }
+
+    #[test]
+    fn kurgast_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-095: 12×22, 0.375 px/frame, a 16×16 chair, rest 300 + wake 40;
+        // D-102: a 16 px berth.
+        assert_eq!(t.kurgast_hitbox, [12, 22]);
+        assert_eq!(t.kurgast_speed, Fx(96), "0.375 px/frame");
+        assert_eq!(t.kurgast_chair, [16, 16]);
+        assert_eq!((t.kurgast_rest, t.kurgast_wake), (300, 40));
+        assert_eq!(t.kurgast_berth, 16);
+        for (field, bad) in [
+            ("kurgast_hitbox", "[17, 22]"),
+            ("kurgast_hitbox", "[12, 0]"),
+            ("kurgast_hitbox", "[12, 33]"),
+            ("kurgast_speed", "0"),
+            ("kurgast_speed", "3072"),
+            ("kurgast_chair", "[0, 16]"),
+            ("kurgast_chair", "[33, 16]"),
+            ("kurgast_chair", "[16, 23]"),
+            ("kurgast_rest", "0"),
+            ("kurgast_wake", "0"),
+            ("kurgast_berth", "-1"),
+            ("kurgast_berth", "33"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
     }
 
     #[test]
@@ -2104,6 +2432,42 @@ mod tests {
             ("regattaboot_telegraph", "0", "regattaboot_telegraph"),
             ("regattaboot_speed", "0", "regattaboot_speed"),
             ("regattaboot_speed", "3072", "regattaboot_speed"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(named), "{field} = {bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn offizier_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-096: 12×22, 0.5 px/frame, march 168 + attention 24 + present
+        // 48 = 240, an 8×16 sabre.
+        assert_eq!((t.offizier_hitbox, t.offizier_speed), ([12, 22], Fx(128)));
+        assert_eq!(
+            (t.offizier_cycle, t.offizier_march, t.offizier_attention),
+            (240, 168, 24)
+        );
+        assert_eq!(
+            t.offizier_cycle - t.offizier_march - t.offizier_attention,
+            48
+        );
+        // D-102: the drawn blade, up to 32 px above his feet.
+        assert_eq!(t.offizier_sabre, [8, 10]);
+        for (field, bad, named) in [
+            ("offizier_hitbox", "[17, 22]", "offizier_hitbox"),
+            ("offizier_hitbox", "[12, 0]", "offizier_hitbox"),
+            ("offizier_sabre", "[0, 10]", "offizier_sabre"),
+            ("offizier_sabre", "[8, 33]", "offizier_sabre"),
+            ("offizier_speed", "0", "offizier_speed"),
+            ("offizier_speed", "3072", "offizier_speed"),
+            ("offizier_march", "0", "offizier_march"),
+            ("offizier_attention", "0", "offizier_attention"),
+            // No „Präsentiert!" frame left.
+            ("offizier_march", "216", "offizier_cycle"),
+            // Longer than the level's phase range (0..=239).
+            ("offizier_cycle", "241", "offizier_cycle"),
         ] {
             let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             let err = Tuning::parse(&text).unwrap_err().to_string();

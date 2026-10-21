@@ -35,6 +35,10 @@ ballast = "Ballast weg!"
 bravo = "Bravo!"
 # M5: a Schwan is defeated (stomp or axe) and sulks.
 beleidigt = "Beleidigt!"
+# M6: a Kurgast lies down in his deck chair after a stomp.
+kurruhe = "Kurruhe!"
+# M6: an Offizier is defeated (stomp, axe or a bumped block).
+abtreten = "Abtreten!"
 
 # Route map between stages (docs/game-design.md "Route map").
 [map]
@@ -159,3 +163,44 @@ sign_grenze = "Landesgrenze\nwandert"
 sign_regatta = "Regatta\nVorrang: wir"
 sign_strobl = "Strobl:\nbitte halten"
 sign_ortsende = "Wolfgangsee"
+
+[stage.strobl]
+title = "Etappe 7: Strobl"
+tagline = "Durchfahrt? Durchgehen!"
+next = "Weiter nach Bad Ischl."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\nfährt durch"
+sign_willkommen = "Willkommen,\nDurchfahrer!"
+sign_zimmer = "Zimmer frei\nab 7 Nächten"
+sign_lueften = "Lüften\n10–12 Uhr"
+sign_umsteigen = "Umsteigen\nin den 546"
+sign_checkpoint = "Bus 150\nhält! Voll."
+sign_stau = "Stau\nseit 1957"
+sign_ampel = "Grün blinkt\n4x. Danke!"
+sign_baden = "Baden heute\nverboten"
+sign_steg = "Steg wird\nsaniert"
+sign_ausfluss = "Hier rinnt\nder See weg"
+sign_radweg = "Radweg\nwar Bahn"
+sign_ortsende = "Strobl"
+
+[stage.bad_ischl]
+title = "Etappe 8: Bad Ischl"
+tagline = "Der Kaiser kurt noch."
+next = "Zum Zauner! Endlich."
+# Level signs (entity `sign`), in the order of the stage.
+sign_bus = "Bus 150\njetzt leer"
+sign_kaiser = "Kaiser auf\nder Pirsch"
+sign_kurgebiet = "Kurgebiet\nbitte leise"
+sign_habtacht = "Habt Acht!\nKaisertage"
+sign_himmel = "Himmel\nauf Erden"
+sign_grundriss = "Grundriss: E\nwie Sisi"
+sign_verlobt = "Verlobt\nseit 1853"
+sign_lehar = "Beste Ideen\nnur in Ischl"
+sign_checkpoint = "Bus 150\nfährt zurück"
+sign_trinkhalle = "Trinkhalle\nnur Wasser"
+sign_salzprinzen = "Solebad\nmacht Kaiser"
+sign_graf = "Hier singt\njeder Graf"
+sign_stollen = "Stollen\nseit 1905"
+sign_anstellen = "Zauner:\nanstellen!"
+# Style `street`, in place of an Ortsende: the journey ends at the café (D-097).
+sign_zauner = "Café Zauner\ngleich da"

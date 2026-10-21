@@ -2,6 +2,7 @@
 //! determinism, the testbed level). Unit tests live next to their modules.
 
 mod autoscroll;
+mod bad_ischl;
 mod boats;
 mod climb;
 mod enemies;
@@ -10,17 +11,22 @@ mod flow;
 mod goal;
 mod hackl;
 mod items;
+mod kurgast;
 mod lake;
 mod lake_enemies;
 mod m2;
 mod m3;
 mod m4;
+mod m6_mix;
 mod modes;
+mod offiziere;
 mod reisebus;
 mod route;
 mod schafbergbahn;
+mod shutters;
 mod swim;
 mod testbed;
+mod traffic;
 
 use crate::{Event, Game, InputFrame, Level, Tuning};
 

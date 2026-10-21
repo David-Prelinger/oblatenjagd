@@ -1,0 +1,55 @@
+# Written by `cargo xtask solve bad_ischl --write`; re-create it instead of editing.
+level  = bad_ischl
+seed   = 1
+source = solver
+expect = complete frames=1851..1851 deaths=0
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 62
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56

@@ -1,0 +1,42 @@
+# Stage 7 Buergelstein (D-097): lethal water under the walkway. As
+# strobl_ampel_red past Ampel #2, onto deck A and on walking off its end:
+# she falls into the Wolfgangsee outflow (lethal water, death 2245) and
+# respawns at the checkpoint (col 132, 2305).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=2245..2245 event=Respawned lives=2 player_x>=2100 state=playing
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150
+R 112
+RJ 20
+R 60
+- 300
+R 96
+RJ 16
+R 40
+R 280
+R 120
+- 200

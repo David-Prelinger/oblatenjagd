@@ -1,0 +1,69 @@
+# Stage 8 goal, Wurstkranz zone (D-038; game-design "Stage 8" section 6):
+# the solver route onto the Trafik's roof by frame 1809; Resi walks back
+# to the roof's left end (one more Oblate) and takes a held running jump
+# off its right edge: she grabs the Maibaum high enough for the
+# Wurstkranz, 5000 points (9400 -> 14400; walking off scores 100,
+# bad_ischl_goal_walk_off). Run-ups of 18 to 38 frames from there reach
+# it (14 or less: 1000-2000). If the solver route changes, re-copy the
+# prefix (its first 48 input lines) and re-check the frames.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = complete frames=1935..1935 score=14400 deaths=0 state=stage_clear
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 14
+L 14
+L 26
+- 20
+RB 22
+RBJ 40
+RB 100

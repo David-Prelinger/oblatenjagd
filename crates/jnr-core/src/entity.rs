@@ -50,6 +50,11 @@ pub enum Popup {
     Bravo,
     /// `popup.beleidigt` („Beleidigt!"), a defeated Schwan (D-078).
     Beleidigt,
+    /// `popup.kurruhe` („Kurruhe!"), a Kurgast lying down in his deck
+    /// chair (D-095).
+    Kurruhe,
+    /// `popup.abtreten` („Abtreten!"), a defeated Offizier (D-096).
+    Abtreten,
 }
 
 impl Popup {
@@ -65,11 +70,13 @@ impl Popup {
             Popup::Ballast => Some("popup.ballast"),
             Popup::Bravo => Some("popup.bravo"),
             Popup::Beleidigt => Some("popup.beleidigt"),
+            Popup::Kurruhe => Some("popup.kurruhe"),
+            Popup::Abtreten => Some("popup.abtreten"),
         }
     }
 }
 
-/// The enemy types of Stages 1–6.
+/// The enemy types of Stages 1–8.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyKind {
     /// `selfie_tourist`.
@@ -112,6 +119,16 @@ pub enum EnemyKind {
     /// `regattaboot`: the Reisebus's machine on the water: parked, then
     /// races left; not stompable, its masthead only bounces (D-080).
     Regattaboot,
+    /// `auto`: a car from an Ampel's side street, drives left ignoring
+    /// tiles; not stompable, its roof only bounces (D-093).
+    Auto,
+    /// `kurgast`: a slow walker (the Nordic-Walker's turn rules); stomped
+    /// he lies down in his deck chair, a one-way top platform, and gets up
+    /// again after a rest (D-095, [`crate::enemies::update_kurgast`]).
+    Kurgast,
+    /// `offizier`: marches, halts and presents sabres on the stage clock;
+    /// the sabre zone ([`crate::enemies::sabre_zone`]) hurts (D-096).
+    Offizier,
 }
 
 impl EnemyKind {
@@ -124,6 +141,7 @@ impl EnemyKind {
                 | EnemyKind::Bienenschwarm
                 | EnemyKind::Reisebus
                 | EnemyKind::Regattaboot
+                | EnemyKind::Auto
         )
     }
 
@@ -149,7 +167,11 @@ impl EnemyKind {
             | EnemyKind::Pilger
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schneekugel => true,
+            | EnemyKind::Schneekugel
+            // Walking or lying in his deck chair (D-097).
+            | EnemyKind::Kurgast
+            // D-097: an officer sinks like a walker.
+            | EnemyKind::Offizier => true,
             EnemyKind::Taube
             | EnemyKind::TaubeSitting
             | EnemyKind::Fiaker
@@ -160,14 +182,16 @@ impl EnemyKind {
             // it), the Regattaboot sails in the surface row ignoring tiles.
             | EnemyKind::Schwan
             | EnemyKind::Gelse
-            | EnemyKind::Regattaboot => false,
+            | EnemyKind::Regattaboot
+            // A car ignores tiles like the bus (D-097).
+            | EnemyKind::Auto => false,
         }
     }
 
     /// Index into `score.stomp_chain` when it is the first stomp of a
     /// chain: 1 (200 points) for the enemies worth 200 (Verkäufer,
-    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan; D-046, D-058,
-    /// D-068, D-078),
+    /// Blasmusiker, E-Biker, Gams, Operettensänger, Schwan, Offizier; D-046,
+    /// D-058, D-068, D-078, D-096),
     /// else 0. Also the index of
     /// its base value (the points outside a chain, e.g. for a thrown Hackl).
     pub const fn chain_start(self) -> usize {
@@ -177,7 +201,8 @@ impl EnemyKind {
             | EnemyKind::EBiker
             | EnemyKind::Gams
             | EnemyKind::Operettensaenger
-            | EnemyKind::Schwan => 1,
+            | EnemyKind::Schwan
+            | EnemyKind::Offizier => 1,
             _ => 0,
         }
     }
@@ -201,6 +226,9 @@ impl EnemyKind {
             EnemyKind::Schwan => "schwan",
             EnemyKind::Gelse => "gelse",
             EnemyKind::Regattaboot => "regattaboot",
+            EnemyKind::Auto => "auto",
+            EnemyKind::Kurgast => "kurgast",
+            EnemyKind::Offizier => "offizier",
         }
     }
 
@@ -223,6 +251,11 @@ impl EnemyKind {
             EnemyKind::Schwan => 14,
             EnemyKind::Gelse => 15,
             EnemyKind::Regattaboot => 16,
+            EnemyKind::Auto => 17,
+            // E38 (M6): 19, with 20 reserved.
+            EnemyKind::Kurgast => 19,
+            // M6: 21–22 are reserved for the Offizier (E39).
+            EnemyKind::Offizier => 21,
         }
     }
 }
@@ -299,6 +332,14 @@ pub enum EntityKind {
     /// way (moored for good at the far end), with a paddle-wheel hurt zone
     /// while it travels ([`crate::platform::paddle_wheel`], D-077).
     Dampfer,
+    /// An Ampel: the traffic-light spawner in the road-level air cell of a
+    /// side street's mouth (no collision; its hitbox is that cell) that
+    /// sends out [`EnemyKind::Auto`] cars, see
+    /// [`crate::enemies::update_ampel`] (D-093).
+    Ampel,
+    /// A Fensterladen: a stationary one-way platform that is there only
+    /// while open on the stage clock ([`crate::platform::shutter`], D-094).
+    Fensterladen,
 }
 
 impl EntityKind {
@@ -325,6 +366,8 @@ impl EntityKind {
             EntityKind::Schafbergbahn => Some("schafbergbahn"),
             EntityKind::Traundl => Some("traundl"),
             EntityKind::Dampfer => Some("dampfer"),
+            EntityKind::Ampel => Some("ampel"),
+            EntityKind::Fensterladen => Some("fensterladen"),
             EntityKind::Popup(_)
             | EntityKind::Bump
             | EntityKind::Sign
@@ -332,9 +375,10 @@ impl EntityKind {
         }
     }
 
-    /// True for moving platforms (Festungsbahn, Gondel, Schafbergbahn,
-    /// Traundl, Dampfer): one-way tops that carry the player and never
-    /// despawn (D-027).
+    /// True for the platforms (Festungsbahn, Gondel, Schafbergbahn,
+    /// Traundl, Dampfer, and the stationary Fensterladen): one-way tops that
+    /// carry the player and never despawn (D-027). A Fensterladen's top is
+    /// there only while it is open ([`crate::platform::carries`], D-094).
     pub const fn is_platform(self) -> bool {
         matches!(
             self,
@@ -343,6 +387,7 @@ impl EntityKind {
                 | EntityKind::Schafbergbahn
                 | EntityKind::Traundl
                 | EntityKind::Dampfer
+                | EntityKind::Fensterladen
         )
     }
 
@@ -377,6 +422,9 @@ impl EntityKind {
             EntityKind::Schafbergbahn => 23,
             EntityKind::Traundl => 24,
             EntityKind::Dampfer => 25,
+            EntityKind::Ampel => 26,
+            // 26–27: E36 (traffic); 28–29: E37.
+            EntityKind::Fensterladen => 28,
         }
     }
 
@@ -396,6 +444,8 @@ impl EntityKind {
                 Popup::Ballast => h.u8(6),
                 Popup::Bravo => h.u8(7),
                 Popup::Beleidigt => h.u8(8),
+                Popup::Kurruhe => h.u8(9),
+                Popup::Abtreten => h.u8(10),
             },
             EntityKind::Enemy(k) | EntityKind::Defeated(k) => h.u8(k.id()),
             _ => {}
@@ -608,6 +658,20 @@ impl Entity {
                 crate::platform::place_free(&mut cab, s, t);
                 cab
             }
+            SpawnKind::Fensterladen => {
+                // Left-aligned in its cell with its top on the cell's top
+                // edge (D-094), in its state at stage clock 0.
+                let [w, h] = t.platforms.fensterladen_size;
+                let mut shutter = Entity::new(
+                    EntityKind::Fensterladen,
+                    cell_x,
+                    tile.mul_int(s.row),
+                    Fx::from_px(w),
+                    Fx::from_px(h),
+                );
+                crate::platform::place_shutter(&mut shutter, s, 0);
+                shutter
+            }
             SpawnKind::NordicWalker => Entity::at_feet(
                 EntityKind::Enemy(EnemyKind::NordicWalker),
                 feet_x,
@@ -663,6 +727,8 @@ impl Entity {
             SpawnKind::Souvenirstand => {
                 Entity::at_feet(EntityKind::Souvenirstand, feet_x, feet_y, [16, 16])
             }
+            // The spawner cell (the cars start 2 px into it, D-093).
+            SpawnKind::Ampel => Entity::at_feet(EntityKind::Ampel, feet_x, feet_y, [16, 16]),
             // The 4-tile (64 px) bus starts in its cell and covers the 3
             // to its right; the hitbox is centred under the sprite and
             // `base_x` keeps where it was parked (its photo stop, D-070).
@@ -701,6 +767,18 @@ impl Entity {
                 cell_x + tile,
                 tile.mul_int(s.row) + Fx::from_px(e.regattaboot_keel_px),
                 e.regattaboot_hitbox,
+            ),
+            SpawnKind::Kurgast => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Kurgast),
+                feet_x,
+                feet_y,
+                e.kurgast_hitbox,
+            ),
+            SpawnKind::Offizier => Entity::at_feet(
+                EntityKind::Enemy(EnemyKind::Offizier),
+                feet_x,
+                feet_y,
+                e.offizier_hitbox,
             ),
             SpawnKind::Durchkriechstein => {
                 // The tunnel: `len` cells from the spawn cell to the right.
@@ -787,10 +865,13 @@ impl Entity {
         let (map, t) = (ctx.map, ctx.tuning);
         self.timer = self.timer.saturating_add(1);
         match self.kind {
+            // A Fensterladen follows the stage clock, not its own update
+            // (`Game::tick_timer`, D-094).
             EntityKind::Oblate
             | EntityKind::Checkpoint
             | EntityKind::Sign
-            | EntityKind::Durchkriechstein => None,
+            | EntityKind::Durchkriechstein
+            | EntityKind::Fensterladen => None,
             EntityKind::Hackl => {
                 // Rises out of its box, then stays where it is (D-056).
                 if self.timer <= t.items.rise_frames {
@@ -825,6 +906,7 @@ impl Entity {
             }
             EntityKind::Steinschlag => crate::enemies::update_steinschlag(self, ctx),
             EntityKind::Souvenirstand => crate::enemies::update_souvenirstand(self, ctx),
+            EntityKind::Ampel => crate::enemies::update_ampel(self, ctx),
             EntityKind::Stein => {
                 crate::enemies::update_stein(self, map, t);
                 None
@@ -925,6 +1007,9 @@ pub(crate) struct UpdateCtx<'a> {
     pub player_cx: Fx,
     /// The player's hitbox top (a Gelse aims just below it, D-079).
     pub player_top: Fx,
+    /// The player's hitbox (an Ampel skips a car that would spawn inside
+    /// her, D-093).
+    pub player_box: Aabb,
     /// The player's hitbox while standing on the ground (a tile or a car),
     /// `None` in the air (a Festungsbahn waits for its rider).
     pub player_standing: Option<crate::physics::Aabb>,
@@ -936,6 +1021,14 @@ pub(crate) struct UpdateCtx<'a> {
     /// (`base_x`, `base_y`): a Souvenirstand counts its own by its spawn
     /// point (D-069: at most `souvenirstand_max_alive`).
     pub globes: &'a [(Fx, Fx)],
+    /// The stage clock ([`crate::Game::stage_clock`]) at the start of this
+    /// frame: frames of play since the stage started or the last respawn.
+    /// An Offizier's drill runs on it (D-096).
+    pub stage_clock: u32,
+    /// Where every car alive at the start of the update started
+    /// (`base_x`, `base_y`): an Ampel counts its own by its spawn point
+    /// (D-093: at most `ampel_max_alive`).
+    pub cars: &'a [(Fx, Fx)],
 }
 
 impl UpdateCtx<'_> {
@@ -1018,6 +1111,8 @@ mod tests {
                 EntityKind::SchneekugelScherben => 23,
                 EntityKind::Traundl => 24,
                 EntityKind::Dampfer => 25,
+                EntityKind::Ampel => 26,
+                EntityKind::Fensterladen => 27,
             }
         }
         let e = EnemyKind::SelfieTourist;
@@ -1048,6 +1143,8 @@ mod tests {
             EntityKind::SchneekugelScherben,
             EntityKind::Traundl,
             EntityKind::Dampfer,
+            EntityKind::Ampel,
+            EntityKind::Fensterladen,
         ];
         for (i, k) in kinds.iter().enumerate() {
             assert_eq!(listed(*k), i, "{k:?} listed in order");
@@ -1079,6 +1176,9 @@ mod tests {
                 EnemyKind::Schwan => 14,
                 EnemyKind::Gelse => 15,
                 EnemyKind::Regattaboot => 16,
+                EnemyKind::Auto => 17,
+                EnemyKind::Kurgast => 18,
+                EnemyKind::Offizier => 19,
             }
         }
         let enemies = [
@@ -1099,6 +1199,9 @@ mod tests {
             EnemyKind::Schwan,
             EnemyKind::Gelse,
             EnemyKind::Regattaboot,
+            EnemyKind::Auto,
+            EnemyKind::Kurgast,
+            EnemyKind::Offizier,
         ];
         for (i, k) in enemies.iter().enumerate() {
             assert_eq!(enemy_listed(*k), i, "{k:?} listed in order");
@@ -1107,6 +1210,23 @@ mod tests {
         ids.sort_unstable();
         ids.dedup();
         assert_eq!(ids.len(), enemies.len(), "an EnemyKind id is used twice");
+        // M6 ranges (parallel tasks): E38's Kurgast 19 (19–20 reserved),
+        // its „Kurruhe!“ popup sub-tag 9.
+        assert_eq!(EnemyKind::Kurgast.id(), 19);
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::Kurruhe).hash(&mut h);
+        let mut nine = crate::hash::Fnv::new();
+        nine.u8(EntityKind::Popup(Popup::Kurruhe).hash_tag());
+        nine.u8(9);
+        assert_eq!(h.finish(), nine.finish());
+        // E39's Offizier 21 (21–22 reserved), its „Abtreten!“ sub-tag 10.
+        assert_eq!(EnemyKind::Offizier.id(), 21);
+        let mut h = crate::hash::Fnv::new();
+        EntityKind::Popup(Popup::Abtreten).hash(&mut h);
+        let mut ten = crate::hash::Fnv::new();
+        ten.u8(EntityKind::Popup(Popup::Abtreten).hash_tag());
+        ten.u8(10);
+        assert_eq!(h.finish(), ten.finish());
     }
 
     use super::*;
@@ -1158,10 +1278,18 @@ mod tests {
             level: &level,
             player_cx: Fx::ZERO,
             player_top: Fx::ZERO,
+            player_box: Aabb {
+                x: Fx::ZERO,
+                y: Fx::ZERO,
+                w: Fx::ZERO,
+                h: Fx::ZERO,
+            },
             player_standing: None,
             screen_left: Fx::ZERO,
             screen_top: Fx::ZERO,
             globes: &[],
+            stage_clock: 0,
+            cars: &[],
         };
         for _ in 0..15 {
             assert!(p.update(&ctx).is_none());
@@ -1197,8 +1325,11 @@ mod tests {
             dy: 0,
             lead: false,
             period: crate::level::DEFAULT_STEINSCHLAG_PERIOD,
+            open: crate::level::DEFAULT_FENSTERLADEN_OPEN,
             range: crate::level::DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
+            cars: 0,
+            look: Default::default(),
         };
         assert!(Entity::from_spawn(&s(SpawnKind::PlayerStart), 0, &t).is_none());
         assert!(Entity::from_spawn(&s(SpawnKind::Prop), 0, &t).is_none());
@@ -1223,6 +1354,8 @@ mod tests {
                     // line), a boat's keel 12 px; a Gelse is centred.
                     SpawnKind::Schwan => 12,
                     SpawnKind::Regattaboot | SpawnKind::Gelse => 4,
+                    // A shutter's 8 px body hangs from its cell's top.
+                    SpawnKind::Fensterladen => 8,
                     _ => 0,
                 };
                 assert_eq!(e.feet().1, Fx::from_px(64 - above), "{kind:?}");
@@ -1253,6 +1386,8 @@ mod tests {
         assert!(EntityKind::Gondel.is_platform() && EntityKind::Festungsbahn.is_platform());
         assert!(EntityKind::Schafbergbahn.is_platform());
         assert!(EntityKind::Traundl.is_platform() && EntityKind::Dampfer.is_platform());
+        assert!(EntityKind::Fensterladen.is_platform());
+        assert_eq!(EntityKind::Fensterladen.sprite(), Some("fensterladen"));
         assert!(!EntityKind::Note.is_platform());
         assert_eq!(EnemyKind::TaubeSitting.sprite(), "taube");
         assert_eq!(Popup::Score(5).text_key(), None);

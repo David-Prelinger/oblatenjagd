@@ -1,0 +1,37 @@
+# Stage 7 Postbus 150 (D-097): waited out on shelter B. The solver's first
+# 606 frames to the Dorfplatz cobbles, a walk under the Gasthof (Selfie-
+# Tourist #3 passes under a hop), up onto shelter B (779): the Postbus
+# (parked at 119) triggers, telegraphs, drives to its halt at 115-118
+# (stopped 890-1035, `halt` with the faces at the windows), then drives on
+# under her and off to the left. She walks on to the checkpoint.
+# Shot (M6 flow task): `halt` (950), the Postbus at its halt seen from
+# shelter B (the tour's route passes before it stops).
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=CheckpointReached state=playing
+shots  = 950:halt
+---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 61
+R 60
+RJ 20
+R 63
+RJ 18
+R 8
+- 330
+RB 150

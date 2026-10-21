@@ -1,0 +1,43 @@
+# A sabre hurt as Zuckerschock (D-096): as in bad_ischl_kurgast_waking_hurt
+# Resi takes the Mozartkugel and stomps Kurgast #1, then climbs the
+# Kaiserpark terrace and waits at its edge. While file A presents sabres
+# (drill frames 192-239) she jumps down onto the flag bearer: the 8x16
+# sabre zone is checked before the stomp, so it hurts (Zuckerschock ->
+# Normal, no points for him) instead of scoring, and her invulnerability
+# carries her past the file.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt power=normal score=3350
+---
+R 128
+- 20
+J 10
+- 200
+RJ 16
+R 10
+- 220
+RJ 16
+R 6
+- 10
+RJ 20
+R 20
+- 40
+R 4
+RJ 20
+R 16
+R 30
+RB 120
+RBJ 20
+RB 40
+RJ 20
+R 20
+- 10
+RJ 20
+R 60
+- 20
+L 6
+- 30
+RBJ 36
+RB 20
+- 60

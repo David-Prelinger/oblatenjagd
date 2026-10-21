@@ -451,8 +451,7 @@ mod tests {
                         let end = from + 1;
                         let hit = label_hits(x, y, w, resi_box(STATIONS[end].dot, power));
                         let pair = (STATIONS[i].id, STATIONS[end].id);
-                        let allowed = LATER.contains(&pair)
-                            || (power == Power::Normal && NORMAL_TOUCH.contains(&pair));
+                        let allowed = power == Power::Normal && NORMAL_TOUCH.contains(&pair);
                         // Big forms: clear on every playable screen.
                         assert!(
                             !hit || allowed,
@@ -471,11 +470,6 @@ mod tests {
     /// labels by its top rows (approved in the M2 map review; the drawn
     /// pixels only meet at the outline): (label, the dot she stands on).
     const NORMAL_TOUCH: [(&str, &str); 1] = [("brunnwinkl", "st_gilgen")];
-
-    /// Known collisions on the later stations (from Bad Ischl on, not
-    /// playable yet), for every form, left for their milestones' map
-    /// review: (label, the dot Resi stands on).
-    const LATER: [(&str, &str); 2] = [("bad_ischl", "bad_ischl"), ("cafe_zauner", "bad_ischl")];
 
     #[test]
     fn big_resi_moves_brunnwinkl_and_falkenstein_to_their_alternate_slots() {
@@ -535,6 +529,53 @@ mod tests {
                 assert!(!label_hits(x, y, w, resi_box(STATIONS[end].dot, power)));
             }
         }
+    }
+
+    #[test]
+    fn bad_ischl_and_cafe_zauner_move_on_the_screen_ending_on_bad_ischl() {
+        // D-098: on Strobl → Bad Ischl (from 6), for every form, Bad Ischl
+        // goes left of its dot (top 94, right edge 266) and Café Zauner
+        // rises to top 58 (right edge 290); every other screen keeps the
+        // primary slots (the teaser Bad Ischl → Café Zauner included).
+        let texts = texts();
+        let font = crate::Font::from_atlas(jnr_assets::atlas());
+        let (bi, cz) = (&STATIONS[7], &STATIONS[8]);
+        assert_eq!((bi.id, cz.id), ("bad_ischl", "cafe_zauner"));
+        let w_bi = font.measure(&texts.get(STATION_KEYS[7]));
+        let w_cz = font.measure(&texts.get(STATION_KEYS[8]));
+        let resi_box_on_bi = |power| resi_box(bi.dot, power);
+        for power in [Power::Normal, Power::Big, Power::Hackl] {
+            for from in 0..STATIONS.len() - 1 {
+                let p_bi = screen_label_pos(bi, w_bi, from, power);
+                let p_cz = screen_label_pos(cz, w_cz, from, power);
+                if from == 6 {
+                    assert_eq!(p_bi, (266 - w_bi, 94), "{power:?}");
+                    assert_eq!(p_cz, (290 - w_cz, 58), "{power:?}");
+                    // Both clear her box on the Bad Ischl dot; the
+                    // primaries would not.
+                    let b = resi_box_on_bi(power);
+                    assert!(!label_hits(p_bi.0, p_bi.1, w_bi, b), "{power:?}");
+                    assert!(!label_hits(p_cz.0, p_cz.1, w_cz, b), "{power:?}");
+                    let (x, y) = station_label_pos(bi, w_bi);
+                    assert!(label_hits(x, y, w_bi, b), "{power:?}: primary");
+                    let (x, y) = station_label_pos(cz, w_cz);
+                    assert!(label_hits(x, y, w_cz, b), "{power:?}: primary");
+                } else {
+                    assert_eq!(p_bi, station_label_pos(bi, w_bi), "{power:?} {from}");
+                    assert_eq!(p_cz, station_label_pos(cz, w_cz), "{power:?} {from}");
+                }
+            }
+        }
+        // A 1 px gap remains (exclusive ends): the moved Bad Ischl label's
+        // outline ends before x 267, her box starts at x 268; Café Zauner's
+        // outline ends before row 67, big Resi's box starts at row 68.
+        assert_eq!(resi_box(bi.dot, Power::Normal).0, 268);
+        assert_eq!(resi_box(bi.dot, Power::Big).1, 68);
+        assert_eq!(
+            screen_label_pos(bi, w_bi, 6, Power::Hackl).0 + w_bi + 1,
+            267
+        );
+        assert_eq!(58 + GLYPH_H + 1, 67);
     }
 
     #[test]

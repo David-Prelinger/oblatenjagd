@@ -1,0 +1,24 @@
+# Postbus 150 (D-097): after waiting out Ampel #2 on shelter C, Resi
+# jumps onto shelter B; the bus triggers, telegraphs, drives 4 tiles and
+# halts right beside the shelter (doors shut, faces at the windows). During
+# the halt she jumps onto its roof (a bounce, no damage, no points) and
+# over it; it drives on away from her.
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 player_x>=1060
+---
+R 60
+RJ 30
+R 80
+- 220
+R 170
+RJ 24
+R 8
+- 400
+R 180
+RJ 24
+R 8
+- 150
+RJ 20
+R 80

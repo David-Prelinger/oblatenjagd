@@ -1,0 +1,21 @@
+# Across the car roofs: from shelter C Resi walks off its right edge onto
+# Ampel #2's first car and bounces (JUMP held: high), lands on the second
+# car 80 px behind it and bounces again (no damage, no points), then comes
+# down past the mouth.
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=0 player_x>=800
+---
+R 60
+RJ 30
+R 80
+- 220
+R 170
+RJ 24
+R 8
+- 173
+R 30
+- 4
+J 140
+R 30

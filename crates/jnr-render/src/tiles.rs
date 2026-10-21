@@ -80,7 +80,9 @@ pub(crate) fn autotile_family(name: &str) -> &str {
 /// return the favour. Every other pair: 0.
 /// - `kalkfels_bg` (the shaft's back wall) runs on behind a `steig_wall`
 ///   plank on every side; the plank still sees the wall as different and
-///   keeps its end brackets.
+///   keeps its end brackets. The same behind a `felssteg` deck (M6,
+///   Strobl's Bürglstein walkway: the deck draws the joined cliff behind
+///   itself); `felssteg` itself joins only `felssteg`.
 /// - `kalkfels_bg` under any other drawn tile (`kalkfels`, a box, a brick,
 ///   a plank, any solid or one-way) counts it as the same above only, so
 ///   the open top's transparent notches show only against real air (no
@@ -94,7 +96,7 @@ pub(crate) fn autotile_family(name: &str) -> &str {
 ///   sky-coloured notches over the back wall.
 pub(crate) fn one_way_join(here: &str, neighbour: &str) -> u8 {
     match (here, neighbour) {
-        ("kalkfels_bg", "steig_wall") => MASK_N | MASK_E | MASK_S | MASK_W,
+        ("kalkfels_bg", "steig_wall" | "felssteg") => MASK_N | MASK_E | MASK_S | MASK_W,
         ("kalkfels_bg", nb) if !nb.is_empty() && nb != INVISIBLE_TILE => MASK_N,
         ("kalkfels", "forest_path" | "meadow" | "stone" | "ground") => MASK_N,
         ("kalkfels", "kalkfels_bg") => MASK_S,
@@ -401,6 +403,38 @@ mod tests {
         // (1,2) wall left of the plank: E joins too.
         assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_E | MASK_S);
         // The plank keeps its ends: (2,2) sees only the other plank (E).
+        assert_eq!(looks.mask(&map, 2, 2), MASK_E);
+        assert_eq!(looks.mask(&map, 3, 2), MASK_W);
+    }
+
+    #[test]
+    fn kalkfels_bg_joins_a_felssteg_deck_on_every_side_and_the_deck_only_itself() {
+        assert_eq!(one_way_join("kalkfels_bg", "felssteg"), 15);
+        for nb in ["kalkfels_bg", "kalkfels", "steig_wall", "steig", ""] {
+            assert_eq!(one_way_join("felssteg", nb), 0, "{nb}");
+        }
+        // A 2-tile deck bolted to the cliff, cliff all around, a plank
+        // right of the deck.
+        let l = level(
+            "\":\" = \"kalkfels_bg\"\n\"=\" = \"felssteg\"\n\"w\" = \"steig_wall\"\n",
+            "P.....\n.::::.\n.:==w.\n.::::.\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (2,1) cliff above the deck: S joined.
+        assert_eq!(looks.mask(&map, 2, 1), MASK_E | MASK_S | MASK_W);
+        // (1,2) cliff left of the deck: E joined.
+        assert_eq!(looks.mask(&map, 1, 2), MASK_N | MASK_E | MASK_S);
+        // (3,3) cliff below the deck (the level's bottom row, S counts as
+        // the same): N joined.
+        assert_eq!(looks.mask(&map, 3, 3), MASK_N | MASK_E | MASK_S | MASK_W);
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 3, 3),
+            MASK_E | MASK_S | MASK_W
+        );
+        // The deck sees only the deck: (2,2) E, (3,2) W; the cliff around
+        // it and the plank beside it stay different.
         assert_eq!(looks.mask(&map, 2, 2), MASK_E);
         assert_eq!(looks.mask(&map, 3, 2), MASK_W);
     }

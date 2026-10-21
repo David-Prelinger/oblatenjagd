@@ -59,20 +59,22 @@ impl TileKind {
     /// lake bed `seegrund`, the quay wall `kai` and the bollard `poller` are
     /// solid, the pier planks `steg` one-way (D-077); the swim water
     /// `see_wasser` (surface), `see_wasser_tief` (deep) and `steg_pfahl`
-    /// (water with a pier post) are swim water (D-076).
+    /// (water with a pier post) are swim water (D-076). M6: the Bürglstein
+    /// walkway `felssteg` is one-way, the gravel path `kies` solid, the side
+    /// street's mouth `einfahrt_bg` decorative.
     pub fn from_tile_name(name: &str) -> Option<TileKind> {
         match name {
             "empty" | "railing_bg" | "wall_village_bg" | "roof_bg" | "kalkfels_bg"
             | "netz_post" | "terrasse_post_l" | "terrasse_post_r" | "tunnel_bg"
             | "tunnel_bg_lamp" | "zahnrad_gleis_0" | "zahnrad_gleis_1" | "zahnrad_gleis_2"
-            | "zahnrad_gleis_3" => Some(TileKind::Empty),
+            | "zahnrad_gleis_3" | "einfahrt_bg" => Some(TileKind::Empty),
             "solid" | "ground" | "meadow" | "rock" | "rampart" | "hedge" | "stone" | "bridge"
             | "railing" | "arch" | "facade" | "arch_under" | "invisible" | "brick"
             | "oblaten_box" | "oblaten_box_empty" | "facade_village" | "roof_shingle" | "jetty"
             | "jetty_post" | "forest_path" | "beute" | "chimney" | "kalkfels" | "standl"
-            | "strasse" | "seegrund" | "kai" | "poller" => Some(TileKind::Solid),
+            | "strasse" | "seegrund" | "kai" | "poller" | "kies" => Some(TileKind::Solid),
             "oneway" | "oneway_sign" | "oneway_burger" | "oneway_wood" | "balcony" | "steig"
-            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" => {
+            | "steig_wall" | "netz" | "standl_dach" | "wartehaus_dach" | "steg" | "felssteg" => {
                 Some(TileKind::OneWay)
             }
             "hazard" => Some(TileKind::Hazard),
@@ -260,11 +262,22 @@ pub enum SpawnKind {
     Gelse,
     /// Enemy `regattaboot` (the Reisebus's machine on the water, D-080).
     Regattaboot,
+    /// An `ampel` traffic-light spawner at a side street's mouth that sends
+    /// out `auto` cars (`period`, `cars`, `phase`, `range`; D-093).
+    Ampel,
+    /// Enemy `kurgast` (a slow walker who becomes a deck chair, D-095).
+    Kurgast,
+    /// A Fensterladen (`period`, `open`, `phase`): a stationary one-way
+    /// platform that is there only while open on the stage clock (D-094).
+    Fensterladen,
+    /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
+    /// salute on the stage clock, D-096).
+    Offizier,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 30] = [
+    pub const ALL: [SpawnKind; 34] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -295,6 +308,10 @@ impl SpawnKind {
         SpawnKind::Schwan,
         SpawnKind::Gelse,
         SpawnKind::Regattaboot,
+        SpawnKind::Ampel,
+        SpawnKind::Kurgast,
+        SpawnKind::Fensterladen,
+        SpawnKind::Offizier,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -331,6 +348,10 @@ impl SpawnKind {
             SpawnKind::Schwan => "schwan",
             SpawnKind::Gelse => "gelse",
             SpawnKind::Regattaboot => "regattaboot",
+            SpawnKind::Ampel => "ampel",
+            SpawnKind::Kurgast => "kurgast",
+            SpawnKind::Fensterladen => "fensterladen",
+            SpawnKind::Offizier => "offizier",
         }
     }
 
@@ -376,6 +397,28 @@ impl SignStyle {
     }
 }
 
+/// The look of a `reisebus` (`look = "..."`, D-097): renderer only, the
+/// bus behaves the same in every look.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum BusLook {
+    /// The coach of St. Wolfgang (`reisebus`, the default).
+    #[default]
+    Reisebus,
+    /// Postbus 150 (`postbus`, with a `halt` anim at its stop; Strobl).
+    Postbus,
+}
+
+impl BusLook {
+    /// The look for a `look` value; `None` if unknown.
+    pub fn from_name(name: &str) -> Option<BusLook> {
+        match name {
+            "reisebus" => Some(BusLook::Reisebus),
+            "postbus" => Some(BusLook::Postbus),
+            _ => None,
+        }
+    }
+}
+
 /// An entity placed in the grid. Its cell's tile is empty air, or the
 /// non-colliding tile named by the legend entry's `tile = "..."` (e.g.
 /// `wall_village_bg` behind a walker); the spawn itself doesn't store it.
@@ -408,7 +451,8 @@ pub struct EntitySpawn {
     /// ±[`MAX_PROP_DX_PX`]), e.g. 8 to centre it between two columns.
     pub dx: i32,
     /// Frames into its cycle at activation (`phase = N`, `gondel`,
-    /// `traundl` and `bienenschwarm`; 0 by default).
+    /// `traundl` and `bienenschwarm`; 0 by default); a `fensterladen`'s
+    /// offset on the stage clock (0..period, D-094).
     pub phase: u16,
     /// Direction of a `bienenschwarm`'s waggle run in 45° steps
     /// (`dir = 0..=7`: 0 right, 2 up, 4 left, 6 down; 0 by default).
@@ -424,24 +468,53 @@ pub struct EntitySpawn {
     /// cell bottom (within ±[`MAX_TAUBE_DY_PX`]), e.g. -8 to sit on a
     /// perch 40 px above the ground.
     pub dy: i32,
-    /// `lead = true` on a `pilger`: the group leader's sprite
-    /// (`pilger_lead`, pennant on his stick); behaviour is unchanged.
+    /// `lead = true` on a `pilger` or an `offizier`: the group leader's
+    /// sprite (`pilger_lead`, pennant on his stick; `offizier_lead`, the
+    /// flag bearer); behaviour is unchanged.
     pub lead: bool,
-    /// A `steinschlag`'s or `souvenirstand`'s counter period in frames
-    /// (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
+    /// A `steinschlag`'s, `souvenirstand`'s or `ampel`'s counter period in
+    /// frames (`period = N`, [`STEINSCHLAG_PERIOD_RANGE`],
     /// [`DEFAULT_STEINSCHLAG_PERIOD`] by default; with `phase` = 0 or
-    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period).
+    /// [`STEINSCHLAG_MIN_PHASE`] / [`SOUVENIRSTAND_MIN_PHASE`]..period; an
+    /// `ampel`: [`AMPEL_PERIOD_RANGE`] and at least [`ampel_min_period`],
+    /// [`DEFAULT_AMPEL_PERIOD`] by default, `phase` 0 or
+    /// [`ampel_min_phase`]..period); a `fensterladen`'s cycle on the stage
+    /// clock ([`FENSTERLADEN_PERIOD_RANGE`], [`DEFAULT_FENSTERLADEN_PERIOD`]
+    /// by default; D-094).
     pub period: u16,
-    /// A `steinschlag`'s or `souvenirstand`'s range in tiles (`range = N`,
-    /// [`STEINSCHLAG_RANGE_TILES`]; [`DEFAULT_STEINSCHLAG_RANGE`] /
-    /// [`DEFAULT_SOUVENIRSTAND_RANGE`] by default): its counter runs while
-    /// the player is this close.
+    /// A `fensterladen`'s open frames at the start of each cycle (`open =
+    /// N`, [`FENSTERLADEN_MIN_OPEN`]..=period − [`FENSTERLADEN_MIN_CLOSED`],
+    /// [`DEFAULT_FENSTERLADEN_OPEN`] by default; D-094). Unused by the other
+    /// kinds.
+    pub open: u16,
+    /// A `steinschlag`'s, `souvenirstand`'s or `ampel`'s range in tiles
+    /// (`range = N`, [`STEINSCHLAG_RANGE_TILES`] / [`AMPEL_RANGE_TILES`];
+    /// [`DEFAULT_STEINSCHLAG_RANGE`] / [`DEFAULT_SOUVENIRSTAND_RANGE`] /
+    /// [`DEFAULT_AMPEL_RANGE`] by default): its counter runs while the
+    /// player is this close.
     pub range: u8,
     /// A `reisebus`'s photo stop (`stop = N`, [`REISEBUS_STOP_TILES`]):
     /// it halts once its hitbox is N tiles left of where it was parked
     /// (D-070). 0 = no stop (the default).
     pub stop: u8,
+    /// An `ampel`'s cars per green (`cars = N`, [`AMPEL_CARS`],
+    /// [`DEFAULT_AMPEL_CARS`] by default; 0 for every other kind).
+    pub cars: u8,
+    /// A `reisebus`'s look (`look = "postbus"`, D-097; renderer only).
+    pub look: BusLook,
 }
+
+/// A `fensterladen`'s `period` without the field, in frames (D-094).
+pub const DEFAULT_FENSTERLADEN_PERIOD: u16 = 240;
+/// Allowed `period` of a `fensterladen`, in frames.
+pub const FENSTERLADEN_PERIOD_RANGE: std::ops::RangeInclusive<u16> = 120..=480;
+/// A `fensterladen`'s `open` without the field, in frames.
+pub const DEFAULT_FENSTERLADEN_OPEN: u16 = 150;
+/// The shortest open phase of a `fensterladen` (`open` >= this), in frames.
+pub const FENSTERLADEN_MIN_OPEN: u16 = 60;
+/// The shortest closed phase of a `fensterladen` (`open` <= period − this),
+/// in frames.
+pub const FENSTERLADEN_MIN_CLOSED: u16 = 30;
 
 /// Allowed `stop` of a `reisebus`, in tiles (D-070).
 pub const REISEBUS_STOP_TILES: std::ops::RangeInclusive<u8> = 1..=16;
@@ -467,6 +540,50 @@ pub const DEFAULT_SOUVENIRSTAND_RANGE: u8 = 8;
 /// `period`), so the first globe of an approach always follows the whole
 /// 30-frame telegraph (`enemies.souvenirstand_telegraph` < this, validated).
 pub const SOUVENIRSTAND_MIN_PHASE: u16 = 31;
+/// Largest `phase` of an `offizier` (D-096: 0..239, frames into the
+/// 240-frame drill; `enemies.offizier_cycle` is at most this + 1, validated).
+pub const OFFIZIER_MAX_PHASE: u16 = 239;
+
+/// Allowed `period` of an `ampel`, in frames (D-093; also at least
+/// [`ampel_min_period`] for its `cars`).
+pub const AMPEL_PERIOD_RANGE: std::ops::RangeInclusive<u16> = 300..=600;
+/// An `ampel`'s `period` without the field, in frames.
+pub const DEFAULT_AMPEL_PERIOD: u16 = 400;
+/// Allowed `cars` of an `ampel` (cars per green).
+pub const AMPEL_CARS: std::ops::RangeInclusive<u8> = 1..=4;
+/// An `ampel`'s `cars` without the field.
+pub const DEFAULT_AMPEL_CARS: u8 = 3;
+/// Allowed `range` of an `ampel`, in tiles.
+pub const AMPEL_RANGE_TILES: std::ops::RangeInclusive<u8> = 6..=16;
+/// An `ampel`'s `range` without the field, in tiles.
+pub const DEFAULT_AMPEL_RANGE: u8 = 12;
+/// The level rules' Ampel cycle (D-093), in frames: red and amber (the
+/// telegraph) ...
+pub const AMPEL_TELEGRAPH: u16 = 30;
+/// ... a car every this many frames of green ...
+pub const AMPEL_GAP: u16 = 40;
+/// ... four green blinks ...
+pub const AMPEL_BLINK: u16 = 64;
+/// ... amber ...
+pub const AMPEL_AMBER: u16 = 30;
+/// ... and at least this much red at the spawner. `Tuning::parse` keeps
+/// `enemies.ampel_telegraph`, `_gap`, `_blink` and `_amber` at most these,
+/// so the level rules hold for any tuning.
+pub const AMPEL_MIN_RED: u16 = 120;
+
+/// The shortest `period` of an `ampel` with `cars` cars: telegraph, green,
+/// blinks, amber and [`AMPEL_MIN_RED`] frames of red (D-093: 30 + cars ×
+/// 40 + 64 + 30 + 120).
+pub const fn ampel_min_period(cars: u8) -> u16 {
+    ampel_min_phase(cars) + AMPEL_BLINK + AMPEL_AMBER + AMPEL_MIN_RED
+}
+
+/// The smallest non-zero `phase` of an `ampel` with `cars` cars: the end of
+/// its green (30 + cars × 40), so the first car of an approach always
+/// follows the whole telegraph.
+pub const fn ampel_min_phase(cars: u8) -> u16 {
+    AMPEL_TELEGRAPH + cars as u16 * AMPEL_GAP
+}
 
 /// Largest `|dy|` of a `bienenschwarm`, in px (half a tile).
 pub const MAX_SWARM_DY_PX: i32 = 8;
@@ -496,7 +613,7 @@ pub const TRAUNDL_DX_TILES: std::ops::RangeInclusive<i32> = 2..=8;
 pub const DAMPFER_DX_TILES: std::ops::RangeInclusive<i32> = 8..=64;
 
 /// Largest `|dx|` of a `prop`, in px.
-pub const MAX_PROP_DX_PX: i32 = 64;
+pub const MAX_PROP_DX_PX: i32 = 96;
 
 /// Draw layer of a `prop` (D-031).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -560,6 +677,22 @@ pub const PROP_SPRITES: &[&str] = &[
     "dalben",
     "schilf",
     "startboje",
+    "buste",
+    "pension",
+    "balkon_pfosten",
+    "balkon_blumenkasten",
+    "gasthof_strobl",
+    "lokalbahn_haltestelle",
+    "kaiser_jagdstandbild",
+    "katrin_talstation",
+    "kaiservilla",
+    "seeauerhaus",
+    "lehar_villa",
+    "trinkhalle",
+    "kongresshaus",
+    "trafik",
+    "zauner_fassade",
+    "warteschlange",
 ];
 
 /// Largest `|dx|` / `|dy|` of a Festungsbahn's `to`, in tiles.
@@ -630,6 +763,12 @@ pub struct LevelMeta {
     /// `0 ≤ from < to ≤ width − 20` (D-075).
     #[serde(default)]
     pub autoscroll: Option<[i32; 2]>,
+    /// The side camera's top clamp in level pixels (D-103): in every phase
+    /// the camera's y is never above it (the side-level twin of D-090's
+    /// `camera.autoscroll_top`). Only with `camera = "side"`;
+    /// `0 ≤ camera_top ≤ level_h − 180`.
+    #[serde(default)]
+    pub camera_top: Option<i32>,
 }
 
 impl LevelMeta {
@@ -706,8 +845,11 @@ enum LegendEntry {
         dy: i32,
         lead: bool,
         period: u16,
+        open: u16,
         range: u8,
         stop: u8,
+        cars: u8,
+        look: BusLook,
     },
 }
 
@@ -800,8 +942,11 @@ impl Level {
                         dy,
                         lead,
                         period,
+                        open,
                         range,
                         stop,
+                        cars,
+                        look,
                     } => {
                         tiles.push(*tile);
                         entities.push(EntitySpawn {
@@ -821,8 +966,11 @@ impl Level {
                             dy: *dy,
                             lead: *lead,
                             period: *period,
+                            open: *open,
                             range: *range,
                             stop: *stop,
+                            cars: *cars,
+                            look: *look,
                         });
                     }
                 }
@@ -855,6 +1003,7 @@ impl Level {
             )));
         }
         validate_autoscroll(&raw.meta, width as i32)?;
+        validate_camera_top(&raw.meta, rows.len() as i32 * TILE_PX)?;
 
         Ok(Level {
             meta: raw.meta,
@@ -956,6 +1105,29 @@ fn validate_autoscroll(meta: &LevelMeta, width: i32) -> Result<(), ParseError> {
     }
 }
 
+/// `[meta] camera_top` (D-103): only with `camera = "side"`, and
+/// `0 ≤ camera_top ≤ level_h − 180` (the bottom clamp) in a `level_h` px
+/// tall level.
+fn validate_camera_top(meta: &LevelMeta, level_h: i32) -> Result<(), ParseError> {
+    let Some(top) = meta.camera_top else {
+        return Ok(());
+    };
+    if meta.camera != CameraMode::Side {
+        return Err(ParseError::new(
+            "meta.camera_top is only allowed with camera = \"side\"",
+        ));
+    }
+    let last = level_h - crate::camera::SCREEN_H;
+    if (0..=last).contains(&top) {
+        Ok(())
+    } else {
+        Err(ParseError::new(format!(
+            "meta.camera_top = {top}: need 0 <= camera_top <= level_h - {} = {last}",
+            crate::camera::SCREEN_H
+        )))
+    }
+}
+
 /// Index of `name` in `tile_names`, appending it if new.
 fn name_index(tile_names: &mut Vec<String>, name: &str) -> u16 {
     match tile_names.iter().position(|n| n == name) {
@@ -1003,11 +1175,14 @@ fn parse_legend_value(
                 (_, Some("taube_sitting")) => &["entity", "tile", "dy"],
                 (_, Some("selfie_tourist")) => &["entity", "tile", "still"],
                 (_, Some("pilger")) => &["entity", "tile", "lead"],
+                (_, Some("offizier")) => &["entity", "tile", "lead", "phase"],
                 (_, Some("steinschlag" | "souvenirstand")) => {
                     &["entity", "tile", "period", "phase", "range"]
                 }
                 (_, Some("prop")) => &["entity", "tile", "sprite", "layer", "dx"],
-                (_, Some("reisebus")) => &["entity", "tile", "stop"],
+                (_, Some("reisebus")) => &["entity", "tile", "stop", "look"],
+                (_, Some("ampel")) => &["entity", "tile", "period", "cars", "phase", "range"],
+                (_, Some("fensterladen")) => &["entity", "tile", "period", "open", "phase"],
                 (_, Some(_)) => &["entity", "tile"],
                 (None, None) => {
                     return Err(ParseError::new(format!(
@@ -1249,23 +1424,60 @@ fn parse_entity(
         MAX_SWARM_DY_PX
     };
     let dy = int_field("dy", -i64::from(max_dy)..=i64::from(max_dy))?.unwrap_or(0) as i32;
+    let ampel = kind == SpawnKind::Ampel;
+    let (period_range, period_default) = match kind {
+        SpawnKind::Ampel => (AMPEL_PERIOD_RANGE, DEFAULT_AMPEL_PERIOD),
+        SpawnKind::Fensterladen => (FENSTERLADEN_PERIOD_RANGE, DEFAULT_FENSTERLADEN_PERIOD),
+        _ => (STEINSCHLAG_PERIOD_RANGE, DEFAULT_STEINSCHLAG_PERIOD),
+    };
     let period = int_field(
         "period",
-        i64::from(*STEINSCHLAG_PERIOD_RANGE.start())..=i64::from(*STEINSCHLAG_PERIOD_RANGE.end()),
+        i64::from(*period_range.start())..=i64::from(*period_range.end()),
     )?
-    .map_or(DEFAULT_STEINSCHLAG_PERIOD, |n| n as u16);
+    .map_or(period_default, |n| n as u16);
+    let (range_tiles, range_default) = match kind {
+        SpawnKind::Ampel => (AMPEL_RANGE_TILES, DEFAULT_AMPEL_RANGE),
+        SpawnKind::Souvenirstand => (STEINSCHLAG_RANGE_TILES, DEFAULT_SOUVENIRSTAND_RANGE),
+        _ => (STEINSCHLAG_RANGE_TILES, DEFAULT_STEINSCHLAG_RANGE),
+    };
+    let open =
+        int_field("open", 0..=i64::from(u16::MAX))?.map_or(DEFAULT_FENSTERLADEN_OPEN, |n| n as u16);
+    if kind == SpawnKind::Fensterladen {
+        let max_open = period - FENSTERLADEN_MIN_CLOSED;
+        if !(FENSTERLADEN_MIN_OPEN..=max_open).contains(&open) {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": a fensterladen's open must be {FENSTERLADEN_MIN_OPEN}..={max_open} (period {period} − {FENSTERLADEN_MIN_CLOSED}), so it is open and closed for long enough to read"
+            )));
+        }
+        if phase >= period {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": a fensterladen's phase must be 0..={} (below its period {period})",
+                period - 1
+            )));
+        }
+    }
     let range = int_field(
         "range",
-        i64::from(*STEINSCHLAG_RANGE_TILES.start())..=i64::from(*STEINSCHLAG_RANGE_TILES.end()),
+        i64::from(*range_tiles.start())..=i64::from(*range_tiles.end()),
     )?
-    .map_or(
-        if kind == SpawnKind::Souvenirstand {
-            DEFAULT_SOUVENIRSTAND_RANGE
-        } else {
-            DEFAULT_STEINSCHLAG_RANGE
-        },
-        |n| n as u8,
-    );
+    .map_or(range_default, |n| n as u8);
+    let cars = if ampel {
+        int_field(
+            "cars",
+            i64::from(*AMPEL_CARS.start())..=i64::from(*AMPEL_CARS.end()),
+        )?
+        .map_or(DEFAULT_AMPEL_CARS, |n| n as u8)
+    } else {
+        0
+    };
+    let look = match string_field(key, t, "look")? {
+        None => BusLook::default(),
+        Some(l) => BusLook::from_name(l).ok_or_else(|| {
+            ParseError::new(format!(
+                "legend \"{key}\": unknown look \"{l}\" (expected reisebus or postbus)"
+            ))
+        })?,
+    };
     let stop = int_field(
         "stop",
         i64::from(*REISEBUS_STOP_TILES.start())..=i64::from(*REISEBUS_STOP_TILES.end()),
@@ -1280,6 +1492,11 @@ fn parse_entity(
             period - 1
         )));
     }
+    if kind == SpawnKind::Offizier && phase > OFFIZIER_MAX_PHASE {
+        return Err(ParseError::new(format!(
+            "legend \"{key}\": an offizier's phase must be 0..={OFFIZIER_MAX_PHASE} (frames into his drill)"
+        )));
+    }
     if kind == SpawnKind::Souvenirstand
         && phase != 0
         && !(SOUVENIRSTAND_MIN_PHASE..period).contains(&phase)
@@ -1288,6 +1505,21 @@ fn parse_entity(
             "legend \"{key}\": a souvenirstand's phase must be 0 or {SOUVENIRSTAND_MIN_PHASE}..={} (below its period {period}), so its first globe shows the whole telegraph",
             period - 1
         )));
+    }
+    if ampel {
+        let min_period = ampel_min_period(cars);
+        if period < min_period {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": an ampel with {cars} cars needs a period of at least {min_period} frames (30 + cars × 40 + 64 + 30 + 120: at least 2 s of red, D-093), got {period}"
+            )));
+        }
+        let min_phase = ampel_min_phase(cars);
+        if phase != 0 && !(min_phase..period).contains(&phase) {
+            return Err(ParseError::new(format!(
+                "legend \"{key}\": an ampel's phase must be 0 or {min_phase}..={} (after its green, below its period {period}), so its first car follows the whole telegraph",
+                period - 1
+            )));
+        }
     }
     Ok(LegendEntry::Entity {
         tile,
@@ -1305,8 +1537,11 @@ fn parse_entity(
         dy,
         lead,
         period,
+        open,
         range,
         stop,
+        cars,
+        look,
     })
 }
 
@@ -1367,8 +1602,11 @@ grid = '''
             dy: 0,
             lead: false,
             period: DEFAULT_STEINSCHLAG_PERIOD,
+            open: DEFAULT_FENSTERLADEN_OPEN,
             range: DEFAULT_STEINSCHLAG_RANGE,
             stop: 0,
+            cars: 0,
+            look: BusLook::Reisebus,
         }
     }
 
@@ -1790,8 +2028,8 @@ P.sSC.tfG
         assert_eq!(prop(", sprite = \"sphaera\", dx = 8").0.dx, 8);
         assert_eq!(prop(", sprite = \"sphaera\", dx = -64").0.dx, -64);
         for bad in [
-            ", sprite = \"a\", dx = 65",
-            ", sprite = \"a\", dx = -65",
+            ", sprite = \"a\", dx = 97",
+            ", sprite = \"a\", dx = -97",
             ", sprite = \"a\", dx = -9223372036854775808",
             ", sprite = \"a\", dx = true",
             ", sprite = \"a\", dx = \"8\"",
@@ -1931,6 +2169,50 @@ P.sSC.tfG
     }
 
     #[test]
+    fn fensterladen_takes_period_open_and_phase_validated_as_d094() {
+        let s = boat("fensterladen", "");
+        assert_eq!(
+            (s.kind, s.period, s.open, s.phase, s.to),
+            (SpawnKind::Fensterladen, 240, 150, 0, None)
+        );
+        let s = boat("fensterladen", ", period = 120, open = 60, phase = 119");
+        assert_eq!((s.period, s.open, s.phase), (120, 60, 119));
+        let s = boat("fensterladen", ", period = 480, open = 450");
+        assert_eq!((s.period, s.open), (480, 450));
+        // A tile under it (the façade behind the window).
+        let lvl = boat_level("fensterladen", ", tile = \"wall_village_bg\"");
+        assert!(Level::parse(&lvl).is_ok());
+        for (bad, msg) in [
+            (
+                ", period = 119",
+                "field \"period\" must be a whole number in 120..=480",
+            ),
+            (
+                ", period = 481",
+                "field \"period\" must be a whole number in 120..=480",
+            ),
+            (", open = 59", "a fensterladen's open must be 60..=210"),
+            (", open = 211", "a fensterladen's open must be 60..=210"),
+            (
+                ", period = 120, open = 91",
+                "a fensterladen's open must be 60..=90",
+            ),
+            (", phase = 240", "a fensterladen's phase must be 0..=239"),
+            (
+                ", period = 120, open = 60, phase = 120",
+                "phase must be 0..=119",
+            ),
+            (", to = [1, 0]", "field \"to\" is not allowed"),
+            (", range = 6", "field \"range\" is not allowed"),
+        ] {
+            let e = err(&boat_level("fensterladen", bad));
+            assert!(e.contains(msg), "{bad}: {e}");
+        }
+        // `open` belongs to the Fensterladen only.
+        let e = err(&boat_level("steinschlag", ", open = 100"));
+        assert!(e.contains("field \"open\" is not allowed"), "{e}");
+    }
+    #[test]
     fn traundl_needs_a_flat_to_of_2_to_8_tiles_and_takes_a_phase() {
         let b = boat("traundl", ", to = [6, 0]");
         assert_eq!(
@@ -1980,6 +2262,67 @@ P.sSC.tfG
         }
         let e = err(&boat_level("dampfer", ", to = [40, 0], phase = 1"));
         assert!(e.contains("field \"phase\" is not allowed"), "{e}");
+    }
+
+    #[test]
+    fn m6_tiles_and_props_parse_with_their_collision_kinds() {
+        use TileKind::*;
+        for (name, kind) in [
+            ("felssteg", OneWay),
+            ("kies", Solid),
+            ("einfahrt_bg", Empty),
+        ] {
+            assert_eq!(TileKind::from_tile_name(name), Some(kind), "{name}");
+        }
+        // A level using the three tiles and an M6 prop on each layer.
+        let text = SMALL
+            .replace(
+                "\"G\" = { entity = \"goal\" }",
+                "\"G\" = { entity = \"goal\" }\n\"f\" = \"felssteg\"\n\"k\" = \"kies\"\n\"e\" = \"einfahrt_bg\"\n\"z\" = { entity = \"prop\", sprite = \"zauner_fassade\", layer = \"back\" }\n\"b\" = { entity = \"prop\", sprite = \"buste\" }",
+            )
+            .replace("......G", "ez.b..G")
+            .replace(".P.--..", ".P.ff..")
+            .replace("###^###", "kkk^###");
+        let l = Level::parse(&text).unwrap();
+        let named = |col, row| {
+            let t = l.tile(col, row).unwrap();
+            (l.tile_names[t.name as usize].clone(), t.kind)
+        };
+        assert_eq!(named(0, 0), ("einfahrt_bg".to_string(), Empty));
+        assert_eq!(named(3, 1), ("felssteg".to_string(), OneWay));
+        assert_eq!(named(4, 1), ("felssteg".to_string(), OneWay));
+        assert_eq!(named(0, 2), ("kies".to_string(), Solid));
+        let props: Vec<(&str, PropLayer, i32)> = l
+            .entities
+            .iter()
+            .filter(|e| e.kind == SpawnKind::Prop)
+            .map(|e| (e.sprite.as_deref().unwrap(), e.layer, e.col))
+            .collect();
+        assert_eq!(
+            props,
+            [
+                ("zauner_fassade", PropLayer::Back, 1),
+                ("buste", PropLayer::Front, 3)
+            ]
+        );
+        for prop in [
+            "buste",
+            "pension",
+            "gasthof_strobl",
+            "lokalbahn_haltestelle",
+            "kaiser_jagdstandbild",
+            "katrin_talstation",
+            "kaiservilla",
+            "seeauerhaus",
+            "lehar_villa",
+            "trinkhalle",
+            "kongresshaus",
+            "trafik",
+            "zauner_fassade",
+            "warteschlange",
+        ] {
+            assert!(PROP_SPRITES.contains(&prop), "{prop}");
+        }
     }
 
     #[test]
@@ -2164,6 +2507,42 @@ P.sSC.tfG
                 e.contains(&format!("field \"{field}\" is not allowed")),
                 "{entity}: {e}"
             );
+        }
+    }
+
+    #[test]
+    fn the_offizier_takes_lead_and_phase() {
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"b\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pb--..")
+        };
+        let spawn = |fields: &str| {
+            let s = Level::parse(&with(&format!("{{ entity = \"offizier\"{fields} }}")))
+                .unwrap()
+                .entities
+                .into_iter()
+                .find(|e| e.col == 2)
+                .unwrap();
+            assert_eq!(s.kind, SpawnKind::Offizier);
+            (s.lead, s.phase)
+        };
+        assert_eq!(spawn(""), (false, 0), "defaults (D-096)");
+        assert_eq!(spawn(", lead = true"), (true, 0));
+        assert_eq!(spawn(", phase = 239"), (false, 239));
+        assert_eq!(spawn(", lead = true, phase = 120"), (true, 120));
+        let e = err(&with("{ entity = \"offizier\", phase = 240 }"));
+        assert!(e.contains("phase must be 0..=239"), "{e}");
+        let e = err(&with("{ entity = \"offizier\", phase = -1 }"));
+        assert!(e.contains("field \"phase\" must be"), "{e}");
+        let e = err(&with("{ entity = \"offizier\", lead = 1 }"));
+        assert!(e.contains("field \"lead\" must be true or false"), "{e}");
+        for field in ["period = 100", "range = 5", "dir = 1", "still = true"] {
+            let e = err(&with(&format!("{{ entity = \"offizier\", {field} }}")));
+            assert!(e.contains("is not allowed"), "{field}: {e}");
         }
     }
 
@@ -2402,6 +2781,46 @@ P.sSC.tfG
             );
             assert_eq!(zone(camera), None);
         }
+    }
+
+    #[test]
+    fn camera_top_is_side_only_and_at_most_the_bottom_clamp() {
+        // 21 x 14 tiles (wide enough for an auto-scroll zone), 224 px tall:
+        // the bottom clamp is 224 - 180 = 44.
+        let tall = |meta: &str| {
+            format!(
+                "[meta]\nid = \"t\"\ntime_limit = 1\n{meta}\n[legend]\n\"P\" = {{ entity = \"player_start\" }}\n[map]\ngrid = '''\nP{}{}\n'''\n",
+                ".".repeat(20),
+                format!("\n{}", ".".repeat(21)).repeat(13)
+            )
+        };
+        let top = |meta: &str| Level::parse(&tall(meta)).unwrap().meta.camera_top;
+        assert_eq!(top(""), None);
+        assert_eq!(top("camera_top = 0"), Some(0));
+        assert_eq!(top("camera_top = 44"), Some(44));
+        assert_eq!(top("camera = \"side\"\ncamera_top = 20"), Some(20));
+        for bad in ["-1", "45"] {
+            let e = err(&tall(&format!("camera_top = {bad}")));
+            assert!(
+                e.contains("need 0 <= camera_top <= level_h - 180 = 44"),
+                "{bad}: {e}"
+            );
+        }
+        // Too short a level has no valid value at all.
+        let e = err(&with_meta("camera_top = 0"));
+        assert!(e.contains("level_h - 180 = -164"), "{e}");
+        for camera in [
+            "camera = \"climb\"",
+            "camera = \"autoscroll\"\nautoscroll = [0, 1]",
+        ] {
+            let e = err(&tall(&format!("{camera}\ncamera_top = 20")));
+            assert!(
+                e.contains("camera_top is only allowed with camera = \"side\""),
+                "{camera}: {e}"
+            );
+        }
+        let e = err(&tall("camera_top = \"high\""));
+        assert!(e.contains("camera_top"), "{e}");
     }
 
     #[test]

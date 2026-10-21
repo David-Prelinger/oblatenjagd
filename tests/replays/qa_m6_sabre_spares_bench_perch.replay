@@ -1,0 +1,80 @@
+# QA M6 regression (was qa_m6_bug_sabre_over_bench; fixed by D-102, E42):
+# file C's sabre must not hurt Resi standing still on the bench (cols
+# 249-250), the 2-high pen wall the file turns at and the stage's designed
+# perch between singer #2 and the file (game-design Stage 8 section 5).
+# The solver's route to the theatre street (bad_ischl_file_c_singer's
+# first 1340 frames), 136 idle frames (a later arrival, so the file wakes
+# later and turns at the bench in another drill phase), then onto the
+# bench: from about 1880 she stands on it, hitbox x 4011-4023 (the bench
+# ends at 4016), feet on its top (208). File C marches left to the bench,
+# the front officer halts 3 px from it (x 4019, Habt Acht 2089) and
+# presents at 2113 (drill f 192). The bug: his 8x16 sabre zone (x
+# 4021-4029, y 202-218) reached 6 px above the bench top into her feet and
+# she died (Normal) without moving. Since D-102 the zone is 8x10 (the drawn
+# blade), it ends 32 px above his feet, level with the bench top (strict
+# overlap), and she stays.
+# Re-cut for D-102 (E42): B2's stone end pier (237, rows 7-10, with the
+# bridge at (236, row 8)) blocks the old stop on the 1-high flower box, so
+# from 1613 she runs, hops onto the box top, jumps the pier and stops on
+# the street (1661), runs and jumps from there over singer #2 onto the
+# bench (1730-1835) and brakes to the old resting x (1836-1910); from 1911
+# on her positions are the old ones (the file woke before 1613, so the
+# drill is unchanged: the front officer presents at x 4019 at 2113).
+# Expected: a player standing on a pen wall is never hurt by an officer in
+# the pen below (deaths=0, still on the bench at the end).
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died state=playing player_y<=186 player_x>=4011
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 49
+- 136
+RB 20
+RBJ 36
+RB 44
+RBJ 36
+RB 2
+RBJ 6
+RB 20
+RBJ 8
+RB 12
+- 115
+RB 36
+RBJ 24
+- 20
+L 8
+- 14
+R 3
+- 260

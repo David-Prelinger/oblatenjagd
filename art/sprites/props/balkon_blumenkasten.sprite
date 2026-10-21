@@ -1,0 +1,30 @@
+# Balcony flower box (Pension Seeblick, Strobl), front layer drawn exactly
+# over the 1-high `stone` box at col 51, row 10 (D-100): fully opaque
+# 16x16, so the stone cell never shows and the drawn shape is the solid
+# shape (D-038), flat top on row 0. k outline. Geraniums like the
+# balkon_pfosten pot (p/r blooms with R undersides, g/G leaves, trimmed
+# flat on top), over a wooden box o/O/l lit from the top left with the
+# balcony's carved board pattern and two G tendrils over its front; it
+# sits on the balcony's handrail (row 11).
+sprite = balkon_blumenkasten
+size   = 16x16
+origin = 8,16
+anim   = idle frames=1
+---
+frame idle 0
+kkkkkkkkkkkkkkkk
+kgpprggggpprgggk
+kpprrRgggprrRgGk
+kgrRRGgpprRRGgGk
+kgGGGgprrRGGgGGk
+kgggGgGRRGGgGGGk
+kkkkkkkkkkkkkkkk
+kooooooooooooOOk
+kOOGOOOOOOOGOOlk
+kOOGOloOOloGOOlk
+kOOOGloOOloOGOlk
+kOOOOloOOloOOOlk
+kOOOOloOOloOOOlk
+kOOOOOOOOOOOOOlk
+kllllllllllllllk
+kkkkkkkkkkkkkkkk

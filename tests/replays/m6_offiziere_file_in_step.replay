@@ -1,0 +1,20 @@
+# File A seen from above (D-096): Resi climbs the steps to the terrace and
+# waits at its edge for more than a whole drill. Below her the flag bearer
+# and his comrade march, halt („Habt Acht!") and present sabres; the sabre
+# zone ends 10 px below her feet, so nothing touches her. Meanwhile file B
+# (columns 44-46) wakes one officer at a time as the camera comes (frames
+# 148, 158, 168: staggered activation) and still marches and salutes in
+# step, since the drill runs on the stage clock. The unit test
+# `tests::offiziere::the_grey_box_files_stay_in_step` plays these inputs
+# and checks every frame.
+level  = m6_offiziere
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped state=playing player_x>=290
+---
+R 30
+RJ 20
+R 17
+RJ 15
+R 110
+- 270

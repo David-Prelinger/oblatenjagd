@@ -1,0 +1,60 @@
+# QA M6: the shutter pair after a respawn (D-094/D-099: the stage clock
+# restarts at 0 and the world is rebuilt as at the stage start). The first
+# 140 frames of strobl_solver (over the garden wall into Nordic-Walker #1's
+# pen), then she stands: the walker reaches her (death 304, clock 303, the
+# M-box already bumped). Respawn at the start at 364 (clock 0, M-box fresh,
+# every shutter back at its clock-0 state). From 364 the whole
+# strobl_solver replay unchanged: the respawned game runs exactly like a
+# fresh one, so #2 and #3 are open together where the solver needs them
+# and the stage completes at 364 + 1729 = 2093.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = dies_at frames=304..304 deaths=1 event=Respawned complete frames=2093..2093 lives=2
+---
+RB 96
+RBJ 36
+RB 8
+- 224
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40

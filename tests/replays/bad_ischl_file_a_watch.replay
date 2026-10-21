@@ -1,0 +1,31 @@
+# Offizier file A seen from above (D-096, game-design "Stage 8" New
+# mechanics): the solver's opening (Kurgast #1 stomped on the way) up to
+# the Kaiserpark terrace; Resi stops at its edge (feet 48 px above the
+# avenue) and watches the file march, halt („Habt Acht!", clock 168-191)
+# and present sabres (192-239) right below her: the sabre zone reaches
+# 38 px above the avenue, so nothing touches her. In the next march she
+# drops behind them and chains both stomps (200, 400, „Abtreten!").
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score=3300
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 18
+RBJ 36
+RB 24
+RBJ 36
+RB 16
+- 3
+L 16
+- 2
+R 10
+- 170
+RJ 16
+R 37
+RJ 12
+R 40
+- 30

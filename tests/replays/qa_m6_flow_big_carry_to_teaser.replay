@@ -1,0 +1,270 @@
+# QA M6 flow: Zuckerschock carried through Wolfgangsee -> Strobl -> Bad
+# Ischl -> the Cafe Zauner teaser -> title (D-047). Title flow with the run
+# started at the Wolfgangsee: START at 20, intro, then
+# qa_m5_wolfgangsee_relaxed's inputs from 171 (the Mozartkugel at its
+# M-box, Zuckerschock from then on, LevelComplete at 5163), idle: tally,
+# route map Wolfgangsee -> Strobl, the Strobl intro and play from 6169 as
+# big Resi. Strobl (clock = frame - 6169): a QA beam search (8-frame
+# chunks, never hurt, power kept): the shutter staircase as big Resi, the
+# Postbus, both Ampeln, the walkway, the Ache, the Wurstkranz (Strobl
+# LevelComplete at 7916). Idle: tally, map Strobl -> Bad Ischl (Wait),
+# intro, Bad Ischl play from 9028 still big. Bad Ischl (clock = frame -
+# 9028): QA beam search, never hurt (the Kurgaeste, three officer files,
+# the Fiaker, the first Traun notch; an extra life on the 100th Oblate),
+# from 9970 (before notch 2) a hurt-free solver beam search, power kept,
+# over the D-102 kerb and B2 pier to the goal (LevelComplete at 10897).
+# Idle: tally, the map walk to Cafe Zauner, the teaser, the title (11626)
+# with the run reset to the Wolfgangsee, Normal.
+# Re-cut for D-102 (E42): Strobl's 230 s shorten its tally by 10 frames
+# (10 idle frames fewer before Bad Ischl, whose inputs keep their clock);
+# the old route ran into the kerb at 151; Bad Ischl's 210 s shorten its
+# tally.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=5163..5163 deaths=0 no_event=Died no_event=Hurt no_event=GameOver event=PowerUp event=ExtraLife
+expect = state=title stage=wolfgangsee power=normal score=0 lives=3 oblaten=0
+---
+- 20
+S 1
+- 150
+# --- qa_m5_wolfgangsee_relaxed ---
+- 40
+R 76
+J 20
+- 140
+RJ 20
+R 20
+D 60
+DL 40
+- 20
+J 1
+- 14
+J 1
+- 24
+R 10
+RJ 20
+R 4
+- 60
+R 1099
+RB 124
+RBJ 33
+RB 15
+RBJ 20
+RB 2
+LB 8
+RB 1027
+- 100
+R 40
+- 45
+J 20
+- 100
+RJ 10
+R 8
+- 20
+- 21
+J 24
+- 20
+- 30
+R 8
+RJ 12
+R 10
+- 104
+R 8
+RJ 12
+R 10
+- 110
+RJ 16
+R 16
+- 10
+R 16
+- 19
+J 24
+- 40
+RJ 20
+R 10
+DR 660
+J 1
+- 12
+J 1
+- 12
+J 1
+- 20
+R 180
+RJ 20
+R 140
+RJ 16
+R 148
+- 1006    # tally, map, Strobl intro
+# --- Strobl as Zuckerschock (QA beam search) ---
+RB 56
+RBJ 32
+RB 40
+RBJ 16
+RB 32
+RBJ 8
+RB 32
+RBJ 8
+RB 24
+RBJ 24
+RB 24
+RBJ 40
+RB 8
+RBJ 8
+RB 24
+L 8
+R 24
+RJ 16
+R 8
+RBJ 8
+LJ 8
+L 8
+RBJ 8
+LJ 8
+RBJ 16
+RB 16
+RBJ 8
+RB 48
+RBJ 8
+RB 40
+RBJ 32
+RB 16
+RBJ 8
+RB 40
+RBJ 8
+RB 56
+RBJ 8
+RB 16
+RBJ 16
+RB 32
+RBJ 40
+RB 32
+RBJ 8
+RB 8
+RBJ 8
+RB 72
+RBJ 8
+RB 24
+RBJ 8
+RB 24
+RBJ 16
+RB 24
+RJ 8
+RB 24
+RBJ 16
+RB 32
+RBJ 40
+RB 24
+RBJ 40
+RB 16
+RBJ 40
+RB 24
+RBJ 8
+RB 32
+RBJ 8
+RB 32
+RBJ 32
+RB 32
+RBJ 40
+RB 16
+RBJ 8
+RB 32
+RBJ 40
+RB 8
+RBJ 32
+RB 24
+RBJ 24
+LJ 8
+- 1107    # tally, map (Wait), Bad Ischl intro
+# --- Bad Ischl as Zuckerschock (QA beam search to 9969, then a solver beam search) ---
+BR 56
+BJR 32
+BR 16
+BJR 16
+BR 64
+BJR 8
+BR 16
+BJR 24
+BR 16
+BJR 40
+BR 16
+BJR 8
+BR 40
+BJR 32
+BR 24
+BJR 40
+BR 16
+BJR 40
+BR 16
+BJR 8
+BR 8
+BJR 32
+BR 40
+BJR 40
+BR 24
+BJR 40
+BR 24
+BJR 40
+BR 24
+BJR 16
+BR 24
+BJR 16
+BR 32
+BJR 40
+BR 17
+BL 8
+- 4
+BJR 36
+BR 2
+BJR 12
+BR 30
+BJR 36
+BR 18
+BJR 20
+BR 18
+BJR 36
+BR 2
+BJR 36
+BR 2
+BJR 36
+BR 18
+BJR 36
+BR 2
+BJR 36
+BR 34
+BJR 20
+BR 2
+BJR 20
+BR 2
+BJR 12
+BR 2
+BJR 20
+BR 2
+BJR 36
+BR 18
+BJR 20
+BR 2
+BJR 12
+BR 2
+BJR 20
+BR 2
+BJR 20
+BR 2
+BJR 36
+BR 2
+BJR 20
+BR 2
+BJR 20
+BR 2
+BJR 36
+BR 2
+BJR 20
+BR 2
+BJR 36
+BR 18
+BJR 36
+BR 2
+BJR 36
+BR 18
+- 760    # tally, map walk, teaser, title

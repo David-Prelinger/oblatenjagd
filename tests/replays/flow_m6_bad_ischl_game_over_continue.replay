@@ -1,0 +1,84 @@
+# M6 flow (D-017, D-047): game over in Bad Ischl -> continue restarts Bad
+# Ischl, not the run's first stage (Strobl). Title flow with the run
+# started in Strobl: flow_m6_strobl_to_bad_ischl's inputs to the start of
+# Bad Ischl play (2942: score 17300, 3 lives, 34 Oblaten). Then three
+# tries of the first 150 frames of bad_ischl_solver.replay (the
+# route's first jumps, back down onto the street at col 26) and standing:
+# Kurgast #1 walks into her (deaths at 3322, 3912, 4502, each try 590
+# frames: 60 dying + 150 intro + 380 of play); game over at 4562; START
+# at 4642 -> the Bad Ischl intro (4643) and play at its start (4793): 3
+# lives, score 0, 0 Oblaten, Normal. D-102 (E42): Strobl's time_limit 230
+# (was 240) shortens its tally by 10 frames, so everything comes 10 frames
+# earlier (10 idle frames fewer before Bad Ischl play).
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver dies_at frames=4502..4502
+expect = state=playing stage=bad_ischl lives=3 score=0 oblaten=0 power=normal player_x>=34 player_y>=218 player_y<=218
+---
+# --- flow_m6_strobl_to_bad_ischl's inputs to the start of Bad Ischl play (2942) ---
+- 20
+S 1
+- 150
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+- 1042
+# try 1: the first 150 frames of bad_ischl_solver.replay, then stand
+RB 96
+RBJ 20
+RB 34
+- 440
+# try 2: the first 150 frames of bad_ischl_solver.replay, then stand
+RB 96
+RBJ 20
+RB 34
+- 440
+# try 3: the same, then the game over screen
+RB 96
+RBJ 20
+RB 34
+- 370
+# START: continue -> the stage intro, then 30 frames of play
+S 1
+- 180

@@ -1,0 +1,14 @@
+# Ampel #2's lane crossed in red: after Ampel #1 (watched from the
+# terrace) Resi walks straight on; Ampel #2 (phase 250) starts counting in
+# its red phase once its cell is fully on screen, and she passes the mouth
+# before the next red and amber (150 frames of red left).
+level  = m6_traffic
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Stomped player_x>=760
+---
+R 60
+RJ 30
+R 80
+- 220
+R 330

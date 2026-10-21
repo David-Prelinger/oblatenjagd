@@ -1,0 +1,90 @@
+# Liegestuhl (M6, D-095): the stomped Kurgast lying in his deck chair, a
+# one-way platform. A wooden deck chair O/l with a striped canvas sun hood
+# R/w: the hood's top is ONE flat line over the middle 16 px (sprite row 0 =
+# its k outline, columns 4-19 = the 16x16 hitbox), the canvas back's top,
+# with his raised knees tucked right under it (D-038: drawn = the surface).
+# Under the hood: grey hair, shut eyes and moustache, the white bathrobe w/i,
+# his straw hat Y/o resting on his belly, pale shins c and R slippers poking
+# out past the front. X legs O/l.
+# idle: he breathes (frame 1: the hat on his belly rises 1 px) and a w "z"
+# with a k outline rises beside his head (left margin, outside the 16 px).
+# wake (telegraph): eyes open, a yawn, both arms stretched out past the
+# hood's ends (frame 0 sideways, frame 1 up and out); the top stays flat.
+# Faces right (head left, feet right); mirror = auto. Built with a scratch
+# script (painted interior + automatic k outline), frozen to text here.
+sprite = liegestuhl
+size   = 24x16
+origin = 12,16
+hitbox = 4,0,16,16
+mirror = auto
+anim   = idle frames=2 ticks=30 loop
+anim   = wake frames=2 ticks=10 loop
+---
+frame idle 0
+....kkkkkkkkkkkkkkkk....
+....kRRwwRRwwRRwwRRk....
+....kRRwwRRwwRRwwRRk....
+....kOieeeRRRRRRwwwk....
+.kk.kOieekeEiiiwwwwik...
+kwwkkOieeiiEiYYiwwiick..
+.kwk.kOeeEiwwYYYowiicck.
+.kwwkkOwwwwwoooooOiiccRk
+..kk..kOwwwwwwwwwiikRRRk
+......kOiiiiiiiiiiikkkk.
+......kllllllllllllk....
+......kOkkkkkkkkkkOk....
+.....kOk..........kOk...
+....kOk............kOk..
+...kOk..............kOk.
+....k................k..
+frame idle 1
+.kk.kkkkkkkkkkkkkkkk....
+kwwkkRRwwRRwwRRwwRRk....
+.kwkkRRwwRRwwRRwwRRk....
+.kwwkOieeeRRRRRRwwwk....
+..kkkOieekeEiYYwwwwik...
+....kOieeiiEYYYowwiick..
+.....kOeeEiwwYYYowiicck.
+.....kOwwwwwoooooOiiccRk
+......kOwwwwwwwwwiikRRRk
+......kOiiiiiiiiiiikkkk.
+......kllllllllllllk....
+......kOkkkkkkkkkkOk....
+.....kOk..........kOk...
+....kOk............kOk..
+...kOk..............kOk.
+....k................k..
+frame wake 0
+....kkkkkkkkkkkkkkkk....
+....kRRwwRRwwRRwwRRk....
+....kRRwwRRwwRRwwRRkkk..
+.kkkkORiekeRRRRRwwwwwek.
+kewwwORieeeEEiiwwwwikk..
+.kkkkORieekEEiYYwwiick..
+.....kOieeekwYYYowiicck.
+.....kOwwwwwoooooOiiccRk
+......kOwwwwwwwwwiikRRRk
+......kOiiiiiiiiiiikkkk.
+......kllllllllllllk....
+......kOkkkkkkkkkkOk....
+.....kOk..........kOk...
+....kOk............kOk..
+...kOk..............kOk.
+....k................k..
+frame wake 1
+....kkkkkkkkkkkkkkkk....
+.k..kRRwwRRwwRRwwRRk.k..
+kek.kRRwwRRwwRRwwRRkkek.
+kwwkkORiekeRRRRRwwwkwwk.
+.kwwkORieeeEEiiwwwwwwk..
+..kkkORieekEEiYYwwiick..
+.....kOieeekwYYYowiicck.
+.....kOwwwwwoooooOiiccRk
+......kOwwwwwwwwwiikRRRk
+......kOiiiiiiiiiiikkkk.
+......kllllllllllllk....
+......kOkkkkkkkkkkOk....
+.....kOk..........kOk...
+....kOk............kOk..
+...kOk..............kOk.
+....k................k..

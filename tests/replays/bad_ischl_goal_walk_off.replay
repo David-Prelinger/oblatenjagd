@@ -1,0 +1,65 @@
+# Stage 8 goal, walk-off zone (D-038, D-097; game-design "Stage 8"
+# section 6): the solver route onto the Trafik's roof (row 10, 6 tiles
+# above the square) by frame 1809, where Resi brakes and then walks off its
+# right edge: the Maibaum catches her low, 100 points (9200 -> 9300; the
+# Wurstkranz is bad_ischl_wurstkranz). The goal sequence then walks her
+# past the queue at Café Zauner. If the solver route changes, re-copy the
+# prefix (its first 48 input lines) and re-check the frames.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = complete frames=1907..1907 score=9300 deaths=0 state=stage_clear
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 14
+L 14
+- 20
+R 150

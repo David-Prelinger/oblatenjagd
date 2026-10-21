@@ -34,7 +34,8 @@ Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
             sprites lint, levels lint
   verify    full validation: check + solver, replays, goldens, wasm-smoke,
-            vnc-smoke
+            vnc-smoke; `verify --no-cache` solves every level even if the
+            solver cache has its result (D-091)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
@@ -63,6 +64,10 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("check") if args.len() == 1 => run_suite("check", steps::check_steps()),
         Some("verify") if args.len() == 1 => run_suite("verify", steps::verify_steps()),
+        Some("verify") if args.len() == 2 && args[1] == "--no-cache" => {
+            solver::verify_without_cache();
+            run_suite("verify", steps::verify_steps())
+        }
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("levels") => levels::run(&workspace_root(), &args[1..]),

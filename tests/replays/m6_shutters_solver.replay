@@ -1,0 +1,18 @@
+# Written by `cargo xtask solve m6_shutters --write`; re-create it instead of editing.
+level  = m6_shutters
+seed   = 1
+source = solver
+expect = complete frames=389..389 deaths=0
+---
+RB 104
+RBJ 12
+RB 27
+RBJ 20
+RB 24
+R 8
+LBJ 36
+LB 2
+RB 4
+- 4
+RBJ 35
+RB 113

@@ -1,0 +1,27 @@
+# A sabre hurt as Zuckerschock (D-096: the sabre zone is checked before
+# the stomp, the high-C rule of D-068). Resi bumps the M-box over the
+# terrace and takes the Mozartkugel (Big), jumps down beside file A while
+# it stands at attention, then hops straight up and comes down on the flag
+# bearer while the file presents sabres: the blade hurts her (Big →
+# Normal, no stomp, no points), she survives.
+level  = m6_offiziere
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped score=1000 power=normal
+---
+R 30
+RJ 20
+R 17
+RJ 15
+R 50
+J 10
+- 40
+R 60
+- 140
+RBJ 20
+RB 10
+- 14
+R 8
+J 16
+R 6
+- 40
