@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 use jnr_artkit::Image;
 use jnr_audio::bank::{Bank, Variant};
-use jnr_audio::cues::{Cue, Director, PENDING_MUSIC, Voice};
+use jnr_audio::cues::{Cue, Director, Music, PENDING_MUSIC, Voice};
 use jnr_audio::mix::{self, Mix, Sound, Sounds};
 use jnr_audio::{FRAMES_PER_TICK, Pcm};
 use jnr_core::Level;
@@ -302,12 +302,18 @@ pub fn lint(m: &Mix) -> Vec<Finding> {
 /// The `missing` lint: every SFX must exist, and a music cue may be silent
 /// only while it is in `cues::PENDING_MUSIC` (D-122; E58b's pending list).
 pub fn missing_lint(m: &Mix) -> Option<Finding> {
+    missing_lint_with(m, PENDING_MUSIC)
+}
+
+/// [`missing_lint`] against a given pending list (tests pass their own, as
+/// `cues::PENDING_MUSIC` is empty since MA).
+fn missing_lint_with(m: &Mix, pending: &[Music]) -> Option<Finding> {
     let bad: Vec<String> = m
         .missing
         .iter()
         .filter(|s| match s {
             Sound::Sfx(_) => true,
-            Sound::Music(x) => !PENDING_MUSIC.contains(x),
+            Sound::Music(x) => !pending.contains(x),
         })
         .map(Sound::to_string)
         .collect();
@@ -721,29 +727,41 @@ mod tests {
 
     /// E60 criterion: on `testbed_route` every sound the WAV starts is a
     /// cue of the timeline, within one frame (735 samples), and every
-    /// sounding cue starts a sound.
+    /// sounding cue starts a sound. Since the music landed (MA) the run ends
+    /// with the `fanfare_clear` jingle, whose own notes are onsets too: up to
+    /// the jingle the onsets are exactly the 7 jumps, and the jingle's first
+    /// onset is on its cue.
     #[test]
     fn testbed_route_onsets_match_the_cue_timeline() {
         let root = root();
         let path = content::resolve_replay(&root, "testbed_route").unwrap();
         let x = mix_replay(&root, &path).unwrap();
-        let expected: Vec<usize> = x
-            .timeline
-            .cues
-            .iter()
-            .filter(|(_, c)| match c {
-                Cue::Sfx(p) => !x.mix.missing.contains(&Sound::Sfx(*p)),
-                Cue::Song(m) | Cue::Jingle(m) => !x.mix.missing.contains(&Sound::Music(*m)),
-                _ => false,
-            })
-            .map(|(f, _)| *f as usize * T)
-            .collect();
-        assert_eq!(expected.len(), 7, "the 7 jumps: {:?}", x.timeline.cues);
+        assert!(x.mix.missing.is_empty(), "{:?}", x.mix.missing);
+        let at = |pick: fn(&Cue) -> bool| -> Vec<usize> {
+            x.timeline
+                .cues
+                .iter()
+                .filter(|(_, c)| pick(c))
+                .map(|(f, _)| *f as usize * T)
+                .collect()
+        };
+        let sfx = at(|c| matches!(c, Cue::Sfx(_)));
+        let music = at(|c| matches!(c, Cue::Song(_) | Cue::Jingle(_)));
+        assert_eq!(sfx.len(), 7, "the 7 jumps: {:?}", x.timeline.cues);
+        assert_eq!(music.len(), 1, "the clear jingle: {:?}", x.timeline.cues);
+        let jingle = music[0];
+        assert_eq!(jingle, 731 * T);
         let found = onsets(&x.mix.render.pcm);
-        assert_eq!(found.len(), expected.len(), "{found:?} vs {expected:?}");
-        for (f, e) in found.iter().zip(&expected) {
+        let (before, after): (Vec<usize>, Vec<usize>) =
+            found.iter().partition(|&&f| f + T < jingle);
+        assert_eq!(before.len(), sfx.len(), "{before:?} vs {sfx:?}");
+        for (f, e) in before.iter().zip(&sfx) {
             assert!(f.abs_diff(*e) <= T, "onset at {f}, cue at {e}");
         }
+        assert!(
+            after.first().is_some_and(|f| f.abs_diff(jingle) <= T),
+            "the jingle starts on its cue: {after:?} vs {jingle}"
+        );
         assert!(x.findings.is_empty(), "{:?}", x.findings);
         assert_eq!(x.stats.clamped_samples, 0);
         assert_eq!(x.timeline.end_frame, 758);
@@ -820,12 +838,21 @@ mod tests {
         let path = content::resolve_replay(&root, "testbed_route").unwrap();
         let wav = dir.join("tb.wav");
         let text = run(&root, &path, Some(&wav)).unwrap();
-        assert!(
-            text.contains("silent (no source in audio/ yet): fanfare_clear"),
-            "{text}"
-        );
+        assert!(!text.contains("silent"), "every cue has a source: {text}");
+        assert!(text.contains(": fanfare_clear"), "{text}");
+        // The run is 759 frames; the clear jingle (cued on frame 731) is a
+        // one-shot and rings out past the end.
+        let bank = load_bank(&root).unwrap();
+        let fanfare = bank
+            .render_music(Music::FanfareClear, Variant::Normal)
+            .unwrap()
+            .unwrap()
+            .pcm;
         let pcm = jnr_audio::wav::read(&fs::read(&wav).unwrap()).unwrap();
-        assert_eq!(pcm.samples.len(), 759 * T);
+        assert_eq!(
+            pcm.samples.len(),
+            (759 * T).max(731 * T + fanfare.samples.len())
+        );
         assert!(dir.join("tb_audio.png").exists());
         let json: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(dir.join("tb_audio.json")).unwrap()).unwrap();
@@ -833,7 +860,17 @@ mod tests {
         assert_eq!(json["cues"].as_array().unwrap().len(), 9);
         assert_eq!(json["cues"][0]["cue"], "sfx jump P4");
         assert_eq!(json["cues"][0]["sample"], 111 * T as u64);
-        assert_eq!(json["onsets_ms"].as_array().unwrap().len(), 7);
+        // The 7 jumps, then the jingle's notes from its cue (12 183 ms) on.
+        let onsets: Vec<f64> = json["onsets_ms"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_f64().unwrap())
+            .collect();
+        let jingle_ms = 731.0 * 1000.0 / 60.0;
+        let jumps = onsets.iter().filter(|&&ms| ms < jingle_ms - 17.0).count();
+        assert_eq!(jumps, 7, "{onsets:?}");
+        assert!(onsets.len() > 7, "the jingle sounds: {onsets:?}");
     }
 
     /// The pitched variants of `cues::PITCHED` are rendered, not missing.
@@ -867,18 +904,20 @@ mod tests {
             ("missing", vec!["jump".to_owned()])
         );
         assert_eq!(findings(&sfx), [f]);
-        let pending = PENDING_MUSIC[0];
-        assert!(
-            missing_lint(&song(pending)).is_none(),
-            "{pending:?} is pending"
-        );
-        assert!(!song(pending).missing.is_empty());
-        if let Some(&done) = Music::ALL
-            .iter()
-            .find(|m| m.is_song() && !PENDING_MUSIC.contains(m))
-        {
-            assert!(missing_lint(&song(done)).is_some());
+        // The real list is empty (MA): every song without a source fails.
+        for &m in Music::ALL.iter().filter(|m| m.is_song()) {
+            assert!(!song(m).missing.is_empty());
+            assert!(
+                missing_lint(&song(m)).is_some(),
+                "{m:?} has no pending excuse"
+            );
         }
+        // A pending song is excused, one that left the list is not, and a
+        // pending list never excuses an SFX.
+        let pending = [Music::Salzburg];
+        assert!(missing_lint_with(&song(Music::Salzburg), &pending).is_none());
+        assert!(missing_lint_with(&song(Music::StGilgen), &pending).is_some());
+        assert!(missing_lint_with(&sfx, &pending).is_some());
     }
 
     /// A throwaway workspace whose `audio/music/` holds E57's placeholder
