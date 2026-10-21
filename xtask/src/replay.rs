@@ -733,6 +733,50 @@ mod tests {
         assert!(ok, "{text}");
     }
 
+    /// D-104, the Stage 9 "New mechanics" table: in a level whose
+    /// `camera_top` is its bottom clamp (a fixed room camera: Café Zauner
+    /// and its grey boxes) the camera's y is that value on every frame of
+    /// every replay that plays it (by its `level` or `route` header), in
+    /// every mode.
+    #[test]
+    fn fixed_room_cameras_never_move_vertically_in_any_replay() {
+        let root = root();
+        let levels: Vec<Level> = content::all_levels(&root)
+            .unwrap()
+            .into_iter()
+            .map(|(_, l)| l.unwrap())
+            .collect();
+        let tuning = content::tuning(&root).unwrap();
+        let fixed = |l: &Level| {
+            l.meta
+                .camera_top
+                .filter(|&top| top == l.height * 16 - jnr_core::SCREEN_H)
+        };
+        let fixed_id = |id: &str| levels.iter().any(|l| l.meta.id == id && fixed(l).is_some());
+        let mut checked = Vec::new();
+        for path in all_replays(&root).unwrap() {
+            let replay = content::load_replay(&path).unwrap();
+            if !fixed_id(&replay.level) && !replay.route.iter().any(|id| fixed_id(id)) {
+                continue;
+            }
+            let game = replay.new_game(&levels, &tuning).unwrap();
+            let mut moved = None;
+            replay.run_game(game, |g| {
+                if let Some(top) = fixed(g.level())
+                    && g.camera().y != top
+                    && moved.is_none()
+                {
+                    moved = Some((g.frame(), g.camera().y));
+                }
+            });
+            assert_eq!(moved, None, "{}: (frame, camera y)", path.display());
+            checked.push(replay.level.clone());
+        }
+        for id in ["m7_boss", "m7_cafe"] {
+            assert!(checked.iter().any(|l| l == id), "{id}: {checked:?}");
+        }
+    }
+
     #[test]
     fn broken_expectation_fails_with_reason() {
         let root = root();

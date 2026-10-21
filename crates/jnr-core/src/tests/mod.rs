@@ -20,6 +20,7 @@ mod m2;
 mod m3;
 mod m4;
 mod m6_mix;
+mod m7_cafe;
 mod modes;
 mod oberkellner;
 mod offiziere;

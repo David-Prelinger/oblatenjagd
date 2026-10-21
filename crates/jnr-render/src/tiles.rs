@@ -67,9 +67,14 @@ pub const INVISIBLE_TILE: &str = "invisible";
 /// The autotile family of a tile name: names of one family count as the
 /// same neighbour for [`autotile_mask`] (in both directions). A small
 /// explicit table; every other name is its own family.
+/// - `arch_under` (the arch's lower row) joins `arch`.
+/// - `marmor_punkt` (Stage 9's „Abstand halten" floor dot) joins the
+///   `marmor` floor (art-director, M7 café art: else each dot shows the
+///   floor's cream lip line under it; D-104 addendum).
 pub(crate) fn autotile_family(name: &str) -> &str {
     match name {
         "arch_under" => "arch",
+        "marmor_punkt" => "marmor",
         other => other,
     }
 }
@@ -383,6 +388,37 @@ mod tests {
         );
         // Without the families the names differ.
         assert_eq!(autotile_mask(&map, &[], 1, 1), MASK_E);
+    }
+
+    #[test]
+    fn marmor_punkt_joins_the_marmor_floor() {
+        assert_eq!(autotile_family("marmor_punkt"), "marmor");
+        assert_eq!(autotile_family("marmor"), "marmor");
+        // A marble floor two rows deep with a dot in its top row, a
+        // vitrine beside it.
+        let l = level(
+            "\"m\" = \"marmor\"\n\"p\" = \"marmor_punkt\"\n\"V\" = \"vitrine\"\n",
+            "P....\n.mpmV\n.mmmV\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let map = TileMap::from_level(&l);
+        // (2,1) the dot: marble on both sides and below, open top.
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 2, 1),
+            MASK_E | MASK_S | MASK_W
+        );
+        // The marble beside it sees it as marble (E / W), the marble
+        // under it sees it above (N): no lip line under the dot.
+        assert_eq!(autotile_mask(&map, &looks.family, 1, 1), MASK_E | MASK_S);
+        assert_eq!(autotile_mask(&map, &looks.family, 3, 1), MASK_S | MASK_W);
+        assert_eq!(
+            autotile_mask(&map, &looks.family, 2, 2),
+            MASK_N | MASK_E | MASK_S | MASK_W
+        );
+        // Without the families the dot is a different tile.
+        assert_eq!(autotile_mask(&map, &[], 2, 1), 0);
+        assert_eq!(autotile_mask(&map, &[], 1, 1), MASK_S);
     }
 
     #[test]

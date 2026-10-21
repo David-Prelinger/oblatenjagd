@@ -2324,13 +2324,44 @@ mod tests {
             Popup::Checkpoint,
             Popup::Wurstkranz,
             Popup::Hoppala,
+            Popup::Hackl,
+            Popup::Ballast,
+            Popup::Bravo,
+            Popup::Beleidigt,
             Popup::Kurruhe,
             Popup::Abtreten,
             Popup::Stollen,
+            Popup::KommGleich,
+            Popup::Anstellen,
+            Popup::Unerhoert,
+            Popup::BitteSehr,
         ] {
             let key = p.text_key().unwrap();
             assert!(texts.contains(key), "{key}");
+            // Every text popup's key is listed as an engine key.
+            assert!(crate::screens::TEXT_KEYS.contains(&key), "{key}");
         }
+        // Exhaustive on purpose (no `_` arm): a new popup kind fails to
+        // compile here until it is added to the list above.
+        let listed = |p: Popup| match p {
+            Popup::Score(_) => false,
+            Popup::ExtraLife
+            | Popup::Checkpoint
+            | Popup::Wurstkranz
+            | Popup::Hoppala
+            | Popup::Hackl
+            | Popup::Ballast
+            | Popup::Bravo
+            | Popup::Beleidigt
+            | Popup::Kurruhe
+            | Popup::Abtreten
+            | Popup::Stollen
+            | Popup::KommGleich
+            | Popup::Anstellen
+            | Popup::Unerhoert
+            | Popup::BitteSehr => true,
+        };
+        assert!(listed(Popup::BitteSehr) && !listed(Popup::Score(100)));
     }
 
     /// Two grey-box officers on a 20-column strip (the lead one at column
