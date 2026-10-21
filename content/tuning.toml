@@ -330,5 +330,5 @@ bill_line_frames = 20     # the bill's lines after its title appear one every th
 credits_pages = 6         # credits.page1 … page6
 credits_page_frames = 180 # per page
 end_frames = 600          # „Ende", at most ...
-end_start_frames = 60     # ... START ends it from this frame on
+end_start_frames = 60     # ... START ends it from this frame on; also the marked title's START window (D-111)
 start_ignore_frames = 30  # START ignored this long at the start of the map, the scene and every credits page

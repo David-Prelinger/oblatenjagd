@@ -330,7 +330,7 @@ impl Game {
                 if c.timer >= g.to_be_continued_frames {
                     // Title with the run reset to its first stage (a no-op
                     // switch for lone levels).
-                    self.end_run();
+                    self.end_run(false);
                     return;
                 }
                 None
@@ -472,7 +472,7 @@ impl Game {
             }
             MapPhase::Teaser => {
                 if m.timer >= t.teaser_frames {
-                    self.end_run();
+                    self.end_run(false);
                     return;
                 }
                 None
@@ -492,7 +492,7 @@ impl Game {
         self.route_map = None;
         let next = usize::from(self.stage) + 1;
         let Some(level) = self.route.as_ref().and_then(|r| r.level(next)).cloned() else {
-            self.end_run();
+            self.end_run(false);
             return;
         };
         let power = self.player.power;
@@ -513,9 +513,11 @@ impl Game {
         self.enter_stage();
     }
 
-    /// After the teaser: the title screen, the run reset to its first
-    /// stage (score 0, full lives, Oblaten 0, Normal).
-    pub(super) fn end_run(&mut self) {
+    /// After the teaser („Fortsetzung folgt …") or the ending: the title
+    /// screen, the run reset to its first stage (score 0, full lives,
+    /// Oblaten 0, Normal). `from_ending` gives the marked title its START
+    /// window (D-111).
+    pub(super) fn end_run(&mut self, from_ending: bool) {
         self.route_map = None;
         if self.stage != self.first_stage {
             if let Some(level) = self
@@ -529,7 +531,10 @@ impl Game {
             }
         }
         self.reset_run();
-        self.mode = Mode::Title { frames: 0 };
+        self.mode = Mode::Title {
+            frames: 0,
+            from_ending,
+        };
         self.frame_title();
     }
 }

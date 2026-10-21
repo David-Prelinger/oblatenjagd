@@ -372,7 +372,10 @@ mod tests {
         assert_eq!(game.frame(), 0);
         assert_eq!(
             game.mode(),
-            jnr_core::Mode::Title { frames: 0 },
+            jnr_core::Mode::Title {
+                frames: 0,
+                from_ending: false
+            },
             "starts at the title"
         );
         assert_eq!(texts().get("stage.clear"), "Etappe geschafft!");

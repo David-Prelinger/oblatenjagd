@@ -298,7 +298,13 @@ fn the_real_flow_on_the_last_station_runs_the_ending_with_its_frame_counts() {
     assert_eq!(g.mode(), Mode::Ending);
     assert_eq!(g.score(), score, "the run stays until the title");
     hold(&mut g, "-", 1);
-    assert!(matches!(g.mode(), Mode::Title { frames: 0 }));
+    assert!(matches!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: true
+        }
+    ));
     assert!(g.ending().is_none());
     // The run reset, the mark set.
     assert_eq!((g.score(), g.oblaten(), g.oblaten_total()), (0, 0, 0));
@@ -382,7 +388,9 @@ fn the_title_mark_survives_new_runs_and_start_plays_again() {
     });
     assert!(g.cleared());
     let marked = g.state_hash();
-    // START starts a new run exactly as before.
+    // START starts a new run exactly as before (once the marked title is
+    // `end_start_frames` old, D-111).
+    hold(&mut g, "-", u32::from(tuning().ending.end_start_frames) - 1);
     hold(&mut g, "S", 1);
     assert!(matches!(g.mode(), Mode::StageIntro { .. }));
     assert_eq!(g.station(), Some(8));
@@ -401,6 +409,113 @@ fn the_title_mark_survives_new_runs_and_start_plays_again() {
     let mut fresh = last_station_run(Start::Title);
     hold(&mut fresh, "-", 1);
     assert_ne!(marked, fresh.state_hash());
+}
+
+/// Runs the whole ending without START, up to the marked title's first
+/// frame.
+fn to_marked_title() -> Game {
+    let mut g = last_station_run(Start::Title);
+    start_playing(&mut g);
+    touch(&mut g);
+    until(&mut g, "-", 6000, |g| {
+        matches!(g.mode(), Mode::Title { .. })
+    });
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: true
+        }
+    );
+    g
+}
+
+#[test]
+fn the_marked_title_takes_start_only_once_it_is_60_frames_old() {
+    // D-111: like the game over's prompt, a press counts once the title is
+    // `end_start_frames` frames old.
+    let delay = tuning().ending.end_start_frames;
+    assert_eq!(delay, 60);
+    let marked = |f: u16| Mode::Title {
+        frames: f,
+        from_ending: true,
+    };
+    // New presses on every odd frame 1..=57 do nothing (released on 58
+    // and 59, so the press at 60 is new) …
+    let mut g = to_marked_title();
+    for f in 1..delay {
+        let press = f % 2 == 1 && f + 2 < delay;
+        hold(&mut g, if press { "S" } else { "-" }, 1);
+        assert_eq!(g.mode(), marked(f), "frame {f}");
+    }
+    assert_eq!((g.score(), g.station()), (0, Some(8)));
+    // … and the press at 60 starts the run.
+    hold(&mut g, "S", 1);
+    assert!(
+        matches!(g.mode(), Mode::StageIntro { .. }),
+        "{:?}",
+        g.mode()
+    );
+    assert_eq!(g.station(), Some(8), "the run's first stage");
+    assert!(g.cleared(), "the mark stays");
+    // A single press at 59 does nothing either.
+    let mut g = to_marked_title();
+    hold(&mut g, "-", u32::from(delay) - 2);
+    hold(&mut g, "S", 1);
+    assert_eq!(g.mode(), marked(delay - 1));
+}
+
+#[test]
+fn a_start_held_from_ende_does_not_fire_on_the_marked_title() {
+    let e = tuning().ending;
+    let mut g = last_station_run(Start::Title);
+    start_playing(&mut g);
+    touch(&mut g);
+    until(&mut g, "-", 6000, |g| {
+        g.ending().is_some_and(|e| e.phase == EndingPhase::Ende)
+    });
+    // START at Ende's frame 60 ends it and is then held on.
+    hold(&mut g, "-", u32::from(e.end_start_frames) - 1);
+    hold(&mut g, "S", 1);
+    assert!(matches!(g.mode(), Mode::Title { frames: 0, .. }));
+    hold(&mut g, "S", 2 * u32::from(e.end_start_frames));
+    assert!(
+        matches!(g.mode(), Mode::Title { .. }),
+        "a held START is no press (D-025)"
+    );
+    hold(&mut g, "-", 1);
+    hold(&mut g, "S", 1);
+    assert!(matches!(g.mode(), Mode::StageIntro { .. }), "re-pressed");
+}
+
+#[test]
+fn every_other_title_takes_start_at_once_even_with_the_mark() {
+    // Boot.
+    let mut g = last_station_run(Start::Title);
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: false
+        }
+    );
+    hold(&mut g, "S", 1);
+    assert!(matches!(g.mode(), Mode::StageIntro { .. }));
+    // After „Fortsetzung folgt …", in a session that already has the mark.
+    let mut g = Game::new_at(&finale(), &tuning(), 1, Start::Title);
+    g.cleared = true;
+    start_playing(&mut g);
+    touch(&mut g);
+    finish_goal_sequence(&mut g);
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: false
+        }
+    );
+    hold(&mut g, "S", 1);
+    assert!(matches!(g.mode(), Mode::StageIntro { .. }));
 }
 
 #[test]

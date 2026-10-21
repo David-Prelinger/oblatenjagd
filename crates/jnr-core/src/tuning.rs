@@ -64,7 +64,8 @@ pub struct EndingTuning {
     pub credits_page_frames: u16,
     /// „Ende", at most (START ends it earlier).
     pub end_frames: u16,
-    /// START ends „Ende" from this frame of it on.
+    /// START ends „Ende" from this frame of it on; also the marked
+    /// title's START window (D-111): START counts once it is this old.
     pub end_start_frames: u16,
     /// START is ignored for this many frames at the start of the Map,
     /// Scene and every credits page.
