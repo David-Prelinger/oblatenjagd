@@ -283,7 +283,7 @@ Art (pixel-artist, art-director APPROVED)
 Levels (level-designer)
 - [x] `09_cafe_zauner.level` (140 × 17, `camera = "side"`, `camera_top = 92`, background `bg_zauner_salon` factor 16) with the 5 sections and the arena as specified; app `options::LEVELS` line; solver finishes it (or the D-106 fallback); `min_jump_window = 5` holds; the narrowest window and the named timings (Kellner #1 at the vitrine drop, the queue hops, the arena entry) recorded for the game-designer (D-073 style)
 - [x] `levels lint` clean (arena lint, signs ≥ 6 columns apart and D-088, collectibles row 8 or lower, the box rule); the queue chain over all nine Wartende proven by a replay (else the spacing per the spec); the Mozartkugel from the box at 117 turns at the step at 118; each required press of the Normal-form boss win shifted alone has a window ≥ 8 (D-100 method, recorded)
-- [ ] `time_limit` set from the measured relaxed run including the fight (D-045, ZEIT clock); Oblaten 50 ± 10
+- [x] `time_limit` set from the measured relaxed run including the fight (D-045, ZEIT clock); Oblaten 50 ± 10 — 200 (relaxed 57.4 s → 180, clamped to 200; `qa_m7_cafe_zauner_relaxed`), Oblaten 46 + 3 = 49 (D-111)
 
 Replays and goldens
 - [ ] Mechanic replays from the Stage 9 "New mechanics" table: `cafe_zauner_tray_bounce`, `_tray_to_luster`, `_kellner_side_hit`, `_queue_chain` (100 … 8000, „+1 Leben"), `_queue_walk`, `_queue_side_hit`, `_kurgast_chair` (chair → chandelier L2), `_boss_win_normal` (no hurt), `_boss_win_big` (one hurt), `_boss_volley`, `_checkpoint` (death in the arena → respawn at 112, the boss reset, the `M`-box fresh)
