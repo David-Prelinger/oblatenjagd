@@ -33,10 +33,14 @@ Options:
   --record <file>               on exit (window close, Escape, --exit-after) write
                                 the played inputs as a replay with expectations
                                 (directories are created); not with --replay
+  --mute                        start with sound off (nothing is loaded; M turns
+                                it on)
+  --test-tone                   debug: play a short 440 Hz test tone once audio
+                                is up (checks the sound device)
   -h, --help                    show this help
 
 Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, Escape quit,
-F1 debug overlay, F12 (debug builds) save the framebuffer to $CARGO_TARGET_DIR/preview/f12_<frame>.png.
+M sound on/off, F1 debug overlay, F12 (debug builds) save the framebuffer to $CARGO_TARGET_DIR/preview/f12_<frame>.png.
 ";
 
 /// Largest accepted `--scale`.
@@ -91,6 +95,8 @@ pub fn parse_args_with(
             }
             "--replay" => replay_path = Some(PathBuf::from(value()?)),
             "--record" => opts.record = Some(PathBuf::from(value()?)),
+            "--mute" => opts.mute = true,
+            "--test-tone" => opts.test_tone = true,
             "--scale" => {
                 let scale: u32 = number(flag, value()?)?;
                 if !(1..=MAX_SCALE).contains(&scale) {
@@ -268,6 +274,8 @@ mod tests {
             "60:/tmp/a.png",
             "--screenshot-at",
             "0:b.png",
+            "--mute",
+            "--test-tone",
         ]);
         assert_eq!(
             opts,
@@ -281,8 +289,19 @@ mod tests {
                 record: None,
                 start: jnr_core::Start::Title,
                 route: Vec::new(),
+                mute: true,
+                test_tone: true,
             }
         );
+    }
+
+    #[test]
+    fn mute_and_test_tone_are_off_by_default() {
+        let opts = run(&["--mute"]);
+        assert!(opts.mute && !opts.test_tone);
+        let opts = run(&["--test-tone"]);
+        assert!(!opts.mute && opts.test_tone);
+        assert!(!Options::default().mute && !Options::default().test_tone);
     }
 
     #[test]

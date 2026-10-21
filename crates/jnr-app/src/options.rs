@@ -200,6 +200,11 @@ pub struct Options {
     /// The level ids of the run, from a `--replay`'s `route` header (empty:
     /// the standard route if `level` is on it, else `level` alone; D-047).
     pub route: Vec<String>,
+    /// `--mute`: load and play no sound (the M key unmutes).
+    pub mute: bool,
+    /// `--test-tone` (debug): play a short test tone once audio is up.
+    /// Native only; wasm never plays it.
+    pub test_tone: bool,
 }
 
 /// Where the per-frame input comes from.
@@ -241,6 +246,8 @@ impl Default for Options {
             record: None,
             start: Start::Title,
             route: Vec::new(),
+            mute: false,
+            test_tone: false,
         }
     }
 }

@@ -10,7 +10,12 @@
 //! 3. an X root-window screenshot taken while it runs
 //!    (`$CARGO_TARGET_DIR/preview/vnc_smoke_root.png`) shows the game window:
 //!    cropped to the window's geometry (`xwininfo`), at least
-//!    [`MIN_SKY_SHARE`] of it is the palette sky colour.
+//!    [`MIN_SKY_SHARE`] of it is the palette sky colour,
+//! 4. audio (E54, D-118): the app runs with `--test-tone`; its log must not
+//!    contain quad-snd's `Audio thread died`. With PulseAudio (a null sink,
+//!    see `pulse.rs`) the sink's monitor is recorded with `parec` and must
+//!    hold the tone (peak ≥ [`MIN_TONE_PEAK`], no clipping); without Pulse
+//!    the step passes with "audio not exercised".
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,6 +26,7 @@ use jnr_artkit::Image;
 use jnr_core::replay::Shot;
 
 use crate::golden::{Comparison, compare, read_png, write_report};
+use crate::pulse::{self, CaptureStats, Pulse};
 use crate::wasm::{KillOnDrop, sky_colour};
 use crate::{content, target_dir};
 
@@ -41,6 +47,11 @@ const MIN_SKY_SHARE: f64 = 0.25;
 /// Per-channel tolerance when matching the sky colour: the noVNC desktop's
 /// root window is 16 bit (RGB565), which moves 5-bit channels by up to 8.
 const SKY_TOLERANCE: u8 = 8;
+/// Least peak of the recorded test tone (amplitude 6000 at volume 0.5 in
+/// the app; the spike measured the expected level exactly).
+const MIN_TONE_PEAK: u16 = 1000;
+/// quad-snd's line for every call after its audio thread died.
+const AUDIO_THREAD_DIED: &str = "Audio thread died";
 
 /// `cargo xtask vnc-smoke`
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -81,6 +92,7 @@ pub fn app_args(replay: &Path, shots: &[Shot], out_dir: &Path) -> Vec<String> {
         SCALE.to_string(),
         "--exit-after".to_owned(),
         (last + 1).to_string(),
+        "--test-tone".to_owned(),
     ];
     for s in shots {
         args.push("--screenshot-at".to_owned());
@@ -131,6 +143,13 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
             existing.join(", ")
         ));
     }
+    // Audio: a Pulse null sink when available, recorded while the app runs.
+    let pulse = pulse::ensure_null_sink();
+    let capture_path = out_dir.join("audio.s16");
+    let mut recorder = match &pulse {
+        Pulse::Ready { .. } => Some(start_capture(&capture_path)?),
+        Pulse::Absent(_) => None,
+    };
     let log_file = fs::File::create(&log).map_err(|e| format!("{}: {e}", log.display()))?;
     let child = Command::new(&app)
         .args(app_args(&replay_path, &replay.shots, &out_dir))
@@ -159,6 +178,13 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     if !status.success() {
         return Err(format!("the app exited with {status}; {}", see_log()));
     }
+    let capture_stats = match recorder.take() {
+        Some(rec) => Some(stop_capture(rec, &capture_path)?),
+        None => None,
+    };
+    let app_log = fs::read_to_string(&log).map_err(|e| format!("{}: {e}", log.display()))?;
+    let audio_summary = audio_verdict(&app_log, &pulse, capture_stats.as_ref())
+        .map_err(|e| format!("{e}; {} (capture {})", see_log(), capture_path.display()))?;
     capture?;
     let geometry = geometry?;
 
@@ -221,11 +247,87 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         ));
     }
     Ok(format!(
-        "DISPLAY={display}, {} shots equal the goldens, {sky_summary}, root screenshot {}, {:.1}s",
+        "DISPLAY={display}, {} shots equal the goldens, {sky_summary}, {audio_summary}, root screenshot {}, {:.1}s",
         replay.shots.len(),
         root_shot.display(),
         started.elapsed().as_secs_f64()
     ))
+}
+
+/// Starts `parec` on the null sink's monitor, writing raw mono s16 at
+/// 44.1 kHz to `path`.
+fn start_capture(path: &Path) -> Result<KillOnDrop, String> {
+    let file = fs::File::create(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let child = Command::new("parec")
+        .args([
+            "-d",
+            pulse::MONITOR,
+            "--format=s16le",
+            "--channels=1",
+            "--rate=44100",
+            "--raw",
+        ])
+        .stdin(Stdio::null())
+        .stdout(file)
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("could not start parec: {e}"))?;
+    Ok(KillOnDrop {
+        child,
+        group: false,
+    })
+}
+
+/// Stops `parec` (SIGINT, so it flushes) and returns the capture's stats.
+fn stop_capture(mut rec: KillOnDrop, path: &Path) -> Result<CaptureStats, String> {
+    let _ = Command::new("kill")
+        .args(["-INT", &rec.child.id().to_string()])
+        .status();
+    let _ = crate::wasm::wait_timeout(&mut rec.child, Duration::from_secs(3));
+    drop(rec);
+    let raw = fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(pulse::capture_stats(&raw))
+}
+
+/// The audio part of the smoke test: no `Audio thread died` spam in the app
+/// log ever; with Pulse, the capture holds the test tone without clipping.
+fn audio_verdict(
+    app_log: &str,
+    pulse: &Pulse,
+    capture: Option<&CaptureStats>,
+) -> Result<String, String> {
+    let died = app_log.matches(AUDIO_THREAD_DIED).count();
+    if died > 0 {
+        return Err(format!(
+            "the app log has {died} `{AUDIO_THREAD_DIED}` line(s): an audio call was made after \
+             quad-snd's thread died (the panic guard in jnr-app/src/audio.rs should prevent it)"
+        ));
+    }
+    match (pulse, capture) {
+        (Pulse::Absent(why), _) => Ok(format!("audio not exercised ({why})")),
+        (Pulse::Ready { .. }, None) => Err("Pulse is ready but nothing was recorded".to_owned()),
+        (Pulse::Ready { started }, Some(stats)) => {
+            let secs = stats.samples as f64 / 44_100.0;
+            if stats.peak < MIN_TONE_PEAK {
+                return Err(format!(
+                    "audio capture is silent: peak {} in {secs:.1}s (need {MIN_TONE_PEAK}; \
+                     the app plays a test tone)",
+                    stats.peak
+                ));
+            }
+            if stats.clipped > 0 {
+                return Err(format!(
+                    "audio capture clips: {} sample(s) at full scale",
+                    stats.clipped
+                ));
+            }
+            let daemon = if *started { "started" } else { "running" };
+            Ok(format!(
+                "audio: test tone captured on the Pulse null sink (peak {}, {secs:.1}s, daemon {daemon})",
+                stats.peak
+            ))
+        }
+    }
 }
 
 /// Fails with a clear message if no X server answers on `display`.
@@ -476,6 +578,7 @@ mod tests {
                 "4",
                 "--exit-after",
                 "751",
+                "--test-tone",
                 "--screenshot-at",
                 "0:/o/start.png",
                 "--screenshot-at",
@@ -507,6 +610,43 @@ mod tests {
         let e = check_sky(&desktop(24, 200, sky), sky, 100).unwrap_err();
         assert!(e.contains("not visible"), "{e}");
         assert!(check_sky(&desktop(0, 200, sky), sky, 100).is_err());
+    }
+
+    #[test]
+    fn audio_verdict_needs_the_tone_with_pulse_and_never_thread_died_lines() {
+        let ready = Pulse::Ready { started: true };
+        let tone = CaptureStats {
+            samples: 44_100,
+            peak: 3000,
+            clipped: 0,
+        };
+        assert!(
+            audio_verdict("ok\n", &ready, Some(&tone))
+                .unwrap()
+                .contains("peak 3000")
+        );
+        let silent = CaptureStats { peak: 0, ..tone };
+        assert!(
+            audio_verdict("", &ready, Some(&silent))
+                .unwrap_err()
+                .contains("silent")
+        );
+        let clipping = CaptureStats { clipped: 3, ..tone };
+        assert!(
+            audio_verdict("", &ready, Some(&clipping))
+                .unwrap_err()
+                .contains("clips")
+        );
+        let absent = Pulse::Absent("JNR_PULSE=off".to_owned());
+        assert_eq!(
+            audio_verdict("jnr-app: audio unavailable (x)\n", &absent, None),
+            Ok("audio not exercised (JNR_PULSE=off)".to_owned())
+        );
+        let spam = "Audio thread died\nAudio thread died\n";
+        for pulse in [&ready, &absent] {
+            let e = audio_verdict(spam, pulse, Some(&tone)).unwrap_err();
+            assert!(e.contains("2 `Audio thread died`"), "{e}");
+        }
     }
 
     #[test]

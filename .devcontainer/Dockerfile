@@ -5,6 +5,8 @@ FROM mcr.microsoft.com/devcontainers/rust:1-bookworm
 # chromium: headless browser for `cargo xtask wasm-smoke` (SwiftShader WebGL).
 # xdotool: send key presses to the game window on DISPLAY=:1 (used by the VNC smoke test, F12 checks).
 # x11-utils: xwininfo (window geometry for `cargo xtask vnc-smoke`), xdpyinfo.
+# pulseaudio, pulseaudio-utils (pactl, parec), libasound2-plugins (ALSA default -> Pulse):
+#   a null sink for the audio part of `cargo xtask vnc-smoke` (xtask starts the daemon on demand, D-118).
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get install -y --no-install-recommends \
         pkg-config \
@@ -29,4 +31,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         chromium \
         xdotool \
         x11-utils \
+        pulseaudio \
+        pulseaudio-utils \
+        libasound2-plugins \
     && apt-get clean && rm -rf /var/lib/apt/lists/*

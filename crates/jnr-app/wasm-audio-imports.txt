@@ -1,0 +1,9 @@
+audio_init
+audio_add_buffer
+audio_play_buffer
+audio_source_is_loaded
+audio_source_set_volume
+audio_source_stop
+audio_source_delete
+audio_playback_stop
+audio_playback_set_volume
