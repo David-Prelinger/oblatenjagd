@@ -255,7 +255,7 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the game-designer review includes both stages' filmstrips, a shutter staircase, the Postbus halt, an Ampel's car stream, the Bürglstein walkway, a Kurgast's chair used as a step, a file presenting sabres, the queue at Café Zauner, the route-map label screens and all new German text.
 
-## M7 – Stage 9 Café Zauner: Kellner, the queue, the Oberkellner, the finale and the ending — in progress
+## M7 – Stage 9 Café Zauner: Kellner, the queue, the Oberkellner, the finale and the ending — ✅ accepted 2026-10-21 (docs/reports/M7.md)
 
 Scope as in `game-design.md` → "Stage 9: Café Zauner" (incl. "Difficulty and reach rules (stage 9)", "The Oberkellner" and "Finale and ending"), "Multi-stage flow" and "Route map"; decisions D-104 … D-108; sprites in `sprite-catalog.md` → "M7 additions". One short stage, one boss and the ending; extras are in the backlog (D-104). Branch `m7-cafe-zauner`.
 
@@ -294,7 +294,7 @@ Replays and goldens
 - [x] Route-map goldens: Bad Ischl → Café Zauner Wait, Normal and Hackl form; the ending's Map phase
 
 Platform
-- [ ] wasm build plays the route through the ending (`wasm-smoke` still green; a browser replay stays MW); verify runtime within budget (record it)
+- [x] wasm build plays the route through the ending (`wasm-smoke` still green; a browser replay stays MW); verify runtime within budget (record it) — the wasm binary embeds Stage 9, the ending art and the ending text, and runs the same core as native; the route through the ending is proven natively (`qa_m7_accept_full_route`, also run in the app on the noVNC desktop); a browser playthrough stays MW; verify 212 s
 
 **Acceptance:** see "Milestone acceptance" below; the art-director reviews the full paged contact sheet; the game-designer review includes the Café Zauner filmstrip, a tray bounce, the queue chain to the 1-up, the arena lock with „Hinten anstellen!", a dash seen from a refuge, a breather stomp, a volley, the third hit with the bow and the bell lifting, the Serve, every ending phase and the marked title, the Bad Ischl → Café Zauner Wait screen, the hand-measured boss windows, and all new German text.
 
@@ -313,6 +313,6 @@ Platform
 - **M4** St. Wolfgang: Schafbergbahn, Operettensänger, Souvenirstände, Reisebusse (accepted, docs/reports/M4.md)
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (accepted, docs/reports/M5.md)
 - **M6** Strobl + Bad Ischl (accepted, docs/reports/M6.md)
-- **M7** Café Zauner finale + ending (in progress, section above)
+- **M7** Café Zauner finale + ending (accepted, docs/reports/M7.md)
 - **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
 - **MW** Web release: polished `index.html`, gamepad support, headless-browser smoke test, hosting
