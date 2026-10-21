@@ -612,4 +612,84 @@ mod tests {
         let e = refuse("x", &loud, &st).unwrap_err();
         assert!(e.contains("fails `audio lint` ([peak]"), "{e}");
     }
+
+    /// A throwaway workspace with one sound `beep` (the `peak_pass` fixture)
+    /// and its target.
+    fn temp_root(target: &str) -> PathBuf {
+        let root = crate::target_dir(Path::new(env!("CARGO_MANIFEST_DIR")))
+            .join(format!("tmp/xtask-audio-test/{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("audio/sfx")).unwrap();
+        fs::create_dir_all(root.join("tests/golden")).unwrap();
+        fs::copy(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/audio/peak_pass.sfx"),
+            root.join("audio/sfx/beep.sfx"),
+        )
+        .unwrap();
+        fs::write(root.join("audio/targets.toml"), target).unwrap();
+        root
+    }
+
+    #[test]
+    fn lint_and_golden_on_a_workspace() {
+        let root = temp_root("[beep]\nclass = \"normal\"\nplaceholder = true\n");
+        let (ok, text) = lint_report(&root, None);
+        assert!(ok, "{text}");
+        assert!(
+            text.ends_with("audio lint: 1 sound(s), 0 error(s)\n"),
+            "{text}"
+        );
+        // A placeholder needs no golden and cannot get one.
+        let (ok, text) = golden_report(&root);
+        assert!(ok, "{text}");
+        assert!(
+            accept(&root, Some("beep"))
+                .unwrap_err()
+                .contains("placeholder")
+        );
+
+        // A real sound must have one; the failure names the report files.
+        fs::write(
+            root.join("audio/targets.toml"),
+            "[beep]\nclass = \"normal\"\n",
+        )
+        .unwrap();
+        let (ok, text) = golden_report(&root);
+        assert!(!ok);
+        assert!(
+            text.starts_with("FAIL beep: no golden for `beep`"),
+            "{text}"
+        );
+        assert!(
+            text.contains("reports/audio-golden/beep{.wav,.json,_wave.png,_spec.png}"),
+            "{text}"
+        );
+        accept(&root, Some("beep")).unwrap();
+        let (ok, text) = golden_report(&root);
+        assert!(ok, "{text}");
+        assert!(text.starts_with("ok   beep\n"), "{text}");
+
+        // One changed sample (a quieter layer) fails it, and lint flags a typo'd target.
+        let src = root.join("audio/sfx/beep.sfx");
+        let text = fs::read_to_string(&src)
+            .unwrap()
+            .replace("volume_pct = 35", "volume_pct = 34");
+        fs::write(&src, text).unwrap();
+        let (ok, text) = golden_report(&root);
+        assert!(!ok);
+        assert!(
+            text.starts_with("FAIL beep: PCM differs: pcm fnv64:"),
+            "{text}"
+        );
+        fs::write(
+            root.join("audio/targets.toml"),
+            "[beeep]\nclass = \"normal\"\n",
+        )
+        .unwrap();
+        let (ok, text) = lint_report(&root, None);
+        assert!(!ok);
+        assert!(text.contains("no `[beep]` in audio/targets.toml"), "{text}");
+        assert!(text.contains("`[beeep]` has no"), "{text}");
+        let _ = fs::remove_dir_all(&root);
+    }
 }

@@ -539,7 +539,10 @@ decision D-119.
   stored line to `reports/audio-golden/`. There is no expected WAV or spectrogram (deviation
   from the proposal's "actual and expected spectrograms"). Every non-placeholder sound must
   have a golden; placeholders must not, and `--accept` refuses them and any sound that fails
-  its lints. The goldens list is empty at the end of E56.
+  its lints. The goldens list is empty at the end of E56, and so is `audio/` (E55's review
+  moved its stand-ins to `crates/jnr-audio/tests/fixtures/`): `render --all`, `lint` and
+  `golden` report "0 sound(s)" and pass. The whole flow is tested on a throwaway workspace
+  (`lint_and_golden_on_a_workspace`), including a one-sample-level change failing a golden.
 - **`.claude/hooks/guard-golden.sh`** already covered `tests/golden/`; it now names the audio
   rule (game-designer verdict) for `audio.toml`.
 

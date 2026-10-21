@@ -7,17 +7,9 @@
 #   duration_ms = 150           # optional: rendered length (±10 ms)
 #   centroid_hz = [1500, 6000]  # optional: spectral-centroid band (the sound's character)
 #   placeholder = true          # a stand-in: linted, but never a golden
-
-[jump]
-class = "normal"
-duration_ms = 150
-placeholder = true
-
-[klatschen]
-class = "normal"
-peak_dbfs = -3
-placeholder = true
-
-[oblate]
-class = "normal"
-placeholder = true
+#
+# Example (the design's jump, docs/audio-design.md section 6):
+#
+#   [jump]
+#   class = "normal"
+#   duration_ms = 150
