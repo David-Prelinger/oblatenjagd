@@ -64,7 +64,7 @@
   2062 sfx boss_telegraph W7
   2062 duck on
   2085 sfx jump P4
-  2098 song boss
+  2100 song boss
   2102 stop-sfx boss_telegraph
   2102 duck off
   2197 sfx boss_breathe W7
@@ -107,7 +107,7 @@
   3244 jingle boss_defeat
   3257 duck off
   3272 sfx jump P4
-  3394 song cafe_zauner
+  3399 song cafe_zauner
   3567 sfx jump P4
   3604 stop-song
   3604 cut-sfx P W A

@@ -49,6 +49,8 @@ cargo xtask audio golden                compare PCM hashes with tests/golden/aud
 cargo xtask audio golden --accept <id>|--all
         write the current hashes; only after a game-designer APPROVED verdict (D-117)
 cargo xtask audio golden --prune        drop lines of removed sounds and placeholders
+cargo xtask audio mix
+        mix every replay offline and lint the headroom (verify step `audio-mix`)
 ";
 
 /// Where a sound's source lives and how it is rendered.
@@ -268,6 +270,7 @@ pub fn run(root: &Path, args: &[String]) -> ExitCode {
         ["golden", "--accept", "--all"] => accept(root, None),
         ["golden", "--accept", id] => accept(root, Some(id)),
         ["golden", "--prune"] => prune(root),
+        ["mix"] => print_result(crate::replay_audio::check_report(root)),
         [] | ["help" | "-h" | "--help"] => {
             print!("{HELP}");
             Ok(())

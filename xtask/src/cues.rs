@@ -20,6 +20,7 @@ use std::process::ExitCode;
 use jnr_audio::cues::log_line;
 
 use crate::content;
+use crate::replay_audio::RunContext;
 
 pub const HELP: &str = "\
 cargo xtask cues                    compare the cue log of every replay with a golden
@@ -64,7 +65,13 @@ pub fn cues_dir(root: &Path) -> PathBuf {
 /// The cue log of the replay at `path`: a header line, then one line per
 /// cue (frame 0 = the game's first frame, before any step).
 pub fn cue_log(root: &Path, path: &Path) -> Result<String, String> {
-    let timeline = crate::replay_audio::timeline(root, path)?;
+    let bank = crate::replay_audio::load_bank(root)?;
+    cue_log_in(&RunContext::load(root, &bank)?, path)
+}
+
+/// [`cue_log`] with the context loaded once (for many replays).
+pub fn cue_log_in(cx: &RunContext, path: &Path) -> Result<String, String> {
+    let timeline = crate::replay_audio::timeline_in(cx, path)?;
     let name = content::replay_name(path);
     let mut text = format!("# cue log of tests/replays/{name}.replay (cargo xtask cues)\n");
     for (frame, cue) in &timeline.cues {
@@ -119,9 +126,10 @@ fn check(root: &Path) -> Result<(bool, String), String> {
             format!("FAIL: no cue-log goldens in {}\n", cues_dir(root).display()),
         ));
     }
+    let cx = RunContext::load(root, &crate::replay_audio::load_bank(root)?)?;
     let results = crate::par::map_ordered(&goldens, crate::par::threads(), |(name, golden)| {
         let replay = content::resolve_replay(root, name)?;
-        let actual = cue_log(root, &replay)?;
+        let actual = cue_log_in(&cx, &replay)?;
         let expected = content::read(golden)?;
         Ok::<_, String>((actual, expected))
     });

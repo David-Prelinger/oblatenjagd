@@ -1,0 +1,114 @@
+# cue log of tests/replays/qa_ma_cues_pause_during_boss_jingles.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   171 song cafe_zauner
+   260 sfx jump P4
+   302 sfx roof_bounce W5
+   314 sfx oblate I3
+   321 sfx oblate I3
+   327 sfx oblate I3
+   355 sfx jump P4
+   397 sfx roof_bounce W5
+   417 sfx oblate I3
+   423 sfx oblate I3
+   430 sfx oblate I3
+   462 sfx jump P4
+   525 sfx stomp W5
+   562 sfx jump P4
+   609 sfx oblate I3
+   615 sfx oblate I3
+   637 sfx stomp W5
+   655 sfx oblate I3
+   660 sfx oblate I3
+   675 sfx stomp W5
+   695 sfx stomp W5
+   713 sfx oblate I3
+   736 sfx stomp W5
+   752 sfx oblate I3
+   776 sfx stomp W5
+   796 sfx stomp W5
+   888 sfx checkpoint I7
+   888 duck on
+   911 sfx jump P4
+   915 duck off
+   995 stop-song
+   995 jingle boss_intro
+  1003 sfx jump P4
+  1061 sfx jump P4
+  1085 jingle boss_surprise
+  1085 sfx boss_telegraph W7
+  1085 duck on
+  1100 cut-sfx all
+  1100 sfx pause I9
+  1100 hold-song on
+  1100 hold-jingle on
+  1100 duck off
+  1299 sfx pause I9 -2
+  1299 hold-song off
+  1299 hold-jingle off
+  1299 duck on
+  1315 duck off
+  1322 song boss
+  1393 sfx jump P4
+  1420 sfx boss_breathe W7
+  1420 duck on
+  1456 duck off
+  1492 sfx boss_telegraph W7
+  1492 duck on
+  1532 stop-sfx boss_telegraph
+  1532 duck off
+  1607 sfx jump P4
+  1643 sfx boss_breathe W7
+  1643 duck on
+  1648 sfx boss_hit W8
+  1678 duck off
+  1708 sfx boss_telegraph W7
+  1708 duck on
+  1744 stop-sfx boss_telegraph
+  1744 duck off
+  1833 sfx boss_breathe W7
+  1833 duck on
+  1869 duck off
+  1893 sfx bills_hang W6
+  2028 sfx boss_telegraph W7
+  2028 duck on
+  2064 stop-sfx boss_telegraph
+  2064 duck off
+  2074 sfx jump P4
+  2113 sfx jump P4
+  2153 sfx boss_breathe W7
+  2153 duck on
+  2155 sfx boss_hit W8
+  2185 duck off
+  2190 sfx jump P4
+  2215 sfx boss_telegraph W7
+  2215 duck on
+  2232 sfx jump P4
+  2247 stop-sfx boss_telegraph
+  2247 duck off
+  2321 sfx boss_breathe W7
+  2321 duck on
+  2357 duck off
+  2369 sfx bills_hang W6
+  2504 sfx boss_telegraph W7
+  2504 duck on
+  2536 stop-sfx boss_telegraph
+  2536 duck off
+  2572 sfx jump P4
+  2610 sfx boss_breathe W7
+  2610 duck on
+  2613 stop-song
+  2613 jingle boss_defeat
+  2615 cut-sfx all
+  2615 sfx pause I9
+  2615 hold-song on
+  2615 hold-jingle on
+  2615 duck off
+  2814 sfx pause I9 -2
+  2814 hold-song off
+  2814 hold-jingle off
+  2814 duck on
+  2830 duck off
+  2841 cut-sfx P W A
+  2841 jingle fanfare_finale

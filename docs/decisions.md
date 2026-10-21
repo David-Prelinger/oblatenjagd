@@ -1062,3 +1062,21 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 ## D-123 Duck applies to songs only; jingles are never ducked (engine-engineer, E62; refines D-122)
 - `Cue::Duck` lowers the song and its underwater twin to 50 %; the playing jingle stays at its own cue gain (`Music::gain_pct`, so `boss_intro` keeps its −12 dB) whatever the duck state. The director's cues are unchanged; only the playback rule changes, in both models (`jnr_audio::mix` and the app's `Mixer`, D-122's one-model rule), and the shared app/mix agreement test covers a duck during a jingle.
 - Why: jingles are one-off music statements that don't compete with SFX (audio-design §2.2). The first `boss_telegraph` (priority 7) starts on the frame of the `boss_surprise` jingle, so the duck made the *fortissimo* Paukenschlag ~4 dB quieter than the `boss` loop after it; the in-fight ZEIT-60 bells and the start of the `boss_defeat` Tusch were ducked the same way (MA acceptance review, game-designer).
+
+## D-124 MA QA: SFX headroom table, play-frame timers, rendered jingle lengths, mute in place (engine-engineer, E63; supersedes D-122's "SFX at 100 %" and D-121's design-length timing)
+- **Every replay is mixed**: the verify step `audio-mix` (also `cargo xtask audio mix`) mixes all of `tests/replays/` (~500), not only the replays with a cue-log golden; levels, tuning and jingle lengths are loaded once, each needed sound is rendered once, and at most 4 mixes run at once (a long route's buffers are ~100 MB; 14 threads fought over page faults: 38 s against 13 s), so it takes 1.6 s in a quiet verify (≈ 13 s while other agents load the container), no cache needed. It listed 34 replays over −1 dBFS (4 clamping, up to 0.00 dBFS): hurt over the 1-up, the high C under either, over the stage piece, and jump + Oblate + bump over the louder pieces.
+- **Fixed by playback gain, not by re-authoring**: `SFX_VOLUME_PCT` 100 → **89** (−1.0 dB for every SFX, so their balance among each other stays) and one table, `Sfx::gain_pct()` in `jnr_audio::cues` (like `Music::gain_pct`, applied by the app's `Mixer` and `jnr_audio::mix` alike; a jnr-app test compares both for every SFX):
+
+  | SFX | gain_pct | effective |
+  |---|---|---|
+  | `hurt` | 89 | −2.0 dB |
+  | `oneup` | 89 | −2.0 dB |
+  | `hohes_c` | 84 | −2.5 dB |
+  | every other | 100 | −1.0 dB |
+
+  Worst remaining peak over all 499 replays: **−1.56 dBFS** (`bad_ischl_file_c_singer`: `bad_ischl` + `hohes_c` + `jump`); no clamps. This was the smallest set found: per-SFX entries alone needed jump, Oblate, bump and stomp lowered too, and a global −1 dB alone left hurt + 1-up at −1.1. The gate stays at the design ceiling −1 dBFS.
+- **The director's frame deadlines count play frames**: `hurry_until`, the scheduled song (boss loop after `boss_surprise`, café piece after the Tusch, route map after the fanfare) and the playing jingle's end are not checked while paused and move by the pause's length on resume, like the held jingle itself.
+- **Jingles are timed by their rendered length**: `Director::new(JingleFrames)` takes `Bank::jingle_frames()` (each jingle rendered once: `jnr_assets::jingle_frames()` in the app, `replay_audio::jingle_frames` in xtask); `Director::default()` (tests) falls back to the design lengths. So `boss` starts 38 frames after the chord (was 36), the café piece 95 + 60 after the Tusch (was 90 + 60).
+- **The route map waits for the fanfare**: entering the map while a jingle still plays schedules `route_map` at the jingle's end (`fanfare_clear`: 383 frames after the Maibaum).
+- **The ZEIT-60 bells wait for boss jingles**: during `boss_intro`, `boss_surprise` or `boss_defeat` the `hurry` jingle starts when that jingle ends (≤ 1.6 s late) instead of cutting it; `DONE` counts as the fight until the café piece is back, so no hold starts then.
+- **M mutes in place**: a runtime mute sets every volume to 0 (`Mixer::set_quiet`) while everything keeps running, so unmuting resumes the song where it is. A `--mute` start still makes no backend calls until the first M.

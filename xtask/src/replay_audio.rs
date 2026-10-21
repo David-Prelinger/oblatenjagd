@@ -9,8 +9,9 @@
 //! `<name>_audio.png` (cue labels, waveform and spectrogram over the run on
 //! one time axis) and `<name>_audio.json` (mix stats, lint findings, the cue
 //! timeline). The lints ([`lint`]: `clamp`, `ceiling`) name the sounds that
-//! play where the mix is too loud. The `verify` step `audio-mix` mixes every
-//! replay with a cue-log golden and runs the lints.
+//! play where the mix is too loud. The `verify` step `audio-mix` (also
+//! `cargo xtask audio mix`) mixes every replay in `tests/replays/` and runs
+//! the lints.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -18,10 +19,10 @@ use std::path::{Path, PathBuf};
 
 use jnr_artkit::Image;
 use jnr_audio::bank::{Bank, Variant};
-use jnr_audio::cues::{Cue, Director, Music, PENDING_MUSIC, Voice};
+use jnr_audio::cues::{Cue, Director, JingleFrames, Music, PENDING_MUSIC, Voice};
 use jnr_audio::mix::{self, Mix, Sound, Sounds};
 use jnr_audio::{FRAMES_PER_TICK, Pcm};
-use jnr_core::Level;
+use jnr_core::{Level, Tuning};
 
 use crate::audio::lint::CEILING_DBFS;
 use crate::audio::plot;
@@ -35,18 +36,43 @@ pub struct Timeline {
     pub end_frame: u32,
 }
 
-/// Runs the replay at `path` and feeds the cue director (frame 0 = `begin`).
-pub fn timeline(root: &Path, path: &Path) -> Result<Timeline, String> {
+/// What a run needs besides its replay: the levels, the tuning and the
+/// jingle lengths (loaded once for many replays).
+pub struct RunContext {
+    pub levels: Vec<Level>,
+    pub tuning: Tuning,
+    pub lengths: JingleFrames,
+}
+
+impl RunContext {
+    /// The workspace's levels and tuning, and the jingle lengths of `bank`.
+    pub fn load(root: &Path, bank: &Bank) -> Result<RunContext, String> {
+        let levels: Vec<Level> = content::all_levels(root)?
+            .into_iter()
+            .map(|(p, l)| l.map_err(|e| format!("{}: {e}", p.display())))
+            .collect::<Result<_, _>>()?;
+        Ok(RunContext {
+            levels,
+            tuning: content::tuning(root)?,
+            lengths: bank.jingle_frames()?,
+        })
+    }
+}
+
+/// Runs the replay at `path` and feeds the cue director (frame 0 = `begin`),
+/// which times the jingles by the bank's rendered lengths (as in the app).
+#[cfg(test)]
+fn timeline(root: &Path, path: &Path) -> Result<Timeline, String> {
+    timeline_in(&RunContext::load(root, &load_bank(root)?)?, path)
+}
+
+/// [`timeline`] with the context loaded once.
+pub fn timeline_in(cx: &RunContext, path: &Path) -> Result<Timeline, String> {
     let replay = content::load_replay(path)?;
-    let levels: Vec<Level> = content::all_levels(root)?
-        .into_iter()
-        .map(|(p, l)| l.map_err(|e| format!("{}: {e}", p.display())))
-        .collect::<Result<_, _>>()?;
-    let tuning = content::tuning(root)?;
     let mut game = replay
-        .new_game(&levels, &tuning)
+        .new_game(&cx.levels, &cx.tuning)
         .map_err(|e| format!("{}: {e}", path.display()))?;
-    let mut director = Director::new();
+    let mut director = Director::new(cx.lengths.clone());
     let mut cues: Vec<(u32, Cue)> = director
         .begin(&game)
         .into_iter()
@@ -554,8 +580,8 @@ fn mix_timeline(name: String, timeline: Timeline, sounds: &Sounds) -> Mixed {
 
 /// Runs, mixes, measures and lints the replay at `path`.
 pub fn mix_replay(root: &Path, path: &Path) -> Result<Mixed, String> {
-    let timeline = timeline(root, path)?;
     let bank = load_bank(root)?;
+    let timeline = timeline_in(&RunContext::load(root, &bank)?, path)?;
     let sounds = sounds(&bank, &needed(&timeline.cues))?;
     Ok(mix_timeline(content::replay_name(path), timeline, &sounds))
 }
@@ -629,10 +655,19 @@ pub fn run(root: &Path, path: &Path, out: Option<&Path>) -> Result<String, Strin
     }
 }
 
-/// The `audio-mix` verify step: every replay with a cue-log golden is
-/// mixed and linted (no files written).
+/// At most this many mixes at once: a long route's mix buffers are
+/// ~100 MB, and more threads only fight over page faults on the shared
+/// 7 GB dev container (E63: 14 threads 38 s, 4 threads 14 s under load).
+const MIX_THREADS: usize = 4;
+
+/// How many of the loudest replays the `audio-mix` report lists.
+const LOUDEST_LISTED: usize = 5;
+
+/// The `audio-mix` verify step (`cargo xtask audio mix`): every replay in
+/// `tests/replays/` is mixed and linted (no files written). Only failures
+/// are listed, then the loudest replays and the worst peak.
 pub fn check_report(root: &Path) -> (bool, String) {
-    let names = match content::files_with_ext(&crate::cues::cues_dir(root), "cues") {
+    let names = match content::files_with_ext(&content::replays_dir(root), "replay") {
         Ok(p) => p
             .iter()
             .map(|p| content::replay_name(p))
@@ -640,64 +675,81 @@ pub fn check_report(root: &Path) -> (bool, String) {
         Err(e) => return (false, format!("error: {e}\n")),
     };
     if names.is_empty() {
-        return (
-            false,
-            "FAIL: no replays to mix (no cue-log goldens)\n".into(),
-        );
+        return (false, "FAIL: no replays to mix\n".into());
     }
+    let bank = match load_bank(root) {
+        Ok(b) => b,
+        Err(e) => return (false, format!("error: {e}\n")),
+    };
+    let cx = match RunContext::load(root, &bank) {
+        Ok(c) => c,
+        Err(e) => return (false, format!("error: {e}\n")),
+    };
     // Every timeline first, then each needed sound rendered once.
     let timelines = crate::par::map_ordered(&names, crate::par::threads(), |name| {
-        content::resolve_replay(root, name).and_then(|p| timeline(root, &p))
+        content::resolve_replay(root, name).and_then(|p| timeline_in(&cx, &p))
     });
     let all: BTreeSet<Sound> = timelines
         .iter()
         .flatten()
         .flat_map(|t| needed(&t.cues))
         .collect();
-    let sounds = match load_bank(root).and_then(|b| sounds(&b, &all)) {
+    let sounds = match sounds(&bank, &all) {
         Ok(s) => s,
         Err(e) => return (false, format!("error: {e}\n")),
     };
     let jobs: Vec<(String, Result<Timeline, String>)> =
         names.iter().cloned().zip(timelines).collect();
-    let results = crate::par::map_ordered(&jobs, crate::par::threads(), |(name, t)| match t {
-        Ok(t) => Ok(mix_timeline(
-            name.clone(),
-            Timeline {
-                cues: t.cues.clone(),
-                end_frame: t.end_frame,
-            },
-            &sounds,
-        )),
-        Err(e) => Err(e.clone()),
-    });
+    // Each job keeps only its stats, findings and silent ids: a whole
+    // route's PCM is ~100 MB, so the mixes must not pile up in memory.
+    let results = crate::par::map_ordered(
+        &jobs,
+        MIX_THREADS.min(crate::par::threads()),
+        |(name, t)| match t {
+            Ok(t) => {
+                let x = mix_timeline(
+                    name.clone(),
+                    Timeline {
+                        cues: t.cues.clone(),
+                        end_frame: t.end_frame,
+                    },
+                    &sounds,
+                );
+                Ok((x.stats, x.findings, missing_ids(&x.mix)))
+            }
+            Err(e) => Err(e.clone()),
+        },
+    );
     let mut text = String::new();
     let mut failed = 0;
     let mut silent: BTreeSet<String> = BTreeSet::new();
+    let mut peaks: Vec<(f64, &str)> = Vec::new();
     for (name, r) in names.iter().zip(results) {
         match r {
             Err(e) => {
                 failed += 1;
                 text.push_str(&format!("FAIL {name}: {e}\n"));
             }
-            Ok(x) => {
-                silent.extend(missing_ids(&x.mix));
-                let st = &x.stats;
-                let head = if x.findings.is_empty() {
-                    "ok  "
-                } else {
-                    "FAIL"
-                };
-                failed += usize::from(!x.findings.is_empty());
+            Ok((st, findings, missing)) => {
+                silent.extend(missing);
+                peaks.push((st.peak_dbfs, name));
+                if findings.is_empty() {
+                    continue;
+                }
+                failed += 1;
                 text.push_str(&format!(
-                    "{head} {name}: peak {:.2} dBFS, {} clamped, {:.2} ms above {CEILING_DBFS} dBFS\n",
+                    "FAIL {name}: peak {:.2} dBFS, {} clamped, {:.2} ms above {CEILING_DBFS} dBFS\n",
                     st.peak_dbfs, st.clamped_samples, st.ms_over_ceiling
                 ));
-                for f in &x.findings {
+                for f in &findings {
                     text.push_str(&format!("  error[{}]: {}\n", f.lint, f.message));
                 }
             }
         }
+    }
+    peaks.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(b.1)));
+    for (peak, name) in peaks.iter().take(LOUDEST_LISTED) {
+        text.push_str(&format!("loud {name}: peak {peak:.2} dBFS\n"));
     }
     if !silent.is_empty() {
         let list: Vec<String> = silent.into_iter().collect();
@@ -707,8 +759,11 @@ pub fn check_report(root: &Path) -> (bool, String) {
         ));
     }
     text.push_str(&format!(
-        "audio mix: {} replay(s), {failed} failed\n",
-        names.len()
+        "audio mix: {} replay(s), {failed} failed, worst peak {}\n",
+        names.len(),
+        peaks
+            .first()
+            .map_or("-".into(), |(p, n)| format!("{p:.2} dBFS ({n})"))
     ));
     (failed == 0, text)
 }
@@ -814,8 +869,9 @@ mod tests {
 
     #[test]
     fn a_mix_over_the_ceiling_without_clamping_is_detected() {
-        // 2 × 15 000 = 30 000 > 29 204 (−1 dBFS), < 32 767.
-        let m = mixed(&table(&[(Sfx::Jump, 15_000), (Sfx::Oblate, 15_000)]));
+        // Played at 89 % (D-124): 2 × 15 130 = 30 260 > 29 204 (−1 dBFS),
+        // < 32 767.
+        let m = mixed(&table(&[(Sfx::Jump, 17_000), (Sfx::Oblate, 17_000)]));
         let f = lint(&m);
         assert_eq!(f.len(), 1, "{f:?}");
         assert_eq!(f[0].lint, "ceiling");

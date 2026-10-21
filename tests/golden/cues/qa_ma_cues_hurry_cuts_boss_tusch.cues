@@ -1,0 +1,97 @@
+# cue log of tests/replays/qa_ma_cues_hurry_cuts_boss_tusch.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   171 song cafe_zauner
+  6408 sfx jump P4
+  6450 sfx roof_bounce W5
+  6462 sfx oblate I3
+  6469 sfx oblate I3
+  6475 sfx oblate I3
+  6503 sfx jump P4
+  6545 sfx roof_bounce W5
+  6565 sfx oblate I3
+  6571 sfx oblate I3
+  6578 sfx oblate I3
+  6610 sfx jump P4
+  6673 sfx stomp W5
+  6710 sfx jump P4
+  6757 sfx oblate I3
+  6763 sfx oblate I3
+  6785 sfx stomp W5
+  6803 sfx oblate I3
+  6808 sfx oblate I3
+  6823 sfx stomp W5
+  6843 sfx stomp W5
+  6861 sfx oblate I3
+  6884 sfx stomp W5
+  6900 sfx oblate I3
+  6924 sfx stomp W5
+  6944 sfx stomp W5
+  7036 sfx checkpoint I7
+  7036 duck on
+  7059 sfx jump P4
+  7063 duck off
+  7143 stop-song
+  7143 jingle boss_intro
+  7151 sfx jump P4
+  7209 sfx jump P4
+  7233 jingle boss_surprise
+  7233 sfx boss_telegraph W7
+  7233 duck on
+  7271 song boss
+  7273 stop-sfx boss_telegraph
+  7273 duck off
+  7341 sfx jump P4
+  7368 sfx boss_breathe W7
+  7368 duck on
+  7404 duck off
+  7440 sfx boss_telegraph W7
+  7440 duck on
+  7480 stop-sfx boss_telegraph
+  7480 duck off
+  7555 sfx jump P4
+  7591 sfx boss_breathe W7
+  7591 duck on
+  7596 sfx boss_hit W8
+  7626 duck off
+  7656 sfx boss_telegraph W7
+  7656 duck on
+  7692 stop-sfx boss_telegraph
+  7692 duck off
+  7781 sfx boss_breathe W7
+  7781 duck on
+  7817 duck off
+  7841 sfx bills_hang W6
+  7976 sfx boss_telegraph W7
+  7976 duck on
+  8012 stop-sfx boss_telegraph
+  8012 duck off
+  8022 sfx jump P4
+  8061 sfx jump P4
+  8101 sfx boss_breathe W7
+  8101 duck on
+  8103 sfx boss_hit W8
+  8133 duck off
+  8138 sfx jump P4
+  8163 sfx boss_telegraph W7
+  8163 duck on
+  8180 sfx jump P4
+  8195 stop-sfx boss_telegraph
+  8195 duck off
+  8269 sfx boss_breathe W7
+  8269 duck on
+  8305 duck off
+  8317 sfx bills_hang W6
+  8452 sfx boss_telegraph W7
+  8452 duck on
+  8484 stop-sfx boss_telegraph
+  8484 duck off
+  8520 sfx jump P4
+  8558 sfx boss_breathe W7
+  8558 duck on
+  8561 stop-song
+  8561 jingle boss_defeat
+  8594 duck off
+  8656 jingle hurry
+  8716 song cafe_zauner

@@ -7,6 +7,8 @@
 # qa_m6a_zaunerstollen_offcentre_bump to 3640 (hohes_c 3564, oneup 3579).
 # Expected: --audio passes; the cue-log golden puts it in the verify step
 # audio-mix, which fails until the mix has headroom.
+# Fixed (E63, D-124): the SFX headroom table (SFX 89 %, hurt and oneup
+# 89 % of that, hohes_c 84 %); `cargo xtask audio mix` mixes every replay.
 level  = bad_ischl
 seed   = 1
 source = handwritten

@@ -44,7 +44,7 @@
   1466 sfx tally_tick I2
   1469 sfx tally_tick I2
   1472 sfx tally_end I6
-  1652 song route_map
+  1726 song route_map
   2016 stop-song
   2016 stop-jingle
   2166 song cafe_zauner
@@ -96,7 +96,7 @@
   3762 sfx boss_telegraph W7
   3762 duck on
   3764 sfx throw P5
-  3798 song boss
+  3800 song boss
   3802 stop-sfx boss_telegraph
   3802 duck off
   3824 sfx jump P4 -5
@@ -132,8 +132,8 @@
   4358 jingle boss_defeat
   4358 sfx axe_hit W6
   4358 duck off
-  4508 song cafe_zauner
   4510 sfx jump P4 -5
+  4513 song cafe_zauner
   4547 stop-song
   4547 cut-sfx P W A
   4547 jingle fanfare_finale

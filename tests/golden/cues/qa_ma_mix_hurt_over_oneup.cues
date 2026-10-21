@@ -1,4 +1,4 @@
-# cue log of tests/replays/bug_mix_hurt_over_oneup.replay (cargo xtask cues)
+# cue log of tests/replays/qa_ma_mix_hurt_over_oneup.replay (cargo xtask cues)
     59 sfx jump P4
     66 sfx bump W4
     66 sfx oblate I3

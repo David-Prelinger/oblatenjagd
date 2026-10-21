@@ -10,6 +10,8 @@
 # Expected cue log: the song stays held after the resume until the bells
 # are over (hold-song off at 14781 + 67 = 14848), as without a pause.
 # The replay itself passes; accept its cue golden only after the fix.
+# Fixed (E63, D-124): `14848 hold-song off` (the pause's 201 frames
+# don't count).
 level  = salzburg
 seed   = 1
 source = handwritten

@@ -12,8 +12,10 @@
 //!   when `audio.js` is missing. Each load is a [`Load`] polled once per frame
 //!   with a no-op waker; after [`LOAD_BUDGET_FRAMES`] audio is switched off
 //!   with one log line and the game runs on.
-//! - **Mute**: `--mute` (native) loads and plays nothing; the M key toggles
-//!   mute at runtime on both platforms.
+//! - **Mute**: `--mute` (native) loads and plays nothing until the M key
+//!   turns sound on. Otherwise M mutes in place on both platforms (E63):
+//!   every volume 0 while everything keeps running, like the pause hold, so
+//!   unmuting resumes the song where it is ([`Mixer::set_quiet`]).
 //!
 //! What to play comes from `jnr_audio::cues::Director` (E58): the app feeds
 //! it after every simulation step and executes its [`Cue`]s (E59). The pure
@@ -25,7 +27,8 @@
 //!
 //! Mix levels: every sound is rendered at its design level (D-113's level
 //! table, checked offline by `cargo xtask audio lint`), so the app plays
-//! SFX at [`SFX`] and music at [`FULL`]; a duck is [`DUCK_GAIN`] (−6 dB, the
+//! music at [`FULL`] and SFX at [`SFX`] times their own gain
+//! ([`sfx_volume`], the headroom table of D-124); a duck is [`DUCK_GAIN`] (−6 dB, the
 //! song and its twin only: a jingle is never ducked, D-123), a hold is 0 (the constants are `jnr_audio::cues`'s percents, shared with
 //! the offline mix) (D-114: the loop keeps running and resumes in place).
 
@@ -35,7 +38,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use jnr_audio::bank::{Bank, Variant};
-use jnr_audio::cues::{Cue, Music, Play, Voice};
+use jnr_audio::cues::{Cue, Music, Play, Sfx, Voice};
 use macroquad::audio::{
     PlaySoundParams, Sound, load_sound_from_bytes, play_sound, set_sound_volume, stop_sound,
 };
@@ -221,11 +224,20 @@ pub struct Mixer {
     hold_jingle: bool,
     duck: bool,
     underwater: bool,
+    /// Muted at runtime (M): every volume is 0 and everything keeps
+    /// running, so unmuting resumes in place (E63).
+    quiet: bool,
 }
 
 /// A music cue's own gain ([`Music::gain_pct`]) as a factor.
 fn cue_gain(m: Option<Music>) -> f32 {
     m.map_or(1.0, |m| m.gain_pct() as f32 / 100.0)
+}
+
+/// An SFX's volume: [`SFX`] times its own gain ([`Sfx::gain_pct`], the
+/// headroom table, D-124).
+pub fn sfx_volume(s: Sfx) -> f32 {
+    SFX * s.gain_pct() as f32 / 100.0
 }
 
 fn slot(v: Voice) -> usize {
@@ -246,7 +258,7 @@ impl Mixer {
     /// the cue's own gain ([`Music::gain_pct`]).
     fn song_volume(&self, twin: bool) -> f32 {
         let cue = if twin { self.twin } else { self.song };
-        if self.hold_song || twin != self.underwater {
+        if self.quiet || self.hold_song || twin != self.underwater {
             0.0
         } else {
             self.duck_gain() * cue_gain(cue)
@@ -254,7 +266,7 @@ impl Mixer {
     }
 
     fn jingle_volume(&self) -> f32 {
-        if self.hold_jingle {
+        if self.quiet || self.hold_jingle {
             0.0
         } else {
             // Never ducked (D-123).
@@ -276,6 +288,11 @@ impl Mixer {
         }
     }
 
+    /// Muted at runtime ([`Mixer::set_quiet`]).
+    pub fn is_quiet(&self) -> bool {
+        self.quiet
+    }
+
     /// The song and its twin (what must stay loaded).
     pub fn songs(&self) -> [Option<Music>; 2] {
         [self.song, self.twin]
@@ -288,6 +305,27 @@ impl Mixer {
         if let Some(m) = self.twin {
             out.push(Op::Volume(SoundId::Music(m), self.song_volume(true)));
         }
+    }
+
+    fn sfx_volume(&self, s: Sfx) -> f32 {
+        if self.quiet { 0.0 } else { sfx_volume(s) }
+    }
+
+    /// Mutes (`true`) or unmutes everything in place (the M key at
+    /// runtime, E63): the volume ops for the song, its twin, the jingle and
+    /// the SFX each voice played last (stopping nothing, so a song resumes
+    /// where it is and a jingle's rest is heard).
+    pub fn set_quiet(&mut self, quiet: bool) -> Vec<Op> {
+        self.quiet = quiet;
+        let mut out = Vec::new();
+        self.music_volumes(&mut out);
+        if let Some(m) = self.jingle {
+            out.push(Op::Volume(SoundId::Music(m), self.jingle_volume()));
+        }
+        for p in self.voices.into_iter().flatten() {
+            out.push(Op::Volume(SoundId::Sfx(p), self.sfx_volume(p.sfx)));
+        }
+        out
     }
 
     fn stop_voice(&mut self, v: Voice, out: &mut Vec<Op>) {
@@ -307,7 +345,7 @@ impl Mixer {
                 out.push(Op::Play {
                     id: SoundId::Sfx(p),
                     looped: false,
-                    volume: SFX,
+                    volume: self.sfx_volume(p.sfx),
                 });
             }
             Cue::StopSfx(s) => {
@@ -906,29 +944,31 @@ impl Audio {
         }
     }
 
-    /// M key: toggles mute; muting stops everything that is playing,
-    /// unmuting starts the current song again from its start.
+    /// M key. After a `--mute` start (nothing loaded or playing yet) it
+    /// turns sound on: the current song starts. Otherwise it mutes and
+    /// unmutes in place (E63): every volume goes to 0 and back while
+    /// everything keeps playing and loading, like the pause hold, so the
+    /// song resumes where it is instead of from bar 1.
     pub fn toggle_mute(&mut self) {
-        if !self.muted && !self.loaded.is_empty() && self.may_call() {
-            for (_, sound) in &self.loaded {
-                stop_sound(sound);
-            }
-        }
-        self.muted = !self.muted;
         if self.muted {
-            // A jingle cued before the mute is not started after it.
-            self.jingle_to_start = None;
+            self.muted = false;
+            log_line("sound on");
+            if self.active() {
+                self.start_songs();
+                self.try_start();
+            }
+            return;
         }
-        log_line(if self.muted { "sound off" } else { "sound on" });
-        if self.active() {
-            self.start_songs();
-            self.try_start();
+        let quiet = !self.mixer.is_quiet();
+        log_line(if quiet { "sound off" } else { "sound on" });
+        for op in self.mixer.set_quiet(quiet) {
+            self.exec(op);
         }
     }
 
     #[cfg(test)]
     pub fn is_muted(&self) -> bool {
-        self.muted
+        self.muted || self.mixer.is_quiet()
     }
 
     /// Why audio is off for good, if it is.
@@ -1039,7 +1079,7 @@ mod tests {
         assert_eq!(load.polls(), LOAD_BUDGET_FRAMES);
     }
 
-    use jnr_audio::cues::{Cut, Director, PAUSE_OUT_SEMITONES, Sfx};
+    use jnr_audio::cues::{Cut, Director, PAUSE_OUT_SEMITONES};
 
     /// The cues of `tests/replays/testbed_route.replay` (7 jumps, the
     /// fanfare), step by step.
@@ -1051,7 +1091,7 @@ mod tests {
         let mut game = replay
             .new_game(&crate::options::embedded_levels(), &tuning)
             .unwrap();
-        let mut d = Director::new();
+        let mut d = Director::new(jnr_assets::jingle_frames().clone());
         let mut out = vec![d.begin(&game)];
         for input in replay.frames() {
             game.step(input);
@@ -1106,6 +1146,78 @@ mod tests {
         SoundId::Music(m)
     }
 
+    /// E63: the M key at runtime mutes in place: volume ops only (no stop,
+    /// no restart), every new sound at 0 while quiet, and unmuting brings
+    /// back each sound's current volume (the held song stays held).
+    #[test]
+    fn a_runtime_mute_sets_volumes_and_stops_nothing() {
+        let mut m = Mixer::default();
+        let none = |_| false;
+        m.apply(Cue::Song(Music::Salzburg), none);
+        m.apply(Cue::Jingle(Music::Hurry), none);
+        m.apply(Cue::HoldSong(true), none);
+        let oneup = Sfx::OneUp.play();
+        m.apply(Cue::Sfx(oneup), none);
+        assert_eq!(
+            m.set_quiet(true),
+            [
+                Op::Volume(music(Music::Salzburg), 0.0),
+                Op::Volume(music(Music::Hurry), 0.0),
+                Op::Volume(sfx(oneup), 0.0),
+            ]
+        );
+        // Cues keep running while quiet, at volume 0.
+        let jump = Sfx::Jump.play();
+        assert_eq!(
+            m.apply(Cue::Sfx(jump), none),
+            [Op::Play {
+                id: sfx(jump),
+                looped: false,
+                volume: 0.0
+            }]
+        );
+        assert_eq!(
+            m.apply(Cue::HoldSong(false), none),
+            [Op::Volume(music(Music::Salzburg), 0.0)]
+        );
+        // Unmuting: the current volumes, nothing restarted.
+        assert_eq!(
+            m.set_quiet(false),
+            [
+                Op::Volume(music(Music::Salzburg), FULL),
+                Op::Volume(music(Music::Hurry), FULL),
+                Op::Volume(sfx(jump), sfx_volume(Sfx::Jump)),
+                Op::Volume(sfx(oneup), sfx_volume(Sfx::OneUp)),
+            ]
+        );
+    }
+
+    /// The app plays each SFX at the offline mix's level (D-122's one model,
+    /// D-124's gain table).
+    #[test]
+    fn the_app_plays_sfx_at_the_offline_mix_level() {
+        use jnr_audio::mix::{Sound as MixSound, Sounds, mix};
+        use jnr_audio::render::Pcm;
+        for s in Sfx::ALL {
+            let mut sounds = Sounds::default();
+            let pcm = Pcm {
+                rate: 44_100,
+                samples: vec![10_000; 4],
+            };
+            sounds.sounds.insert(MixSound::Sfx(s.play()), pcm);
+            let got = mix(&sounds, &[(0, Cue::Sfx(s.play()))], 0)
+                .render
+                .pcm
+                .samples[0];
+            assert_eq!(
+                f32::from(got),
+                (10_000.0 * sfx_volume(s)).round(),
+                "{}",
+                s.id()
+            );
+        }
+    }
+
     #[test]
     fn an_sfx_stops_what_its_voice_played_last() {
         let mut m = Mixer::default();
@@ -1116,7 +1228,7 @@ mod tests {
             [Op::Play {
                 id: sfx(jump),
                 looped: false,
-                volume: SFX
+                volume: sfx_volume(Sfx::Jump)
             }]
         );
         // A retrigger: stop, then play (one live copy).

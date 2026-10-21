@@ -42,6 +42,17 @@ pub fn audio_bank() -> &'static jnr_audio::bank::Bank {
     })
 }
 
+/// The rendered length of every jingle in [`audio_bank`] (one render each
+/// on first use): the cue director's jingle timing (E63).
+pub fn jingle_frames() -> &'static jnr_audio::cues::JingleFrames {
+    static FRAMES: OnceLock<jnr_audio::cues::JingleFrames> = OnceLock::new();
+    FRAMES.get_or_init(|| {
+        audio_bank()
+            .jingle_frames()
+            .expect("the build script checked the audio sources")
+    })
+}
+
 /// Looks up a sprite (or palette-swap variant) by name.
 pub fn sprite(name: &str) -> Option<&'static AtlasSprite> {
     atlas().sprite(name)
@@ -90,6 +101,19 @@ mod tests {
                 }
             );
         }
+    }
+
+    /// The director's jingle timing has a rendered length for every
+    /// jingle cue (E63: no design-length fallback in the game).
+    #[test]
+    fn every_jingle_has_its_rendered_length() {
+        let lengths = jingle_frames();
+        for m in Music::ALL.into_iter().filter(|m| !m.is_song()) {
+            let frames = lengths.frames.get(&m).copied().unwrap_or(0);
+            assert!(frames > 0, "`{}` has no rendered length", m.id());
+        }
+        let jingles = Music::ALL.iter().filter(|m| !m.is_song()).count();
+        assert_eq!(lengths.frames.len(), jingles, "{lengths:?}");
     }
 
     /// Every embedded song renders clean: a loop is a multiple of 4096

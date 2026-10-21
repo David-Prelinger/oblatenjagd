@@ -63,7 +63,7 @@
   2062 jingle boss_surprise
   2062 sfx boss_telegraph W7
   2062 duck on
-  2098 song boss
+  2100 song boss
   2102 stop-sfx boss_telegraph
   2102 duck off
   2128 cut-sfx all
@@ -77,7 +77,7 @@
   2873 jingle boss_surprise
   2873 sfx boss_telegraph W7
   2873 duck on
-  2909 song boss
+  2911 song boss
   2913 stop-sfx boss_telegraph
   2913 duck off
   2942 cut-sfx all
@@ -91,7 +91,7 @@
   3578 jingle boss_surprise
   3578 sfx boss_telegraph W7
   3578 duck on
-  3614 song boss
+  3616 song boss
   3618 stop-sfx boss_telegraph
   3618 duck off
   3647 cut-sfx all

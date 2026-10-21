@@ -269,7 +269,7 @@ fn cuts_free_voices_and_priority_7_ducks() {
 fn the_title_start_intro_and_stage_piece() {
     let level = flat("time_limit = 300\nmusic = \"salzburg\"");
     let mut g = Game::new_at(&level, &tuning(), 1, Start::Title);
-    let mut d = Director::new();
+    let mut d = Director::default();
     assert_eq!(d.begin(&g), vec![Cue::Song(Music::Title)]);
     let log = run(&mut g, &mut d, "S", 1);
     assert_eq!(
@@ -286,7 +286,7 @@ fn the_title_start_intro_and_stage_piece() {
 fn pause_cuts_sfx_holds_the_song_and_resumes_in_place() {
     let level = flat("time_limit = 300\nmusic = \"salzburg\"");
     let mut g = Game::new_at(&level, &tuning(), 1, Start::Title);
-    let mut d = Director::new();
+    let mut d = Director::default();
     d.begin(&g);
     run(&mut g, &mut d, "S", 1);
     run(&mut g, &mut d, "-", 150);
@@ -322,7 +322,7 @@ fn pause_cuts_sfx_holds_the_song_and_resumes_in_place() {
 fn zeit_60_rings_the_bells_and_holds_the_piece_for_their_length() {
     let level = flat("time_limit = 61\nmusic = \"salzburg\"");
     let mut g = Game::new(&level, &tuning(), 1);
-    let mut d = Director::new();
+    let mut d = Director::default();
     assert_eq!(d.begin(&g), vec![Cue::Song(Music::Salzburg)]);
     let log = run(&mut g, &mut d, "-", 200);
     assert_eq!(
@@ -337,12 +337,13 @@ fn zeit_60_rings_the_bells_and_holds_the_piece_for_their_length() {
 }
 
 /// A pause during the ZEIT-60 bells holds the jingle (it isn't stopped)
-/// and keeps the song held until the bells' 96 frames are over.
+/// and keeps the song held until the bells' 96 frames are over, counted in
+/// play frames: the 10 paused frames don't count (E63).
 #[test]
 fn a_pause_holds_a_running_jingle_in_place() {
     let level = flat("time_limit = 61\nmusic = \"salzburg\"");
     let mut g = Game::new_at(&level, &tuning(), 1, Start::Title);
-    let mut d = Director::new();
+    let mut d = Director::default();
     d.begin(&g);
     run(&mut g, &mut d, "S", 1);
     run(&mut g, &mut d, "-", 150);
@@ -371,7 +372,7 @@ fn a_pause_holds_a_running_jingle_in_place() {
         log.iter()
             .find(|(_, c)| *c == Cue::HoldSong(false))
             .map(|(f, _)| *f),
-        Some(bells + 96)
+        Some(bells + 96 + 10)
     );
 }
 
@@ -380,7 +381,7 @@ fn a_death_cuts_everything_and_the_respawn_restarts_the_piece() {
     // A 1 s timer: time-up at frame 60, respawn after the dying phase.
     let level = flat("time_limit = 1\nmusic = \"strobl\"");
     let mut g = Game::new(&level, &tuning(), 1);
-    let mut d = Director::new();
+    let mut d = Director::default();
     d.begin(&g);
     let log = run(&mut g, &mut d, "-", 60);
     assert_eq!(
@@ -401,11 +402,11 @@ fn a_death_cuts_everything_and_the_respawn_restarts_the_piece() {
 fn begin_starts_fresh_with_the_level_piece_or_silence() {
     let level = flat("time_limit = 300\nmusic = \"salzburg\"");
     let g = Game::new(&level, &tuning(), 1);
-    let mut d = Director::new();
+    let mut d = Director::default();
     d.begin(&g);
     assert_eq!(d.begin(&g), vec![Cue::Song(Music::Salzburg)]);
     let quiet = Game::new(&flat("time_limit = 300"), &tuning(), 1);
-    assert_eq!(Director::new().begin(&quiet), vec![]);
+    assert_eq!(Director::default().begin(&quiet), vec![]);
 }
 
 #[test]
@@ -417,4 +418,46 @@ fn pending_music_is_empty() {
         &[] as &[Music],
         "PENDING_MUSIC must stay empty: every music cue needs its .song"
     );
+}
+
+/// E63: jingles are timed by the bank's rendered lengths; a jingle the
+/// table lacks falls back to its design length.
+#[test]
+fn jingle_frames_prefer_the_rendered_length() {
+    let mut lengths = JingleFrames::default();
+    assert_eq!(lengths.of(Music::Hurry), 96, "1600 ms by design");
+    lengths.frames.insert(Music::Hurry, 101);
+    assert_eq!(lengths.of(Music::Hurry), 101);
+    assert_eq!(lengths.of(Music::BossDefeat), 90);
+}
+
+/// E63: the beaten Oberkellner still counts as the fight until the stage
+/// piece is back (the bells don't hold a song that isn't playing).
+#[test]
+fn done_counts_as_the_fight_until_the_piece_resumes() {
+    use state::oberkellner as st;
+    assert!(!boss_fighting(None, false));
+    assert!(!boss_fighting(Some(st::WAIT), true));
+    assert!(boss_fighting(Some(st::TELEGRAPH), false));
+    assert!(boss_fighting(Some(st::DONE), true));
+    assert!(!boss_fighting(Some(st::DONE), false));
+}
+
+/// E63: the ZEIT-60 bells hold the song for the jingle's rendered length
+/// (from the bank's table), not its design length.
+#[test]
+fn the_bells_hold_counts_rendered_frames() {
+    let level = flat("time_limit = 61\nmusic = \"salzburg\"");
+    let mut g = Game::new_at(&level, &tuning(), 1, Start::Title);
+    let mut lengths = JingleFrames::default();
+    lengths.frames.insert(Music::Hurry, 50);
+    let mut d = Director::new(lengths);
+    d.begin(&g);
+    run(&mut g, &mut d, "S", 1);
+    run(&mut g, &mut d, "-", 150);
+    let log = run(&mut g, &mut d, "-", 60);
+    assert!(cues(&log).contains(&Cue::HoldSong(true)));
+    let bells = g.frame();
+    let log = run(&mut g, &mut d, "-", 60);
+    assert_eq!(log, vec![(bells + 50, Cue::HoldSong(false))]);
 }

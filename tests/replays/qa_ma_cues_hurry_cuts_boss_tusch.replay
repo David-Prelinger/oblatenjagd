@@ -11,6 +11,9 @@
 # coincide. Expected: the Tusch plays in full (bells on voice I, or the
 # bells wait / are dropped). The replay passes; accept its cue golden
 # only after the fix.
+# Fixed (E63, D-124): the bells wait for the Tusch's rendered end
+# (`8656 jingle hurry`, no hold: DONE counts as the fight until the café
+# piece resumes at 8716).
 level  = cafe_zauner
 seed   = 1
 source = handwritten

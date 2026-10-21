@@ -11,6 +11,8 @@
 # (or stopped/faded) before route_map starts from bar 1. The same overlap
 # is already in the flow_route_carry_over golden (481 -> 778) and in every
 # Hackl test-route flow (1343 -> 1652). Accept the cue log only after the fix.
+# Fixed (E63, D-124): the map's piece waits for the fanfare's rendered
+# end (383 frames): `14384 song route_map`.
 level  = strobl
 seed   = 1
 source = handwritten

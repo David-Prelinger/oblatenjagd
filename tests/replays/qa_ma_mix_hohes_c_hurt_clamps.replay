@@ -7,6 +7,8 @@
 # Inputs: qa_m4_singer_column_hit_big to 4620 (Hurt at 4564).
 # Expected: --audio passes (no clamp, no sample above -1 dBFS); the cue-log
 # golden puts it in the verify step audio-mix, which fails until fixed.
+# Fixed (E63, D-124): the SFX headroom table (SFX 89 %, hurt and oneup
+# 89 % of that, hohes_c 84 %); `cargo xtask audio mix` mixes every replay.
 level  = st_wolfgang
 seed   = 1
 source = handwritten

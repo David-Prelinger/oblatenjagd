@@ -18,7 +18,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::cues::{Music, Play};
+use crate::cues::{JingleFrames, Music, Play};
 use crate::music_lint::{Level, LintContext, lint_song};
 use crate::patch::{FREQ_RANGE, Pitch, Sfx};
 use crate::render::{Pcm, render_sfx};
@@ -207,6 +207,24 @@ impl Bank {
                 clamped: r.clamped,
             }
         }))
+    }
+}
+
+impl Bank {
+    /// The rendered length of every jingle music cue in the bank, in game
+    /// frames rounded up (one render each, at load): what the cue
+    /// [`Director`](crate::cues::Director) times the jingles by (E63), so a
+    /// song that waits for a jingle starts when its last sample has played.
+    pub fn jingle_frames(&self) -> Result<JingleFrames, String> {
+        let mut out = JingleFrames::default();
+        for m in Music::ALL.into_iter().filter(|m| !m.is_song()) {
+            if let Some(r) = self.render_music(m, Variant::Normal)? {
+                let samples = r.pcm.samples.len() as u32;
+                out.frames
+                    .insert(m, samples.div_ceil(crate::FRAMES_PER_TICK));
+            }
+        }
+        Ok(out)
     }
 }
 

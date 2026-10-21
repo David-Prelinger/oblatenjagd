@@ -4,10 +4,12 @@
 # Two "loud" SFX on different voices sum past the ceiling: peak -0.09 dBFS,
 # 320 samples over -1 dBFS at 16.78 s (frames 1007..1016), sounds
 # hurt + oneup (no music on 00_items). Inputs: items_checkpoint_death to 1060.
-# Expected: `cargo xtask replay bug_mix_hurt_over_oneup --audio` passes
+# Expected: `cargo xtask replay qa_ma_mix_hurt_over_oneup --audio` passes
 # (no sample above -1 dBFS). Its cue-log golden puts it in the verify
 # step `audio-mix`, which fails until the mix has headroom (a master
 # limiter / soft clip as audio-design §3 asks, or lower SFX levels).
+# Fixed (E63, D-124): the SFX headroom table (SFX 89 %, hurt and oneup
+# 89 % of that, hohes_c 84 %); `cargo xtask audio mix` mixes every replay.
 level  = items
 seed   = 1
 source = handwritten
