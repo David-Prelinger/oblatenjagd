@@ -30,11 +30,6 @@ use macroquad::audio::{PlaySoundParams, Sound, load_sound_from_bytes, play_sound
 /// missing-`audio.js` case on wasm; natively a load finishes on its first
 /// poll, in the browser after 1–2 frames).
 pub const LOAD_BUDGET_FRAMES: u32 = 120;
-/// Frames to wait after start-up before the first load. quad-snd's audio
-/// thread dies within the first frames when there is no device (the spike
-/// saw the flag set before frame 3); loading before that would send to a
-/// dead thread and print `Audio thread died`.
-pub const STARTUP_GRACE_FRAMES: u32 = 10;
 /// Sample rate of every sound we hand to quad-snd (44.1 kHz mono i16, D-114).
 pub const SAMPLE_RATE: u32 = 44_100;
 
@@ -186,26 +181,33 @@ type SoundLoad = Load<Result<Sound, macroquad::Error>>;
 pub struct Audio {
     muted: bool,
     off: Option<Off>,
-    /// Render frames seen by [`Audio::update`].
-    frames: u32,
-    /// Sounds waiting for the start-up grace to pass, as (id, WAV bytes).
+    /// Whether quad-snd's audio thread has died ([`audio_dead`]; a stub in tests).
+    dead: fn() -> bool,
+    /// Sounds not yet handed to quad-snd, as (id, WAV bytes).
     queued: Vec<(SoundId, Vec<u8>)>,
     /// Loads in flight; polled once per frame.
     pending: Vec<(SoundId, SoundLoad)>,
     loaded: Vec<(SoundId, Sound)>,
     /// Play the test tone once it is loaded.
     play_test_tone: bool,
-    /// Backend calls made (loads, plays, stops): `--mute` must keep this 0.
+    /// Backend calls made: load starts, frames with load polls (on wasm a
+    /// poll asks `audio.js` whether the buffer is decoded), plays and stops.
+    /// `--mute` must keep this 0.
     calls: u32,
 }
 
 impl Audio {
     /// `muted` (`--mute`): nothing is loaded or played until M unmutes.
     pub fn new(muted: bool) -> Audio {
+        Audio::with_probe(muted, audio_dead)
+    }
+
+    /// [`Audio::new`] with the dead-thread check passed in (for tests).
+    fn with_probe(muted: bool, dead: fn() -> bool) -> Audio {
         Audio {
             muted,
             off: None,
-            frames: 0,
+            dead,
             queued: Vec::new(),
             pending: Vec::new(),
             loaded: Vec::new(),
@@ -223,7 +225,7 @@ impl Audio {
     /// Whether a backend call may be made now (and counts it). Checked
     /// before every macroquad audio call.
     fn may_call(&mut self) -> bool {
-        if audio_dead() && self.off.is_none() {
+        if (self.dead)() && self.off.is_none() {
             self.off = Some(Off::NoDevice);
         }
         if self.off.is_some() || self.muted {
@@ -233,11 +235,15 @@ impl Audio {
         true
     }
 
-    /// Once per render frame: starts queued loads after the start-up grace
-    /// and polls the pending ones. Never blocks.
+    /// Once per render frame: starts queued loads and polls the pending
+    /// ones (neither while muted or off). Never blocks.
+    ///
+    /// Loading right at start-up is safe even when the audio thread is about
+    /// to die: a send before it dies succeeds silently, and the panic guard
+    /// sets the dead flag before the thread drops its receiver, so every
+    /// later call is refused before it can print `Audio thread died`.
     pub fn update(&mut self) {
-        self.frames = self.frames.saturating_add(1);
-        if self.frames > STARTUP_GRACE_FRAMES && !self.queued.is_empty() && self.may_call() {
+        if !self.queued.is_empty() && self.may_call() {
             for (id, wav) in std::mem::take(&mut self.queued) {
                 let load = Load::new(
                     async move { load_sound_from_bytes(&wav).await },
@@ -245,6 +251,10 @@ impl Audio {
                 );
                 self.pending.push((id, load));
             }
+        }
+        if self.pending.is_empty() || !self.may_call() {
+            self.play_test_tone_if_loaded();
+            return;
         }
         let mut still_pending = Vec::new();
         for (id, mut load) in std::mem::take(&mut self.pending) {
@@ -267,9 +277,13 @@ impl Audio {
         if self.off.is_none() {
             self.pending = still_pending;
         }
-        if self.play_test_tone && self.is_loaded(SoundId::TestTone) {
+        self.play_test_tone_if_loaded();
+    }
+
+    fn play_test_tone_if_loaded(&mut self) {
+        if self.play_test_tone && self.is_loaded(SoundId::TestTone) && self.play(SoundId::TestTone)
+        {
             self.play_test_tone = false;
-            self.play(SoundId::TestTone);
             log_line("test tone played");
         }
     }
@@ -278,20 +292,23 @@ impl Audio {
         self.loaded.iter().any(|(loaded, _)| *loaded == id)
     }
 
-    /// Plays `id` once if it is loaded and audio is on; otherwise drops it.
-    pub fn play(&mut self, id: SoundId) {
+    /// Plays `id` once if it is loaded and audio is on (returns whether it
+    /// played); otherwise drops it.
+    pub fn play(&mut self, id: SoundId) -> bool {
         if !self.is_loaded(id) || !self.may_call() {
-            return;
+            return false;
         }
-        if let Some((_, sound)) = self.loaded.iter().find(|(loaded, _)| *loaded == id) {
-            play_sound(
-                sound,
-                PlaySoundParams {
-                    looped: false,
-                    volume: 0.5,
-                },
-            );
-        }
+        let Some((_, sound)) = self.loaded.iter().find(|(loaded, _)| *loaded == id) else {
+            return false;
+        };
+        play_sound(
+            sound,
+            PlaySoundParams {
+                looped: false,
+                volume: 0.5,
+            },
+        );
+        true
     }
 
     /// M key: toggles mute; muting stops everything that is playing.
@@ -327,7 +344,7 @@ impl Drop for Audio {
     /// Dropping a `Sound` sends a delete to quad-snd's thread; when that
     /// thread is dead, leak them instead (no `Audio thread died` lines).
     fn drop(&mut self) {
-        if audio_dead() {
+        if (self.dead)() {
             for (_, sound) in self.loaded.drain(..) {
                 std::mem::forget(sound);
             }
@@ -462,7 +479,7 @@ mod tests {
         // (no macroquad context exists here, so any call would panic).
         let mut audio = Audio::new(true);
         audio.queue_test_tone();
-        for _ in 0..(STARTUP_GRACE_FRAMES + LOAD_BUDGET_FRAMES + 5) {
+        for _ in 0..(LOAD_BUDGET_FRAMES + 5) {
             audio.update();
         }
         audio.play(SoundId::TestTone);
@@ -475,14 +492,20 @@ mod tests {
     }
 
     #[test]
-    fn nothing_loads_during_the_startup_grace() {
-        let mut audio = Audio::new(false);
+    fn a_dead_audio_thread_gets_no_calls_and_turns_audio_off() {
+        // No macroquad context exists here, so any backend call would panic.
+        let mut audio = Audio::with_probe(false, || true);
         audio.queue_test_tone();
-        for _ in 0..STARTUP_GRACE_FRAMES {
+        for _ in 0..(LOAD_BUDGET_FRAMES + 5) {
             audio.update();
         }
+        assert!(!audio.play(SoundId::TestTone));
+        audio.toggle_mute();
+        audio.toggle_mute();
         assert_eq!(audio.calls(), 0);
-        assert_eq!(audio.queued.len(), 1);
+        assert_eq!(audio.off(), Some(Off::NoDevice));
+        assert!(audio.pending.is_empty() && audio.loaded.is_empty());
+        assert!(audio.play_test_tone, "the tone never played");
     }
 
     #[test]

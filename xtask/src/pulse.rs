@@ -1,34 +1,51 @@
-//! PulseAudio null sink for audio smoke tests (D-118).
+//! PulseAudio null sinks for audio smoke tests (D-118).
 //!
 //! The dev container has no sound device. With `pulseaudio`,
 //! `pulseaudio-utils` and `libasound2-plugins` installed, ALSA's `default`
-//! device goes to Pulse; a null sink named [`SINK`] swallows what the game
-//! plays, and its monitor ([`MONITOR`]) can be recorded with `parec`.
-//! [`ensure_null_sink`] starts a daemon on demand (it stays running for
-//! later runs) or reuses a running one. Without Pulse, the caller notes
-//! "audio not exercised" and goes on.
+//! device goes to Pulse. [`null_sink_for_run`] makes sure a daemon runs
+//! (it starts one on demand, which stays running for later runs) and loads
+//! a null sink of its own, `jnr_null_<pid>`; the caller points the game at
+//! it with `PULSE_SINK=<name>` and records `<name>.monitor` with `parec`.
+//! The sink is unloaded when the [`NullSink`] is dropped, so parallel runs
+//! never share a sink and the daemon's default sink is left alone. Without
+//! Pulse, the caller notes "audio not exercised" and goes on.
 //!
-//! `JNR_PULSE=off` makes [`ensure_null_sink`] report Pulse as absent without
-//! touching a daemon (to check the no-device path; stop a running daemon
-//! first with `pulseaudio --kill`).
+//! `JNR_PULSE=off` makes [`null_sink_for_run`] report Pulse as absent
+//! without touching a daemon.
 
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-/// Name of the null sink.
-pub const SINK: &str = "jnr_null";
-/// The sink's monitor source (what `parec -d` records).
-pub const MONITOR: &str = "jnr_null.monitor";
 /// How long to wait for a freshly started daemon to answer.
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Whether audio can be exercised.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Pulse {
-    /// The null sink is the default sink; `started` = this call started the daemon.
-    Ready { started: bool },
+    /// A null sink for this run; `started` = this call started the daemon.
+    Ready { started: bool, sink: NullSink },
     /// No Pulse (not installed, disabled, or it would not start): why.
     Absent(String),
+}
+
+/// A null sink loaded for one run; unloaded on drop.
+#[derive(Debug)]
+pub struct NullSink {
+    pub name: String,
+    module: String,
+}
+
+impl NullSink {
+    /// The source that records what the sink plays.
+    pub fn monitor(&self) -> String {
+        format!("{}.monitor", self.name)
+    }
+}
+
+impl Drop for NullSink {
+    fn drop(&mut self) {
+        let _ = run("pactl", &["unload-module", &self.module]);
+    }
 }
 
 /// Runs a command quietly; `Ok(stdout)` if it exited with 0.
@@ -49,26 +66,48 @@ fn run(cmd: &str, args: &[&str]) -> Result<String, String> {
     }
 }
 
-/// The `pulseaudio` arguments that start a daemon with only the null sink
-/// and the native protocol (no hardware modules, no autospawn config).
+/// The `pulseaudio` arguments that start a daemon with only the native
+/// protocol (no hardware modules, no default script; sinks come per run).
 pub fn daemon_args() -> Vec<String> {
     vec![
         "--daemonize=yes".to_owned(),
         "--exit-idle-time=-1".to_owned(),
         "-n".to_owned(),
-        format!("--load=module-null-sink sink_name={SINK}"),
         "--load=module-native-protocol-unix".to_owned(),
     ]
 }
 
-/// Whether `pactl list short sinks` output names our sink.
-pub fn has_sink(list: &str) -> bool {
-    list.lines()
-        .any(|l| l.split_whitespace().nth(1) == Some(SINK))
+/// The null sink name for the process `pid`.
+pub fn sink_name(pid: u32) -> String {
+    format!("jnr_null_{pid}")
 }
 
-/// Makes sure a Pulse daemon runs with [`SINK`] as its default sink.
-pub fn ensure_null_sink() -> Pulse {
+/// Makes sure a Pulse daemon answers (starting one if needed); returns
+/// whether this call started it. A failed start may be a race with another
+/// run starting the daemon at the same time, so it only counts once the
+/// daemon still does not answer after [`START_TIMEOUT`].
+fn ensure_daemon() -> Result<bool, String> {
+    if run("pactl", &["info"]).is_ok() {
+        return Ok(false);
+    }
+    let args = daemon_args();
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let start = run("pulseaudio", &args);
+    let begin = Instant::now();
+    while run("pactl", &["info"]).is_err() {
+        if begin.elapsed() > START_TIMEOUT {
+            return Err(match start {
+                Err(e) => format!("could not start pulseaudio: {e}"),
+                Ok(_) => "pulseaudio started but does not answer".to_owned(),
+            });
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    Ok(start.is_ok())
+}
+
+/// A daemon plus a fresh null sink for this run, or why there is none.
+pub fn null_sink_for_run() -> Pulse {
     if std::env::var("JNR_PULSE").as_deref() == Ok("off") {
         return Pulse::Absent("JNR_PULSE=off".to_owned());
     }
@@ -77,43 +116,32 @@ pub fn ensure_null_sink() -> Pulse {
             "pulseaudio is not installed (see .devcontainer/Dockerfile)".to_owned(),
         );
     }
-    let mut started = false;
-    if run("pactl", &["info"]).is_err() {
-        let args = daemon_args();
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        if let Err(e) = run("pulseaudio", &args) {
-            return Pulse::Absent(format!("could not start pulseaudio: {e}"));
-        }
-        started = true;
-        let begin = Instant::now();
-        while run("pactl", &["info"]).is_err() {
-            if begin.elapsed() > START_TIMEOUT {
-                return Pulse::Absent("pulseaudio started but does not answer".to_owned());
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
+    let started = match ensure_daemon() {
+        Ok(started) => started,
+        Err(e) => return Pulse::Absent(e),
+    };
+    let name = sink_name(std::process::id());
+    match run(
+        "pactl",
+        &[
+            "load-module",
+            "module-null-sink",
+            &format!("sink_name={name}"),
+        ],
+    ) {
+        Ok(module) => Pulse::Ready {
+            started,
+            sink: NullSink {
+                name,
+                module: module.trim().to_owned(),
+            },
+        },
+        Err(e) => Pulse::Absent(format!("could not add a null sink: {e}")),
     }
-    let sinks = run("pactl", &["list", "short", "sinks"]).unwrap_or_default();
-    if !has_sink(&sinks) {
-        if let Err(e) = run(
-            "pactl",
-            &[
-                "load-module",
-                "module-null-sink",
-                &format!("sink_name={SINK}"),
-            ],
-        ) {
-            return Pulse::Absent(format!("could not add the null sink: {e}"));
-        }
-    }
-    if let Err(e) = run("pactl", &["set-default-sink", SINK]) {
-        return Pulse::Absent(e);
-    }
-    Pulse::Ready { started }
 }
 
 /// Level statistics of a recorded capture (s16 samples).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CaptureStats {
     pub samples: usize,
     /// Largest absolute sample.
@@ -145,24 +173,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn daemon_loads_the_null_sink_and_never_exits_idle() {
+    fn daemon_never_exits_idle_and_sinks_are_per_run() {
         let args = daemon_args();
-        assert!(args.contains(&"--load=module-null-sink sink_name=jnr_null".to_owned()));
         assert!(args.contains(&"--exit-idle-time=-1".to_owned()));
         assert!(
             args.contains(&"-n".to_owned()),
             "no default.pa (no hardware modules)"
         );
-        assert_eq!(MONITOR, format!("{SINK}.monitor"));
-    }
-
-    #[test]
-    fn sink_list_is_parsed() {
-        let list = "1\tauto_null\tmodule-null-sink.c\ts16le 2ch 44100Hz\tIDLE\n\
-                    2\tjnr_null\tmodule-null-sink.c\ts16le 2ch 44100Hz\tSUSPENDED\n";
-        assert!(has_sink(list));
-        assert!(!has_sink("1\tjnr_null_other\tx\n"));
-        assert!(!has_sink(""));
+        assert!(!args.iter().any(|a| a.contains("null-sink")));
+        assert_eq!(sink_name(42), "jnr_null_42");
+        let sink = std::mem::ManuallyDrop::new(NullSink {
+            name: sink_name(7),
+            module: "3".to_owned(),
+        });
+        assert_eq!(sink.monitor(), "jnr_null_7.monitor");
     }
 
     #[test]
