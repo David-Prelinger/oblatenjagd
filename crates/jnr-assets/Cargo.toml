@@ -9,6 +9,10 @@ publish.workspace = true
 [dependencies]
 # Runtime atlas data types only (no features, wasm-safe).
 jnr-artkit.workspace = true
+# The audio bank (`audio_bank()`): parsed once from the embedded sources.
+jnr-audio.workspace = true
 
 [build-dependencies]
 jnr-artkit.workspace = true
+# Parses and checks `audio/` at build time: a broken source fails the build.
+jnr-audio.workspace = true
