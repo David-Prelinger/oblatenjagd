@@ -115,7 +115,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 | `boss` | the fight | 2/4 | 160 (nice: 168/176) | C minor, B E♭ | 0 + 32 (A B A′ B) | 24.0 s | original | must |
 | `boss_defeat` | third hit | 3/4 (as built) | 120 | C | once | 1.5 s | Tusch (original) | must |
 | `fanfare_clear` | Maibaum | 6/8 | ♩. = 96 | F | once, ~5 bars | ~6.3 s | Mozart K. 596 | must |
-| `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 88 | F | once, 7 bars | 9.6 s | Mozart K. 596 + leitmotif | must |
+| `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 112 | F | once, 6 bars | 6.5 s | Mozart K. 596 + leitmotif | must |
 | `death` | Died | – | – | – | once | 1.25 s | original | must |
 | `game_over` | GameOver | 2/4 | 60 | B♭ minor → B♭ | once, 4 bars | 8.0 s | original | must |
 | `hurry` | ZEIT 60 | – | – | bells | once | 1.6 s | original | must |
@@ -247,7 +247,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 - The Maibaum is a May custom, and Mozart wrote the May song four months before he died. **Nice**: a Wurstkranz touch adds the first 300 ms of `oneup` (the Juchizer) over the fanfare.
 
 ### `fanfare_finale` (must)
-- On `LevelComplete` at the `goal_stollen`. The same K. 596 phrase at ♩. = 80, full band with M2 in sixths and the `becken` on every phrase start, then a 2-bar coda: the **leitmotif** in augmentation (F A C B♭ → F) and a 1.5 s Tusch. About 9 s: it covers the Serve (1.5 s) and the Tally. *As built (S2b review, accepted)*: ♩. = 88, not 80 (at 80 the 7 bars, vamp + phrase + coda, run 10.5 s, over the 10 s jingle cap); 9.6 s, the Tusch bar is 1.36 s.
+- On `LevelComplete` at the `goal_stollen`. The same K. 596 phrase at ♩. = 80, full band with M2 in sixths and the `becken` on every phrase start, then a 2-bar coda: the **leitmotif** in augmentation (F A C B♭ → F) and a 1.5 s Tusch. About 9 s: it covers the Serve (1.5 s) and the Tally. *As built (MA QA)*: the ending's Map phase starts `ending_map` 413–438 frames after the Stollen, so the cue must end within 400 frames (6.67 s): ♩. = 112, 6 bars (vamp with the pickup, the phrase, and a coda bar where the leitmotif follows the cadence's A4 at its own speed, F5 A5 C6 ♪ ♪ ♪ → B♭5 ♩, turning into the Tusch B♭ → F with the snare roll and the final hit), 6.5 s with the release. (S2b had ♩. = 88, 7 bars, 9.6 s.)
 
 ### `death` „Autsch-Jodler" (must)
 - 1 000 ms + 300 ms release, on the music channels (the piece is cut). *As built (S2a review, accepted)*: 1 250 ms in all (600 ms yodel, 100 ms rest, the 300 ms slide, then its ring-out and release); it ends inside the 60-frame Dying phase plus the respawn and still reads as one fall.
