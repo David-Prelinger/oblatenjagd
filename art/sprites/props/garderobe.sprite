@@ -13,13 +13,13 @@ anim   = idle frames=1
 ---
 frame idle 0
 ................................................
-.oO....................oo....................Oo.
-o.l...................oOOl...................l.o
-oOloooooooooooooooooooooooooooooooooooooooooolOo
-.OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO.
-..llllllllllllllllllllllllllllllllllllllllllll..
-..Ol...................Ol...................Ol..
-..Ol...................Ol...................Ol..
+.oo....................oo....................oo.
+oOOl..................oOOl..................oOOl
+.OllO.................OOlO.................OOOl.
+..OllOO.............OOlOllOO.............OOlOl..
+..Ol.llOOO.......OOOll.Ol.llOOO.......OOOll.Ol..
+..Ol...lllOOOOOOOlll...Ol...lllOOOOOOOlll...Ol..
+..Ol......lllllll......Ol......lllllll......Ol..
 ..Ol...................Ol...................Ol..
 ..Ol...................Ol...................Ol..
 ..Ol...................Ol............w......Ol..
