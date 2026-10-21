@@ -920,6 +920,56 @@ mod tests {
         assert_eq!(fb.get(0, 179), Some(SKY_LIGHT));
     }
 
+    #[test]
+    fn an_opaque_salon_wall_at_factor_16_replaces_the_flat_sky_in_a_cafe_level() {
+        // M7 (`bg_zauner_salon`, catalog "M7 additions"): a 17-row side
+        // level with `camera_top = 92` and one opaque 180 px layer at factor
+        // 16. It is drawn without the flat sky wherever the camera stands.
+        let wall: Vec<&str> = vec!["abc"; HEIGHT];
+        let atlas = testutil::atlas(&[testutil::sprite(
+            "bg_zauner_salon",
+            (0, 0),
+            false,
+            vec![("idle", 0, vec![image(&wall)])],
+        )]);
+        let texts = texts();
+        let cafe = |start_col: usize| {
+            let mut rows: Vec<String> = (0..17).map(|_| ".".repeat(60)).collect();
+            rows[..7].fill("#".repeat(60));
+            rows[14].replace_range(start_col..=start_col, "P");
+            rows[15] = "#".repeat(60);
+            rows[16] = "#".repeat(60);
+            let text = format!(
+                "[meta]\nid = \"cafe\"\ntime_limit = 300\ncamera_top = 92\n\
+                 background = [{{ sprite = \"bg_zauner_salon\", factor = 16 }}]\n\
+                 [legend]\n\"P\" = {{ entity = \"player_start\" }}\n\"#\" = \"solid\"\n\
+                 [map]\ngrid = '''\n{}\n'''\n",
+                rows.join("\n")
+            );
+            Level::parse(&text).unwrap()
+        };
+        let mut seen_x = Vec::new();
+        for start_col in [2, 30, 57] {
+            let level = cafe(start_col);
+            let ctx = RenderContext::for_level(&atlas, &texts, &level);
+            assert!(ctx.background_covers, "{start_col}");
+            let game = Game::new(&level, &tuning(), 1);
+            let cam = game.camera();
+            assert_eq!(cam.y, 92, "{start_col}");
+            seen_x.push(cam.x);
+            let mut fb = Framebuffer::new();
+            render(&game, &ctx, &mut fb);
+            assert!(!fb.pixels.contains(&SKY_LIGHT), "{start_col}");
+            // Rows 7..15 are air: the wall shows, scrolled with the camera.
+            let y = 7 * 16 - 92 + 8;
+            for x in 0..6 {
+                let want = [A, B, C][(x + cam.x).rem_euclid(3) as usize];
+                assert_eq!(fb.get(x, y), Some(want), "{start_col} {x}");
+            }
+        }
+        assert!(seen_x[0] < seen_x[1] && seen_x[1] < seen_x[2], "{seen_x:?}");
+    }
+
     /// A 2-column, 21-row climb level with a `factor_y = 8` layer and the
     /// player standing on a ledge in `start_row`.
     fn tall_level(start_row: usize) -> Level {

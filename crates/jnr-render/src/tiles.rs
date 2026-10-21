@@ -568,6 +568,26 @@ mod tests {
     }
 
     #[test]
+    fn cafe_tiles_draw_as_grey_boxes_by_kind_until_the_art_lands() {
+        // M7 (E48): no `tile_<name>` sprites yet; the five solids fill their
+        // cell in stone grey, the chandelier ring is a one-way strip on top.
+        let l = level(
+            "\"m\" = \"marmor\"\n\"d\" = \"marmor_punkt\"\n\"s\" = \"stuck\"\n\"v\" = \"vitrine\"\n\"t\" = \"theke\"\n\"l\" = \"luster\"\n",
+            "Psl\nvt.\nmdm\n",
+        );
+        let atlas = testutil::atlas(&[]);
+        let looks = TileLooks::resolve(&atlas, &l.tile_names, "tile_");
+        let mut fb = testutil::fb();
+        let air = fb.get(36, 12);
+        draw_tiles(&mut fb, &atlas, &looks, &game(&l), Camera { x: 0, y: 0 }, 0);
+        for (x, y) in [(20, 8), (4, 24), (20, 24), (4, 40), (20, 40), (36, 40)] {
+            assert_eq!(fb.get(x, y), Some(STONE_GREY), "solid at {x},{y}");
+        }
+        assert_eq!(fb.get(36, 1), Some(LEATHER_DARK), "luster: one-way top");
+        assert_eq!(fb.get(36, 12), air, "luster: open below its top");
+    }
+
+    #[test]
     fn swim_water_grey_box_is_blue_not_the_lethal_red() {
         let l = level(
             "\"~\" = \"see_wasser\"\n\"t\" = \"see_wasser_tief\"\n\"|\" = \"steg_pfahl\"\n\"w\" = \"wolfgangsee_water\"\n\"#\" = \"solid\"\n",
