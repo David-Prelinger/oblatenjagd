@@ -40,7 +40,7 @@
 
 use super::{Event, Game, Mode};
 use crate::camera::SCREEN_W;
-use crate::entity::{EntityKind, Popup, popup};
+use crate::entity::{EntityKind, Popup, popup, stacked_popups};
 use crate::fx::Fx;
 use crate::hash::Fnv;
 use crate::level::{SpawnKind, TILE_PX};
@@ -139,6 +139,15 @@ impl StageClear {
     }
 }
 
+/// The `goal_stollen` popups' `bottom` ([`stacked_popups`]) is this many
+/// px above Resi's hitbox top (E51), so their lowest drawn row is 2 px
+/// above the plate she holds up: her drawn look is 2 px taller than her
+/// hitbox (16×24 over 22, 16×32 over 30), the `stollen_teller` (12 px)
+/// is drawn 1 px above it, so its top row is 15 px above the hitbox top;
+/// rows 16 and 17 stay clear, the lowest popup row is 18 above, and
+/// `stacked_popups` leaves 1 px between that row and `bottom`.
+pub const STOLLEN_POPUP_ABOVE_TOP_PX: i32 = 16;
+
 /// Maibaum points for a feet height (whole px above the pole base) and
 /// whether it is the top zone (the Wurstkranz).
 pub fn maibaum_points(height_px: i32, g: &GoalTuning) -> (u32, bool) {
@@ -199,14 +208,20 @@ impl Game {
     /// (D-107): 10 000 points and „Zaunerstollen!" above her, enemies and
     /// the timer stop, and the Serve starts where she is (no horizontal
     /// speed; in the air she keeps her vertical speed and falls).
+    ///
+    /// The popups (E51): every popup still up goes at once (the boss's
+    /// „Bitte sehr!"/5000 may still hang there), and the pair appears
+    /// above the plate she holds up on the frame she stands
+    /// ([`Game::serve_popups`]): now if she touched it standing, else on
+    /// the frame she lands.
     fn touch_stollen(&mut self, col: i32, row: i32) {
         let points = self.tuning.score.stollen;
         self.add_score(points);
-        let (fx, _) = self.player.feet();
-        let top = self.player.y;
-        self.entities.push(popup(Popup::Score(points), fx, top));
         self.entities
-            .push(popup(Popup::Stollen, fx, top - Fx::from_px(10)));
+            .retain(|e| !matches!(e.kind, EntityKind::Popup(_)));
+        if self.player.on_ground {
+            self.serve_popups();
+        }
         let p = &mut self.player;
         p.vx = Fx::ZERO;
         p.skidding = false;
@@ -223,6 +238,20 @@ impl Game {
             bonus: 0,
         });
         self.events.push(Event::LevelComplete);
+    }
+
+    /// The Serve's popups (E51): 10 000 with „Zaunerstollen!" above it,
+    /// stacked over the plate she holds up while standing (their lowest
+    /// drawn row 2 px above it, [`STOLLEN_POPUP_ABOVE_TOP_PX`]). Standing,
+    /// so she never rises into them; they rise away from the plate.
+    fn serve_popups(&mut self) {
+        let (fx, _) = self.player.feet();
+        let bottom = self.player.y - Fx::from_px(STOLLEN_POPUP_ABOVE_TOP_PX);
+        self.entities.extend(stacked_popups(
+            &[Popup::Score(self.tuning.score.stollen), Popup::Stollen],
+            fx,
+            bottom,
+        ));
     }
 
     /// One frame of falling in the Serve (player gravity, stopped by solid
@@ -311,7 +340,9 @@ impl Game {
             ClearPhase::Serve => {
                 // Counted from the frame she stands.
                 if !self.player.on_ground {
-                    self.serve_fall();
+                    if self.serve_fall() {
+                        self.serve_popups();
+                    }
                     c.timer = 0;
                 }
                 (self.player.on_ground && c.timer >= g.serve_frames).then_some(if self.time > 0 {

@@ -591,3 +591,110 @@ fn the_armed_goal_wins_over_a_hurt_in_the_same_frame() {
     assert_eq!(g.mode(), Mode::StageClear);
     assert_eq!(g.deaths(), 0);
 }
+
+/// The `goal_stollen` popups (E51) in the order they spawn: `(popup, x,
+/// top)` in whole px.
+fn stollen_popups(g: &Game) -> Vec<(Popup, i32, i32)> {
+    g.entities()
+        .iter()
+        .filter_map(|e| match e.kind {
+            EntityKind::Popup(p @ (Popup::Stollen | Popup::Score(10_000))) => {
+                Some((p, e.feet().0.to_px(), e.y.to_px()))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// E51: touched standing, 10 000 with „Zaunerstollen!" above it appear at
+/// once over the plate she holds up: the score's lowest drawn row (its
+/// outline, top + 8) 2 px above the plate's top row, which is 15 px above
+/// her hitbox top (her look is 2 px taller, the 12 px plate 1 px above it).
+#[test]
+fn touched_standing_the_stollen_popups_stack_above_the_plate() {
+    let mut g = Game::new(&finale(), &tuning(), 1);
+    touch(&mut g);
+    assert!(g.player().on_ground);
+    let top = g.player().y.to_px();
+    let fx = g.player().feet().0.to_px();
+    let plate_top = top - 15;
+    let stack = crate::entity::POPUP_STACK_PX;
+    // 2 rows of air, then the score's outline row, 8 rows below its top.
+    let score_top = plate_top - 2 - 1 - 8;
+    assert_eq!(
+        stollen_popups(&g),
+        vec![
+            (Popup::Score(10_000), fx, score_top),
+            (Popup::Stollen, fx, score_top - stack),
+        ]
+    );
+    assert_eq!(
+        score_top,
+        top - crate::game::STOLLEN_POPUP_ABOVE_TOP_PX - 10,
+        "stacked_popups: the drawn bottom 1 px above `bottom`"
+    );
+    // Only once.
+    hold(&mut g, "-", 5);
+    assert_eq!(stollen_popups(&g).len(), 2);
+}
+
+/// E51: touched in the air, the pair appears on the frame she lands (she
+/// never rises or falls through it), above the plate where she stands.
+#[test]
+fn touched_in_the_air_the_stollen_popups_appear_when_she_lands() {
+    let mut g = Game::new(&finale(), &tuning(), 1);
+    let tile = Fx::from_px(TILE_PX);
+    g.player.x = tile.mul_int(GOAL_COL);
+    g.player.y = tile.mul_int(GOAL_ROW + 1) - g.player.h - Fx::from_px(12);
+    g.player.vy = -Fx::from_px(2);
+    g.player.on_ground = false;
+    let events = hold(&mut g, "-", 1);
+    assert!(events.contains(&Event::LevelComplete));
+    let mut frames = 0;
+    while !g.player().on_ground {
+        assert!(stollen_popups(&g).is_empty(), "none in the air");
+        hold(&mut g, "-", 1);
+        frames += 1;
+        assert!(frames < 120);
+    }
+    let top = g.player().y.to_px();
+    let popups = stollen_popups(&g);
+    assert_eq!(popups.len(), 2, "on the landing frame");
+    assert_eq!(popups[0].0, Popup::Score(10_000));
+    assert_eq!(popups[0].2, top - 15 - 2 - 1 - 8);
+    // Only once.
+    hold(&mut g, "-", 5);
+    assert_eq!(stollen_popups(&g).len(), 2);
+}
+
+/// E51: every popup still up (the boss's „Bitte sehr!"/5000) goes when the
+/// goal sequence starts.
+#[test]
+fn touching_the_stollen_clears_the_popups_still_up() {
+    let mut g = Game::new(&finale(), &tuning(), 1);
+    // Standing in the goal cell: the touch is the next step.
+    let tile = Fx::from_px(TILE_PX);
+    g.player.x = tile.mul_int(GOAL_COL);
+    g.player.y = tile.mul_int(GOAL_ROW + 1) - g.player.h;
+    g.player.on_ground = true;
+    let x = g.player().x;
+    g.entities
+        .push(crate::entity::popup(Popup::BitteSehr, x, Fx::from_px(40)));
+    g.entities
+        .push(crate::entity::popup(Popup::Score(5000), x, Fx::from_px(51)));
+    let events = hold(&mut g, "-", 1);
+    assert!(events.contains(&Event::LevelComplete));
+    let left: Vec<EntityKind> = g
+        .entities()
+        .iter()
+        .filter(|e| matches!(e.kind, EntityKind::Popup(_)))
+        .map(|e| e.kind)
+        .collect();
+    assert_eq!(
+        left,
+        vec![
+            EntityKind::Popup(Popup::Score(10_000)),
+            EntityKind::Popup(Popup::Stollen)
+        ]
+    );
+}

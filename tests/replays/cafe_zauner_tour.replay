@@ -27,7 +27,10 @@
 #                       stomp from the counter (hit 1, „Unerhört!"); 1755
 #                       a volley (round 2, three bills); 2414 the third
 #                       hit, the bell lifted („Bitte sehr!"); 2432 the bow
-#   finale              2492 the Serve (the plate held up on the counter)
+#   finale              2456 the Serve (the plate held up on the counter,
+#                       „Zaunerstollen!"/10000 above it, E51: the pair
+#                       appears as she lands at 2448), 2760 the
+#                       clear panel („Mahlzeit, Resi!", E51)
 #   ending              2999 Map, 3319 Scene, 3692 Bill, 4349 Credits
 #                       page 2 (the cast), 5279 Ende
 level  = cafe_zauner
@@ -36,7 +39,7 @@ source = handwritten
 start  = title
 expect = complete frames=2441..2441 deaths=0 no_event=Hurt
 expect = state=title cleared=true score=0 lives=3 oblaten=0 power=normal
-shots  = 60:intro 181:door 304:tray_bounce 475:salon 686:queue 892:checkpoint 1000:anstellen 1170:dash 1452:breather_stomp 1755:volley 2414:bell 2432:bow 2492:serve 2999:ending_map 3319:ending_scene 3692:ending_bill 4349:credits 5279:ende
+shots  = 60:intro 181:door 304:tray_bounce 475:salon 686:queue 892:checkpoint 1000:anstellen 1170:dash 1452:breather_stomp 1755:volley 2414:bell 2432:bow 2456:serve 2760:clear 2999:ending_map 3319:ending_scene 3692:ending_bill 4349:credits 5279:ende
 ---
 - 20
 S 1

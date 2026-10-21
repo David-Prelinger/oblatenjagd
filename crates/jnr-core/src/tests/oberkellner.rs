@@ -397,6 +397,59 @@ fn the_raised_tray_bounces_her_without_damage_or_points_and_its_side_hurts() {
     }
 }
 
+/// E51: a hit's labels hang beside his head on the room's side, the text
+/// starting just below her feet as she bounces off, the score under it;
+/// at both walls (the breathers alternate: left, right, left), for all
+/// three hits. That they keep clear of his sprite is checked with the real
+/// font in `jnr-render` (`boss_hit_labels_clear_his_sprite`).
+#[test]
+fn the_hit_labels_hang_beside_his_head_on_the_rooms_side() {
+    let t = tuning();
+    let side = Fx::from_px(crate::game::OBERKELLNER_POPUP_SIDE_PX);
+    let stack = Fx::from_px(crate::entity::POPUP_STACK_PX);
+    let mut g = locked();
+    for (hit, wall_x, room, label, points) in [
+        (1u8, LEFT_WALL_X, 1, Popup::Unerhoert, 1000),
+        (2, RIGHT_WALL_X, -1, Popup::Unerhoert, 1000),
+        (3, LEFT_WALL_X, 1, Popup::BitteSehr, 5000),
+    ] {
+        until_boss(&mut g, st::BREATHE, 900);
+        let b = boss(&g);
+        assert_eq!(b.x, Fx::from_px(wall_x), "hit {hit}: at the wall");
+        assert_eq!(i32::from(b.dir), -room, "facing the wall");
+        let head = b.y;
+        assert_eq!(
+            head,
+            Fx::from_px(FLOOR_Y - t.enemies.oberkellner_breathe_hitbox[1])
+        );
+        let (cx, _) = b.feet();
+        drop_onto(&mut g, b, 2);
+        g.step(input("-"));
+        assert_eq!(boss(&g).hits, hit);
+        let popup = |p: Popup| {
+            *g.entities
+                .iter()
+                .find(|e| e.kind == EntityKind::Popup(p))
+                .unwrap_or_else(|| panic!("hit {hit}: no {p:?}"))
+        };
+        let (text, score) = (popup(label), popup(Popup::Score(points)));
+        // The text's outline row is his head top; the score one line under.
+        assert_eq!(text.y, head + Fx::ONE, "hit {hit}");
+        assert_eq!(score.y, text.y + stack, "hit {hit}");
+        let room_x = cx + side.mul_int(room);
+        assert_eq!(
+            (text.feet().0, score.feet().0),
+            (room_x, room_x),
+            "hit {hit}"
+        );
+        if hit < 3 {
+            until_boss(&mut g, st::TELEGRAPH, 200);
+            g.entities
+                .retain(|e| !matches!(e.kind, EntityKind::Popup(_)));
+        }
+    }
+}
+
 #[test]
 fn a_stomp_in_the_breather_is_a_hit_and_its_side_hurts() {
     let t = tuning();

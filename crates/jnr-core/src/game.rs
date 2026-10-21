@@ -20,7 +20,7 @@ mod flow;
 mod power;
 
 pub use ending::{BILL_LINES, Ending, EndingPhase};
-pub use flow::{ClearPhase, StageClear, Start, maibaum_points};
+pub use flow::{ClearPhase, STOLLEN_POPUP_ABOVE_TOP_PX, StageClear, Start, maibaum_points};
 
 use std::sync::Arc;
 
@@ -48,6 +48,12 @@ pub const TELEPORT_SEARCH_COLS: i32 = 8;
 /// (the art review asks for at least 2), and it only rises from there (E12
 /// art review: it used to spawn at 40 and cover the board).
 pub const CHECKPOINT_POPUP_ABOVE_GROUND_PX: i32 = 52;
+
+/// The Oberkellner's hit labels („Unerhört!"/„Bitte sehr!" over the
+/// score, E51) are centred this many px from his centre, on the room's
+/// side: the widest label („Bitte sehr!") then keeps clear of his 32 px
+/// wide sprite cell (`jnr-render` checks it with the real font).
+pub const OBERKELLNER_POPUP_SIDE_PX: i32 = 42;
 
 /// Highest score (the HUD shows 6 digits).
 pub const MAX_SCORE: u32 = 999_999;
@@ -1498,10 +1504,19 @@ impl Game {
     /// D-106): 1000 and „Unerhört!" on hits 1 and 2; on the third 5000 and
     /// „Bitte sehr!", and every bill is gone. Returns the popups (score,
     /// then the text stacked above it); none if he wasn't in his breather.
+    ///
+    /// Where (E51): beside his head, on the room's side. The text's drawn
+    /// top (its outline) is on the breather's hitbox top, where her feet
+    /// are on a stomp, with the score below it, so the labels start under
+    /// her as she bounces off and never cover her; they are centred
+    /// [`OBERKELLNER_POPUP_SIDE_PX`] from his centre away from the wall he
+    /// breathes at (his `dir` faces it), so they don't cover him either.
     pub(crate) fn hit_oberkellner(&mut self, i: usize) -> Vec<Entity> {
         let Some(e) = self.entities.get_mut(i) else {
             return Vec::new();
         };
+        // His head: the breather's hitbox top, before the hit resizes it.
+        let head = e.y;
         let Some(beaten) = crate::enemies::hit_oberkellner(e, &self.tuning) else {
             return Vec::new();
         };
@@ -1520,10 +1535,16 @@ impl Game {
                 }
             }
         }
-        let (fx, _) = e.feet();
+        let (cx, _) = e.feet();
+        let fx = cx - Fx::from_px(OBERKELLNER_POPUP_SIDE_PX * i32::from(e.dir));
+        let text_top = head + Fx::ONE;
         vec![
-            popup(Popup::Score(points), fx, e.y),
-            popup(text, fx, e.y - Fx::from_px(crate::entity::POPUP_STACK_PX)),
+            popup(
+                Popup::Score(points),
+                fx,
+                text_top + Fx::from_px(crate::entity::POPUP_STACK_PX),
+            ),
+            popup(text, fx, text_top),
         ]
     }
 

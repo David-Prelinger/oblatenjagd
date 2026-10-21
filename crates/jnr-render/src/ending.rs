@@ -42,6 +42,11 @@ const BILL_LEFT: i32 = 8;
 const BILL_RIGHT: i32 = 167;
 const BILL_TOP: i32 = 16;
 const BILL_PITCH: i32 = 12;
+/// The last pixel column of the numbers' glyphs (E51 art review): 2 px
+/// left of [`BILL_RIGHT`], so with their `k` shadow at (+1, +1) the
+/// numbers keep the same margin to the slip's right edge as the text
+/// keeps on the left.
+const BILL_NUMBER_RIGHT: i32 = BILL_RIGHT - 2;
 /// `ending.bill_title` and the bill's lines in order of appearance.
 pub const BILL_TITLE_KEY: &str = "ending.bill_title";
 /// `ending.bill_score`, `.bill_oblaten`, `.bill_lives`, `.bill_tip`,
@@ -155,8 +160,10 @@ fn draw_bill(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer, timer: u16)
         if let Some(n) = numbers[i] {
             let mut buf = [0u8; 10];
             let digits = hud::padded(n, 1, &mut buf);
-            let x = x0 + BILL_RIGHT + 1 - font.measure(digits);
-            font.draw_text_outlined(fb, atlas, digits, x, y, MOZART_YELLOW, OUTLINE);
+            let x = x0 + BILL_NUMBER_RIGHT + 1 - font.measure(digits);
+            // A `k` shadow at (+1, +1) only (E51): a full outline closes
+            // the yellow digits into dark slugs on the cream paper at 1×.
+            font.draw_text(fb, atlas, digits, x, y, MOZART_YELLOW, Some(OUTLINE));
         }
     }
 }
@@ -388,10 +395,19 @@ mod tests {
         }
         assert_eq!((g.oblaten_total(), g.lives()), (1, 3));
         let fb = rendered(&g, &atlas);
-        let one = x0 + BILL_RIGHT + 1 - width("1");
+        let one = x0 + BILL_NUMBER_RIGHT + 1 - width("1");
         assert_eq!(fb.get(one, bill_line_y(3)), Some(MOZART_YELLOW));
-        let three = x0 + BILL_RIGHT + 1 - width("3");
+        let three = x0 + BILL_NUMBER_RIGHT + 1 - width("3");
         assert_eq!(fb.get(three, bill_line_y(4)), Some(MOZART_YELLOW));
+        // E51: the number column ends 2 px left of the text area's right
+        // edge, with a `k` shadow at (+1, +1) only (no full outline).
+        let (right, y) = (x0 + BILL_NUMBER_RIGHT, bill_line_y(4));
+        assert_eq!(BILL_NUMBER_RIGHT, BILL_RIGHT - 2);
+        assert_eq!(fb.get(right, y), Some(MOZART_YELLOW));
+        assert_eq!(fb.get(right + 1, y + 1), Some(OUTLINE), "the shadow");
+        assert_ne!(fb.get(right + 1, y), Some(OUTLINE), "no outline right");
+        assert_ne!(fb.get(three - 1, y), Some(OUTLINE), "no outline left");
+        assert_ne!(fb.get(three, y - 1), Some(OUTLINE), "no outline above");
         assert_eq!(fb.get(x0 + BILL_LEFT, bill_line_y(6)), Some(WHITE), "tip");
         let thanks = t.get("ending.bill_thanks");
         assert_eq!(fb.get(centred_x(&thanks), bill_line_y(8)), Some(WHITE));
