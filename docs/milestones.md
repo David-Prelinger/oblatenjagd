@@ -298,6 +298,35 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the art-director reviews the full paged contact sheet; the game-designer review includes the Café Zauner filmstrip, a tray bounce, the queue chain to the 1-up, the arena lock with „Hinten anstellen!", a dash seen from a refuge, a breather stomp, a volley, the third hit with the bow and the bell lifting, the Serve, every ending phase and the marked title, the Bad Ischl → Café Zauner Wait screen, the hand-measured boss windows, and all new German text.
 
+## MA – Audio: own synth, chiptune Blasmusik, a sound for every event
+
+Design: `docs/audio-design.md` (D-113). Engine plan: `docs/proposals/ma-audio-architecture.md` (D-114 … D-118). Sound review gate: the game-designer's verdict before `cargo xtask audio golden --accept` (D-117).
+
+Planning
+- [x] Audio design, PD sources verified, mute texts (game-designer, D-113)
+- [x] Architecture spike: macroquad audio natively, in wasm and without a sound device; render cost; plan (D-114 … D-118)
+
+Engine
+- [ ] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
+- [ ] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
+- [ ] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
+- [ ] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
+- [ ] E58 Embedding through `jnr-assets/build.rs`; core `Event::Bounced` (output only, no hash change); the pure cue mapper (events + state diff → cues, exhaustive per `Event`) with D-113's voice rules; level `music` ids for the 9 journey levels with a `levels lint` check; cue-log goldens from replays
+- [ ] E59 App wiring: SFX at startup, songs per stage (lazy, unloaded), pause, ducking, jingles, underwater swap; `vnc-smoke` audio capture assertions
+- [ ] E60 `xtask replay <file> --audio` (offline mix, spectrogram, cue timeline, clipping/ceiling check)
+- [ ] E61 Docs (architecture, validation, agentic-setup), the `sound-designer` agent and the `sfx-authoring` skill
+
+Sound (sound-designer, game-designer review)
+- [ ] S1 The 25 must SFX (audio-design §6), stats in range
+- [ ] S2 Must music in the order of audio-design's task list (title, death, clear, hurry, game over, map, Salzburg, boss set, café, finale, ending set, Stages 2–8, underwater), each quote transcribed from its PD edition with its header filled in
+- [ ] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows
+- [ ] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
+
+Platform
+- [ ] wasm build loads and plays (audio.js present; still runs without it); `wasm-smoke` and `vnc-smoke` green; verify runtime within budget (record it)
+
+**Acceptance:** see "Milestone acceptance" below, with the art-director step replaced by the game-designer's audio verdict on every piece and SFX (stats, spectrograms, piano rolls, the offline mixes of the Stage 1 solver run and the boss win); QA covers the cue logs over every flow, mute in every mode, and the Stage 6 dive/surface swap.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.

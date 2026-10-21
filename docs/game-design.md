@@ -1181,6 +1181,10 @@ Then **the title** with the run reset (Salzburg, score 0, 3 lives, Oblaten 0, No
 
 **Thrown Hackl vs the new kinds** (D-105, D-106): Kellner **Bounce** (the tray); Wartender **Defeat** (100, a Selfie-Tourist); Oberkellner **Bounce** with the tray up, **a hit** in his breather, **Pass** in Wait/Intro/Stun/Done; Rechnung **Pass**. `sinks_in_swim_water` (exhaustive; no water in Stage 9): Kellner and Oberkellner true (on foot), Wartender as a Selfie-Tourist.
 
+## Audio (Milestone MA)
+
+The audio design is `docs/audio-design.md` (D-113): chiptune Blasmusik and Ländler from our own synth, one piece per stage plus the title, the map, the boss, the fanfares, death, game over, the ZEIT-60 church bells and the ending, quoting only melodies that are public domain worldwide (Mozart, Haydn, Strauss Vater and Sohn, traditional tunes), every SFX mapped to a core event or a state change. The only core change is the output event `Bounced` (a no-damage bounce off a non-stompable top). M toggles mute.
+
 ## UI text (German)
 
 All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, signs ≤ 2 lines of ≤ 12 characters, only characters of the font's charset (D-012; no `°`, `€`, `&`, `*`).
@@ -1196,6 +1200,7 @@ All keys live in `content/text/de.toml` (D-006). UI lines ≤ 24 characters, sig
 | `ui.continue` | Weiter? Drück START |
 | `ui.time_up` | Zeit is' um! |
 | `ui.to_be_continued` | Fortsetzung folgt … |
+| `ui.sound_off` / `ui.sound_on` | Ton aus – Kurruhe / Ton an – Musi, bitte! (MA, nice: the toast after M toggles the sound; „Kurruhe" are a spa town's quiet hours, „Musi" is Austrian for music, D-113) |
 | `popup.extra_life` | +1 Leben |
 | `popup.checkpoint` | Zwischenstopp |
 | `popup.wurstkranz` | Wurstkranz! |

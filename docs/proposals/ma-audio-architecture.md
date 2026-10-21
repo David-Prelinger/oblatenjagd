@@ -317,19 +317,19 @@ deliberately outside the contract.
 
 ## Proposed decisions
 
-- **D-113** Audio playback: macroquad `audio` (quad-snd 0.2.8) with runtime-rendered mono
+- **D-113** (recorded as **D-114**) Audio playback: macroquad `audio` (quad-snd 0.2.8) with runtime-rendered mono
   44.1 kHz WAVs. No custom streaming mixer. A song is a loop from sample 0, rendered to a
   multiple of 4096 frames (quad-snd native loop bug). Intros are separate jingles on the
   StageIntro screen.
-- **D-114** Audio is optional: the quad-snd panic guard, frame-budgeted loads (120 frames),
+- **D-114** (recorded as **D-115**) Audio is optional: the quad-snd panic guard, frame-budgeted loads (120 frames),
   `--mute`/M, and no cue ever blocks or fails the game.
-- **D-115** wasm link: `--allow-undefined-file` for exactly quad-snd's 9 imports (not a
+- **D-115** (recorded as **D-116**) wasm link: `--allow-undefined-file` for exactly quad-snd's 9 imports (not a
   global `--allow-undefined`). `web/audio.js` is a pinned copy of quad-snd 0.2.8's
   `js/audio.js`.
-- **D-116** `jnr-audio`: integer-only synth under the core determinism lint. Sources in
+- **D-116** (recorded as **D-117**) `jnr-audio`: integer-only synth under the core determinism lint. Sources in
   `audio/`, embedded and linted by `jnr-assets/build.rs`. PCM-hash goldens accepted after a
   game-designer verdict.
-- **D-117** Container: PulseAudio null sink for audio smoke tests (packages below).
+- **D-117** (recorded as **D-118**) Container: PulseAudio null sink for audio smoke tests (packages below).
 
 ## Task breakdown
 
