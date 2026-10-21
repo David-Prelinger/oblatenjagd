@@ -437,7 +437,7 @@ pub fn render(game: &Game, ctx: &RenderContext, fb: &mut Framebuffer) {
         .stage_clear()
         .is_some_and(|c| c.phase == ClearPhase::ToBeContinued);
     match game.mode() {
-        Mode::Title { frames } => return screens::draw_title(game, ctx, fb, frames),
+        Mode::Title { frames, .. } => return screens::draw_title(game, ctx, fb, frames),
         Mode::StageIntro { .. } => return screens::draw_intro(game, ctx, fb),
         Mode::GameOver { frames } => return screens::draw_game_over(game, ctx, fb, frames),
         Mode::StageClear if to_be_continued => return screens::draw_to_be_continued(ctx, fb),

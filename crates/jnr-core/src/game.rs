@@ -160,6 +160,11 @@ pub enum Mode {
     Title {
         /// Frames since the title screen appeared (saturating; for blinking).
         frames: u16,
+        /// Entered from the ending's „Ende" (the marked title, D-111):
+        /// START counts only once `frames >= ending.end_start_frames`.
+        /// Every other title (boot, after „Fortsetzung folgt …") takes
+        /// START at once.
+        from_ending: bool,
     },
     /// The stage intro screen before play, also after every death and after
     /// a continue (only with [`Start::Title`]). Nothing moves.
@@ -296,7 +301,7 @@ pub struct Game {
     ending: Option<Ending>,
     /// The session's „durchgespielt" mark (D-107): set when the ending
     /// ends, never cleared (it survives `end_run` and every new run).
-    cleared: bool,
+    pub(crate) cleared: bool,
     /// Hash of everything that never changes during a game (start grid,
     /// goals, spawns, tuning), computed per level (`level_parts`).
     static_hash: u64,
@@ -394,7 +399,10 @@ impl Game {
         game.reset_level();
         game.place_camera();
         if start == Start::Title {
-            game.mode = Mode::Title { frames: 0 };
+            game.mode = Mode::Title {
+                frames: 0,
+                from_ending: false,
+            };
             game.frame_title();
         }
         game
@@ -406,12 +414,21 @@ impl Game {
         self.frame = self.frame.wrapping_add(1);
         let start_pressed = input.contains(InputFrame::START) && !self.start_held;
         match self.mode {
-            Mode::Title { frames } => {
+            Mode::Title {
+                frames,
+                from_ending,
+            } => {
                 self.player.jump_held = input.jump();
+                let frames = frames.saturating_add(1);
                 self.mode = Mode::Title {
-                    frames: frames.saturating_add(1),
+                    frames,
+                    from_ending,
                 };
-                if start_pressed {
+                // D-111: the marked title ignores START for its first
+                // frames, like the game over's prompt (a press counts once
+                // the title is `end_start_frames` frames old).
+                let ready = !from_ending || frames >= self.tuning.ending.end_start_frames;
+                if start_pressed && ready {
                     self.restart();
                 }
             }
@@ -1696,9 +1713,13 @@ impl Game {
                 h.u8(3);
                 h.u16(frames);
             }
-            Mode::Title { frames } => {
+            Mode::Title {
+                frames,
+                from_ending,
+            } => {
                 h.u8(4);
                 h.u16(frames);
+                h.bool(from_ending);
             }
             Mode::StageIntro { timer } => {
                 h.u8(5);

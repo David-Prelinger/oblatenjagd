@@ -179,7 +179,13 @@ fn last_playable_stage_ends_with_the_teaser_and_a_reset_title() {
     hold(&mut g, "-", u32::from(t.map.teaser_frames) - 3);
     assert_eq!(map(&g).phase, MapPhase::Teaser);
     hold(&mut g, "-", 1);
-    assert_eq!(g.mode(), Mode::Title { frames: 0 });
+    assert_eq!(
+        g.mode(),
+        Mode::Title {
+            frames: 0,
+            from_ending: false
+        }
+    );
     // The run is reset: its first stage, score 0, full lives, Normal.
     assert_eq!(g.level().meta.id, "b");
     assert_eq!(
