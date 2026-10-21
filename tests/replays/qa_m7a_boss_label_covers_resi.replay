@@ -1,0 +1,76 @@
+# QA M7 acceptance, BUG (E51 / D-106 as-built "where the hit labels hang"):
+# the boss's hit labels cover Resi when she steps off a refuge onto his
+# head and drifts to the room side. E51 promises the labels "start below
+# her as she bounces off and never cover her". That holds for a high
+# bounce straight back (the solver's hits from the counter), but a step-off
+# with the direction still held is a low bounce (vy -900) that carries her
+# 20-40 px towards the room, exactly into the label column (42 px from his
+# centre), and she falls back down through it.
+# Steps: the solver's route to the counter (frames 0-1234, cafe_zauner_solver
+# unchanged), stand on the counter while he telegraphs and dashes right
+# (breather at the counter from 1272), walk left off the counter's edge
+# (LEFT 14 frames from 1272) onto his head: hit 1 at 1297, 1000 +
+# „Unerhört!". With nothing held she drifts left and falls past him.
+# Expected: no frame where „Unerhört!" or its „1000" is drawn over Resi.
+# Actual: frames 1314-1325 the label pair is drawn over her whole body
+# (text x 201-243 / 210-234 on screen, Resi x 219-241, y 87-147); at 1318-
+# 1320 only her hair and skirt show between the two lines. The same
+# happens at the left wall in the documented "forgiving pattern" of the
+# Normal win (cafe_zauner_boss_win_normal 1231-1238, 1765-1772, 2243-2250:
+# the label's first 3-5 columns over her arm and side as she drops beside
+# him), and for every form (a Big/Hackl Resi is 8 px taller).
+# The replay format cannot check popup rectangles, so the expectation is
+# visual: the shots below (her inside the labels) become goldens only once
+# the art-director approves a fixed frame; until then the goldens step
+# fails on them. Suggested regression test for the fix: replay this file
+# and check that no Unerhoert/BitteSehr/Score popup rectangle (font width,
+# rows y-1..y+8) intersects her drawn look (16 x 24/32 at her feet) on any
+# frame (the QA probe that found it does exactly that).
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt boss_hits=1 state=playing
+shots  = 1314:label_over_head 1318:label_over_body 1322:score_over_legs
+---
+RB 88
+RBJ 20
+RB 15
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 108
+LBJ 12
+LB 2
+- 4
+RB 16
+- 217      # stand on the counter: the Oberkellner dashes right and breathes at the counter (1272)
+L 14       # walk off the counter's left edge onto his head: hit 1 at 1297 (low bounce, LEFT held)
+- 60       # she drifts left and falls through „Unerhört!" / „1000" (1314-1325)

@@ -1,0 +1,142 @@
+# QA M7 acceptance (regression; replaces the intent of
+# qa_m7_flow_game_over_continue, which since the D-111 box move no longer
+# reaches the arena: its run now dies to Kellner #1 at 523 and in the
+# salon, so it proves a game over in Stage 9 but not in the fight).
+# Game over in the boss fight and the continue, in the title flow: the
+# relaxed run (qa_m7_flow_ending_start_held's inputs to frame 1974) locks
+# the arena at 1972 („Hinten anstellen!"); she stands on the floor and the
+# first dash kills her (2128). Twice more she respawns at the checkpoint,
+# walks into the arena from a standstill (lock 2783, 3488: the fight is
+# rebuilt from his spawn each time) and stands in the first dash (2942,
+# 3647): game over at 3707. START at 3985 continues: Café Zauner from its
+# start (the checkpoint cleared), 3 lives, score 0, Oblaten 0, the boss
+# waiting at his spawn with no hits; she walks right.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver no_event=LevelComplete stage=cafe_zauner score=0 lives=3 oblaten=0 boss_hits=0 state=playing
+---
+- 10
+S 1
+- 150
+- 40
+R 130
+RJ 24
+R 8
+- 20
+R 5
+- 43
+R 16
+- 4
+RJ 16
+- 8
+RJ 4
+- 4
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 8
+- 4
+RJ 4
+- 12
+RJ 4
+- 4
+RJ 8
+- 4
+RJ 20
+- 4
+RJ 4
+- 4
+RJ 12
+- 4
+RJ 8
+- 4
+RJ 16
+R 8
+RJ 32
+- 4
+RJ 4
+- 8
+RJ 36
+- 4
+RJ 4
+- 8
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 4
+- 4
+RJ 20
+- 12
+RJ 4
+- 12
+RJ 8
+- 8
+RJ 4
+- 4
+RJ 8
+- 8
+RJ 12
+- 8
+RJ 8
+- 4
+RJ 12
+- 4
+RJ 16
+R 4
+RJ 28
+- 8
+RJ 16
+L 4
+- 40
+R 13
+- 40
+R 6
+RJ 18
+R 20
+- 40
+R 48
+RJ 6
+R 20
+- 40
+R 45
+RJ 6
+R 20
+- 40
+R 44
+RJ 6
+R 20
+- 40
+R 50
+- 30
+- 80
+R 57
+- 30
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 1
+# --- 1974: the arena is locked (1972); death 1 ---
+- 600     # dies in the first dash (2128), respawn, intro, play from 2338
+R 44
+RJ 1      # over the step
+R 40
+RJ 20     # onto the Tortenvitrine
+R 100     # down onto the arena floor; the lock
+- 200     # stands in the middle: the first dash kills her
+- 300     # death 2 at 2942, respawn
+R 44
+RJ 1      # over the step
+R 40
+RJ 20     # onto the Tortenvitrine
+R 100     # down onto the arena floor; the lock
+- 200     # stands in the middle: the first dash kills her
+- 300     # death 3 at 3647: game over at 3707
+S 1       # 3985: continue
+- 200
+R 60

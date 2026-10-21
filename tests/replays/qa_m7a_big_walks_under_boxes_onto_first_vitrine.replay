@@ -1,0 +1,28 @@
+# QA M7 acceptance (D-111 fix, regression): a Zuckerschock Resi walks
+# under both boxes of section 1 and takes the first vitrine with a walking
+# jump. She bumps the M-box at 12 from below (136), the Mozartkugel rolls
+# right, turns at the vitrine's face and comes back to her (PowerUp 363,
+# big at x 154). Big, she walks left under the ?-box at 8 to the door and
+# back right under both boxes (no second bump: 48 px of headroom), then a
+# walking jump (no RUN) lands on the vitrine's top (x 308, hitbox top
+# 178 = vitrine top 208 - 30). Probed: every walking jump after 130 ... 200
+# frames of walking (take-off from a run-up or standing at the face) lands
+# on the vitrine; Normal from 135 frames of walking on
+# (qa_m7_walk_jump_blocked_at_first_vitrine, cafe_zauner_walk_only);
+# Hackl in cafe_zauner_boss_win_hackl.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt power=big player_x>=290 player_y>=178 player_y<=178 state=playing
+---
+R 108
+- 20
+J 12       # bump the M-box at 12 (136)
+- 120
+L 30       # make room: the Mozartkugel comes back from the vitrine
+- 103      # PowerUp 363
+L 90       # big, to the door under the ?-box at 8
+R 140      # back right under both boxes
+RJ 20      # walking jump onto the vitrine at 18-19
+R 10
+- 20
