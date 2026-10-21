@@ -29,9 +29,14 @@ use crate::{SAMPLE_RATE, note::Note};
 
 /// A loop's length is a multiple of this many frames (D-114).
 pub const LOOP_ALIGN: u32 = 4096;
-/// Fade (samples, 2 ms) when a new onset cuts a sounding voice; the same
-/// cut as `render::add_note_until`/`add_sfx_until` (tested).
+/// Fade (samples, 2 ms) when a new onset cuts a sounding voice: the cut of
+/// `render::add_note_until`/`add_sfx_until`, applied to the summed voice
+/// (identical for one layer, tested; a multi-layer voice may differ by a
+/// few LSBs of rounding, since those fade each layer).
 pub use crate::render::CUT_FADE;
+
+/// Allowed `tempo_pct` (a render variant, not a new piece).
+pub const TEMPO_PCT: (u32, u32) = (50, 200);
 
 /// Render variants of one song (D-114).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -78,6 +83,13 @@ pub fn natural_frames(song: &Song, tempo_pct: u32) -> u64 {
 
 /// The rendered length `L` of a song (see the module docs).
 pub fn song_frames(song: &Song, opts: &RenderOptions) -> Result<u32, String> {
+    let (lo, hi) = TEMPO_PCT;
+    if !(lo..=hi).contains(&opts.tempo_pct) {
+        return Err(format!(
+            "tempo_pct = {} is outside {lo}..={hi}",
+            opts.tempo_pct
+        ));
+    }
     let nat = natural_frames(song, opts.tempo_pct);
     match (opts.length_frames, song.kind) {
         (Some(0), _) => Err("length_frames must be > 0".into()),
@@ -91,6 +103,57 @@ pub fn song_frames(song: &Song, opts: &RenderOptions) -> Result<u32, String> {
         }
         (None, SongKind::Jingle) => Ok(nat.max(1) as u32),
     }
+}
+
+/// `opts` with `length_frames` resolved: a `length_of` song (D-114, the
+/// underwater track) gets its target loop's length at the same tempo.
+pub fn resolve_length(
+    songs: &BTreeMap<String, Song>,
+    song: &Song,
+    opts: &RenderOptions,
+) -> Result<RenderOptions, ParseError> {
+    let (Some(target), None) = (&song.length_of, opts.length_frames) else {
+        return Ok(*opts);
+    };
+    let err = |m: String| ParseError {
+        file: song.file.clone(),
+        line: song.at.length_of.line,
+        col: song.at.length_of.col,
+        kind: ErrorKind::Music,
+        message: m,
+    };
+    let t = songs
+        .get(target)
+        .ok_or_else(|| err(format!("`length_of` names no song `{target}`")))?;
+    if t.kind != SongKind::Loop {
+        return Err(err(format!("`length_of`: `{target}` is not a loop")));
+    }
+    let at = RenderOptions {
+        length_frames: None,
+        ..*opts
+    };
+    Ok(RenderOptions {
+        length_frames: Some(song_frames(t, &at).map_err(err)?),
+        ..*opts
+    })
+}
+
+/// Renders song `id` of `songs` with [`resolve_length`] applied: what the
+/// game (E58) and xtask both call.
+pub fn render_in(
+    songs: &BTreeMap<String, Song>,
+    instruments: &BTreeMap<String, Instrument>,
+    id: &str,
+    opts: &RenderOptions,
+) -> Result<SongRender, ParseError> {
+    let song = songs.get(id).ok_or_else(|| ParseError {
+        file: format!("{id}.song"),
+        line: 1,
+        col: 1,
+        kind: ErrorKind::Id,
+        message: format!("no song `{id}`"),
+    })?;
+    render_song(song, instruments, &resolve_length(songs, song, opts)?)
 }
 
 /// Each channel's instrument, checked against its tokens.
@@ -193,7 +256,10 @@ pub fn render_song(
                 None if looped => Some(at(onsets[0].step) + l as usize),
                 None => None,
             };
-            let cut = next.map_or(usize::MAX, |n| n - start);
+            // Events are in time order (the parser checks every bar); if a
+            // hand-made song isn't, a later onset cuts at once instead of
+            // underflowing.
+            let cut = next.map_or(usize::MAX, |n| n.saturating_sub(start));
             let gain = ch.volume_pct * e.velocity_pct / 100;
             let ids: Vec<u8> = match &e.sound {
                 Sound::Notes(t) => t.iter().map(|t| t.note.0).collect(),

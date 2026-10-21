@@ -32,16 +32,19 @@
 //!
 //! Token: `<sound>[/<steps>][>]['][@<velocity>]`. Sounds: a note (`c5`,
 //! `f#4`, `bb3`, with `!` if it is outside the key on purpose), a chord
-//! (`[d4,f4,bb4]`, up to three notes, arpeggiated by the channel's `arp_ms`),
+//! (`[d4,f4,bb4]`, up to three notes, no spaces, arpeggiated by the
+//! channel's `arp_ms`),
 //! a kit letter (`K`) or several hit together (`[K,c]`), a rest `r`, a tie `_`
 //! (holds the previous note longer, also across bar lines and patterns).
-//! `/<steps>` is the length (default: the previous token's on this line; the
-//! first token of a line: one beat). `>` accents (velocity 125 %), `'` plays
+//! `/<steps>` is the length (default: the previous token's of the same
+//! channel in this pattern, across its lines; the channel's first token in
+//! a pattern: one beat). `>` accents (velocity 125 %), `'` plays
 //! staccato (sounds half the length), `@<pct>` sets the velocity (1..=200).
 //! A `#` at a line start or after a space starts a comment (`f#4` is a
 //! note). Several lines of one channel in a score continue each other (one "system"
 //! of a few bars per block keeps the bars of all channels aligned). A channel
-//! without a line in a pattern is silent there.
+//! without a line in a pattern is silent there. Every bar must fill the
+//! meter exactly (a `score` error otherwise), so events are in time order.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -482,6 +485,26 @@ impl Song {
                     )
                     .at(line[0].at));
                 }
+                // Every bar fills the meter exactly, so patterns start on
+                // their bar lines and events stay in time order.
+                let bar_steps = meter.beats * steps_per_beat;
+                for (bi, bar) in line.iter().enumerate() {
+                    let sum: u32 = bar.tokens.iter().map(|t| t.len).sum();
+                    if sum != bar_steps {
+                        return Err(src
+                            .err(
+                                r.score.span(),
+                                ErrorKind::Score,
+                                format!(
+                                    "pattern {name} `{}` bar {}: {sum} steps; a {meter} bar has {bar_steps} ({} beats x {steps_per_beat} steps)",
+                                    channels[ci].name,
+                                    bi + 1,
+                                    meter.beats
+                                ),
+                            )
+                            .at(bar.at));
+                    }
+                }
             }
             patterns.push(Pattern {
                 name: name.clone(),
@@ -857,7 +880,7 @@ pub(crate) fn token(word: &str, prev_len: &mut u32) -> Result<Token, String> {
         "_" => Sound::Tie,
         b if b.starts_with('[') => {
             let inner = &b[1..b.len() - 1];
-            let items: Vec<&str> = inner.split(',').map(str::trim).collect();
+            let items: Vec<&str> = inner.split(',').collect();
             if items.len() > MAX_CHORD || items.iter().any(|i| i.is_empty()) {
                 return Err(format!(
                     "`{b}`: a chord has 1..={MAX_CHORD} notes or hits, comma-separated"
