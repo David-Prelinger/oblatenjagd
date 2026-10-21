@@ -11,10 +11,12 @@
 //! - `golden [--accept <id>|--all] | --prune` (`verify` step
 //!   `audio-goldens`): PCM hashes in `tests/golden/audio.toml`.
 //!
-//! Sources are enumerated per [`Kind`]; a new kind (E57: `.song` in
-//! `audio/music/`) adds a variant, its directory, its render arm in
-//! [`render`], its target in [`target_for`] and its extra review images in
-//! [`write_review`] (the piano roll). Every command then handles it.
+//! Sources are enumerated per [`Kind`]; a kind has its directory, its
+//! render arm in [`render`], its target in [`target_for`] and its extra
+//! review images in [`write_review`]. Songs (`audio/music/*.song`, E57) are
+//! rendered through `crate::audio_song`, get a default target by their kind
+//! (loop: class `song`; jingle: class `jingle`), a piano roll, loop fields
+//! in their JSON, and the music lints of `jnr_audio::music_lint` in `lint`.
 
 pub mod golden;
 pub mod lint;
@@ -22,6 +24,7 @@ pub mod plot;
 pub mod stats;
 pub mod targets;
 
+use std::borrow::Cow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -35,11 +38,13 @@ use stats::Stats;
 use targets::{Class, Target, Targets};
 
 pub const HELP: &str = "\
-cargo xtask audio render <id>|<file.sfx>|--all
+cargo xtask audio render <id>|<file.sfx>|<file.song>|--all
         render to $CARGO_TARGET_DIR/preview/audio/: <id>.wav, <id>_wave.png,
-        <id>_spec.png, <id>.json (stats); --all also sheet_spectrograms.png
+        <id>_spec.png, <id>.json (stats), songs <id>_roll.png (piano roll);
+        --all also sheet_spectrograms.png
 cargo xtask audio lint [id]
-        signal lints against audio/targets.toml (check step `audio-lint`)
+        signal lints against audio/targets.toml (songs: their kind's defaults)
+        and the music lints of every .song (check step `audio-lint`)
 cargo xtask audio golden                compare PCM hashes with tests/golden/audio.toml
 cargo xtask audio golden --accept <id>|--all
         write the current hashes; only after a game-designer APPROVED verdict (D-117)
@@ -53,15 +58,18 @@ pub enum Kind {
     Sfx,
     /// `audio/jingles/*.sfx`.
     Jingle,
+    /// `audio/music/*.song` (loops and music jingles, E57).
+    Song,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 2] = [Kind::Sfx, Kind::Jingle];
+    pub const ALL: [Kind; 3] = [Kind::Sfx, Kind::Jingle, Kind::Song];
 
     pub fn name(self) -> &'static str {
         match self {
             Kind::Sfx => "sfx",
             Kind::Jingle => "jingle",
+            Kind::Song => "song",
         }
     }
 
@@ -70,6 +78,7 @@ impl Kind {
         match self {
             Kind::Sfx => ("audio/sfx", "sfx"),
             Kind::Jingle => ("audio/jingles", "sfx"),
+            Kind::Song => ("audio/music", "song"),
         }
     }
 }
@@ -87,6 +96,8 @@ pub struct Rendered {
     pub source: Source,
     pub pcm: Pcm,
     pub stats: Stats,
+    /// A looping song's loop length in frames (its whole PCM).
+    pub loop_frames: Option<u32>,
 }
 
 /// Every source of every kind, sorted by kind, then path. An empty or
@@ -114,13 +125,19 @@ pub fn render_sfx_file(path: &Path) -> Result<Render, String> {
 }
 
 pub fn render(source: &Source) -> Result<Rendered, String> {
-    let r = match source.kind {
-        Kind::Sfx | Kind::Jingle => render_sfx_file(&source.path)?,
+    let (r, loop_frames) = match source.kind {
+        Kind::Sfx | Kind::Jingle => (render_sfx_file(&source.path)?, None),
+        Kind::Song => {
+            let (song, r) = crate::audio_song::render_song_file(&source.path)?;
+            let looped = song.kind == jnr_audio::song::SongKind::Loop;
+            (r.render, looped.then_some(r.length_frames))
+        }
     };
     Ok(Rendered {
         source: source.clone(),
         stats: stats::analyse(&r.pcm, r.clamped),
         pcm: r.pcm,
+        loop_frames,
     })
 }
 
@@ -143,12 +160,41 @@ pub fn load_targets(root: &Path) -> Result<Targets, String> {
     }
 }
 
-/// The target a source is linted against (`.sfx` kinds: its entry in
-/// `audio/targets.toml`).
-pub fn target_for<'a>(source: &Source, targets: &'a Targets) -> Option<&'a Target> {
-    match source.kind {
-        Kind::Sfx | Kind::Jingle => targets.get(&source.id),
+/// The class a song's target defaults to: `song` for a loop, `jingle` for
+/// a music jingle (a song that doesn't parse: `song`; `render` reports it).
+fn song_class(path: &Path) -> Class {
+    match crate::audio_song::song_kind(path) {
+        Some(jnr_audio::song::SongKind::Jingle) => Class::Jingle,
+        _ => Class::Song,
     }
+}
+
+/// The target a source is linted against: `.sfx` kinds: its entry in
+/// `audio/targets.toml`; songs: that entry if there is one (to mark a
+/// placeholder or set a peak), else the default of their kind, so every
+/// song is linted.
+pub fn target_for<'a>(source: &Source, targets: &'a Targets) -> Option<Cow<'a, Target>> {
+    match source.kind {
+        Kind::Sfx | Kind::Jingle => targets.get(&source.id).map(Cow::Borrowed),
+        Kind::Song => Some(match targets.get(&source.id) {
+            Some(t) => Cow::Borrowed(t),
+            None => Cow::Owned(Target {
+                class: song_class(&source.path),
+                peak_dbfs: None,
+                duration_ms: None,
+                centroid_hz: None,
+                placeholder: false,
+            }),
+        }),
+    }
+}
+
+/// Ids are file stems of `[a-z0-9_]+` (they become golden keys and asset names).
+fn valid_id(id: &str) -> bool {
+    !id.is_empty()
+        && id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
 /// Wiring problems: duplicate ids, sources without a target, targets
@@ -156,6 +202,13 @@ pub fn target_for<'a>(source: &Source, targets: &'a Targets) -> Option<&'a Targe
 pub fn wiring(srcs: &[Source], targets: &Targets) -> Vec<String> {
     let mut out = Vec::new();
     for (i, s) in srcs.iter().enumerate() {
+        if !valid_id(&s.id) {
+            out.push(format!(
+                "{}: bad id `{}`: use lowercase letters, digits and `_`",
+                s.path.display(),
+                s.id
+            ));
+        }
         if let Some(other) = srcs[..i].iter().find(|o| o.id == s.id) {
             out.push(format!(
                 "{}: id `{}` is also used by {} (ids are unique across audio/)",
@@ -164,7 +217,7 @@ pub fn wiring(srcs: &[Source], targets: &Targets) -> Vec<String> {
                 other.path.display()
             ));
         }
-        match (s.kind, target_for(s, targets)) {
+        match (s.kind, target_for(s, targets).as_deref()) {
             (Kind::Sfx | Kind::Jingle, None) => out.push(format!(
                 "{}: no `[{}]` in audio/targets.toml (give it a class)",
                 s.path.display(),
@@ -173,6 +226,16 @@ pub fn wiring(srcs: &[Source], targets: &Targets) -> Vec<String> {
             (Kind::Sfx, Some(t)) if t.class == Class::Jingle => out.push(format!(
                 "{}: class `jingle` belongs in audio/jingles/",
                 s.path.display()
+            )),
+            (Kind::Sfx | Kind::Jingle, Some(t)) if t.class == Class::Song => out.push(format!(
+                "{}: class `song` is for loops in audio/music/",
+                s.path.display()
+            )),
+            (Kind::Song, Some(t)) if t.class != song_class(&s.path) => out.push(format!(
+                "{}: this song's class is `{}` (its `kind`), not `{}`",
+                s.path.display(),
+                song_class(&s.path).name(),
+                t.class.name()
             )),
             (Kind::Jingle, Some(t)) if t.class != Class::Jingle => out.push(format!(
                 "{}: a jingle needs class `jingle` (has `{}`)",
@@ -183,12 +246,9 @@ pub fn wiring(srcs: &[Source], targets: &Targets) -> Vec<String> {
         }
     }
     for id in targets.keys() {
-        if !srcs
-            .iter()
-            .any(|s| &s.id == id && matches!(s.kind, Kind::Sfx | Kind::Jingle))
-        {
+        if !srcs.iter().any(|s| &s.id == id) {
             out.push(format!(
-                "audio/targets.toml: `[{id}]` has no audio/sfx/{id}.sfx or audio/jingles/{id}.sfx"
+                "audio/targets.toml: `[{id}]` has no audio/sfx/{id}.sfx, audio/jingles/{id}.sfx or audio/music/{id}.song"
             ));
         }
     }
@@ -251,15 +311,19 @@ pub fn write_review(dir: &Path, r: &Rendered, target: Option<&Target>) -> Result
     )?;
     write(
         &dir.join(format!("{id}.json")),
-        stats::to_json(id, r.source.kind.name(), &r.pcm, &r.stats).as_bytes(),
+        stats::to_json(id, r.source.kind.name(), &r.pcm, &r.stats, r.loop_frames).as_bytes(),
     )?;
     let wave = plot::waveform(&r.pcm, target.map(lint::peak_band));
     write(&dir.join(format!("{id}_wave.png")), &wave.encode_png())?;
     let spec = plot::spectrogram(&r.pcm);
     write(&dir.join(format!("{id}_spec.png")), &spec.encode_png())?;
-    // Kind-specific extra images go here (E57: the piano roll of a song).
+    // Kind-specific extra images.
     match r.source.kind {
         Kind::Sfx | Kind::Jingle => {}
+        Kind::Song => {
+            let roll = crate::audio_song::roll_of_file(&r.source.path)?;
+            write(&dir.join(format!("{id}_roll.png")), &roll.encode_png())?;
+        }
     }
     Ok(plot::cell(&wave, &spec))
 }
@@ -269,18 +333,21 @@ fn render_cmd(root: &Path, which: Option<&str>) -> Result<(), String> {
     let all = sources(root)?;
     let chosen: Vec<Source> = match which {
         None => all,
-        Some(w) if w.ends_with(".sfx") => {
-            // A file outside audio/ (a draft, a test fixture), rendered as an SFX.
+        Some(w) if w.ends_with(".sfx") || w.ends_with(".song") => {
+            // A file outside audio/ (a draft, a test fixture), rendered as an
+            // SFX or a song (with the instruments and quotes found under the
+            // song directory's parent, like audio/ for audio/music/).
             let path = PathBuf::from(w);
             let id = path
                 .file_stem()
                 .map(|s| s.to_string_lossy().into_owned())
                 .unwrap_or_default();
-            vec![Source {
-                kind: Kind::Sfx,
-                id,
-                path,
-            }]
+            let kind = if w.ends_with(".song") {
+                Kind::Song
+            } else {
+                Kind::Sfx
+            };
+            vec![Source { kind, id, path }]
         }
         Some(w) => {
             let found: Vec<Source> = all.iter().filter(|s| s.id == w).cloned().collect();
@@ -309,7 +376,7 @@ fn render_cmd(root: &Path, which: Option<&str>) -> Result<(), String> {
     let mut cells = Vec::new();
     for r in render_all(&chosen) {
         let r = r?;
-        let cell = write_review(&dir, &r, target_for(&r.source, &targets))?;
+        let cell = write_review(&dir, &r, target_for(&r.source, &targets).as_deref())?;
         let st = &r.stats;
         println!(
             "{:<16} {:>7.1} ms  peak {:>6.2} dBFS  RMS {:>6.2} dBFS  centroid {:>5.0} Hz  clamped {}",
@@ -327,7 +394,7 @@ fn render_cmd(root: &Path, which: Option<&str>) -> Result<(), String> {
         }
     }
     println!(
-        "wrote {}/<id>{{.wav,.json,_wave.png,_spec.png}}",
+        "wrote {}/<id>{{.wav,.json,_wave.png,_spec.png}} (songs also <id>_roll.png)",
         dir.display()
     );
     if which.is_none() {
@@ -377,7 +444,7 @@ fn lint_all(root: &Path, id: Option<&str>) -> Result<(bool, String), String> {
         let Some(target) = target_for(src, &targets) else {
             continue; // reported by `wiring`
         };
-        for f in lint::check(&r.stats, target) {
+        for f in lint::check(&r.stats, &target) {
             errors += 1;
             text.push_str(&format!(
                 "error: {} [{}]: {}\n",
@@ -386,6 +453,12 @@ fn lint_all(root: &Path, id: Option<&str>) -> Result<(bool, String), String> {
                 f.message
             ));
         }
+    }
+    // The music lints read the song text (bars, keys, ranges, quotes).
+    if chosen.iter().any(|s| s.kind == Kind::Song) {
+        let (music_errors, music) = crate::audio_song::lint_songs(root, &root.join("audio"), id);
+        errors += music_errors;
+        text.push_str(&music);
     }
     text.push_str(&format!(
         "audio lint: {} sound(s), {errors} error(s)\n",
@@ -401,14 +474,15 @@ fn reports_dir(root: &Path) -> PathBuf {
 /// Compares every sound with `tests/golden/audio.toml`; returns (all
 /// equal, text). Failures write the review set to `reports/audio-golden/`.
 pub fn golden_report(root: &Path) -> (bool, String) {
-    match golden_check(root) {
+    match golden_check(root, &reports_dir(root)) {
         Ok(r) => r,
         Err(e) => (false, format!("error: {e}\n")),
     }
 }
 
-fn golden_check(root: &Path) -> Result<(bool, String), String> {
-    let report_dir = reports_dir(root);
+/// [`golden_report`] with its failure reports in `report_dir` (emptied first).
+fn golden_check(root: &Path, report_dir: &Path) -> Result<(bool, String), String> {
+    let report_dir = report_dir.to_path_buf();
     if report_dir.exists() {
         fs::remove_dir_all(&report_dir)
             .map_err(|e| format!("clean {}: {e}", report_dir.display()))?;
@@ -418,11 +492,16 @@ fn golden_check(root: &Path) -> Result<(bool, String), String> {
     let srcs = sources(root)?;
     let mut text = String::new();
     let (mut failed, mut compared) = (0, 0);
+    let mut placeholders: Vec<String> = Vec::new();
     for r in render_all(&srcs) {
         let r = r?;
         let id = &r.source.id;
         let target = target_for(&r.source, &targets);
+        let target = target.as_deref();
         let placeholder = target.is_some_and(|t| t.placeholder);
+        if placeholder {
+            placeholders.push(id.clone());
+        }
         let actual = Golden::of(&r.pcm, &r.stats);
         let expected = goldens.get(id);
         let problem = match golden::compare(placeholder, expected, &actual) {
@@ -474,8 +553,14 @@ fn golden_check(root: &Path) -> Result<(bool, String), String> {
         }
     }
     text.push_str(&format!(
-        "audio goldens: {compared} compared, {failed} failed ({} sound(s))\n",
-        srcs.len()
+        "audio goldens: {compared} compared, {failed} failed ({} sound(s), {} placeholder(s){})\n",
+        srcs.len(),
+        placeholders.len(),
+        if placeholders.is_empty() {
+            String::new()
+        } else {
+            format!(": {}", placeholders.join(", "))
+        }
     ));
     Ok((failed == 0, text))
 }
@@ -500,7 +585,7 @@ fn accept(root: &Path, which: Option<&str>) -> Result<(), String> {
         let r = r?;
         let target = target_for(src, &targets)
             .ok_or_else(|| format!("`{}` has no entry in audio/targets.toml", src.id))?;
-        refuse(&src.id, target, &r.stats)?;
+        refuse(&src.id, &target, &r.stats)?;
         goldens.insert(src.id.clone(), Golden::of(&r.pcm, &r.stats));
         println!("accepted {} ({})", src.id, golden::fingerprint(&r.pcm));
     }
@@ -640,7 +725,7 @@ mod tests {
             "{text}"
         );
         // A placeholder needs no golden and cannot get one.
-        let (ok, text) = golden_report(&root);
+        let (ok, text) = golden_check(&root, &root.join("reports/audio-golden")).unwrap();
         assert!(ok, "{text}");
         assert!(
             accept(&root, Some("beep"))
@@ -654,7 +739,7 @@ mod tests {
             "[beep]\nclass = \"normal\"\n",
         )
         .unwrap();
-        let (ok, text) = golden_report(&root);
+        let (ok, text) = golden_check(&root, &root.join("reports/audio-golden")).unwrap();
         assert!(!ok);
         assert!(
             text.starts_with("FAIL beep: no golden for `beep`"),
@@ -665,7 +750,7 @@ mod tests {
             "{text}"
         );
         accept(&root, Some("beep")).unwrap();
-        let (ok, text) = golden_report(&root);
+        let (ok, text) = golden_check(&root, &root.join("reports/audio-golden")).unwrap();
         assert!(ok, "{text}");
         assert!(text.starts_with("ok   beep\n"), "{text}");
 
@@ -675,7 +760,7 @@ mod tests {
             .unwrap()
             .replace("volume_pct = 35", "volume_pct = 34");
         fs::write(&src, text).unwrap();
-        let (ok, text) = golden_report(&root);
+        let (ok, text) = golden_check(&root, &root.join("reports/audio-golden")).unwrap();
         assert!(!ok);
         assert!(
             text.starts_with("FAIL beep: PCM differs: pcm fnv64:"),
@@ -690,6 +775,95 @@ mod tests {
         assert!(!ok);
         assert!(text.contains("no `[beep]` in audio/targets.toml"), "{text}");
         assert!(text.contains("`[beeep]` has no"), "{text}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    /// A throwaway workspace with the jnr-audio song fixtures in
+    /// `audio/{instruments,music,quotes}/` and `targets` as targets.toml.
+    fn song_root(targets: &str) -> PathBuf {
+        let fx =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../crates/jnr-audio/tests/fixtures/music");
+        let root = crate::target_dir(Path::new(env!("CARGO_MANIFEST_DIR")))
+            .join(format!("tmp/xtask-audio-song-test/{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        for (ext, sub) in [
+            ("inst", "instruments"),
+            ("song", "music"),
+            ("quote", "quotes"),
+        ] {
+            let dir = root.join("audio").join(sub);
+            fs::create_dir_all(&dir).unwrap();
+            for f in content::files_with_ext(&fx, ext).unwrap() {
+                fs::copy(&f, dir.join(f.file_name().unwrap())).unwrap();
+            }
+        }
+        fs::create_dir_all(root.join("tests/golden")).unwrap();
+        fs::write(root.join("audio/targets.toml"), targets).unwrap();
+        root
+    }
+
+    #[test]
+    fn songs_are_rendered_linted_and_golden_checked() {
+        let root = song_root("[placeholder_polka]\nclass = \"song\"\nplaceholder = true\n");
+        let srcs = sources(&root).unwrap();
+        assert_eq!(srcs.iter().filter(|s| s.kind == Kind::Song).count(), 2);
+        // Default targets: a loop is class `song`, a music jingle `jingle`.
+        let targets = load_targets(&root).unwrap();
+        let fanfare = srcs.iter().find(|s| s.id == "placeholder_fanfare").unwrap();
+        assert_eq!(target_for(fanfare, &targets).unwrap().class, Class::Jingle);
+
+        let (ok, text) = lint_report(&root, None);
+        assert!(ok, "{text}");
+        assert!(text.contains("music lint: 2 song(s), 0 error(s)"), "{text}");
+        assert!(
+            text.ends_with("audio lint: 2 sound(s), 0 error(s)\n"),
+            "{text}"
+        );
+
+        // The review set has a piano roll and the loop fields.
+        let polka = srcs.iter().find(|s| s.id == "placeholder_polka").unwrap();
+        let r = render(polka).unwrap();
+        let dir = root.join("review");
+        fs::create_dir_all(&dir).unwrap();
+        write_review(&dir, &r, target_for(polka, &targets).as_deref()).unwrap();
+        assert!(dir.join("placeholder_polka_roll.png").exists());
+        let json = fs::read_to_string(dir.join("placeholder_polka.json")).unwrap();
+        assert!(json.contains("\"loop_aligned\": true"), "{json}");
+        assert_eq!(r.loop_frames, Some(r.pcm.samples.len() as u32));
+
+        // Goldens: the placeholder is named, the jingle needs one.
+        let (ok, text) = golden_check(&root, &root.join("reports")).unwrap();
+        assert!(!ok);
+        assert!(
+            text.contains("FAIL placeholder_fanfare: no golden"),
+            "{text}"
+        );
+        assert!(
+            text.contains("1 placeholder(s): placeholder_polka"),
+            "{text}"
+        );
+
+        // A music lint error fails `audio lint` with its file and line.
+        let song = root.join("audio/music/placeholder_fanfare.song");
+        let t = fs::read_to_string(&song)
+            .unwrap()
+            .replace("e4/2 |", "e4/3 |");
+        fs::write(&song, t).unwrap();
+        let (ok, text) = lint_report(&root, Some("placeholder_fanfare"));
+        assert!(!ok);
+        assert!(text.contains("placeholder_fanfare.song:21:"), "{text}");
+        assert!(text.contains("error[music-bar-length]"), "{text}");
+
+        // A song's targets entry must match its kind; a bad id is reported.
+        fs::write(
+            root.join("audio/targets.toml"),
+            "[placeholder_polka]\nclass = \"jingle\"\n",
+        )
+        .unwrap();
+        fs::write(root.join("audio/music/Bad-Id.song"), "").unwrap();
+        let w = wiring(&sources(&root).unwrap(), &load_targets(&root).unwrap());
+        assert!(w.iter().any(|m| m.contains("class is `song`")), "{w:?}");
+        assert!(w.iter().any(|m| m.contains("bad id `Bad-Id`")), "{w:?}");
         let _ = fs::remove_dir_all(&root);
     }
 }

@@ -561,3 +561,64 @@ Notes for E57 and the sound-designer:
   duration into `duration_ms`). Review with `cargo xtask audio render --all` and the sheet,
   then ask the game-designer for a verdict before `audio golden --accept <id>`.
 - E58: `jnr-assets/build.rs` should skip `audio/targets.toml` (review data, not a source).
+## As built (E57)
+
+`crates/jnr-audio` modules `song` (format, parser, timeline), `song_render`, `music_lint`,
+`quote`; `xtask/src/audio_song.rs` (bank loading, `lint_songs`, `render_song_report`, the
+piano roll). The format, lints and roll are documented in `docs/architecture.md` ("`.song`",
+"`.quote`"); the decisions are D-120. Deviations from the sketch above:
+
+- **Scores, not per-channel strings**: `[pattern.X] score = '''…'''` holds every channel's
+  line, bar-aligned, several "systems" per pattern. `[meta]` adds `kind` (loop | jingle),
+  `bars` (checked), `source`/`edition`, `length_of`; no `intro` (D-114: intros are jingles).
+  Channels may set `arp_ms`. Tokens add accents (`>`), staccato (`'`), `@velocity`, kit
+  chords `[K,S]`.
+- **Monophonic channels and arpeggiated chords** (D-120). The cut uses E55's `CUT_FADE`; the
+  renderer caches uncut voices and applies the cut while mixing (a unit test pins it to
+  `add_note_until`/`add_sfx_until`), so a voice is synthesised once however its cuts differ.
+- **Limits**: jingles ≤ 10 s (not 6 s); loop alignment ≤ 2048 frames (≤ 0.24 % at 20 s).
+- **Melody fixtures** are `.quote` files plus `[[quote]]` in the song (pitches, lengths,
+  transpose, augmentation, or pitches only), checked by the `quote` lint.
+- **Lints**: as listed in the proposal, plus `bars`, `loop-point`, `length-of`, `provenance`,
+  `accidental`, and a `clash` heuristic (semitone/7th/9th between melodic channels on beats).
+  `order` naming a missing pattern, unequal bar counts, > 6 channels and > 3-note chords are
+  parse errors (`file:line:col`), not lints. Every lint has a failing and a passing fixture
+  in `crates/jnr-audio/tests/song.rs`.
+- **Measured** (release, aarch64, load average ~18 from other agents): the 90 s, 6-channel
+  test song (3/4, 16ths, arpeggiated chords, kit; 1 264 voices, 50 synthesised) renders in
+  **15 ms** (budget 50 ms; the test prints it and asserts < 50 ms in release, < 1 s in debug).
+  The 24 s placeholder polka: 7 ms through xtask. The loop wrap equals the middle of three
+  passes played in a row, sample for sample.
+- **Placeholders**: `crates/jnr-audio/tests/fixtures/music/` (four instruments, two quotes,
+  `placeholder_polka.song`, `placeholder_fanfare.song`); `audio/music/` stays empty for the
+  sound-designer.
+- **xtask**: songs are E56's `Kind::Song` (`audio/music/*.song`): `audio render <id>|<file.song>`
+  writes the usual review set plus `<id>_roll.png` and `loop_frames`/`loop_aligned` in the JSON;
+  `audio lint` runs the signal lints against the song's default target (a loop: the new class
+  `song`, peak −20 … −8 dBFS, RMS −20 ± 2, 20–90 s, no `onset`/`tail`/`edges` since it wraps;
+  a `.song` jingle: class `jingle`) and the music lints (`audio_song::lint_songs`);
+  `audio golden` hashes songs like every sound. `xtask/src/audio_song.rs` holds the bank
+  loading, `render_song_file`, `render_in` (with `length_of` and `RenderOptions`) and the
+  piano roll. No hurry render on the CLI (the sound-designer can't hear the difference; E58
+  renders it through `RenderOptions { tempo_pct: 112, .. }`, tested in xtask).
+- **E56 review notes fixed here**: `target_for` returns `Option<Cow<Target>>` (songs get an
+  owned default target, so no song skips the signal lints); the `edges` bound is rounded
+  (±33 passes, as printed); the golden check takes its reports directory, so the workspace
+  test no longer deletes the real `reports/audio-golden/`; wiring checks ids against
+  `[a-z0-9_]+`; the `audio-goldens` summary counts and names the placeholders.
+- **The placeholder songs pass the signal lints** (polka: peak −8.2, RMS −20.6 dBFS; tested
+  on a throwaway workspace with the fixtures in `audio/`). Balancing them showed that the
+  25 % pulse lead made the crest factor too high for the music bus (peak ≤ −8 with RMS
+  ≥ −22); the fixture lead is a 50 % square now (see the `sfx-authoring` skill).
+
+Notes for E58 (embedding, cues):
+
+- Load `audio/music/*.song`, `audio/quotes/*.quote` and `audio/instruments/*.inst`;
+  `Song::parse` errors are build errors, `lint_song` errors too (warnings → `cargo:warning`).
+  `LintContext` needs all songs (for `length_of`) and all quotes.
+- Render with `render_song(&song, &instruments, &RenderOptions::default())`; a `length_of`
+  song needs `length_frames: Some(song_frames(target, &opts))` (see `render_song_report`).
+  The hurry variant is `tempo_pct: 112`. Jingles' `render.pcm` is longer than
+  `length_frames` (the release).
+- A loop's PCM length is always a multiple of 4096 (tested per fixture song); keep a test
+  that does this over `audio/music/` once songs exist.

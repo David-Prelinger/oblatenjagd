@@ -26,6 +26,16 @@ pub enum ErrorKind {
     Kit,
     /// The file name is not a valid id (`[a-z][a-z0-9_]*` plus extension).
     Id,
+    /// `.song`/`.quote`: a bad token or line in a score (`| c5/4 r _ |`).
+    Score,
+    /// `.song`: an unknown, missing or misshapen pattern or `order` entry.
+    Pattern,
+    /// `.song`: a bad channel: too many, unknown in a score, or an
+    /// instrument that is missing or doesn't fit the tokens (kit vs. notes).
+    Channel,
+    /// `.song`: a `[meta]` value that doesn't make music (meter, key,
+    /// kind, tempo grid) or a bad `[[quote]]` reference.
+    Music,
 }
 
 impl ErrorKind {
@@ -40,6 +50,10 @@ impl ErrorKind {
             ErrorKind::Note => "note",
             ErrorKind::Kit => "kit",
             ErrorKind::Id => "id",
+            ErrorKind::Score => "score",
+            ErrorKind::Pattern => "pattern",
+            ErrorKind::Channel => "channel",
+            ErrorKind::Music => "music",
         }
     }
 }

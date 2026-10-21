@@ -92,9 +92,11 @@ pub fn analyse(pcm: &Pcm, clamped: u32) -> Stats {
 
 /// The stats as pretty JSON (the `<id>.json` file), with the golden
 /// fingerprint and the source kind.
-pub fn to_json(id: &str, kind: &str, pcm: &Pcm, st: &Stats) -> String {
+/// The stats as JSON; a looping song adds `loop_frames` and `loop_aligned`
+/// (a multiple of 4096 frames, D-114).
+pub fn to_json(id: &str, kind: &str, pcm: &Pcm, st: &Stats, loop_frames: Option<u32>) -> String {
     let round = |v: f64| (v * 100.0).round() / 100.0;
-    let value = serde_json::json!({
+    let mut value = serde_json::json!({
         "id": id,
         "kind": kind,
         "pcm": super::golden::fingerprint(pcm),
@@ -110,6 +112,12 @@ pub fn to_json(id: &str, kind: &str, pcm: &Pcm, st: &Stats) -> String {
         "first_sample": st.first_sample,
         "last_sample": st.last_sample,
     });
+    if let Some(frames) = loop_frames {
+        value["loop_frames"] = frames.into();
+        value["loop_aligned"] = frames
+            .is_multiple_of(jnr_audio::song_render::LOOP_ALIGN)
+            .into();
+    }
     serde_json::to_string_pretty(&value).expect("json") + "\n"
 }
 
