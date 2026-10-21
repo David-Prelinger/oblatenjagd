@@ -1,0 +1,64 @@
+# QA M7 (finale edge): the Stollen touch on the very frame the ZEIT clock
+# runs out. cafe_zauner_boss_win_normal's inputs to 2328 (on the left refuge
+# after the bow), 9414 idle frames, then the rest of its inputs: she touches
+# the armed goal_stollen at 12000, the frame idling there would die of
+# time-up (one more idle frame: Died at 12000). Expected and actual: the goal
+# wins, no death (as the Maibaum, qa_m6a_strobl_goal_on_time_up_frame).
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = complete frames=12000..12000 deaths=0 no_event=Died boss_hits=3 state=stage_clear
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 9434
+R 200
+RJ 20
+R 30

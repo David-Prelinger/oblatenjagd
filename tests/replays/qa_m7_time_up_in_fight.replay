@@ -1,0 +1,51 @@
+# QA M7 (boss edge): time-up during the fight. cafe_zauner_boss_win_normal's
+# inputs to 1300 (one hit, back on the left refuge), then she waits there:
+# the boss runs round 2 (telegraph, dash, breather, volley) over and over,
+# no bill reaches the refuge, and at 12000 (in his breather) the clock kills
+# her. Respawn at the checkpoint (112) with the fight reset: no hits, no
+# bills, the clock at 200.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = dies_at frames=12000..12000 deaths=1 no_event=Hurt boss_hits=0 lives=2 player_x>=1790 state=playing
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 44
+- 11000
