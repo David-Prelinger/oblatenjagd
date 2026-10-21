@@ -1,0 +1,17 @@
+# Any contact but the tray from above hurts (D-105): Resi takes the
+# Mozartkugel from the box at 4 (Zuckerschock, 1000), jumps into the pen
+# behind the Kellner and walks on until he comes back from the far wall and
+# meets her head-on: Zuckerschock → Normal, no death.
+level  = m7_kellner
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Hurt no_event=Stomped power=normal score=1000
+---
+R 22
+RJ 10
+- 40
+R 80
+- 40
+RJ 15
+R 120
+- 100

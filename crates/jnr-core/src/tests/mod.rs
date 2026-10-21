@@ -11,6 +11,7 @@ mod flow;
 mod goal;
 mod hackl;
 mod items;
+mod kellner;
 mod kurgast;
 mod lake;
 mod lake_enemies;

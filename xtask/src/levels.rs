@@ -509,6 +509,13 @@ mod tests {
                 "01_s.level: still enemy at row 1, column 2: `still = true` is for grey-box test levels (00_*.level) only"
             ]
         );
+        // A Wartender is still by its kind and legal in stages (D-105).
+        let queue = text.replace("selfie_tourist\", still = true", "wartender\"");
+        let stage = vec![(
+            PathBuf::from("09_s.level"),
+            Level::parse(&queue).map_err(|e| e.to_string()),
+        )];
+        assert_eq!(lint(&stage, &texts, &tuning(), None), Vec::<String>::new());
     }
 
     #[test]

@@ -1,0 +1,17 @@
+# Written by `cargo xtask solve m7_kellner --write`; re-create it instead of editing.
+level  = m7_kellner
+seed   = 1
+source = solver
+expect = complete frames=341..341 deaths=0
+---
+RB 40
+RBJ 20
+RB 15
+RBJ 36
+RB 78
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 36
+RB 40
