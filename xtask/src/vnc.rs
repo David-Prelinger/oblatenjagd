@@ -10,7 +10,19 @@
 //! 3. an X root-window screenshot taken while it runs
 //!    (`$CARGO_TARGET_DIR/preview/vnc_smoke_root.png`) shows the game window:
 //!    cropped to the window's geometry (`xwininfo`), at least
-//!    [`MIN_SKY_SHARE`] of it is the palette sky colour.
+//!    [`MIN_SKY_SHARE`] of it is the palette sky colour,
+//! 4. audio (E54, E59, D-118): the app plays the replay's real cues (the
+//!    testbed has 7 jumps and no music); its log must not contain quad-snd's
+//!    `Audio thread died`. With PulseAudio (a null sink of this run, see
+//!    `pulse.rs`, selected with `PULSE_SINK`) the sink's monitor is recorded
+//!    with `parec` and must hold at least [`MIN_SFX_ONSETS`] sound onsets
+//!    (`pulse::count_onsets`), no clipping; without Pulse that part notes
+//!    "audio not exercised",
+//! 5. the no-device path, always: a short second run with
+//!    `PULSE_SERVER=unix:/nonexistent` (so even a running daemon is out of
+//!    reach) must exit 0 and log exactly one `audio unavailable (` line and
+//!    no `Audio thread died`. (A sound played before the audio thread died
+//!    is fine: the guard only has to stop the calls after it.)
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,6 +33,13 @@ use jnr_artkit::Image;
 use jnr_core::replay::Shot;
 
 use crate::golden::{Comparison, compare, read_png, write_report};
+use crate::pulse::{self, CaptureStats, Pulse};
+
+/// Frames of the no-device run (the audio thread dies within the first
+/// few; one second leaves plenty of room).
+const NO_DEVICE_FRAMES: u32 = 60;
+/// The app's line when the panic guard turns audio off.
+const AUDIO_UNAVAILABLE: &str = "audio unavailable (";
 use crate::wasm::{KillOnDrop, sky_colour};
 use crate::{content, target_dir};
 
@@ -41,6 +60,11 @@ const MIN_SKY_SHARE: f64 = 0.25;
 /// Per-channel tolerance when matching the sky colour: the noVNC desktop's
 /// root window is 16 bit (RGB565), which moves 5-bit channels by up to 8.
 const SKY_TOLERANCE: u8 = 8;
+/// Least SFX onsets in the capture of the testbed replay (7 jumps; native
+/// playback starts at 93 ms block boundaries, so a margin).
+const MIN_SFX_ONSETS: usize = 5;
+/// quad-snd's line for every call after its audio thread died.
+const AUDIO_THREAD_DIED: &str = "Audio thread died";
 
 /// `cargo xtask vnc-smoke`
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -131,8 +155,19 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
             existing.join(", ")
         ));
     }
+    // Audio: a Pulse null sink when available, recorded while the app runs.
+    let pulse = pulse::null_sink_for_run();
+    let capture_path = out_dir.join("audio.s16");
+    let mut recorder = match &pulse {
+        Pulse::Ready { sink, .. } => Some(start_capture(&sink.monitor(), &capture_path)?),
+        Pulse::Absent(_) => None,
+    };
     let log_file = fs::File::create(&log).map_err(|e| format!("{}: {e}", log.display()))?;
-    let child = Command::new(&app)
+    let mut command = Command::new(&app);
+    if let Pulse::Ready { sink, .. } = &pulse {
+        command.env("PULSE_SINK", &sink.name);
+    }
+    let child = command
         .args(app_args(&replay_path, &replay.shots, &out_dir))
         .current_dir(root)
         .env("DISPLAY", &display)
@@ -159,6 +194,18 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     if !status.success() {
         return Err(format!("the app exited with {status}; {}", see_log()));
     }
+    let capture_stats = match recorder.take() {
+        Some(rec) => Some(stop_capture(rec, &capture_path)?),
+        None => None,
+    };
+    let app_log = fs::read_to_string(&log).map_err(|e| format!("{}: {e}", log.display()))?;
+    let audio = match (pulse, capture_stats) {
+        (Pulse::Absent(why), _) => AudioRun::NotExercised(why),
+        (Pulse::Ready { started, .. }, stats) => AudioRun::Recorded { started, stats },
+    };
+    let audio_summary = audio_verdict(&app_log, &audio)
+        .map_err(|e| format!("{e}; {} (capture {})", see_log(), capture_path.display()))?;
+    let no_device_summary = no_device_run(root, &app, &display, &out_dir)?;
     capture?;
     let geometry = geometry?;
 
@@ -221,11 +268,157 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         ));
     }
     Ok(format!(
-        "DISPLAY={display}, {} shots equal the goldens, {sky_summary}, root screenshot {}, {:.1}s",
+        "DISPLAY={display}, {} shots equal the goldens, {sky_summary}, {audio_summary}, {no_device_summary}, root screenshot {}, {:.1}s",
         replay.shots.len(),
         root_shot.display(),
         started.elapsed().as_secs_f64()
     ))
+}
+
+/// Starts `parec` on the null sink's monitor, writing raw mono s16 at
+/// 44.1 kHz to `path`.
+fn start_capture(monitor: &str, path: &Path) -> Result<KillOnDrop, String> {
+    let file = fs::File::create(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let child = Command::new("parec")
+        .args([
+            "-d",
+            monitor,
+            "--format=s16le",
+            "--channels=1",
+            "--rate=44100",
+            "--raw",
+            // Small fragments, so the stop loses at most this much.
+            "--latency-msec=50",
+        ])
+        .stdin(Stdio::null())
+        .stdout(file)
+        .stderr(Stdio::null())
+        .spawn()
+        .map_err(|e| format!("could not start parec: {e}"))?;
+    Ok(KillOnDrop {
+        child,
+        group: false,
+    })
+}
+
+/// Stops `parec` (SIGINT, so it flushes) and returns the capture's stats.
+fn stop_capture(mut rec: KillOnDrop, path: &Path) -> Result<CaptureStats, String> {
+    let _ = Command::new("kill")
+        .args(["-INT", &rec.child.id().to_string()])
+        .status();
+    let _ = crate::wasm::wait_timeout(&mut rec.child, Duration::from_secs(3));
+    drop(rec);
+    let raw = fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(pulse::capture_stats(&raw))
+}
+
+/// What the audio part of the main run did.
+#[derive(Debug)]
+enum AudioRun {
+    /// No Pulse: why.
+    NotExercised(String),
+    /// Recorded from this run's null sink (`started`: the daemon was
+    /// started for it; `stats`: `None` if nothing could be read).
+    Recorded {
+        started: bool,
+        stats: Option<CaptureStats>,
+    },
+}
+
+/// The audio part of the smoke test: no `Audio thread died` spam in the app
+/// log ever; with Pulse, the capture holds the replay's SFX without clipping.
+fn audio_verdict(app_log: &str, audio: &AudioRun) -> Result<String, String> {
+    no_thread_died(app_log)?;
+    match audio {
+        AudioRun::NotExercised(why) => Ok(format!("audio not exercised ({why})")),
+        AudioRun::Recorded { stats: None, .. } => {
+            Err("Pulse is ready but nothing was recorded".to_owned())
+        }
+        AudioRun::Recorded {
+            started,
+            stats: Some(stats),
+        } => {
+            let secs = stats.samples as f64 / 44_100.0;
+            if stats.onsets < MIN_SFX_ONSETS {
+                return Err(format!(
+                    "audio capture: {} sound onset(s), peak {} in {secs:.1}s (need {MIN_SFX_ONSETS}; \
+                     the replay jumps 7 times)",
+                    stats.onsets, stats.peak
+                ));
+            }
+            if stats.clipped > 0 {
+                return Err(format!(
+                    "audio capture clips: {} sample(s) at full scale",
+                    stats.clipped
+                ));
+            }
+            let daemon = if *started { "started" } else { "running" };
+            Ok(format!(
+                "audio: {} SFX onsets captured on a Pulse null sink (peak {}, {secs:.1}s, daemon {daemon})",
+                stats.onsets, stats.peak
+            ))
+        }
+    }
+}
+
+fn no_thread_died(app_log: &str) -> Result<(), String> {
+    let died = app_log.matches(AUDIO_THREAD_DIED).count();
+    if died > 0 {
+        return Err(format!(
+            "the app log has {died} `{AUDIO_THREAD_DIED}` line(s): an audio call was made after \
+             quad-snd's thread died (the panic guard in jnr-app/src/audio.rs should prevent it)"
+        ));
+    }
+    Ok(())
+}
+
+/// The no-device run's log: audio turned off exactly once, silently.
+fn no_device_verdict(app_log: &str) -> Result<String, String> {
+    no_thread_died(app_log)?;
+    let unavailable = app_log.matches(AUDIO_UNAVAILABLE).count();
+    if unavailable != 1 {
+        return Err(format!(
+            "no-device run: expected exactly one `{AUDIO_UNAVAILABLE}` line, got {unavailable}"
+        ));
+    }
+    Ok("no-device run: audio off with one line".to_owned())
+}
+
+/// Runs the app briefly with no reachable sound device (Pulse pointed at a
+/// socket that does not exist, so ALSA finds nothing) and checks its log.
+fn no_device_run(root: &Path, app: &Path, display: &str, out_dir: &Path) -> Result<String, String> {
+    let log = out_dir.join("no_device.log");
+    let log_file = fs::File::create(&log).map_err(|e| format!("{}: {e}", log.display()))?;
+    let child = Command::new(app)
+        .args([
+            "--level",
+            "testbed",
+            "--exit-after",
+            &NO_DEVICE_FRAMES.to_string(),
+        ])
+        .current_dir(root)
+        .env("DISPLAY", display)
+        .env("PULSE_SERVER", "unix:/nonexistent")
+        .env_remove("PULSE_SINK")
+        .stdin(Stdio::null())
+        .stdout(log_file.try_clone().map_err(|e| e.to_string())?)
+        .stderr(log_file)
+        .spawn()
+        .map_err(|e| format!("could not start {}: {e}", app.display()))?;
+    let mut proc = KillOnDrop {
+        child,
+        group: false,
+    };
+    let see = format!("see {}", log.display());
+    let status = wait_exit(&mut proc.child, APP_TIMEOUT)
+        .map_err(|e| format!("no-device run: {e}; {see}"))?;
+    if !status.success() {
+        return Err(format!(
+            "no-device run: the app exited with {status}; {see}"
+        ));
+    }
+    let text = fs::read_to_string(&log).map_err(|e| format!("{}: {e}", log.display()))?;
+    no_device_verdict(&text).map_err(|e| format!("{e}; {see}"))
 }
 
 /// Fails with a clear message if no X server answers on `display`.
@@ -507,6 +700,86 @@ mod tests {
         let e = check_sky(&desktop(24, 200, sky), sky, 100).unwrap_err();
         assert!(e.contains("not visible"), "{e}");
         assert!(check_sky(&desktop(0, 200, sky), sky, 100).is_err());
+    }
+
+    #[test]
+    fn audio_verdict_needs_the_sfx_with_pulse_and_never_thread_died_lines() {
+        let tone = CaptureStats {
+            samples: 44_100,
+            peak: 3000,
+            clipped: 0,
+            onsets: 7,
+        };
+        let recorded = |stats: CaptureStats| AudioRun::Recorded {
+            started: true,
+            stats: Some(stats),
+        };
+        assert!(
+            audio_verdict("ok\n", &recorded(tone))
+                .unwrap()
+                .contains("7 SFX onsets")
+        );
+        let few = CaptureStats {
+            samples: 44_100,
+            peak: 9000,
+            clipped: 0,
+            onsets: 4,
+        };
+        assert!(
+            audio_verdict("", &recorded(few))
+                .unwrap_err()
+                .contains("4 sound onset(s)")
+        );
+        let clipping = CaptureStats {
+            samples: 44_100,
+            peak: 32768,
+            clipped: 3,
+            onsets: 7,
+        };
+        assert!(
+            audio_verdict("", &recorded(clipping))
+                .unwrap_err()
+                .contains("clips")
+        );
+        let nothing = AudioRun::Recorded {
+            started: false,
+            stats: None,
+        };
+        assert!(
+            audio_verdict("", &nothing)
+                .unwrap_err()
+                .contains("nothing was recorded")
+        );
+        let absent = AudioRun::NotExercised("JNR_PULSE=off".to_owned());
+        assert_eq!(
+            audio_verdict("jnr-app: audio unavailable (x)\n", &absent),
+            Ok("audio not exercised (JNR_PULSE=off)".to_owned())
+        );
+        let spam = "Audio thread died\nAudio thread died\n";
+        let e = audio_verdict(spam, &absent).unwrap_err();
+        assert!(e.contains("2 `Audio thread died`"), "{e}");
+        let e = audio_verdict(spam, &recorded(tone)).unwrap_err();
+        assert!(e.contains("2 `Audio thread died`"), "{e}");
+    }
+
+    #[test]
+    fn no_device_run_needs_exactly_one_unavailable_line() {
+        let ok = "ALSA lib pcm.c: Unknown PCM default\n\
+                  jnr-app: audio unavailable (Can't open PCM device.), playing silently\n";
+        assert!(no_device_verdict(ok).is_ok());
+        assert!(no_device_verdict("").unwrap_err().contains("got 0"));
+        let twice = format!("{ok}{ok}");
+        assert!(no_device_verdict(&twice).unwrap_err().contains("got 2"));
+        let spam = format!("{ok}Audio thread died\n");
+        assert!(
+            no_device_verdict(&spam)
+                .unwrap_err()
+                .contains("Audio thread died")
+        );
+        // A sound played before the thread died is no failure (the race of
+        // E57's run): only calls after it would print `Audio thread died`.
+        let early = format!("jnr-app: audio: 27 sfx rendered in 2.0 ms\n{ok}");
+        assert!(no_device_verdict(&early).is_ok());
     }
 
     #[test]

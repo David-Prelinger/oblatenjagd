@@ -32,6 +32,10 @@
 //! where the edge pushes (E31, D-085), and a checkpoint in the zone on a
 //! deck tile.
 //!
+//! Music (MA, D-113, E58b): a journey stage (`01_`…`99_`) has `[meta]
+//! music`, and every `music` names a stage song that is embedded
+//! (`audio/music/<id>.song`) or still pending (`jnr_audio::cues::PENDING_MUSIC`).
+//!
 //! Signs (M5, [`crate::signlint`], E33, D-088): no placed Oblate
 //! overlaps a sign board's drawn rectangle (known findings only warn).
 //!
@@ -69,7 +73,9 @@ Commands:
               board (face and frame as drawn, posts left out); a level
               with an oberkellner: his arena (last 20 columns: refuges,
               flat floor, nothing above it, no other enemy/sign/box, bill
-              columns over the floor)
+              columns over the floor); a journey stage (01_..99_) has
+              [meta] music, and every music id is a stage song that is
+              embedded (audio/music/<id>.song) or still pending
 ";
 
 pub fn run(root: &Path, args: &[String]) -> ExitCode {
@@ -179,6 +185,11 @@ pub fn lint(
                 ));
             }
         }
+        problems.extend(
+            music_problems(path, level)
+                .into_iter()
+                .map(|p| format!("{shown}: {p}")),
+        );
         if !level.entities.iter().any(|e| e.kind.is_goal()) {
             problems.push(format!(
                 "{shown}: no goal (add a `goal` or `goal_stollen` entity)"
@@ -225,6 +236,62 @@ pub fn lint(
         problems.push(format!("no level with id `{id}` in content/levels"));
     }
     problems
+}
+
+/// A journey stage's file: `NN_<id>.level` with `NN` 01–99 (`00_` are the
+/// grey-box test levels).
+fn journey_level(path: &Path) -> bool {
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    let b = name.as_bytes();
+    b.len() > 3
+        && b[0].is_ascii_digit()
+        && b[1].is_ascii_digit()
+        && b[2] == b'_'
+        && !name.starts_with("00_")
+}
+
+/// `[meta] music` (MA, D-113, E58b): a journey stage names its piece, and
+/// any `music` is a stage song (`jnr_audio::cues::Music::level_song`) that
+/// exists in the embedded bank (`audio/music/<id>.song`) or is still in
+/// `jnr_audio::cues::PENDING_MUSIC`.
+fn music_problems(path: &Path, level: &jnr_core::Level) -> Vec<String> {
+    use jnr_audio::cues::PENDING_MUSIC;
+    let available = |m| jnr_assets::audio_bank().has_music(m) || PENDING_MUSIC.contains(&m);
+    music_problems_with(path, level, &available)
+}
+
+/// [`music_problems`] with `available` deciding whether a song exists.
+fn music_problems_with(
+    path: &Path,
+    level: &jnr_core::Level,
+    available: &dyn Fn(jnr_audio::cues::Music) -> bool,
+) -> Vec<String> {
+    use jnr_audio::cues::Music;
+    match &level.meta.music {
+        Some(id) => match Music::level_song(id) {
+            None => {
+                let known: Vec<&str> = Music::ALL
+                    .into_iter()
+                    .map(|m| m.id())
+                    .filter(|id| Music::level_song(id).is_some())
+                    .collect();
+                vec![format!(
+                    "music `{id}` is not a known stage song (one of {})",
+                    known.join(", ")
+                )]
+            }
+            Some(m) if !available(m) => {
+                vec![format!(
+                    "music `{id}`: no audio/music/{id}.song (and not in jnr_audio::cues::PENDING_MUSIC)"
+                )]
+            }
+            Some(_) => Vec::new(),
+        },
+        None if journey_level(path) => {
+            vec!["no music (a journey stage needs `music = \"<id>\"` in [meta], docs/audio-design.md §5)".to_owned()]
+        }
+        None => Vec::new(),
+    }
 }
 
 /// The columns an auto-scroll camera shows while it scrolls (D-075): its
@@ -351,6 +418,59 @@ mod tests {
             lint(&levels[..1], &texts, &tuning(), Some("zz")),
             vec!["no level with id `zz` in content/levels"]
         );
+    }
+
+    #[test]
+    fn music_must_be_a_known_song_and_journey_stages_need_one() {
+        let levels = vec![
+            (
+                PathBuf::from("00_test.level"),
+                level("id = \"t\"\ntime_limit = 1", "PG"),
+            ),
+            (
+                PathBuf::from("01_a.level"),
+                level("id = \"a\"\ntime_limit = 1", "PG"),
+            ),
+            (
+                PathBuf::from("02_b.level"),
+                level("id = \"b\"\ntime_limit = 1\nmusic = \"salzburg\"", "PG"),
+            ),
+            (
+                PathBuf::from("03_c.level"),
+                level("id = \"c\"\ntime_limit = 1\nmusic = \"death\"", "PG"),
+            ),
+            (
+                PathBuf::from("00_d.level"),
+                level("id = \"d\"\ntime_limit = 1\nmusic = \"polka\"", "PG"),
+            ),
+        ];
+        let problems = lint(&levels, &texts(), &tuning(), None);
+        assert_eq!(problems.len(), 3, "{problems:?}");
+        assert!(
+            problems[0].starts_with("01_a.level: no music"),
+            "{problems:?}"
+        );
+        assert!(
+            problems[1].starts_with("03_c.level: music `death` is not a known stage song (one of title, route_map, salzburg,"),
+            "{problems:?}"
+        );
+        assert!(
+            problems[2].starts_with("00_d.level: music `polka`"),
+            "{problems:?}"
+        );
+        // A known song that is neither embedded nor pending.
+        let (path, lvl) = &levels[2];
+        assert_eq!(
+            music_problems_with(path, lvl.as_ref().unwrap(), &|_| false),
+            [
+                "music `salzburg`: no audio/music/salzburg.song (and not in jnr_audio::cues::PENDING_MUSIC)"
+            ]
+        );
+        assert!(music_problems_with(path, lvl.as_ref().unwrap(), &|_| true).is_empty());
+        assert!(!journey_level(Path::new("a.level")));
+        assert!(journey_level(Path::new(
+            "content/levels/09_cafe_zauner.level"
+        )));
     }
 
     #[test]
@@ -510,7 +630,7 @@ mod tests {
 
     #[test]
     fn still_enemies_only_in_test_levels() {
-        let text = "[meta]\nid = \"s\"\ntime_limit = 1\n[legend]\n\"P\" = { entity = \"player_start\" }\n\"G\" = { entity = \"goal\" }\n\"t\" = { entity = \"selfie_tourist\", still = true }\n[map]\ngrid = '''\nPtG\n'''\n";
+        let text = "[meta]\nid = \"s\"\ntime_limit = 1\nmusic = \"salzburg\"\n[legend]\n\"P\" = { entity = \"player_start\" }\n\"G\" = { entity = \"goal\" }\n\"t\" = { entity = \"selfie_tourist\", still = true }\n[map]\ngrid = '''\nPtG\n'''\n";
         let level = || Level::parse(text).map_err(|e| e.to_string());
         let texts = Texts::parse("").unwrap();
         let test = vec![(PathBuf::from("00_s.level"), level())];

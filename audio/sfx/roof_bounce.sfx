@@ -1,0 +1,13 @@
+# Bounce off a non-stompable top, „Boing" (audio-design §6.2 / §6.4): pulse 50 % 330 -> 392 Hz
+# with a 22 Hz vibrato of ±100 cents decaying to 0 (sheet metal). 160 ms.
+[[layer]]
+wave = "pulse"
+freq_hz = 330
+slide_to_hz = 392
+slide_ms = 120
+vibrato = { depth_cents = 100, to_depth_cents = 0, rate_hz = 22, ramp_ms = 150 }
+attack_ms = 1
+hold_ms = 40
+decay_ms = 119
+volume_pct = 40
+lowpass_hz = 7000

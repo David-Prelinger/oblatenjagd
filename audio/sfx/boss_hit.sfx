@@ -1,0 +1,40 @@
+# Oberkellner hit, „Unerhört!" (audio-design §6.3): crockery clatter, six noise ticks
+# band-passed at 4 kHz at 0, 40, 70, 130, 180 and 260 ms, plus a slide whistle, sine
+# 1200 -> 300 Hz over 400 ms. 500 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 4000, q_pct = 300 }
+attack_ms = 1
+decay_ms = 14
+volume_pct = 39
+repeat = { count = 3, every_ms = 130 }
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 4000, q_pct = 300 }
+delay_ms = 40
+attack_ms = 1
+decay_ms = 14
+volume_pct = 39
+repeat = { count = 2, every_ms = 140 }
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 4000, q_pct = 300 }
+delay_ms = 70
+attack_ms = 1
+decay_ms = 14
+volume_pct = 39
+
+[[layer]]
+wave = "sine"
+freq_hz = 1200
+slide_to_hz = 300
+slide_ms = 400
+attack_ms = 5
+hold_ms = 395
+decay_ms = 100
+volume_pct = 22

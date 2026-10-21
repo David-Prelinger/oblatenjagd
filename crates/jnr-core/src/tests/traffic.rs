@@ -219,6 +219,29 @@ fn a_postbus_behaves_and_hashes_like_a_plain_bus() {
     }
 }
 
+/// D-113: the Postbus's roof is a non-stompable top like any bus's: a
+/// bounce with `Stomped` and `Bounced`, no points.
+#[test]
+fn the_postbus_roof_bounces_with_bounced() {
+    let mut g = game(&world(60, &[(11, 14, 'y')]));
+    safe_step(&mut g, "-");
+    let b = *g
+        .entities()
+        .iter()
+        .find(|e| e.kind == EntityKind::Enemy(EnemyKind::Reisebus))
+        .unwrap();
+    g.player.x = b.x + b.w.div_int(2) - g.player.w.div_int(2);
+    g.player.y = b.y - Fx::from_px(2) - g.player.h;
+    g.player.vx = Fx::ZERO;
+    g.player.vy = Fx::from_px(3);
+    g.player.on_ground = false;
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(events.contains(&Event::Bounced), "{events:?}");
+    assert!(!events.contains(&Event::Hurt) && !events.contains(&Event::Died));
+    assert_eq!(g.score(), 0);
+}
+
 // -------------------------------------------------------------- Ampel
 
 #[test]
@@ -566,6 +589,7 @@ fn its_roof_bounces_without_damage_or_points_in_every_form() {
         g.player.on_ground = false;
         let events = g.step(input("-")).to_vec();
         assert!(events.contains(&Event::Stomped), "{power:?}: {events:?}");
+        assert!(events.contains(&Event::Bounced), "{power:?}: {events:?}");
         assert!(!events.contains(&Event::Hurt) && !events.contains(&Event::Died));
         assert_eq!(g.score(), 0, "{power:?}: no points");
         assert!(g.player().vy < Fx::ZERO, "{power:?}: bounced up");

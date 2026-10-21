@@ -1,0 +1,133 @@
+# cue log of tests/replays/qa_ma_cues_fanfare_clear_under_route_map.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   171 song strobl
+   326 sfx oblate I3
+   336 sfx oblate I3
+   347 sfx oblate I3
+   358 sfx oblate I3
+   368 sfx oblate I3
+   398 sfx jump P4
+   405 sfx bump W4
+   521 sfx zucker P8
+   521 duck on
+   551 duck off
+   592 sfx jump P4 -5
+   599 sfx oblate I3
+   609 sfx oblate I3
+   616 sfx jump P4 -5
+   652 sfx jump P4 -5
+   720 sfx jump P4 -5
+   727 sfx oblate I3
+   737 sfx oblate I3
+   748 sfx oblate I3
+   830 sfx jump P4 -5
+   854 sfx jump P4 -5
+   902 sfx oblate I3
+   907 sfx oblate I3
+   914 sfx jump P4 -5
+   963 sfx stomp W5
+   999 sfx oblate I3
+  1154 sfx jump P4 -5
+  1182 sfx jump P4 -5
+  1226 sfx oblate I3
+  1250 sfx jump P4 -5
+  1250 sfx bump W4
+  1316 sfx oneup I9
+  1316 duck on
+  1358 duck off
+  1362 sfx oblate I3
+  1368 sfx jump P4 -5
+  1447 sfx jump P4 -5
+  1520 sfx jump P4 -5
+  1563 sfx jump P4 -5
+  1588 sfx jump P4 -5
+  1627 sfx oblate I3
+  1681 sfx oblate I3
+  1692 sfx oblate I3
+  1703 sfx oblate I3
+  1722 sfx jump P4 -5
+  1783 sfx oblate I3
+  1794 sfx jump P4 -5
+  1798 sfx bump W4
+  1798 sfx oblate I3
+  1809 sfx oblate I3
+  1820 sfx oblate I3
+  1826 sfx jump P4 -5
+  1831 sfx oblate I3
+  1950 sfx jump P4 -5
+  1955 sfx oblate I3
+  1972 sfx stomp W5
+  1980 sfx oblate I3
+  1991 sfx oblate I3
+  2006 sfx jump P4 -5
+  2023 sfx oblate I3
+  2033 sfx oblate I3
+  2042 sfx jump P4 -5
+  2098 sfx jump P4 -5
+  2103 sfx oblate I3
+  2468 sfx oblate I3
+  2479 sfx oblate I3
+  2500 sfx oblate I3
+  2514 sfx jump P4 -5
+  2525 sfx oblate I3
+  2618 sfx oblate I3
+  2628 sfx oblate I3
+  2639 sfx oblate I3
+  2678 sfx checkpoint I7
+  2678 duck on
+  2705 duck off
+  2712 sfx jump P4 -5
+  2756 sfx jump P4 -5
+  2820 sfx jump P4 -5
+  2852 sfx jump P4 -5
+  2899 sfx oblate I3
+  2900 sfx oblate I3
+  3210 sfx jump P4 -5
+  3268 sfx jump P4 -5
+  3314 sfx oblate I3
+  3325 sfx oblate I3
+  3335 sfx oblate I3
+  3408 sfx jump P4 -5
+  3413 sfx oblate I3
+  3507 sfx oblate I3
+  3808 sfx jump P4 -5
+  3809 sfx oblate I3
+  3817 sfx oblate I3
+  3827 sfx oblate I3
+  3837 sfx jump P4 -5
+  3872 sfx jump P4 -5
+  3902 sfx oblate I3
+  3904 sfx jump P4 -5
+  3913 sfx oblate I3
+  3947 sfx oblate I3
+  3955 sfx oblate I3
+  3966 sfx oblate I3
+  3984 sfx jump P4 -5
+  4008 sfx stomp W5
+  4049 sfx oblate I3
+  4053 sfx oblate I3
+  4068 sfx jump P4 -5
+  4124 sfx jump P4 -5
+  4125 sfx oblate I3
+  4126 sfx oblate I3
+ 10401 jingle hurry
+ 10401 hold-song on
+ 10497 hold-song off
+ 13656 sfx jump P4 -5
+ 13735 sfx jump P4 -5
+ 13784 sfx jump P4 -5
+ 13790 sfx oblate I3
+ 13800 sfx oblate I3
+ 13817 sfx oblate I3
+ 13823 sfx stomp W5
+ 13850 sfx jump P4 -5
+ 13876 sfx jump P4 -5
+ 13919 sfx oblate I3
+ 13929 sfx oblate I3
+ 14001 stop-song
+ 14001 cut-sfx P W A
+ 14001 jingle fanfare_clear
+ 14114 sfx tally_end I6
+ 14384 song route_map

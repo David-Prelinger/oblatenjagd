@@ -1,0 +1,81 @@
+# QA MA (audio, §5 `unterwasser`, D-114): the underwater swap needs 20
+# frames below (or above) the water line, so quick dives don't flap the
+# music. The bathing-notch entry of qa_m5_notch_diver_safe, then six short
+# dives (DOWN 10, then JUMP: she is back at the surface and jumps out:
+# `jump` at 248, 299, ..., 503) with no `underwater` cue; then a long dive
+# (DOWN 60) swaps to the twin at 577 and five strokes plus a jump-out
+# swap back at 650. Cue-log golden.
+level  = wolfgangsee
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Died
+---
+R 105
+RJ 20
+R 20
+- 20
+J 14
+RJ 10
+R 4
+- 30
+L 14
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 10
+J 1
+- 4
+J 1
+- 4
+J 1
+- 30
+D 60
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+J 1
+- 6
+- 60

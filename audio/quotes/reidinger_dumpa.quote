@@ -1,0 +1,11 @@
+# „Es wird scho glei dumpa“ (Krippllied; melody after an old folk tune, shaped by Anton
+# Reidinger; no text used): the first period, pickup + 8 bars, 3/4, A-flat major as
+# printed; the top voice of the two-part print. Grid: sixteenths.
+source = "Anton Reidinger (after a folk tune), Krippllied „Es wird scho glei dumpa“, first period (pickup + 8 bars)"
+edition = "Anton Reidinger, Kripplgsangl und Kripplspiel, 1884, p. 1 (scan on Wikimedia Commons: Anton Reidinger - Krippllied.jpg)"
+steps_per_beat = 4
+notes = '''
+eb4/2 |
+ab4/4 ab4 bb4 | c5/3 eb5/1 eb5/6 db5/2 | c5/4 c5 bb4 | bb4/8 eb4/4 |
+ab4/4 ab4 bb4 | c5/3 eb5/1 eb5/6 db5/2 | c5/4 c5 bb4 | ab4/8
+'''

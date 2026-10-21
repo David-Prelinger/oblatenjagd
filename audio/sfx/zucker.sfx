@@ -1,0 +1,13 @@
+# Power-up Zuckerschock (audio-design §6.2): pulse 50 % arpeggio C5 E5 G5 C6 E6 G6 C7,
+# 70 ms each, vibrato growing from 0 to ±50 cents at 9 Hz (the sugar rush). 500 ms.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 523
+arp = { every_ms = 70, semitones = [0, 4, 7, 12, 16, 19, 24] }
+vibrato = { depth_cents = 0, to_depth_cents = 50, rate_hz = 9, ramp_ms = 490 }
+attack_ms = 2
+hold_ms = 420
+decay_ms = 78
+volume_pct = 50
+lowpass_hz = 7000

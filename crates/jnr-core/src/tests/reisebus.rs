@@ -264,6 +264,7 @@ fn its_roof_bounces_without_damage_or_points_in_every_state() {
         g.player.on_ground = false;
         let events = g.step(input("-")).to_vec();
         assert!(events.contains(&Event::Stomped), "{st}: {events:?}");
+        assert!(events.contains(&Event::Bounced), "{st}: {events:?}");
         assert!(!events.contains(&Event::Hurt) && !events.contains(&Event::Died));
         assert_eq!(g.score(), 0, "{st}: no points");
         assert!(g.player().vy < Fx::ZERO, "{st}: bounced up");

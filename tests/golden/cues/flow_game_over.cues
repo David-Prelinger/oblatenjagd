@@ -1,0 +1,32 @@
+# cue log of tests/replays/flow_game_over.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   242 sfx jump P4
+   289 sfx oblate I3
+   295 sfx oblate I3
+   302 sfx oblate I3
+   308 sfx oblate I3
+   314 sfx oblate I3
+   388 cut-sfx all
+   388 jingle death
+   672 sfx jump P4
+   719 sfx oblate I3
+   725 sfx oblate I3
+   732 sfx oblate I3
+   738 sfx oblate I3
+   744 sfx oblate I3
+   818 cut-sfx all
+   818 jingle death
+  1102 sfx jump P4
+  1149 sfx oblate I3
+  1155 sfx oblate I3
+  1162 sfx oblate I3
+  1168 sfx oblate I3
+  1174 sfx oblate I3
+  1248 cut-sfx all
+  1248 jingle death
+  1308 cut-sfx all
+  1308 jingle game_over
+  1372 stop-jingle
+  1372 sfx ui_start I6

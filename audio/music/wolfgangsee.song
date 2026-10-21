@@ -1,0 +1,95 @@
+# `wolfgangsee` „Dampfer-Barcarole" (audio-design §5): Stage 6. 6/8, dotted quarter = 66
+# (tempo_bpm counts eighths: 198; bar 1.818 s), F major. Intro 2 + A 16 + B 8 + A' 8 =
+# 34 bars, 61.8 s (`unterwasser` renders to this length). D-114: a loop plays from
+# sample 0, so the paddle wheel's intro comes round each loop.
+# Intro (1-2): the paddle wheel alone: a soft chuff on 1 and 4, the Helikon rocking F-C.
+# A (3-18): a lilting boat song on the clarinet (♩ ♪ ♩ ♪), the Tenorhorn below in held
+#   sixths and thirds, Helikon on 1 and 4, Nachschlag on 3 and 6, the chuff quieter.
+# B (19-26): the moving state border („Landesgrenze / wandert"): four bars in D minor,
+#   then four in B-flat major, as if the boat crossed into another Land; C7 back to F.
+# A' (27-34): A's second half, back in F.
+[meta]
+id = "wolfgangsee"
+kind = "loop"
+tempo_bpm = 198
+meter = "6/8"
+steps_per_beat = 2            # sixteenths: a 6/8 bar has 12 steps
+key = "f major"
+bars = 34
+order = ["I", "A", "B1", "B2", "A2"]
+source = "original"
+
+[channels]
+lead   = { instrument = "klarinette", volume_pct = 21 }
+second = { instrument = "tenorhorn", volume_pct = 12 }
+bass   = { instrument = "helikon", volume_pct = 14 }
+chords = { instrument = "begleitung", volume_pct = 11, arp_ms = 17 }
+drums  = { instrument = "schlagwerk", volume_pct = 7 }
+
+[pattern.I]
+score = '''
+bass   | f2/4 r/2 c2/4 r/2 | f2/4 r/2 c2/4 r/2 |
+drums  | H/6@100 H        | H/6@100 H        |
+'''
+
+[pattern.A]
+score = '''
+lead   | a4/4 g4/2 a4/4 c5/2 | f5/4 e5/2 d5/4 c5/2 | d5/4 bb4/2 g4/4 bb4/2 | a4/10 c5/2 |
+second | c4/6 f4          | g4/6 e4          | bb3/6 d4         | c4/6 f4          |
+bass   | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | g1/4 r/2 d2/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,c4,e4]'/2 r/4 [g3,c4,e4]'/2 | r/4 [g3,bb3,d4]'/2 r/4 [g3,bb3,d4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+
+lead   | d5/4 c5/2 bb4/4 d5/2 | c5/4 a4/2 f4/4 a4/2 | g4/4 bb4/2 c5/4 e5/2 | f5/12      |
+second | f4/6 d4          | a3/6 c4          | bb3/6 c4         | a3/12            |
+bass   | bb1/4 r/2 f2/4 r/2 | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [bb3,d4,f4]'/2 r/4 [bb3,d4,f4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,bb3,e4]'/2 r/4 [g3,bb3,e4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+
+lead   | c5/4 a4/2 c5/4 f5/2 | g5/4 e5/2 c5/4 e5/2 | d5/4 bb4/2 d5/4 g5/2 | f5/10 a4/2 |
+second | a3/6 c4          | e4/6 g4          | bb3/6 d4         | c4/6 a3          |
+bass   | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | g1/4 r/2 d2/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,c4,e4]'/2 r/4 [g3,c4,e4]'/2 | r/4 [g3,bb3,d4]'/2 r/4 [g3,bb3,d4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+
+lead   | d5/4 c5/2 bb4/4 d5/2 | c5/4 a4/2 f4/4 a4/2 | g4/4 bb4/2 c5/4 e5/2 | f5/12      |
+second | f4/6 d4          | a3/6 c4          | bb3/6 c4         | a3/12            |
+bass   | bb1/4 r/2 f2/4 r/2 | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [bb3,d4,f4]'/2 r/4 [bb3,d4,f4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,bb3,e4]'/2 r/4 [g3,bb3,e4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+'''
+
+[pattern.B1]
+key = "d minor"
+score = '''
+lead   | a4/4 d5/2 f5/4 a5/2 | e5/4 c#5/2 a4/4 e5/2 | f5/4 d5/2 a4/4 d5/2 | e5/4 c#5/2 a4/6 |
+second | d4/6 f4          | c#4/6 e4         | d4/6 a3          | c#4/12           |
+bass   | d2/4 r/2 a1/4 r/2 | a1/4 r/2 e2/4 r/2 | d2/4 r/2 a1/4 r/2 | a1/4 r/2 e2/4 r/2 |
+chords | r/4 [d4,f4,a4]'/2 r/4 [d4,f4,a4]'/2 | r/4 [c#4,e4,a4]'/2 r/4 [c#4,e4,a4]'/2 | r/4 [d4,f4,a4]'/2 r/4 [d4,f4,a4]'/2 | r/4 [c#4,e4,a4]'/2 r/4 [c#4,e4,a4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+'''
+
+[pattern.B2]
+key = "bb major"
+score = '''
+lead   | f5/4 d5/2 bb4/4 d5/2 | c5/4 eb5/2 g5/4 eb5/2 | d5/4 bb4/2 f4/4 bb4/2 | c5/4 g4/2 bb4/4 e5!/2 |
+second | d4/6 f4          | c4/6 eb4         | d4/6 bb3         | bb3/6 e4!        |
+bass   | bb1/4 r/2 f2/4 r/2 | f2/4 r/2 c2/4 r/2 | bb1/4 r/2 f2/4 r/2 | c2/4 r/2 g1/4 r/2 |
+chords | r/4 [bb3,d4,f4]'/2 r/4 [bb3,d4,f4]'/2 | r/4 [a3,c4,eb4]'/2 r/4 [a3,c4,eb4]'/2 | r/4 [bb3,d4,f4]'/2 r/4 [bb3,d4,f4]'/2 | r/4 [g3,bb3,e4!]'/2 r/4 [g3,bb3,e4!]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+'''
+
+[pattern.A2]
+score = '''
+lead   | c5/4 a4/2 c5/4 f5/2 | g5/4 e5/2 c5/4 e5/2 | d5/4 bb4/2 d5/4 g5/2 | f5/10 a4/2 |
+second | a3/6 c4          | e4/6 g4          | bb3/6 d4         | c4/6 a3          |
+bass   | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | g1/4 r/2 d2/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,c4,e4]'/2 r/4 [g3,c4,e4]'/2 | r/4 [g3,bb3,d4]'/2 r/4 [g3,bb3,d4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+
+lead   | d5/4 c5/2 bb4/4 d5/2 | c5/4 a4/2 f4/4 a4/2 | g4/4 bb4/2 c5/4 e5/2 | f5/12      |
+second | f4/6 d4          | a3/6 c4          | bb3/6 c4         | a3/12            |
+bass   | bb1/4 r/2 f2/4 r/2 | f2/4 r/2 c2/4 r/2 | c2/4 r/2 g1/4 r/2 | f2/4 r/2 c2/4 r/2 |
+chords | r/4 [bb3,d4,f4]'/2 r/4 [bb3,d4,f4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [g3,bb3,e4]'/2 r/4 [g3,bb3,e4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 |
+drums  | H/6@50 H         | H/6@50 H         | H/6@50 H         | H/6@50 H         |
+'''

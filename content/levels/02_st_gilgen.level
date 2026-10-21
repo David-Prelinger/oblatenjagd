@@ -110,6 +110,7 @@
 
 [meta]
 id = "st_gilgen"
+music = "st_gilgen"
 title_key = "stage.st_gilgen.title"
 time_limit = 210
 min_jump_window = 6

@@ -1,0 +1,24 @@
+# Ending bill, lines 1-3 (audio-design §6.3): the tally_end till bell, decay 250 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+highpass_hz = 2000
+attack_ms = 1
+decay_ms = 9
+volume_pct = 5
+
+[[layer]]
+wave = "sine"
+freq_hz = 1568
+attack_ms = 1
+hold_ms = 20
+decay_ms = 229
+volume_pct = 16
+
+[[layer]]
+wave = "sine"
+freq_hz = 2349
+attack_ms = 1
+hold_ms = 10
+decay_ms = 209
+volume_pct = 10

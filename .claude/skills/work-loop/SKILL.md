@@ -15,6 +15,7 @@ Status: approved v1. Needs `cargo xtask` (available from M0).
    - code → `engine-engineer`
    - art → `pixel-artist`, then `art-director`; loop until APPROVED (max 3 rounds)
    - level → `level-designer`
+   - audio → `sound-designer`, then `game-designer` (audio verdict, `sfx-authoring` rubric); loop until APPROVED (max 3 rounds); the orchestrator runs `cargo xtask audio golden --accept` only after APPROVED (D-117)
    Give each subagent: the goal, the relevant doc sections, the acceptance criteria, and what to report.
 5. **Verify**: `cargo xtask verify` must be green. Send failures back to the responsible agent.
 6. **QA**: `qa-tester` on the feature. Bugs → back to step 4 with the failing replay.

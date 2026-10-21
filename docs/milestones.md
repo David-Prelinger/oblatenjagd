@@ -298,6 +298,36 @@ Platform
 
 **Acceptance:** see "Milestone acceptance" below; the art-director reviews the full paged contact sheet; the game-designer review includes the Café Zauner filmstrip, a tray bounce, the queue chain to the 1-up, the arena lock with „Hinten anstellen!", a dash seen from a refuge, a breather stomp, a volley, the third hit with the bow and the bell lifting, the Serve, every ending phase and the marked title, the Bad Ischl → Café Zauner Wait screen, the hand-measured boss windows, and all new German text.
 
+## MA – Audio: own synth, chiptune Blasmusik, a sound for every event
+
+Design: `docs/audio-design.md` (D-113). Engine plan: `docs/proposals/ma-audio-architecture.md` (D-114 … D-118). Sound review gate: the game-designer's verdict before `cargo xtask audio golden --accept` (D-117).
+
+Planning
+- [x] Audio design, PD sources verified, mute texts (game-designer, D-113)
+- [x] Architecture spike: macroquad audio natively, in wasm and without a sound device; render cost; plan (D-114 … D-118)
+
+Engine
+- [x] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
+- [x] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
+- [x] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
+- [x] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
+- [x] E58 Embedding through `jnr-assets/build.rs`; core `Event::Bounced` (output only, no hash change); the pure cue mapper (events + state diff → cues, exhaustive per `Event`) with D-113's voice rules; level `music` ids for the 9 journey levels with a `levels lint` check; cue-log goldens from replays
+- [x] E59 App wiring: SFX at startup, songs per stage (lazy, unloaded), pause, ducking, jingles, underwater swap; `vnc-smoke` audio capture assertions
+- [x] E60 `xtask replay <file> --audio` (offline mix, spectrogram, cue timeline, clipping/ceiling check)
+- [x] E61 Docs (architecture, validation, agentic-setup), the `sound-designer` agent and the `sfx-authoring` skill
+
+Sound (sound-designer, game-designer review)
+- [x] S1 The 25 must SFX (audio-design §6), stats in range
+- [x] S2 Must music in the order of audio-design's task list (title, death, clear, hurry, game over, map, Salzburg, boss set, café, finale, ending set, Stages 2–8, underwater), each quote transcribed from its PD edition with its header filled in
+- [x] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows: deferred to the backlog ("MA deferred"); `fanfare_finale` shortened in MA QA
+- [x] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
+
+Platform
+- [x] Every music cue has its `.song`: `jnr_audio::cues::PENDING_MUSIC` is empty; no placeholder among the must sounds
+- [x] wasm build loads and plays (audio.js present; still runs without it); `wasm-smoke` and `vnc-smoke` green; verify runtime within budget (record it)
+
+**Acceptance:** see "Milestone acceptance" below, with the art-director step replaced by the game-designer's audio verdict on every piece and SFX (stats, spectrograms, piano rolls, the offline mixes of the Stage 1 solver run and the boss win); QA covers the cue logs over every flow, mute in every mode, and the Stage 6 dive/surface swap.
+
 ## Milestone acceptance (done by agents, no human)
 
 1. `cargo xtask verify` green on the milestone branch.
@@ -314,5 +344,5 @@ Platform
 - **M5** Wolfgangsee: auto-scroll, boats (Traundl, paddle steamer), swimming (accepted, docs/reports/M5.md)
 - **M6** Strobl + Bad Ischl (accepted, docs/reports/M6.md)
 - **M7** Café Zauner finale + ending (accepted, docs/reports/M7.md)
-- **MA** Audio (low priority, can be pulled forward at any time): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
+- **MA** Audio (accepted, docs/reports/MA.md): own sfxr-style synth in `jnr-audio` for sound effects; music written as text patterns (tracker style, Ländler/Blasmusik) rendered by the same synth; CC0 sounds from freesound.org/OpenGameArt only if needed, recorded in `assets/LICENSES.md`. Adds a `sound-designer` agent and a `sfx-authoring` skill. Re-enable macroquad's `audio` feature (disabled in M0).
 - **MW** Web release: polished `index.html`, gamepad support, headless-browser smoke test, hosting

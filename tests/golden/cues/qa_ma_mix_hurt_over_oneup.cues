@@ -1,0 +1,32 @@
+# cue log of tests/replays/qa_ma_mix_hurt_over_oneup.replay (cargo xtask cues)
+    59 sfx jump P4
+    66 sfx bump W4
+    66 sfx oblate I3
+   189 sfx jump P4
+   196 sfx bump W4
+   445 sfx zucker P8
+   445 duck on
+   475 duck off
+   523 sfx jump P4 -5
+   527 sfx brick W6
+   613 sfx jump P4 -5
+   683 sfx oblate I3
+   694 sfx oblate I3
+   705 sfx oblate I3
+   715 sfx oblate I3
+   726 sfx oblate I3
+   784 sfx jump P4 -5
+   788 sfx bump W4
+   788 sfx oblate I3
+   814 sfx jump P4 -5
+   818 sfx bump W4
+   818 sfx oblate I3
+   844 sfx jump P4 -5
+   848 sfx bump W4
+   848 sfx oblate I3
+   920 sfx jump P4 -5
+   924 sfx bump W4
+   980 sfx oneup I9
+   980 duck on
+  1007 sfx hurt P8
+  1037 duck off

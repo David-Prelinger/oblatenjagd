@@ -1,0 +1,10 @@
+# cue log of tests/replays/testbed_route.replay (cargo xtask cues)
+   111 sfx jump P4
+   206 sfx jump P4
+   299 sfx jump P4
+   372 sfx jump P4
+   441 sfx jump P4
+   477 sfx jump P4
+   529 sfx jump P4
+   731 cut-sfx P W A
+   731 jingle fanfare_clear

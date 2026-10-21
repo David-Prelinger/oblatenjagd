@@ -1,0 +1,8 @@
+# Lint fixture for `dc` (xtask/src/audio/lint.rs): Less than half a period of a 20 Hz sine: all positive, a large DC offset.
+[[layer]]
+wave = "sine"
+freq_hz = 20
+attack_ms = 1
+hold_ms = 15
+decay_ms = 5
+volume_pct = 35

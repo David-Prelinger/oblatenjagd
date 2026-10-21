@@ -1,4 +1,5 @@
-//! `jnr-assets`: all art, levels and text of Oblatenjagd, embedded at build time.
+//! `jnr-assets`: all art, levels, text and sound sources of Oblatenjagd,
+//! embedded at build time.
 //!
 //! `build.rs` uses `jnr-artkit` to compile `art/` into one packed atlas
 //! (raw RGBA + generated metadata) and embeds it, so the game needs no file
@@ -16,6 +17,7 @@ pub use jnr_artkit::atlas::{Atlas, AtlasAnim, AtlasSprite, Point, Rect};
 
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
 include!(concat!(env!("OUT_DIR"), "/atlas.rs"));
+include!(concat!(env!("OUT_DIR"), "/audio.rs"));
 
 static ATLAS_RGBA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/atlas.rgba"));
 
@@ -23,6 +25,35 @@ static ATLAS_RGBA: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/atlas.rgba"
 pub fn atlas() -> &'static Atlas {
     static ATLAS: OnceLock<Atlas> = OnceLock::new();
     ATLAS.get_or_init(|| generated_atlas(ATLAS_RGBA))
+}
+
+/// Every sound source under `audio/` as `(path, text)` (the build script
+/// already checked them with `jnr_audio::bank::Bank::load`).
+pub fn audio_sources() -> &'static [(&'static str, &'static str)] {
+    AUDIO_SOURCES
+}
+
+/// The sound bank, parsed from [`audio_sources`] on first use (a few ms).
+pub fn audio_bank() -> &'static jnr_audio::bank::Bank {
+    static BANK: OnceLock<jnr_audio::bank::Bank> = OnceLock::new();
+    BANK.get_or_init(|| {
+        jnr_audio::bank::Bank::load(AUDIO_SOURCES)
+            .expect("the build script checked the audio sources")
+    })
+}
+
+/// The rendered length of every jingle (the cue director's jingle timing,
+/// E63), measured by the build script: nothing is rendered at run time.
+pub fn jingle_frames() -> jnr_audio::cues::JingleFrames {
+    jnr_audio::cues::JingleFrames {
+        frames: JINGLE_FRAMES
+            .iter()
+            .map(|&(id, f)| {
+                let m = jnr_audio::cues::Music::from_id(id).expect("a music cue id");
+                (m, f)
+            })
+            .collect(),
+    }
 }
 
 /// Looks up a sprite (or palette-swap variant) by name.
@@ -33,6 +64,99 @@ pub fn sprite(name: &str) -> Option<&'static AtlasSprite> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jnr_audio::cues::{Music, PENDING_MUSIC, PITCHED, Sfx};
+
+    /// Every SFX the cues can play is in the embedded bank (no pending
+    /// SFX), and so is every pitched variant's id.
+    #[test]
+    fn every_cue_sfx_is_embedded() {
+        let bank = audio_bank();
+        for s in Sfx::ALL {
+            assert!(
+                bank.sfx.contains_key(s.id()),
+                "audio/sfx/{}.sfx is missing",
+                s.id()
+            );
+        }
+        let mut ids: Vec<&str> = bank.sfx.keys().map(String::as_str).collect();
+        ids.sort_unstable();
+        let mut ours: Vec<&str> = Sfx::ALL.iter().map(|s| s.id()).collect();
+        ours.sort_unstable();
+        assert_eq!(ids, ours, "audio/sfx has exactly the cues' ids");
+        assert_eq!(bank.startup_sfx().len(), Sfx::ALL.len() + PITCHED.len());
+    }
+
+    /// Every music cue exists as a song or jingle, or is pending; a pending
+    /// one that exists must leave `PENDING_MUSIC` (so the list only shrinks).
+    #[test]
+    fn every_music_cue_is_embedded_or_pending() {
+        let bank = audio_bank();
+        for m in Music::ALL {
+            let pending = PENDING_MUSIC.contains(&m);
+            assert!(
+                bank.has_music(m) != pending,
+                "`{}`: {}",
+                m.id(),
+                if pending {
+                    "exists now: remove it from jnr_audio::cues::PENDING_MUSIC"
+                } else {
+                    "no audio/music/<id>.song or audio/jingles/<id>.sfx (and not pending)"
+                }
+            );
+        }
+    }
+
+    /// The director's jingle timing has a rendered length for every
+    /// jingle cue (E63: no design-length fallback in the game), and the
+    /// build script's table is exactly what the bank renders now.
+    #[test]
+    fn every_jingle_has_its_rendered_length() {
+        let lengths = jingle_frames();
+        assert_eq!(lengths, audio_bank().jingle_frames().unwrap());
+        for m in Music::ALL.into_iter().filter(|m| !m.is_song()) {
+            let frames = lengths.frames.get(&m).copied().unwrap_or(0);
+            assert!(frames > 0, "`{}` has no rendered length", m.id());
+        }
+        let jingles = Music::ALL.iter().filter(|m| !m.is_song()).count();
+        assert_eq!(lengths.frames.len(), jingles, "{lengths:?}");
+    }
+
+    /// Every embedded song renders clean: a loop is a multiple of 4096
+    /// frames (D-114) and nothing clamps (a no-op until S2's songs land).
+    #[test]
+    fn every_embedded_song_renders_aligned_and_unclamped() {
+        let bank = audio_bank();
+        for m in Music::ALL
+            .into_iter()
+            .filter(|m| bank.songs.contains_key(m.id()))
+        {
+            for variant in [
+                jnr_audio::bank::Variant::Normal,
+                jnr_audio::bank::Variant::Hurry,
+            ] {
+                let r = bank
+                    .render_music(m, variant)
+                    .unwrap_or_else(|e| panic!("{}: {e}", m.id()))
+                    .expect("in the bank");
+                if r.looped {
+                    assert_eq!(r.pcm.samples.len() % 4096, 0, "{} {variant:?}", m.id());
+                }
+                assert_eq!(r.clamped, 0, "{} {variant:?}: clamped samples", m.id());
+            }
+        }
+    }
+
+    #[test]
+    fn embedded_audio_sources_are_sorted_sources() {
+        let src = audio_sources();
+        assert!(src.windows(2).all(|w| w[0].0 < w[1].0));
+        assert!(src.iter().all(|(p, _)| p.starts_with("audio/")));
+        assert!(src.iter().any(|(p, _)| *p == "audio/sfx/jump.sfx"));
+        assert!(
+            !src.iter()
+                .any(|(p, _)| p.ends_with(".md") || p.ends_with(".toml"))
+        );
+    }
 
     #[test]
     fn build_script_ran_with_artkit() {

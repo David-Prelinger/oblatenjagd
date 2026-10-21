@@ -1,0 +1,113 @@
+# `strobl` „Durchfahrts-Polka" (audio-design §5): Stage 7, the town everybody only drives
+# through. 2/4, 132 BPM (bar 0.909 s), B-flat major, Trio E-flat. Intro 2 + A 16 + B 8 +
+# Trio 16 = 42 bars, 38.2 s. D-114: a loop plays from sample 0, so the honks come round
+# each loop (bar 42's F7 leads into them).
+# Intro (1-2): two car-horn honks as the pickup (A4 + C-sharp5 together: ♪, ♪ rest, ♪),
+#   then a ♩ honk on beat 1 of bar 2.
+# A (3-18): a busy polka of short repeated notes (traffic), full accompaniment.
+# B (19-26) „Stop-and-go": one bar played, one bar silent except the indicator ticking
+#   on every eighth; the music stops at the red lights.
+# Trio (27-42): E-flat major, lighter (the old Ischlerbahn trackbed, now a cycle path):
+#   a bicycle bell on the first beat of every 4-bar phrase, kick on 1 only.
+[meta]
+id = "strobl"
+kind = "loop"
+tempo_bpm = 132
+meter = "2/4"
+steps_per_beat = 4            # sixteenths: a bar has 8 steps
+key = "bb major"
+bars = 42
+order = ["I", "A", "B", "T", "X"]
+source = "original"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 27 }
+second = { instrument = "tenorhorn", volume_pct = 19 }
+bass   = { instrument = "helikon", volume_pct = 20 }
+chords = { instrument = "begleitung", volume_pct = 20, arp_ms = 17 }
+hupe   = { instrument = "hupe", volume_pct = 22, arp_ms = 0 }
+drums  = { instrument = "schlagwerk", volume_pct = 8 }
+
+[pattern.I]
+score = '''
+hupe   | r/2 [a4,c#5!]/2 r/2 [a4,c#5!]/2 | [a4,c#5!]/4 r/4 |
+'''
+
+[pattern.A]
+score = '''
+lead   | f5/1 f5 f5 f5 d5/2 bb4 | c5/1 c5 c5 c5 a4/2 f4 | d5/1 d5 d5 d5 f5/2 bb5 | a5/2 g5 f5/4 |
+second | d5/1 d5 d5 d5 bb4/2 f4 | a4/1 a4 a4 a4 f4/2 c4 | bb4/1 bb4 bb4 bb4 d5/2 f5 | f5/2 eb5 c5/4 |
+bass   | bb1/4 f2       | f2/4 c2        | bb1/4 f2        | f2/4 c2        |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' |
+drums  | [K,B]/4 K      | K/4 K          | K/4 K           | K/4 K          |
+
+lead   | g5/1 g5 g5 g5 eb5/2 c5 | f5/1 f5 f5 f5 d5/2 bb4 | c5/1 d5 eb5 c5 a4/2 c5 | bb4/4 r |
+second | eb5/1 eb5 eb5 eb5 c5/2 g4 | d5/1 d5 d5 d5 bb4/2 f4 | a4/1 bb4 c5 a4 f4/2 a4 | d4/4 r |
+bass   | c2/4 g2        | bb1/4 f2       | f2/4 c2         | bb1/4 f2       |
+chords | r/2 [c4,eb4,g4]' r [c4,eb4,g4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' |
+drums  | K/4 K          | K/4 K          | K/4 K           | K/4 S/1 S S S  |
+
+lead   | f5/1 f5 f5 f5 d5/2 bb4 | c5/1 c5 c5 c5 a4/2 f4 | d5/1 d5 d5 d5 f5/2 bb5 | bb5/2 a5 g5 f5 |
+second | d5/1 d5 d5 d5 bb4/2 f4 | a4/1 a4 a4 a4 f4/2 c4 | bb4/1 bb4 bb4 bb4 d5/2 f5 | g5/2 f5 eb5 c5 |
+bass   | bb1/4 f2       | f2/4 c2        | bb1/4 f2        | g2/4 c2        |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [bb3,d4,g4]' r [a3,c4,eb4]' |
+drums  | [K,B]/4 K      | K/4 K          | K/4 K           | K/4 K          |
+
+lead   | g5/1 g5 g5 g5 eb5/2 c5 | d5/2 f5 bb5 d6 | c5/1 d5 eb5 c5 a4/2 c5 | bb4/4 r |
+second | eb5/1 eb5 eb5 eb5 c5/2 g4 | bb4/2 d5 f5 bb5 | a4/1 bb4 c5 a4 f4/2 a4 | d4/4 r |
+bass   | c2/4 g2        | bb1/4 f2       | f2/4 c2         | bb1/4 f2       |
+chords | r/2 [c4,eb4,g4]' r [c4,eb4,g4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' |
+drums  | K/4 K          | K/4 K          | K/4 K           | K/4 S/1 S S S  |
+'''
+
+[pattern.B]
+score = '''
+lead   | f5/1 f5 f5 f5 d5/2 bb4 | r/8 | g5/1 g5 g5 g5 eb5/2 c5 | r/8 |
+second | d5/1 d5 d5 d5 bb4/2 f4 | r/8 | eb5/1 eb5 eb5 eb5 c5/2 g4 | r/8 |
+bass   | bb1/4 f2       | r/8           | c2/4 g2        | r/8           |
+chords | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/8 | r/2 [c4,eb4,g4]' r [c4,eb4,g4]' | r/8 |
+drums  | K/4 K          | I/2@60 I I I  | K/4 K          | I/2@60 I I I  |
+
+lead   | a5/2 f5 c5 a4  | r/8           | bb4/4 r        | r/8           |
+second | f5/2 c5 a4 f4  | r/8           | d4/4 r         | r/8           |
+bass   | f2/4 c2        | r/8           | bb1/4 r        | r/8           |
+chords | r/2 [a3,c4,eb4]' r [a3,c4,eb4]' | r/8 | r/2 [bb3,d4,f4]' r/4 | r/8 |
+drums  | K/4 K          | I/2@60 I I I  | K/4 r          | I/2@60 I I I  |
+'''
+
+[pattern.T]
+key = "eb major"
+score = '''
+lead   | g5/4 eb5      | bb4/8         | c5/4 eb5      | g5/8          |
+second | eb5/4 bb4     | g4/8          | ab4/4 c5      | eb5/8         |
+bass   | eb2/4 bb1     | eb2/4 bb1     | ab1/4 eb2     | eb2/4 bb1     |
+chords | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [ab3,c4,eb4]' r [ab3,c4,eb4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | [K,Q]/4 r     | K/4 r         | K/4 r         | K/4 r         |
+
+lead   | f5/4 d5       | bb4/8         | ab4/4 c5      | bb4/8         |
+second | d5/4 bb4      | f4/8          | f4/4 ab4      | g4/8          |
+bass   | bb1/4 f2      | bb1/4 f2      | f2/4 c2       | eb2/4 bb1     |
+chords | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [ab3,c4,f4]' r [ab3,c4,f4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | [K,Q]/4 r     | K/4 r         | K/4 r         | K/4 r         |
+
+lead   | g5/4 eb5      | bb5/8         | ab5/4 f5      | c6/8          |
+second | eb5/4 bb4     | g5/8          | f5/4 c5       | ab5/8         |
+bass   | eb2/4 bb1     | eb2/4 bb1     | ab1/4 eb2     | ab1/4 eb2     |
+chords | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [ab3,c4,f4]' r [ab3,c4,f4]' | r/2 [ab3,c4,eb4]' r [ab3,c4,eb4]' |
+drums  | [K,Q]/4 r     | K/4 r         | K/4 r         | K/4 r         |
+
+lead   | bb5/4 g5      | f5/4 d5       | eb5/8         |
+second | g5/4 eb5      | d5/4 bb4      | g4/8          |
+bass   | eb2/4 bb1     | bb1/4 f2      | eb2/4 bb1     |
+chords | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' | r/2 [bb3,d4,ab4]' r [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' r [eb4,g4,bb4]' |
+drums  | [K,Q]/4 r     | K/4 r         | K/4 r         |
+'''
+
+[pattern.X]
+score = '''
+lead   | f5/2 eb5 c5 a4 |
+second | c5/2 a4 f4 eb4 |
+bass   | f2/4 c2        |
+chords | r/2 [f4,a4,eb5]' r [f4,a4,eb5]' |
+drums  | K/4 S/1 S S S  |
+'''

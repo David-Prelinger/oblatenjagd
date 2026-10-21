@@ -1,0 +1,45 @@
+# `fanfare_clear` „Komm, lieber Mai" (audio-design §5): on LevelComplete at a Maibaum.
+# 6/8, dotted quarter = 96 (tempo_bpm counts eighths: 288), F major, the song's key.
+# Mozart, Sehnsucht nach dem Frühlinge K. 596: the voice part's first phrase, pickup +
+# 4 bars to the first cadence („... wieder grün"), on the Flügelhorn with the Tenorhorn
+# in thirds and sixths, Helikon on 1 and 4, Nachschlag on 3 and 6, the cymbal on the
+# phrase's first downbeat (bar 2).
+# Bar 1 is one bar of oom-pa vamp that carries the pickup (a jingle can't start with
+# 5/6 of a bar of silence). The cadence note („grün", A4) becomes the Tusch bar: the band
+# holds F major over a crescendo snare roll and ends on a bass drum + choked cymbal.
+# 5 bars = 6.25 s, then the release.
+[meta]
+id = "fanfare_clear"
+kind = "jingle"
+tempo_bpm = 288
+meter = "6/8"
+steps_per_beat = 2            # sixteenths: a 6/8 bar has 12 steps
+key = "f major"
+bars = 5
+order = ["A"]
+source = "W. A. Mozart, Sehnsucht nach dem Frühlinge K. 596, voice part, bars 0-4"
+edition = "Mozarts Werke (AMA), Serie VII No. 37, ed. G. Nottebohm, Leipzig: Breitkopf & Härtel 1877, plate W.A.M. 596, p. 77 (IMSLP #63850)"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 36 }
+second = { instrument = "tenorhorn", volume_pct = 26 }
+bass   = { instrument = "helikon", volume_pct = 27 }
+chords = { instrument = "begleitung", volume_pct = 20, arp_ms = 17 }
+tusch  = { instrument = "orgel_satz", volume_pct = 11, arp_ms = 0 }
+drums  = { instrument = "schlagwerk", volume_pct = 11 }
+
+[pattern.A]
+score = '''
+lead   | r/10 f4/2          | f4/4 a4/2 c5/4 f5/2 | c5/6 _/2 a4/2 f4/2 | bb4/4 bb4/2 bb4/2 c5/2 bb4/2 | a4/12 |
+second | r/10 c4/2          | c4/4 f4/2 a4/4 c5/2 | a4/6 _/2 f4/2 c4/2 | g4/4 g4/2 g4/2 a4/2 g4/2     | f4/12 |
+bass   | f2/4 r/2 c3/4 r/2  | f2/4 r/2 c3/4 r/2   | f2/4 r/2 c3/4 r/2  | c3/4 r/2 g2/4 r/2            | f2/12 |
+chords | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [a3,c4,f4]'/2 r/4 [a3,c4,f4]'/2 | r/4 [bb3,c4,e4]'/2 r/4 [bb3,c4,e4]'/2 | r/12 |
+tusch  | r/12               | r/12                | r/12               | r/12                         | [f4,a4,c5]/12 |
+drums  | K/6 K              | [K,B]/6 K           | K/6 K              | K/6 K                        | S/1@30 S@36 S@42 S@50 S@58 S@66 S@75 S@85 S@95 S@105 [K,C]/2 |
+'''
+
+[[quote]]
+fixture = "mozart_k596"
+channel = "lead"
+bar = 1
+step = 10

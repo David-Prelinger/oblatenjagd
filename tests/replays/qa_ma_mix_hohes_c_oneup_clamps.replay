@@ -1,0 +1,122 @@
+# QA MA (audio mix, audio-design §3 master ceiling -1 dBFS, no clamped
+# sample): the Zaunerstollen 1-up (oneup I9, -6 dBFS) on balcony B2 while
+# the Operettensänger in Bad Ischl sings his high C (hohes_c W6, -8 dBFS,
+# 800 ms) over the bad_ischl piece: --audio peak 0.00 dBFS, 5 clamped
+# samples, 285 samples above -1 dBFS at 59.67..60.13 s (frames
+# 3580..3607), sounds bad_ischl + hohes_c + oneup. Inputs:
+# qa_m6a_zaunerstollen_offcentre_bump to 3640 (hohes_c 3564, oneup 3579).
+# Expected: --audio passes; the cue-log golden puts it in the verify step
+# audio-mix, which fails until the mix has headroom.
+# Fixed (E63, D-124): the SFX headroom table (SFX 89 %, hurt and oneup
+# 89 % of that, hohes_c 84 %); `cargo xtask audio mix` mixes every replay.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=ExtraLife lives=4
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 260
+RJ 4
+R 32
+RJ 12
+R 24
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 36
+RJ 36
+R 20
+RJ 28
+R 34
+L 11
+- 43
+R 40
+RJ 4
+R 8
+RJ 4
+R 16
+RJ 4
+R 124
+RJ 12
+R 20
+RJ 4
+R 172
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 12
+RJ 28
+R 56
+RJ 8
+R 56
+- 4
+L 8
+- 60
+R 24
+RJ 4
+R 36
+L 8
+LJ 4
+RJ 24
+R 4
+RJ 36
+R 16
+RJ 32
+R 20
+- 3
+R 12
+- 20
+J 14
+- 153

@@ -32,7 +32,7 @@ jumpnrun/
 │  ├─ jnr-render/             # software renderer: (&Game, &Assets) -> Framebuffer (RGBA, 320x180)
 │  ├─ jnr-artkit/             # palette + .sprite parser, procedural generators, art lints
 │  ├─ jnr-assets/             # build.rs compiles art/ + content/ into embedded data
-│  ├─ jnr-audio/              # (later milestone) synth for SFX + music, renders to PCM/WAV
+│  ├─ jnr-audio/              # integer synth: .sfx/.inst parser, renderer to 44.1 kHz mono i16, WAV (MA)
 │  └─ jnr-app/                # macroquad binary: native + wasm. Thin shell.
 ├─ xtask/                     # dev tool: check, verify, sprites, levels, solve, replay, golden, wasm, vnc
 ├─ art/
@@ -40,6 +40,7 @@ jumpnrun/
 │  ├─ sprites/**/*.sprite
 │  ├─ generators/*.toml       # parameters for procedural art (parallax, water, tiles)
 │  └─ sprites/ui/font.sprite  # bitmap font incl. ÄÖÜäöüß„“– (see jnr-render)
+├─ audio/                     # sound sources (MA): sfx/*.sfx, jingles/*.sfx, instruments/*.inst, music/*.song, targets.toml (lint targets)
 ├─ content/
 │  ├─ levels/01_salzburg.level
 │  ├─ text/de.toml            # all player-visible German text, keyed
@@ -59,8 +60,11 @@ jnr-app ──► jnr-render ──► jnr-core
    └──► jnr-assets ──► jnr-artkit   (runtime: atlas data types only)
             ▲              │
             └─ (build.rs) ◄┘          (build time: parse, lint, pack, codegen)
+jnr-audio ──► jnr-core   (the cues read events and game state; E58a)
 xtask ──► everything (never the other way round)
 ```
+
+- `jnr-audio` is pure and wasm-safe like `jnr-core` (`serde` + `toml` only; never macroquad, quad-snd, rand) and under the same determinism source scan (D-117); it also may not mention `as_float`, `Value::Float` or `toml::Value` (every audio number is an integer key). `jnr-render` never depends on it.
 
 - `jnr-artkit` depends by default only on `serde` + `toml` (generator params; pure and wasm-safe, like jnr-core) and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
 
@@ -80,7 +84,9 @@ impl Game {
 }
 
 #[derive(Clone, Copy)] pub struct InputFrame(u8);  // bitflags: LEFT RIGHT UP DOWN JUMP RUN START
-pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
+pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, OblateCollected, PowerUp, Hurt, ExtraLife, BlockBumped,
+                 BrickBroken, Stomped, CheckpointReached, GameOver, HacklThrown, AxeHit, CrawlStarted, Stroke,
+                 Bounced /* MA, D-113: output only, never hashed */ }
 ```
 
 Modules (M0, + `entity` in M1, + `swim` in M5): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run` / `new_game` + `run_game`, expectation checks; see `validation.md` L5), `route` (the journey and the run's levels, M2), plus `hash` (FNV-1a) and `rng` (xorshift64*).
@@ -158,7 +164,7 @@ loop {
   - `--record`: `record::Recorder` RLE-encodes the input of every step and tracks a `replay::Outcome`; on exit (window close, Escape, `--exit-after`) it writes a replay with `source = human` and a derived `expect` (`complete frames=N..N`, else `state=<mode> player_x>=<x>`; always `deaths=<n>`), creating directories, and prints `recorded: <path>`. Not combinable with `--replay`.
 - Escape and closing the window (native) end the loop cleanly (`prevent_quit`), so the recording can be written; the process exits 0.
 - Debug keys (debug builds): F1 hitboxes, F2 frame-step, F3 slow-mo, F12 save framebuffer PNG.
-- Audio: maps core `Event`s to sounds (macroquad audio). Audio is optional; a missing sound never fails.
+- Audio: plays the cues of `jnr_audio::cues::Director` (fed after every `Game::step`, see "jnr-audio" → "Cues") through macroquad audio. Audio is optional; a missing sound never fails. Platform layer as built in E54 (D-114 … D-116, D-118), below; the cue wiring and real sounds come with E59.
 - Wasm: built with `cargo xtask wasm`, served from `web/` with any static server. All assets are embedded (`include_bytes!`), so no fetching at runtime.
 
 Implemented (M0):
@@ -168,12 +174,229 @@ Implemented (M0):
 - PNG encoding uses the `png` crate as a native-only dependency of `jnr-app`.
 - Wasm uses `Options::default()` (no command line). `web/index.html` loads `web/gl.js` (unmodified copy of miniquad's loader, version in `web/README.md`) and `jnr-app.wasm`; it sets `<body data-wasm="loaded">` once the module is instantiated. `cargo xtask wasm [--debug] [--serve] [--port N]` builds (release by default) and assembles `$CARGO_TARGET_DIR/web/`; `cargo xtask wasm-smoke` (a `verify` step) loads it in headless Chromium (SwiftShader WebGL) and checks the marker and the screenshot `$CARGO_TARGET_DIR/preview/wasm_smoke.png` (not blank, ≥ 25 % sky colour `s`).
 
+Implemented (MA, E54): audio platform (`src/audio.rs`, the only code that touches `macroquad::audio`):
+- `jnr-app` enables macroquad's `audio` feature in its own `Cargo.toml` (quad-snd 0.2.8; the workspace entry stays `default-features = false`).
+- **Panic guard** (native, D-115): `audio::install_panic_guard()` runs in `main()` before `Window::from_config` (macroquad creates the audio context, and quad-snd its thread, while it sets up the window). The pure `classify_panic(file, thread)` treats a panic located in `quad-snd` on a thread other than `main` as the audio thread dying (no device: `Can't open PCM device.`): it sets the static `AUDIO_DEAD`, prints one line `jnr-app: audio unavailable (<msg>), playing silently` and swallows the panic. Everything else, including a quad-snd panic on the main thread (an undecodable WAV), goes to the previous hook. libasound's own `ALSA lib …` stderr lines remain (cosmetic).
+- **Backend gate**: every macroquad audio call goes through `Audio::may_call()`, which refuses while the thread is dead (an injectable probe, `audio_dead` in the app, a stub in tests), after a load timeout or while muted, and counts the calls it allows (`calls()`: load starts, frames with load polls, plays, stops, volume changes and unloads of a `Sound`). Unit tests: a dead probe gives 0 calls and `off() == Some(NoDevice)`; `--mute` through a whole replay's cues gives 0 calls. `Audio`'s `Drop` leaks loaded `Sound`s when the thread is dead (their drop would send a delete). Result: no `Audio thread died` lines (quad-snd prints one per call otherwise); `vnc-smoke` asserts it.
+- **Frame-budgeted loader**: `Load<T>` pins a load future and polls it once per render frame with `Waker::noop()`; after `LOAD_BUDGET_FRAMES` (120) without a result it reports `TimedOut`. While nothing has loaded yet that is the wasm-without-`audio.js` case (`load_sound_from_bytes` never returns): `Audio` logs `audio load timed out after 120 frames; audio off` once and stays off, the game runs on. Once any sound has loaded, a timeout only gives up that one sound (E59 review). Natively a load finishes on its first poll. Loads start on the first frame: a send to quad-snd before its thread dies succeeds silently, and the guard sets the flag before the dying thread drops its receiver, so no later call reaches a dead channel. While muted, nothing is started or polled. `Audio::update()` runs once per render frame after the frame's simulation steps (so a cue's sound loads and starts on its own frame natively), never blocks.
+- **Mute**: `--mute` (native CLI) starts muted: nothing is loaded or played. The **M** key (`MUTE_KEY`, both platforms, not a game key; a test checks it is not in `KEY_MAP`) logs `sound off`/`sound on`. After a `--mute` start the first M turns sound on (the current song starts). Otherwise M mutes **in place** (E63, D-124): `Mixer::set_quiet` sets every volume to 0 (song, twin, jingle, the SFX each voice played last) and new plays start at 0, while cues, loads and loops keep running like the pause hold; unmuting restores the current volumes, so the song resumes where it is. No player-visible text.
+- **Cues (E59)**: `main` feeds `jnr_audio::cues::Director` (`begin` once, `step` after every `Game::step`, also with `--replay`) and hands the cues to `Audio::cues`. The pure `audio::Mixer` turns each cue into `Op::{Play, Stop, Volume}` on a `SoundId::{Sfx(Play), Music(Music)}`: an SFX stops what its voice started last, then plays (one live copy per id); `Song` stops the old song and twin, starts the new one looped (the `unterwasser` twin muted on the same frame, when the bank has it); `Jingle` replaces the jingle; `HoldSong`/`HoldJingle` set volume 0 and back, `Duck` 0.5 (−6 dB), `Underwater` swaps the song's and twin's volumes. Every sound is rendered at its design level; music plays at 1.0, SFX at 0.89 times their own `Sfx::gain_pct` (the headroom table, D-124). `Audio` renders all SFX and `cues::PITCHED` variants on its first active frame (`jnr-app: audio: 27 sfx rendered in 2.5 ms`, debug build) and loads them through the budgeted loader; a song is rendered and loaded when its cue first comes up; the song and its twin start together, in the first update in which both are loaded (`Mixer::start_ops`, D-114: they must stay in step; natively the cue's own frame); a new song unloads the old ones (jingles stay), a song replaced before or while loading is dropped, and songs unloaded while muted are parked and dropped at the next active frame (only a dead or off backend leaks them). Each music cue also has its own gain (`Music::gain_pct`: `boss_intro` 25 %, −12 dB), applied by the app and `jnr_audio::mix` alike. An SFX cue whose sound hasn't loaded is dropped. M mutes and unmutes in place (above). The E54 test tone is gone (`vnc-smoke` checks real SFX onsets).
+- **wasm**: `crates/jnr-app/build.rs` emits, only for `wasm32`, `cargo:rustc-link-arg-bins=--allow-undefined-file=<manifest>/wasm-audio-imports.txt` with exactly the 9 `audio_*` imports of quad-snd's `web_snd.rs` (D-116; quad-snd lacks `wasm_import_module`, and rustc no longer allows undefined symbols on wasm32). `web/audio.js` is an unmodified copy of quad-snd 0.2.8's `js/audio.js` (sha256 and licence in `web/README.md`, `audio.js.LICENSE-MIT` next to it); `index.html` loads it after `gl.js`, and `xtask wasm` copies both into the web dir. xtask tests pin it: the quad-snd version in `Cargo.lock` equals `QUAD_SND_VERSION`, the imports list equals the `extern "C"` block of the registry's `web_snd.rs`, `audio.js` matches the README's sha256, and `index.html` loads it between `gl.js` and the module. The browser `AudioContext` stays suspended until the first key press (autoplay policy; `audio.js` resumes it).
+
 ## jnr-artkit + jnr-assets: asset pipeline
 
 - `jnr-artkit` is a library: parses `.palette` and `.sprite`, runs procedural generators, packs atlases, runs art lints. Details in `art-pipeline.md`.
 - `jnr-assets/build.rs` calls `jnr-artkit` to compile all art into one packed RGBA atlas: raw pixels (`include_bytes!`, borrowed without copying) plus generated Rust code for the metadata. At runtime `jnr_assets::atlas()` builds the `jnr_artkit::atlas::Atlas` once via `OnceLock` (D-010), so `jnr-assets` depends on `jnr-artkit` at runtime for these data types. A broken sprite = a **build error** with file:line:col.
 - Levels and text are embedded as strings and parsed by `jnr-core` (`Level::parse(&str)`), so tests and tools can load them directly.
+- Audio (E58b): `build.rs` also reads the flat source directories `audio/{sfx,jingles}/*.sfx`, `audio/instruments/*.inst`, `audio/music/*.song`, `audio/quotes/*.quote` (a source file anywhere else is a build error; `README.md`, `targets.toml` are not sources), checks them (incl. each music cue's kind: loops as `kind = "loop"` songs, one-shots as jingle songs or `jingles/*.sfx`) with `jnr_audio::bank::Bank::load` (parse errors, duplicate ids, music-lint errors: a **build error** with `file:line:col`) and embeds them as `AUDIO_SOURCES` (`include_str!`, sorted by path). `jnr_assets::audio_sources()` returns them, `jnr_assets::audio_bank()` the parsed `Bank` (once, `OnceLock`, ~0.2 ms release). `jnr-assets` therefore depends on `jnr-audio` (normal and build); `jnr-render` reaches it only as a dev-dependency.
 - Generated files are **not committed**; sources are the single truth. Previews go to `target/preview/`.
+
+## jnr-audio: integer synth (MA, D-114, D-117)
+
+Pure crate (E55): text patches → 44 100 Hz mono `i16` PCM, bit-identical on native and wasm (integer maths only, checked by the arch-lint's determinism scan; a test pins the FNV-1a hash of a patch that uses every feature, and the same hash was measured from a wasm32 build in Node). Debug builds compile it with `opt-level = 2`.
+
+- `patch`: `Sfx::parse(file, text)` and `Instrument::parse(file, text)`; the id is the file stem (`[a-z][a-z0-9_]*`). Errors are `file:line:col: error[<kind>]: message` with kinds `syntax`, `schema` (unknown/missing key, wrong type, any float), `key` (a key not allowed in this file kind or on this wave), `range`, `wave`, `layers`, `note`, `kit`, `id`.
+- `synth`: one layer = one voice. A `u32` phase accumulator whose increment is recomputed every 32 samples from the pitch in cents (slide + vibrato + arpeggio + detune) via `tables::scale_by_cents` (Q30 semitone and cent tables). Oscillators in Q15: `pulse` (zero-mean and peak-normalised for any duty), `triangle`, `saw`, `sine` (256-entry table, linear interpolation), `noise` (15-bit LFSR, taps 0/1, seed 1, stepping twice per period of `freq_hz`). Envelopes are linear Q16 segments whose boundaries are `ms_to_samples` of the cumulative times (exact to the sample). Filters: one-pole low-pass and high-pass (`a = w/(1+w)`, `w = 2π·fc/fs`), and a band-pass (Chamberlin state-variable filter, 2× oversampled, unity gain at the centre, centre glides in cents over the sound). Tremolo scales the gain.
+- `render`: voices are summed into an `i32` buffer (`add_sfx`, `add_note`), then `to_pcm` clamps to ±32767 and **counts** clamped samples (`Render { pcm, clamped }`). `Pcm::fnv64()` is the golden fingerprint. `FRAMES_PER_TICK = 735`.
+- `wav`: `write(&Pcm)` (44-byte RIFF header, PCM 16-bit mono) and `read` (skips unknown chunks; for tests and tools).
+- `song` (E57): `Song::parse(file, text)`, the `.song` format below (error kinds also `score`, `pattern`, `channel`, `music`); `song.events` is the order laid out in time (per channel, ties merged). `song_render`: `render_song(&Song, &instruments, &RenderOptions) -> SongRender`. `music_lint`: `lint_song(&Song, &LintContext) -> Vec<Lint>` (`file:line:col: error[music-<code>]: …`). `quote`: `.quote` melody fixtures and `check_quote`.
+
+### `.sfx` (`audio/sfx/*.sfx`, `audio/jingles/*.sfx`)
+
+TOML, integers only, units in the key names. 1–8 `[[layer]]`s, summed:
+
+| Key | Values | Default | Notes |
+|---|---|---|---|
+| `wave` | `pulse` `triangle` `saw` `sine` `noise` | required | |
+| `duty_pct` | 1..=99 | 50 | pulse only |
+| `freq_hz` | 20..=20000 | required | noise: the LFSR steps at 2 × `freq_hz` (20000 ≈ white) |
+| `slide_to_hz` | 20..=20000 | none | glide in cents (exponential in Hz) |
+| `slide_ms` | 0..=10000 | the rest of the sound | only with `slide_to_hz` |
+| `slide_delay_ms` | 0..=10000 | 0 | the glide starts this long after the layer's start (e.g. a 1-up's last step); only with a slide |
+| `attack_ms`, `hold_ms`, `decay_ms` | 0..=10000 each | 0 | linear 0 → peak → peak → 0; at least one > 0 |
+| `volume_pct` | 0..=100 | required | of full scale; layers add up, clamps are counted |
+| `vibrato` | `{ depth_cents = 0..=1200, rate_hz = 0..=50, delay_ms = 0..=10000, to_depth_cents = 0..=1200, ramp_ms = 0..=10000 }` | off; `delay_ms` 0, `to_depth_cents` = `depth_cents`, `ramp_ms` 0 | off before `delay_ms` (the LFO starts at phase 0 there), then the depth goes linearly from `depth_cents` to `to_depth_cents` over `ramp_ms` (with `ramp_ms = 0`: `to_depth_cents` at once). A delayed vibrato: `{ depth_cents = 20, rate_hz = 6, delay_ms = 200 }`; growing: `depth_cents = 0, to_depth_cents = 50, ramp_ms = 500`; fading: `depth_cents = 100, to_depth_cents = 0, ramp_ms = 200`. `rate_hz` ≥ 1 when either depth > 0 |
+| `arp` | `{ every_ms = 1..=1000, semitones = [-24..=24; ≤ 8] }` | off | cycles through the list |
+| `tremolo` | `{ depth_pct = 0..=100, rate_hz = 1..=50 }` | off | gain × (1 − depth·(1+sin)/2) |
+| `lowpass_hz`, `highpass_hz` | 20..=20000 | off | one-pole; high-pass < low-pass |
+| `bandpass` | `{ hz = 20..=10000, to_hz = 20..=10000, q_pct = 100..=2000 }` | off | `to_hz` defaults to `hz`; Q = `q_pct`/100. Unity gain holds for a tone at the centre; it is no peak bound for broadband noise, whose peaks can exceed the input's, so check the clamp count. A **low-pass sweep** is approximated with a Q 1 band-pass sweep (`q_pct = 100`); `lowpass_hz` itself is fixed |
+| `delay_ms` | 0..=10000 | 0 | the layer starts later |
+| `repeat` | `{ count = 1..=64, every_ms = 1..=10000 }` | off | the whole layer again, `every_ms` apart |
+
+The sound's length is the longest layer's `delay + attack + hold + decay` (+ repeats).
+
+Cutting early (E57's notes, SFX retriggers): `render::add_sfx_until` and `add_note_until` take an absolute sample `until`; the voice is unchanged before it, fades out linearly over `CUT_FADE` = 88 samples (2 ms) from it, and adds nothing after; a voice starting at or after `until` adds nothing.
+
+The crate's test fixtures (example `.sfx`/`.inst` files) are in `crates/jnr-audio/tests/fixtures/`; `audio/` holds only game sounds.
+
+```toml
+# audio/sfx/jump.sfx
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 294
+slide_to_hz = 880
+slide_ms = 120
+attack_ms = 2
+hold_ms = 8
+decay_ms = 140
+volume_pct = 35
+```
+
+### `.inst` (`audio/instruments/*.inst`)
+
+**Melodic**: `range = ["e1", "f4"]` (note names `c4`, `f#3`, `bb2`, octaves 0..=8; `a4` = 440 Hz, equal temperament) and 1–8 `[[layer]]`s with the `.sfx` keys except `freq_hz`, `slide_to_hz`, `hold_ms` and `repeat`, plus `detune_cents` (−2400..=2400), `slide_cents` (−4800..=4800, needs `slide_ms`), and an ADSR: `attack_ms`, `decay_ms` (to sustain), `sustain_pct` (default 100), `release_ms`. A note's `gate` (samples) is counted from its onset, a layer's `delay_ms` included, so every layer of a note sounds `gate + release` samples from the onset (a layer whose delay is ≥ the gate stays silent). A release before the end of attack or decay starts from the level reached; a release from level 0 (e.g. a gate of 0) has no samples.
+
+**Kit**: a `[kit]` table mapping single letters (A–Z, a–z) to patch names, and one `[[patch.<name>.layer]]` list per patch with `.sfx` keys. No `range` or top-level `[[layer]]`; every patch must be used.
+
+```toml
+# audio/instruments/kit.inst
+[kit]
+K = "kick"
+
+[[patch.kick.layer]]
+wave = "sine"
+freq_hz = 120
+slide_to_hz = 50
+slide_ms = 60
+attack_ms = 1
+hold_ms = 20
+decay_ms = 120
+volume_pct = 70
+```
+
+### `.song` (`audio/music/*.song`, E57)
+
+A song is a **loop** (it loops from sample 0, D-114) or a **jingle** (once: a stage intro, a fanfare, `game_over`). TOML header plus tracker-style scores in multi-line literal strings, bar-structured so that every channel's bars line up under each other, like a system in a score:
+
+```toml
+# audio/music/example.song
+[meta]
+id = "example"            # = the file stem
+kind = "loop"             # loop | jingle
+tempo_bpm = 120           # beats per minute; a beat is the meter's lower number
+meter = "2/4"             # 2/4 | 3/4 | 6/8 (6/8 counts eighths: dotted quarter = 66 is tempo_bpm = 198)
+steps_per_beat = 4        # the grid: a 2/4 bar has 2 x 4 = 8 steps
+key = "bb major"          # tonic (c, c#, db, ... bb, b) + major | minor
+bars = 24                 # the bars of `order` (checked)
+order = ["A", "B", "A"]   # patterns in playing order (repeat one by naming it again)
+source = "original"       # or the quoted work; then `edition` (the PD edition) is required
+# edition = "AMA, Breitkopf 1886"
+# length_of = "wolfgangsee"   # render to that song's exact length (the underwater track)
+
+[channels]                # 1..=6, top to bottom in the piano roll
+lead   = { instrument = "fluegelhorn", volume_pct = 40 }
+bass   = { instrument = "helikon", volume_pct = 30 }
+chords = { instrument = "begleitung", volume_pct = 20, arp_ms = 17 }  # default 17; 0 = together
+drums  = { instrument = "kit", volume_pct = 25 }
+
+[pattern.A]
+score = '''
+lead   | r/2 bb4 d5 f5 | eb5/4> d5 | c5/2 d5 eb5 c5 | bb4/4 _       |  # the Oblaten-Motiv
+bass   | bb2/4 f2      | bb2/4 f2  | f2/4 c3        | bb2/4 f2      |
+chords | r/2 [d4,f4,bb4]' r [d4,f4,bb4]' | r/2 [d4,f4,bb4]' r [d4,f4,bb4]' | r/2 [c4,f4,a4]' r [c4,f4,a4]' | r/2 [d4,f4,bb4]' r/4 |
+drums  | K/2 h K h     | K/2 h K h | K/2 h K h      | [K,S]/2 S S S |
+
+lead   | c5/4 a4       | ...                                       # the next bars: a new "system"
+'''
+
+[pattern.B]
+key = "f major"           # optional: this section's key (a Trio, a B section)
+score = '''
+...
+'''
+
+[[quote]]                 # optional, one per quoted tune (see `.quote`)
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 1                   # 1-based song bar
+step = 2                  # optional: steps into that bar (a pickup)
+# transpose = 0           # semitones from the fixture to the song
+# augment = 1             # the song's lengths are the fixture's times this
+# compare = "exact"       # exact (pitch and length) | pitches (a tune squeezed into another meter)
+```
+
+**Score lines**: `<channel> | bar | bar | …`, tokens separated by spaces. Several lines of the same channel in one score continue each other (a block of a few bars for every channel is a "system"); a channel without a line is silent in that pattern; all its present lines have the same number of bars. `#` at a line start or after a space starts a comment (`f#4` is a note).
+
+**Token**: `<sound>[/<steps>][>]['][@<velocity>]`.
+
+| Sound | Meaning |
+|---|---|
+| `c5`, `f#4`, `bb3` | a note (octaves 0..=8); `c#5!` marks a note outside the key as intended |
+| `[d4,f4,bb4]` | a chord of ≤ 3 notes, no spaces: one voice arpeggiated every `arp_ms` (the chip chord), the first note is the root; `arp_ms = 0` sounds the notes together |
+| `K`, `[K,S]` | kit letters (any letter of the kit except `r`), several struck together |
+| `r` | a rest (releases ring into it) |
+| `_` | a tie: the previous note or hit lasts longer, also across bar lines and patterns |
+
+`/<steps>`: the length (default: the previous token's of that channel in the pattern, across its lines; its first token in a pattern: one beat). Every bar must sum to meter × `steps_per_beat` (else a `score` error at the bar). `>` accent (velocity 125 %), `'` staccato (sounds half the length), `@<pct>` velocity 1..=200; the velocity scales the channel's `volume_pct`.
+
+**Rendering a song** (`song_render`):
+- Time: a song of `S` steps is `L` samples; step `k` starts at `k·L/S` (rounded down, spread evenly). A jingle's `L` is its natural length; a loop's is rounded to the nearest multiple of **4096 frames** (D-114): at most 2048 frames (46 ms) per loop. `RenderOptions { tempo_pct, length_frames }`: `tempo_pct` (50..=200; 112 is the "hurry" render, D-114); `length_frames` forces an exact length (a loop: a multiple of 4096). `song_render::render_in(&songs, &instruments, id, &opts)` resolves `length_of` (`resolve_length`: the target loop's length at the same tempo) and is what the game and xtask call.
+- **Channels are monophonic**: a new note, chord or hit cuts what still sounds on its channel (the `CUT_FADE` of `add_note_until`, applied to the summed voice: identical for one layer, a few LSBs of rounding apart for several); a rest doesn't cut.
+- **Loops wrap**: tails past the loop end are added at the start, and the last notes are cut by the channel's first onset one loop later, so the loop equals the steady state of playing it forever (tested sample-exact against three passes in a row).
+- **Cache**: identical voices (channel, notes or hits, gate, velocity) are synthesised once and added wherever they recur (the 90 s, 6-channel test song renders in ~15 ms in release).
+- A jingle's PCM runs on to the end of its last release.
+
+**Music lints** (`music_lint`; part of `cargo xtask audio lint`; a bar that doesn't fill the meter is already a `score` parse error, so patterns and the loop end sit on bar lines): errors `instrument` (exists; kit vs. melodic tokens; kit letters), `bars`, `range` (the instrument's `range`), `key` (outside the pattern's key without `!`; minor keys include the raised 6th and 7th), `length` (loops 20–90 s, jingles ≤ 10 s), `length-of` (the target exists, is a loop, ≤ 3 % apart), `quote`, `provenance` (quoting a PD fixture needs a non-"original" `source`); warnings `accidental` (`!` on an in-key note), `clash` (two melodic channels a semitone, 7th or 9th apart where one starts a note on a beat), `consonance` (beat 1, highest vs. lowest melodic channel: unison, 3rd, 5th, 6th or octave in ≥ 70 % of bars), `melody-range` (> 2 octaves), `repeat` (a pattern > 4 times in a row), `unused-pattern`.
+
+**Piano roll** (`cargo xtask audio render <id>|<file.song>` → `$CARGO_TARGET_DIR/preview/audio/<id>_roll.png`, next to the WAV, stats and spectrogram): 8 bars per row, one lane per channel, pitch upwards with a line and a label at every C, bar numbers and pattern names on top, bright bar lines and dim beat lines. Notes in the channel's colour (brighter = louder), a white onset column, drawn as long as they sound; `!` notes have a magenta top edge, notes the lints reject are red; kit lanes have one row per patch; a loop ends in a green line.
+
+### `.quote` (`audio/quotes/*.quote`, E57)
+
+A melody fixture: the first notes of a quoted tune, transcribed from its public-domain edition (D-113, audio-design §9.3). A song's `[[quote]]` must play it (the `quote` lint), so a pattern edit that breaks a quote fails. Single notes, `r` and `_` on the fixture's own grid; `|` is only for reading:
+
+```toml
+# audio/quotes/haydn_94_andante.quote
+source = "Joseph Haydn, Symphony No. 94, II. Andante, bars 1-2 of the theme"
+edition = "Breitkopf & Haertel, ed. J. Rietz, c. 1855 (IMSLP)"
+steps_per_beat = 2          # eighths in 2/4
+notes = '''
+c4/1 c4 e4 e4 | g4 g4 e4/2
+'''
+```
+
+The check takes the channel's notes (the top note of a chord) from the quote's bar and step on, merges consecutive rests, and compares pitches (plus `transpose`) and lengths in beats (times `augment`; `compare = "pitches"` skips lengths). The last fixture note may be held longer in the song. The first difference is reported with the song's `file:line:col`. The leitmotif is a fixture too (`source = "original"`).
+
+Test fixtures for both formats are in `crates/jnr-audio/tests/fixtures/music/` (placeholder instruments, `placeholder_polka.song`, `placeholder_fanfare.song`, two `.quote`s).
+### Tooling (`cargo xtask audio`, E56)
+
+`xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`, `Song` = `audio/music/*.song`, rendered and drawn by `xtask/src/audio_song.rs`); a new kind adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
+
+
+### Bank (`jnr_audio::bank`, E58b, D-114)
+
+```rust
+let bank = jnr_assets::audio_bank();                       // every source, checked at build time
+let sfx: Vec<(Play, Pcm)> = bank.startup_sfx();            // Sfx::ALL + cues::PITCHED, rendered (~1.5 ms release)
+let song: Option<MusicRender> = bank.render_music(Music::Salzburg, Variant::Normal)?;  // on demand; None = not authored yet
+// MusicRender { pcm, looped, clamped }; Variant::Hurry = a loop at 112 % (the ZEIT-60 render)
+let wav = jnr_audio::wav::write(&song.pcm);                // bytes for load_sound_from_bytes
+```
+
+- `Bank { sfx, jingles, instruments, songs, quotes }` by id; `has_music(Music)` is a `.song` or a `jingles/*.sfx`. A song renders through `song_render::render_in`, so an underwater twin (`length_of`) gets its stage piece's length. `bank::transpose(&Sfx, semitones)` moves every fixed oscillator pitch (filters and timing stay) for the pitched variants.
+- `jnr_audio::cues::PENDING_MUSIC` lists the music cues without a source yet (all 25 at E58b, empty since MA; a test keeps it empty); tests in `jnr-assets` fail for a missing cue that isn't pending and for a pending one that exists, and `levels lint` accepts a level `music` only if it is embedded or pending.
+
+### Cues (`jnr_audio::cues`, E58a, D-113/D-114)
+
+Pure mapping from the simulation to sound commands; the app only executes them. As built in detail: `docs/proposals/ma-audio-architecture.md` → "As built (E58a)".
+
+```rust
+let mut d = Director::new();
+let cues: Vec<Cue> = d.begin(&game);              // the first frame (title music, or the stage piece)
+game.step(input); let cues = d.step(&game, input); // after every step; reads game.events()
+enum Cue { Sfx(Play), StopSfx(Sfx), CutSfx(Cut), Song(Music), StopSong, Jingle(Music), StopJingle,
+           HoldSong(bool), HoldJingle(bool), Duck(bool), Underwater(bool) }
+struct Play { sfx: Sfx, semitones: i8 }            // pitched variants: cues::PITCHED (pre-rendered)
+```
+
+- `Sfx` (the 25 must SFX: id, voice P/W/I/A, priority 1–9, design length), `Music` (25 songs and jingles of audio-design §5; `level_song`, `underwater_twin`), `sfx_for(Event, Power) -> EventSound` (exhaustive `match`: a new `Event` doesn't compile until its sound is decided).
+- `Voices` holds the §6.1 rules (per step one sound per voice, highest priority first; a busy voice is replaced only by an equal or higher priority; cuts; priority ≥ 7 ducks). The director derives the rest from a small snapshot of the previous step (mode/phase, `time_left`, the tally bonus, the ending timer, the Oberkellner's state, the singing Operettensänger by spawn index), the camera (off-screen entities are silent) and the swim API (`swim::swim_surface`, the water line for the underwater swap).
+- A level names its piece with `[meta] music = "<id>"` (`levels lint`: required in journey levels, a `Music::level_song` id); `music` is not hashed.
+- Cue logs: `cargo xtask replay <file> --cue-log`, goldens `tests/golden/cues/*.cues` (`cargo xtask cues`, validation.md L6b).
+
+### Offline mix (`jnr_audio::mix`, E60, D-122)
+
+`mix::mix(&Sounds, &[(frame, Cue)], end_frame) -> Mix` plays a cue timeline into one `i32` buffer by D-114's playback rules (one live copy per SFX id, the voice's last sound stopped, hard stops, songs looping from sample 0, jingles once, hold/duck/underwater volumes; `cues::{SFX_VOLUME_PCT, MUSIC_VOLUME_PCT, DUCKED_MUSIC_VOLUME_PCT}`, shared with the app) and clamps it (`Render`, clamp count), with the `Span` of every sound heard and the sounds missing from the table (silent). `Sounds` is filled from the app's own `bank::Bank` (`render_sfx(Play)`, pitched variants included through `bank::transpose`; `render_music(m, Variant::Normal)`), so there is one parsing and one variant path. Used by `cargo xtask replay <file> --audio` (validation.md L6c).
 
 ## Content formats
 
@@ -199,7 +422,7 @@ background = [                       # far to near; factor in 1/16 of the camera
   { sprite = "bg_rooftops", factor = 8 },
   # optional factor_y (0..=32, sixteenths, default 0): sinks the layer as the camera climbs (D-054)
 ]
-music = "salzburg"
+music = "salzburg"                   # [meta]: the stage piece (a jingle-free song id of audio-design §5; required in journey levels, MA)
 
 [legend]
 "#" = "ground"

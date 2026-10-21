@@ -1,0 +1,58 @@
+# cue log of tests/replays/qa_ma_cues_zeit60_on_boss_loop_due.replay (cargo xtask cues)
+ 14068 sfx checkpoint I7
+ 14068 duck on
+ 14095 duck off
+ 14109 sfx jump P4
+ 14150 sfx jump P4
+ 14272 jingle boss_intro
+ 14362 jingle boss_surprise
+ 14362 sfx boss_telegraph W7
+ 14362 duck on
+ 14385 sfx jump P4
+ 14400 jingle hurry
+ 14400 song boss
+ 14402 stop-sfx boss_telegraph
+ 14402 duck off
+ 14497 sfx boss_breathe W7
+ 14497 duck on
+ 14532 sfx boss_hit W8
+ 14560 sfx jump P4
+ 14562 duck off
+ 14592 sfx boss_telegraph W7
+ 14592 duck on
+ 14628 stop-sfx boss_telegraph
+ 14628 duck off
+ 14717 sfx boss_breathe W7
+ 14717 duck on
+ 14753 duck off
+ 14777 sfx bills_hang W6
+ 14912 sfx boss_telegraph W7
+ 14912 duck on
+ 14948 stop-sfx boss_telegraph
+ 14948 duck off
+ 15037 sfx boss_breathe W7
+ 15037 duck on
+ 15066 sfx boss_hit W8
+ 15094 sfx jump P4
+ 15096 duck off
+ 15126 sfx boss_telegraph W7
+ 15126 duck on
+ 15158 stop-sfx boss_telegraph
+ 15158 duck off
+ 15232 sfx boss_breathe W7
+ 15232 duck on
+ 15268 duck off
+ 15280 sfx bills_hang W6
+ 15415 sfx boss_telegraph W7
+ 15415 duck on
+ 15447 stop-sfx boss_telegraph
+ 15447 duck off
+ 15521 sfx boss_breathe W7
+ 15521 duck on
+ 15544 stop-song
+ 15544 jingle boss_defeat
+ 15557 duck off
+ 15572 sfx jump P4
+ 15867 sfx jump P4
+ 15904 cut-sfx P W A
+ 15904 jingle fanfare_finale

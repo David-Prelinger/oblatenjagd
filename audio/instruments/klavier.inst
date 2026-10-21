@@ -1,0 +1,13 @@
+# M2/M4 in the café, the Klavier (audio-design §2.1): pulse 12 % (duty in whole percent),
+# A 1 / D 250 / S 20 % / R 80.
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 12
+attack_ms = 1
+decay_ms = 250
+sustain_pct = 20
+release_ms = 80
+volume_pct = 60
+lowpass_hz = 4000

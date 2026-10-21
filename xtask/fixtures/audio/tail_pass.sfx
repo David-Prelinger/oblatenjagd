@@ -1,0 +1,17 @@
+# Lint fixture for `tail` (xtask/src/audio/lint.rs): A silent second layer runs 40 ms past the sound.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 35
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 180
+decay_ms = 1
+volume_pct = 0

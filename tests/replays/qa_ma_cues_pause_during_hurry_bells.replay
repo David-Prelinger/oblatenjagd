@@ -1,0 +1,29 @@
+# QA MA (audio, audio-design §4 ZEIT 60 + Pause): pause while the ZEIT-60
+# church bells ring. Salzburg from the title, Resi stands still: play from
+# 151, ZEIT 60 at 14551 (`jingle hurry`, `hold-song on`: the piece waits
+# 96 frames for the bells). START at 14580 (29 frames into the bells)
+# pauses: `hold-jingle on`, the bells stop in place. START at 14781
+# resumes: `hold-jingle off` (67 frames of bells left) AND `hold-song off`
+# on the same frame, so the bells' rest rings over the running salzburg
+# piece. The Director's `hurry_until` counts game frames, which run on
+# through the pause, so the hold ran out while paused.
+# Expected cue log: the song stays held after the resume until the bells
+# are over (hold-song off at 14781 + 67 = 14848), as without a pause.
+# The replay itself passes; accept its cue golden only after the fix.
+# Fixed (E63, D-124, review round 2): a held jingle runs on at volume 0
+# in the app and the mix (D-114), so the bells ended silently during the
+# pause; the hold is no longer checked while paused and ends on the resume
+# frame: `14781 hold-song off` with the resume. No bells ring over the
+# piece, and no silent wait follows the resume.
+level  = salzburg
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=0 state=playing
+---
+S 1       # title -> intro
+- 14578
+S 1       # pause, 29 frames into the bells (14580)
+- 200
+S 1       # resume (14781)
+- 200

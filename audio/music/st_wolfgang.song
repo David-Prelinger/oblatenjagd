@@ -1,0 +1,95 @@
+# `st_wolfgang` „Operettenwalzer (nicht der aus dem Rößl)" (audio-design §5): Stage 5.
+# 3/4, 168 BPM (bar 1.071 s), C major (the Operettensänger's high C is the tonic), B in
+# A minor. Intro 4 + A 16 + B 16 = 36 bars, 38.6 s. An original tune in operetta style:
+# no Benatzky, Stolz or Lehár melody (§7). D-114: a loop plays from sample 0, so the
+# curtain rises again each loop (bar 36's G7 holds on into it).
+# Intro (1-4): the curtain: a held G7 (the Tenorhorn's chord), the Stehgeiger sliding up
+#   an octave from G4 to G5 over 400 ms (the Schmalz scoop), a triangle on bar 4 and the
+#   pickup into the tune.
+# A (5-20): the waltz tune, the second voice in thirds, Helikon on 1, Nachschlag on 2 and
+#   3, the triangle on 1 of every second bar.
+# B (21-36): the duet in A minor: Stehgeiger (soprano) and Tenorhorn (tenor) answer each
+#   other in 2-bar phrases, climbing to a C6 held for two bars (33-34), the same C the
+#   Operettensänger sings as a hazard; then the cadence, G7 in bar 36.
+[meta]
+id = "st_wolfgang"
+kind = "loop"
+tempo_bpm = 168
+meter = "3/4"
+steps_per_beat = 2            # eighths: a bar has 6 steps
+key = "c major"
+bars = 36
+order = ["I", "A", "B"]
+source = "original"
+
+[channels]
+lead    = { instrument = "stehgeiger", volume_pct = 30 }
+schmalz = { instrument = "schmalz", volume_pct = 30 }
+second  = { instrument = "tenorhorn", volume_pct = 20 }
+bass    = { instrument = "helikon", volume_pct = 20 }
+chords  = { instrument = "begleitung", volume_pct = 16, arp_ms = 17 }
+drums   = { instrument = "salon", volume_pct = 14 }
+
+[pattern.I]
+score = '''
+lead    | r/6           | r/6           | r/6           | r/2 g4 b4     |
+schmalz | g4/6          | _/6           | _/6           | r/6           |
+second  | [b3,d4,f4]/6  | _/6           | _/6           | _/6           |
+bass    | g2/6          | _/6           | _/6           | _/2 r/4       |
+drums   | r/6           | r/6           | r/6           | T/6           |
+'''
+
+[pattern.A]
+score = '''
+lead   | c5/4 e5/2     | g5/6          | a5/4 g5/2     | e5/6          |
+second | a4/4 c5/2     | e5/6          | f5/4 c5/2     | c5/6          |
+bass   | c3/2 r/4      | c3/2 r/4      | f2/2 r/4      | c3/2 r/4      |
+chords | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [c4,f4,a4]' [c4,f4,a4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | f5/4 d5/2     | b4/6          | d5/4 f5/2     | e5/6          |
+second | d5/4 b4/2     | g4/6          | b4/4 d5/2     | c5/6          |
+bass   | d2/2 r/4      | g2/2 r/4      | g2/2 r/4      | c3/2 r/4      |
+chords | r/2 [d4,f4,a4]' [d4,f4,a4]' | r/2 [b3,d4,f4]' [b3,d4,f4]' | r/2 [b3,d4,f4]' [b3,d4,f4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | c5/4 e5/2     | g5/4 c6/2     | a5/4 f5/2     | e5/6          |
+second | a4/4 c5/2     | e5/4 e5/2     | f5/4 c5/2     | c5/6          |
+bass   | c3/2 r/4      | c3/2 r/4      | f2/2 r/4      | c3/2 r/4      |
+chords | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [c4,f4,a4]' [c4,f4,a4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | d5/4 f5/2     | a5/4 g5/2     | f5/4 d5/2     | c5/6          |
+second | b4/4 d5/2     | f5/4 b4/2     | d5/4 b4/2     | e4/6          |
+bass   | g2/2 r/4      | f2/2 r/4      | g2/2 r/4      | c3/2 r/4      |
+chords | r/2 [b3,d4,f4]' [b3,d4,f4]' | r/2 [c4,f4,a4]' [b3,d4,f4]' | r/2 [b3,d4,f4]' [b3,d4,f4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+'''
+
+[pattern.B]
+key = "a minor"
+score = '''
+lead   | e5/4 a5/2     | g5/4 e5/2     | r/6           | r/6           |
+second | r/6           | r/6           | c4/4 e4/2     | d4/4 b3/2     |
+bass   | a2/2 r/4      | a2/2 r/4      | a2/2 r/4      | e2/2 r/4      |
+chords | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g#4]' [b3,d4,g#4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | f5/4 a5/2     | b5/4 g#5/2    | r/6           | r/6           |
+second | r/6           | r/6           | d4/4 f4/2     | e4/4 b3/2     |
+bass   | d2/2 r/4      | e2/2 r/4      | d2/2 r/4      | e2/2 r/4      |
+chords | r/2 [d4,f4,a4]' [d4,f4,a4]' | r/2 [b3,d4,g#4]' [b3,d4,g#4]' | r/2 [d4,f4,a4]' [d4,f4,a4]' | r/2 [b3,d4,g#4]' [b3,d4,g#4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | a5/4 c6/2     | b5/4 g#5/2    | r/6           | r/6           |
+second | r/6           | r/6           | e4/4 a4/2     | g#4/4 b4/2    |
+bass   | a2/2 r/4      | e2/2 r/4      | a2/2 r/4      | e2/2 r/4      |
+chords | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g#4]' [b3,d4,g#4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g#4]' [b3,d4,g#4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+
+lead   | c6/6>         | _/6           | a5/4 f5/2     | g5/6          |
+second | e5/6          | _/6           | c5/4 a4/2     | b4/6          |
+bass   | c3/2 r/4      | a2/2 r/4      | d2/2 r/4      | g2/2 r/4      |
+chords | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [d4,f4,a4]' [d4,f4,a4]' | r/2 [b3,d4,f4]' [b3,d4,f4]' |
+drums  | T/6           | r/6           | T/6           | r/6           |
+'''

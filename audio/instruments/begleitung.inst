@@ -1,0 +1,13 @@
+# M4 Nachschlag, the „pah" of oom-pah (audio-design §2.1): pulse 50 %, staccato 90 ms.
+# Songs play it as chords: one voice arpeggiated every 17 ms (the chip chord, `arp_ms`).
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+attack_ms = 2
+decay_ms = 88
+sustain_pct = 0
+release_ms = 20
+volume_pct = 60
+lowpass_hz = 3000

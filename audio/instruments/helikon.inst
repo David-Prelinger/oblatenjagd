@@ -1,0 +1,24 @@
+# M3 Bass, the Helikon (audio-design §2.1): triangle, low-pass 1.2 kHz, A 5 / D 120 /
+# S 40 % / R 40 (staccato oom), plus a quiet pulse an octave up for the brass edge, so the
+# bass still reads on small speakers.
+range = ["e1", "f3"]
+
+[[layer]]
+wave = "triangle"
+attack_ms = 5
+decay_ms = 120
+sustain_pct = 40
+release_ms = 40
+volume_pct = 70
+lowpass_hz = 1200
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+detune_cents = 1200
+attack_ms = 5
+decay_ms = 60
+sustain_pct = 15
+release_ms = 30
+volume_pct = 10
+lowpass_hz = 1200

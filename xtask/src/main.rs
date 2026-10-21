@@ -6,14 +6,19 @@
 //! placeholder steps in `steps.rs`.
 
 mod archlint;
+mod audio;
+mod audio_song;
 mod climblint;
 mod content;
+mod cues;
 mod golden;
 mod levels;
 mod par;
 #[cfg(test)]
 mod popup_clearance;
+mod pulse;
 mod replay;
+mod replay_audio;
 mod report;
 mod scrolllint;
 mod signlint;
@@ -34,22 +39,28 @@ cargo xtask <command>
 
 Commands:
   check     fast validation: fmt, clippy, tests, wasm build, architecture lint,
-            sprites lint, levels lint
-  verify    full validation: check + solver, replays, goldens, wasm-smoke,
-            vnc-smoke; `verify --no-cache` solves every level even if the
+            sprites lint, levels lint, audio lint
+  verify    full validation: check + solver, replays, goldens, cue logs, audio goldens,
+            wasm-smoke, vnc-smoke; `verify --no-cache` solves every level even if the
             solver cache has its result (D-091)
   arch-lint only the architecture lint (part of check)
   sprites   lint | preview [filter] [--scale N] | sheet | anim <name>
             (see `cargo xtask sprites help`; images under $CARGO_TARGET_DIR/preview)
   levels    lint [id]
+  audio     render <id>|<file.sfx>|--all | lint [id] | golden [--accept <id>|--all|--prune]
+            (see `cargo xtask audio help`; files under $CARGO_TARGET_DIR/preview/audio)
   solve     <level-id|--all> [--write] [--shots]  solver bot + difficulty report
             (see `cargo xtask solve help`)
-  replay    <file|name|--all> [--shots]   run replays (expectations + determinism)
+  replay    <file|name|--all> [--shots] [--cue-log]
+                                          run replays (expectations + determinism);
+                                          --cue-log prints the sound cues per frame
   filmstrip <file|name> [--every N]       contact sheet of every Nth frame
   scene     <level-id> --x <px> [--bg <sprite:factor,...>]
                                           render the level at camera x (with parallax layers)
   golden    [--accept <name>|--all]       compare / accept golden screenshots
             (see `cargo xtask replay help`, `cargo xtask golden help`)
+  cues      [--accept <replay>|--all]     compare / accept cue-log goldens
+            (tests/golden/cues/<replay>.cues, see `cargo xtask cues help`)
   wasm      [--debug] [--serve] [--port N]: build + assemble $CARGO_TARGET_DIR/web
   wasm-smoke  load the wasm build in headless Chromium, check the screenshot
   vnc-smoke   run the native app on $DISPLAY (default :1) with a replay; compare
@@ -71,6 +82,7 @@ fn main() -> ExitCode {
             run_suite("verify", steps::verify_steps())
         }
         Some("arch-lint") if args.len() == 1 => run_suite("arch-lint", vec![steps::arch_lint]),
+        Some("audio") => audio::run(&workspace_root(), &args[1..]),
         Some("sprites") => sprites::run(&workspace_root(), &args[1..]),
         Some("levels") => levels::run(&workspace_root(), &args[1..]),
         Some("solve") => solver::run(&workspace_root(), &args[1..]),
@@ -78,6 +90,7 @@ fn main() -> ExitCode {
         Some("filmstrip") => replay::run_filmstrip(&workspace_root(), &args[1..]),
         Some("scene") => replay::run_scene(&workspace_root(), &args[1..]),
         Some("golden") => golden::run(&workspace_root(), &args[1..]),
+        Some("cues") => cues::run(&workspace_root(), &args[1..]),
         Some("wasm") => wasm::run(&workspace_root(), &args[1..]),
         Some("wasm-smoke") => wasm::smoke(&workspace_root(), &args[1..]),
         Some("vnc-smoke") => vnc::run(&workspace_root(), &args[1..]),

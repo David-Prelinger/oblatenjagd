@@ -1,0 +1,14 @@
+# M2 in Brunnwinkl's B section, the bee (audio-design §5): pulse 12 % with a fast 18 Hz
+# vibrato ±20 cents, the buzz.
+range = ["c4", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 12
+attack_ms = 10
+decay_ms = 80
+sustain_pct = 70
+release_ms = 60
+volume_pct = 60
+lowpass_hz = 4000
+vibrato = { depth_cents = 20, rate_hz = 18 }

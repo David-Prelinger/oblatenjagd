@@ -97,6 +97,7 @@
 
 [meta]
 id = "bad_ischl"
+music = "bad_ischl"
 title_key = "stage.bad_ischl.title"
 time_limit = 210
 min_jump_window = 4

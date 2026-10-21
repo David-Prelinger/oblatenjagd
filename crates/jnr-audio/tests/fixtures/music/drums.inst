@@ -1,0 +1,31 @@
+# PLACEHOLDER (E57 test fixture): kick, snare, hi-hat.
+[kit]
+K = "kick"
+S = "snare"
+h = "hihat"
+
+[[patch.kick.layer]]
+wave = "sine"
+freq_hz = 120
+slide_to_hz = 50
+slide_ms = 60
+attack_ms = 1
+hold_ms = 20
+decay_ms = 120
+volume_pct = 55
+
+[[patch.snare.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 150
+volume_pct = 30
+bandpass = { hz = 1500, q_pct = 120 }
+
+[[patch.hihat.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 40
+volume_pct = 15
+highpass_hz = 7000

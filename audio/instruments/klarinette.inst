@@ -1,0 +1,14 @@
+# M1 variant, the clarinet (audio-design §2.1): pulse 50 % (odd harmonics only, like the
+# real instrument's lower register), low-pass 2.5 kHz, a soft reed attack, light vibrato.
+range = ["d3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+attack_ms = 12
+decay_ms = 60
+sustain_pct = 80
+release_ms = 50
+volume_pct = 60
+lowpass_hz = 2500
+vibrato = { depth_cents = 8, rate_hz = 5, delay_ms = 250 }

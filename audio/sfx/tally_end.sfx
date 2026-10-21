@@ -1,0 +1,25 @@
+# Tally done, „Kassa" (audio-design §6.3): an old till's bell, a 10 ms noise click plus
+# sines 1568 + 2349 Hz, decay 450 ms. 500 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+highpass_hz = 2000
+attack_ms = 1
+decay_ms = 9
+volume_pct = 7
+
+[[layer]]
+wave = "sine"
+freq_hz = 1568
+attack_ms = 1
+hold_ms = 40
+decay_ms = 459
+volume_pct = 18
+
+[[layer]]
+wave = "sine"
+freq_hz = 2349
+attack_ms = 1
+hold_ms = 20
+decay_ms = 429
+volume_pct = 12

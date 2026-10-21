@@ -1,0 +1,12 @@
+# The soft bass under water (audio-design §5 `unterwasser`): a triangle, low-passed,
+# A 5 / D 300 / S 30 % / R 200.
+range = ["e1", "f3"]
+
+[[layer]]
+wave = "triangle"
+attack_ms = 5
+decay_ms = 300
+sustain_pct = 30
+release_ms = 200
+volume_pct = 70
+lowpass_hz = 600

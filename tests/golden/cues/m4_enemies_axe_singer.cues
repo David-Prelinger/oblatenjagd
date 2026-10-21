@@ -1,0 +1,13 @@
+# cue log of tests/replays/m4_enemies_axe_singer.replay (cargo xtask cues)
+    63 sfx jump P4
+    65 sfx bump W4
+    79 sfx hohes_c W6
+   127 sfx jump P4
+   157 sfx hackl P8
+   157 duck on
+   187 duck off
+   338 sfx hohes_c W6
+   406 sfx hohes_c W6
+   412 sfx throw P5
+   442 stop-sfx hohes_c
+   442 sfx axe_hit W6

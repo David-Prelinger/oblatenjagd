@@ -1,0 +1,27 @@
+# cue log of tests/replays/flow_route_carry_over.replay (cargo xtask cues)
+     0 song title
+    21 stop-song
+    21 sfx ui_start I6
+   208 sfx jump P4
+   215 sfx bump W4
+   238 sfx oblate I3
+   278 sfx zucker P8
+   278 duck on
+   308 duck off
+   323 sfx oblate I3
+   343 sfx jump P4 -5
+   481 cut-sfx P W A
+   481 jingle fanfare_clear
+   575 sfx tally_tick I2
+   578 sfx tally_tick I2
+   581 sfx tally_tick I2
+   584 sfx tally_tick I2
+   587 sfx tally_tick I2
+   590 sfx tally_tick I2
+   593 sfx tally_tick I2
+   596 sfx tally_tick I2
+   598 sfx tally_end I6
+   864 song route_map
+   943 stop-song
+   943 stop-jingle
+   943 sfx ui_start I6

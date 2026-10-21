@@ -1,0 +1,55 @@
+# Bad Ischl's intro, „Die Kurkapelle stimmt" (audio-design §5): four band voices on one
+# note, detuned -40, +25, -15 and +40 cents, each sliding to 0 cents over 2 000 ms (the
+# band tuning to the A), then held. Pulses 25/75 % alternate so the four don't stack.
+range = ["a3", "a5"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+detune_cents = -40
+slide_cents = 40
+slide_ms = 2000
+attack_ms = 30
+decay_ms = 100
+sustain_pct = 80
+release_ms = 80
+volume_pct = 22
+lowpass_hz = 4000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 75
+detune_cents = 25
+slide_cents = -25
+slide_ms = 2000
+attack_ms = 30
+decay_ms = 100
+sustain_pct = 80
+release_ms = 80
+volume_pct = 22
+lowpass_hz = 4000
+
+[[layer]]
+wave = "triangle"
+detune_cents = -1215
+slide_cents = 15
+slide_ms = 2000
+attack_ms = 30
+decay_ms = 100
+sustain_pct = 80
+release_ms = 80
+volume_pct = 30
+lowpass_hz = 1200
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+detune_cents = 40
+slide_cents = -40
+slide_ms = 2000
+attack_ms = 30
+decay_ms = 100
+sustain_pct = 80
+release_ms = 80
+volume_pct = 16
+lowpass_hz = 3000

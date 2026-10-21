@@ -1,0 +1,8 @@
+# The leitmotif in minor (docs/audio-design.md §1, §5 `game_over`): 1-b3-5-4, in B-flat
+# minor. Ours.
+source = "original"
+edition = "docs/audio-design.md, sections 1 and 5 (D-113)"
+steps_per_beat = 2
+notes = '''
+bb4/1 db5 f5 eb5/2
+'''

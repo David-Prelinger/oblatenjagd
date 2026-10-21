@@ -1,0 +1,10 @@
+# Lint fixture for `onset` (xtask/src/audio/lint.rs): Starts 12 ms late.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 35
+delay_ms = 12

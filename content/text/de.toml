@@ -25,6 +25,9 @@ game_over = "Aus is'! Spiel vorbei."
 continue = "Weiter? Drück START"
 time_up = "Zeit is' um!"
 to_be_continued = "Fortsetzung folgt …"
+# MA (nice): the toast after M toggles the sound (docs/audio-design.md §8).
+sound_off = "Ton aus – Kurruhe"
+sound_on = "Ton an – Musi, bitte!"
 
 [popup]
 extra_life = "+1 Leben"

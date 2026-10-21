@@ -1,0 +1,12 @@
+# E55 test fixture for jnr-audio (not a game sound; the sound-designer authors those in audio/).
+# Resi jumps: a pulse chirp gliding up (docs/audio-design.md, section 6: D4 -> A5).
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 294
+slide_to_hz = 880
+slide_ms = 120
+attack_ms = 2
+hold_ms = 8
+decay_ms = 140
+volume_pct = 35

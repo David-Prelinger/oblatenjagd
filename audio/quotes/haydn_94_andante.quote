@@ -1,0 +1,12 @@
+# Haydn, Symphony No. 94 „mit dem Paukenschlag" (Surprise), II. Andante, bars 1-2 of the
+# theme (2/4, C major): C4 C4 E4 E4 | G4 G4 E4, eighths and a quarter, as printed in the
+# piano part of the edition below (Andante, p. 8; the melody is the strings' theme).
+# The Rietz/Breitkopf score named in audio-design §5 (c. 1855, IMSLP #546546) could not
+# be opened (IMSLP's downloads are behind a captcha); this 1823 print is public domain
+# and was read from the Internet Archive scan „surprisehaydnsce00hayd", page n29.
+source = "Joseph Haydn, Symphony No. 94 in G major, Hob. I:94, II. Andante, bars 1-2 of the theme"
+edition = "The Surprise, Haydn's celebrated symphony No. 3, adapted for the piano forte by Muzio Clementi, London: Clementi, Collard & Collard, c. 1823 (Internet Archive surprisehaydnsce00hayd)"
+steps_per_beat = 2          # eighths in 2/4
+notes = '''
+c4/1 c4 e4 e4 | g4 g4 e4/2
+'''

@@ -1,0 +1,106 @@
+# `cafe_zauner` „Tritsch-Tratsch in der Schlange" (audio-design §5): Stage 9. 2/4, 144 BPM
+# (bar 0.833 s, a Polka schnell), A major. Intro 2 + A 16 + B 8 + A' 8 = 34 bars.
+# Salon instrumentation: Stehgeiger (M1), Klavier thirds and after-beats (M2), pizzicato
+# bass (M3), Klavier off-beat chords (M4), triangle on 1 of every second bar and a brush
+# on the off-beats (M5).
+# D-114: a loop plays from sample 0, so the intro (two cup clinks and the pickup) recurs
+# once per loop; the design's „from its loop point (bar 3)" after the boss is bar 1 here.
+#
+# Intro (1-2): two cup clinks (quarter, quarter); the polka's pickup at the end of bar 2.
+# A (3-18): Johann Strauss (Sohn), Tritsch-Tratsch-Polka op. 214, the Polka's first strain
+#   as in the Haslinger first edition (piano), an octave down for the Stehgeiger. Its
+#   chords stay chords: the violin double-stops E over the inner voice's chromatic fall
+#   (D-sharp, D, C-sharp, B, A), the chatter of the queue. Bar 18 ends on B7.
+# B (19-26): original „Komm' gleich!" strain in D major: running sixteenths (the waiters'
+#   hurry) with the Klavier in parallel thirds, ending on the counter bell (beat 2 of
+#   bar 26) and the E4 pickup into A'.
+# A' (27-34): A's last 8 bars, the last one turned into E7, back into the clinks.
+[meta]
+id = "cafe_zauner"
+kind = "loop"
+tempo_bpm = 144
+meter = "2/4"
+steps_per_beat = 4            # sixteenths: a bar has 8 steps
+key = "a major"
+bars = 34
+order = ["I", "A", "B", "A2"]
+source = "Johann Strauss (Sohn), Tritsch-Tratsch-Polka op. 214, Polka, first strain"
+edition = "First edition, piano, Vienna: Carl Haslinger, plate C.H. 12226, [1858-59] (IMSLP #253257)"
+
+[channels]
+lead   = { instrument = "stehgeiger", volume_pct = 35 }
+second = { instrument = "klavier", volume_pct = 21 }
+bass   = { instrument = "pizzicato", volume_pct = 19 }
+chords = { instrument = "klavier", volume_pct = 21, arp_ms = 17 }
+drums  = { instrument = "salon", volume_pct = 12 }
+
+[pattern.I]
+score = '''
+lead   | r/8           | r/6 e4/2      |
+drums  | Z/4 Z         | r/8           |
+'''
+
+[pattern.A]
+score = '''
+lead   | e5/2 r/4 e4/2 | e5/2 r/4 [d#5!,e5]/2 | [d5,e5]/2 [c#5,e5] [b4,e5] [a4,e5] | [e4,g#4,e5]/2 r/4 f#4/2 |
+second | r/8           | r/8           | r/8           | r/8           |
+bass   | a2/4 e2       | a2/4 e2       | e2/4 b1       | e2/4 b1       |
+chords | r/2 [c#4,e4,a4]' r [c#4,e4,a4]' | r/2 [c#4,e4,a4]' r [a3,c#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' |
+drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W r W     |
+
+lead   | b4/2 r/4 f#4/2 | b4/2 r/4 g#3/1 a3 | b3/1 c#4 d4 e4 f#4 g#4 a4 b4 | c#5/2 r/4 e4/2 |
+second | g#4/2 r/4 d4/2 | g#4/2 r/4 e3/1 f#3 | g#3/1 a3 b3 c#4 d4 e4 f#4 g#4 | a4/2 r/4 c#4/2 |
+bass   | e2/4 b1        | e2/4 b1           | e2/4 b1        | a2/4 e2        |
+chords | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [c#4,e4,a4]' r [c#4,e4,a4]' |
+drums  | T/2 W r W      | r/2 W r W         | T/2 W r W      | r/2 W r W      |
+
+lead   | e5/2 r/4 e4/2 | e5/2 r/4 [d#5!,e5]/2 | [d5,e5]/2 [c#5,e5] [b4,e5] [a4,e5] | [e4,g#4,e5]/2 r/4 g#4/2 |
+second | r/8           | r/8           | r/8           | r/6 e4/2      |
+bass   | a2/4 e2       | a2/4 e2       | e2/4 b1       | e2/4 b1       |
+chords | r/2 [c#4,e4,a4]' r [c#4,e4,a4]' | r/2 [c#4,e4,a4]' r [a3,c#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' |
+drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W r W     |
+
+lead   | c#5/2 r/4 g#4/2 | c#5/2 r/4 f#3/1 g#3 | a#3!/2 c#4 e4 a#4! | b4/6 b4/2  |
+second | e4/2 r/4 e4/2   | e4/2 r/6            | f#3/2 a#3! c#4 f#4 | d#4!/6 d#4!/2 |
+bass   | c#3/4 g#2       | c#3/4 c#2           | f#2/4 c#3          | b1/4 f#2   |
+chords | r/2 [c#4,e4,g#4]' r [c#4,e4,g#4]' | r/2 [c#4,e4,g#4]' r [c#4,e4,a#4!]' | r/2 [c#4,e4,a#4!]' r [c#4,e4,a#4!]' | r/2 [b3,d#4!,a4]' r [b3,d#4!,a4]' |
+drums  | T/2 W r W       | r/2 W r W           | T/2 W r W          | r/2 W r W  |
+'''
+
+[pattern.B]
+key = "d major"
+score = '''
+lead   | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | g4/1 f#4 e4 f#4 g4 a4 b4 g4 | a4/1 g4 f#4 g4 a4 b4 c#5 a4 | d5/2 a4 f#4 d4 |
+second | d4/1 c#4 b3 c#4 d4 e4 f#4 d4 | e4/1 d4 c#4 d4 e4 f#4 g4 e4 | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | a4/2 f#4 d4 a3 |
+bass   | d2/4 a1       | g2/4 d2       | a2/4 e2       | d2/4 a1       |
+chords | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' |
+drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W r W     |
+
+lead   | e4/1 d4 c#4 d4 e4 f#4 g4 e4 | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | g4/1 e4 c#4 e4 a4/2 g4 | f#4/2 d4 r e4 |
+second | c#4/1 b3 a3 b3 c#4 d4 e4 c#4 | d4/1 c#4 b3 c#4 d4 e4 f#4 d4 | e4/1 c#4 a3 c#4 e4/2 e4 | r/8 |
+bass   | a2/4 e2       | d2/4 a1       | a2/4 e2       | d2/4 r        |
+chords | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r/4 |
+drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W D/4     |
+'''
+
+[pattern.A2]
+score = '''
+lead   | e5/2 r/4 e4/2 | e5/2 r/4 [d#5!,e5]/2 | [d5,e5]/2 [c#5,e5] [b4,e5] [a4,e5] | [e4,g#4,e5]/2 r/4 g#4/2 |
+second | r/8           | r/8           | r/8           | r/6 e4/2      |
+bass   | a2/4 e2       | a2/4 e2       | e2/4 b1       | e2/4 b1       |
+chords | r/2 [c#4,e4,a4]' r [c#4,e4,a4]' | r/2 [c#4,e4,a4]' r [a3,c#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' |
+drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W r W     |
+
+lead   | c#5/2 r/4 g#4/2 | c#5/2 r/4 f#3/1 g#3 | a#3!/2 c#4 e4 a#4! | b4/4 d5    |
+second | e4/2 r/4 e4/2   | e4/2 r/6            | f#3/2 a#3! c#4 f#4 | g#4/4 b4   |
+bass   | c#3/4 g#2       | c#3/4 c#2           | f#2/4 c#3          | e2/4 b1    |
+chords | r/2 [c#4,e4,g#4]' r [c#4,e4,g#4]' | r/2 [c#4,e4,g#4]' r [c#4,e4,a#4!]' | r/2 [c#4,e4,a#4!]' r [c#4,e4,a#4!]' | r/2 [b3,d4,g#4]' r [b3,d4,g#4]' |
+drums  | T/2 W r W       | r/2 W r W           | T/2 W r W          | r/2 W r W  |
+'''
+
+[[quote]]
+fixture = "strauss_tritsch_tratsch"
+channel = "lead"
+bar = 2
+step = 6
+transpose = -12

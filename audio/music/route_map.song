@@ -1,0 +1,67 @@
+# `route_map` „Wanderkarte-Landler" (audio-design §5): 3/4, 132 BPM (bar 1.364 s), F major,
+# A 8 + B 8 = 16 bars, loops from bar 1 (the map starts on a downbeat, 21.8 s).
+# A: the clarinet opens with the Oblaten-Motiv as ♪ ♪ ♪ ♩. (F4 A4 C5 B-flat4) and yodels:
+# sixth leaps and an octave flip up on beat 3 of bars 2 and 6; the Tenorhorn sings the
+# parallel thirds below (the Zwiegesang). B: the answer phrase in C (the dominant), the
+# octave flip again in bar 12, then back to F; claps on 2 and 3 (Ländler with clapping).
+# Bar 16 sits on C7 and leads back into bar 1.
+[meta]
+id = "route_map"
+kind = "loop"
+tempo_bpm = 132
+meter = "3/4"
+steps_per_beat = 2            # eighths: a bar has 6 steps
+key = "f major"
+bars = 16
+order = ["A", "B", "C"]
+source = "original"
+
+[channels]
+lead   = { instrument = "klarinette", volume_pct = 21 }
+second = { instrument = "tenorhorn", volume_pct = 15 }
+bass   = { instrument = "helikon", volume_pct = 17 }
+chords = { instrument = "begleitung", volume_pct = 14, arp_ms = 17 }
+drums  = { instrument = "schlagwerk", volume_pct = 6 }
+
+# A (bars 1-8): F major.
+[pattern.A]
+score = '''
+lead   | f4/1 a4 c5 bb4/3  | a4/2 c5 c6        | bb5/2 g5 e5       | f5/4 c5/2         |
+second | d4/1 f4 f4 g4/3   | f4/2 a4 a5        | g5/2 e5 c5        | a4/4 a4/2         |
+bass   | f2/2 r/4          | f2/2 r/4          | c3/2 r/4          | f2/2 r/4          |
+chords | r/2 [a3,c4,f4]' [bb3,d4,f4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
+drums  | K/2 r/4           | K/2 r/4           | K/2 r/4           | K/2 r/4           |
+
+lead   | g4/1 bb4 d5 c5/3  | e5/2 c5 c6        | bb5/2 g5 e5       | f5/4 r/2          |
+second | e4/1 g4 bb4 g4/3  | c5/2 g4 g5        | g5/2 e5 c5        | a4/4 r/2          |
+bass   | g2/2 r/4          | c3/2 r/4          | c3/2 r/4          | f2/2 r/4          |
+chords | r/2 [g3,bb3,d4]' [bb3,c4,e4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' |
+drums  | K/2 r/4           | K/2 r/4           | K/2 r/4           | K/2 r/4           |
+'''
+
+# B, first half (bars 9-12): the answer in C major, with the clapping.
+[pattern.B]
+key = "c major"
+score = '''
+lead   | g5/2 e5 c5        | d5/2 b4 g4        | g4/1 b4 d5 f5/3   | e5/2 c5 c6        |
+second | e5/2 c5 a4        | b4/2 g4 d4        | e4/1 g4 b4 d5/3   | c5/2 a4 a5        |
+bass   | c3/2 r/4          | g2/2 r/4          | g2/2 r/4          | c3/2 r/4          |
+chords | r/2 [c4,e4,g4]' [c4,e4,g4]' | r/2 [g3,b3,f4]' [g3,b3,f4]' | r/2 [g3,b3,f4]' [g3,b3,f4]' | r/2 [c4,e4,g4]' [c4,e4,g4]' |
+drums  | K/2 X X           | K/2 X X           | K/2 X X           | K/2 X X           |
+'''
+
+# B, second half (bars 13-16): back to F, ending on C7 into bar 1.
+[pattern.C]
+score = '''
+lead   | bb5/2 g5 e5       | a5/2 f5 c5        | d5/1 f5 bb5 a5 g5 f5 | e5/2 g5 c5     |
+second | g5/2 e5 c5        | f5/2 d5 a4        | bb4/1 d5 d5 c5 bb4 a4 | c5/2 e5 g4     |
+bass   | c3/2 r/4          | f2/2 r/4          | bb2/2 r/4         | c3/2 r/4          |
+chords | r/2 [bb3,c4,e4]' [bb3,c4,e4]' | r/2 [a3,c4,f4]' [a3,c4,f4]' | r/2 [bb3,d4,f4]' [bb3,d4,f4]' | r/2 [bb3,c4,e4]' [bb3,c4,e4]' |
+drums  | K/2 X X           | K/2 X X           | K/2 X X           | K/2 X X           |
+'''
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 1
+transpose = -5

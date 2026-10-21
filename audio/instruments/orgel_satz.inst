@@ -1,0 +1,25 @@
+# M4 variant, sustained band chords (the „orgel" patch of audio-design §2.1: square 50 %
+# plus its octave, sustained, no arpeggio): the held chords of the funeral march
+# (`game_over`) and the Tusch in the fanfares.
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+attack_ms = 20
+decay_ms = 200
+sustain_pct = 75
+release_ms = 120
+volume_pct = 45
+lowpass_hz = 2500
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+detune_cents = 1200
+attack_ms = 20
+decay_ms = 200
+sustain_pct = 60
+release_ms = 120
+volume_pct = 15
+lowpass_hz = 2500

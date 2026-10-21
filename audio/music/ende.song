@@ -1,0 +1,27 @@
+# `ende` „Pfiat di" (audio-design §5, ending Ende): the music box alone plays the
+# Oblaten-Motiv slowly: B-flat4 D5 F5 | E-flat5, then B-flat4 held (a half note, the
+# box's comb ringing out). 3/4, 84 BPM, 2 bars, about 4.3 s, then silence until the title.
+[meta]
+id = "ende"
+kind = "jingle"
+tempo_bpm = 84
+meter = "3/4"
+steps_per_beat = 2
+key = "bb major"
+bars = 2
+order = ["A"]
+source = "original"
+
+[channels]
+box = { instrument = "spieluhr", volume_pct = 60 }
+
+[pattern.A]
+score = '''
+box | bb4/2 d5 f5   | eb5/2 bb4/4   |
+'''
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "box"
+bar = 1
+compare = "pitches"     # slow and even (§5: quarters, then the return to B-flat)

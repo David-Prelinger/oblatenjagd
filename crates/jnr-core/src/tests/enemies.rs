@@ -426,6 +426,10 @@ fn stomping_a_moving_taube_uses_its_previous_position() {
     };
     let (events, e) = run(0);
     assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(
+        !events.contains(&Event::Bounced),
+        "a real stomp: {events:?}"
+    );
     assert!(e.y < e.prev_y, "it moved up in the stomp frame");
     let mut g = game(&world(20, &[(6, 6, 'u')]));
     g.step(input("-"));
@@ -677,12 +681,51 @@ fn landing_straight_down_on_the_fiaker_with_up_to_4_px_penetration_bounces() {
         airborne(&mut g, x, f.y + Fx::from_px(pen) - max_fall, max_fall);
         let events = g.step(input("-")).to_vec();
         assert!(events.contains(&Event::Stomped), "pen {pen}: {events:?}");
+        // D-113: a roof bounce only, so also `Bounced`.
+        assert!(events.contains(&Event::Bounced), "pen {pen}: {events:?}");
         assert_eq!(g.player().feet().1, f.y, "pen {pen}: feet on its top");
         let events = hold(&mut g, "-", 30);
         assert!(!events.contains(&Event::Hurt), "pen {pen}: {events:?}");
         assert_eq!((g.mode(), g.deaths()), (Mode::Playing, 0), "pen {pen}");
         assert_eq!(g.score(), 0, "pen {pen}: no points for the Fiaker");
     }
+}
+
+/// D-113: a step that stomps an enemy and bounces off a Fiaker's top at
+/// once is a real stomp: `Stomped` without `Bounced`.
+#[test]
+fn a_stomp_and_a_roof_bounce_in_one_step_is_no_bounced() {
+    let max_fall = tuning().player.max_fall_speed;
+    let mut g = game(&world(40, &[(11, 14, 'f'), (11, 24, 'T')]));
+    g.step(input("-"));
+    let f = g.entities()[fiaker_index(&g)];
+    // The still tourist moved flush right of the Fiaker, its top level
+    // with the Fiaker's.
+    let ti = g
+        .entities()
+        .iter()
+        .position(|e| e.kind == EntityKind::Enemy(EnemyKind::SelfieTourist))
+        .unwrap();
+    let t = &mut g.entities[ti];
+    t.x = f.x + f.w;
+    t.y = f.y;
+    t.prev_y = f.y;
+    // Her hitbox straddles the seam.
+    let x = f.x + f.w - g.player.w.div_int(2);
+    airborne(&mut g, x, f.y + Fx::from_px(2) - max_fall, max_fall);
+    let events = g.step(input("-")).to_vec();
+    assert!(events.contains(&Event::Stomped), "{events:?}");
+    assert!(!events.contains(&Event::Bounced), "{events:?}");
+    assert!(
+        g.entities()
+            .iter()
+            .any(|e| e.kind == EntityKind::Defeated(EnemyKind::SelfieTourist)),
+        "the tourist was stomped"
+    );
+    assert_eq!(
+        first(&g, EntityKind::Enemy(EnemyKind::Fiaker)).kind,
+        EntityKind::Enemy(EnemyKind::Fiaker)
+    );
 }
 
 #[test]

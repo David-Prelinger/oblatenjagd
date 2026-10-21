@@ -1,0 +1,86 @@
+# cue log of tests/replays/cafe_zauner_boss_win_normal.replay (cargo xtask cues)
+     0 song cafe_zauner
+    89 sfx jump P4
+   131 sfx roof_bounce W5
+   143 sfx oblate I3
+   150 sfx oblate I3
+   156 sfx oblate I3
+   184 sfx jump P4
+   226 sfx roof_bounce W5
+   246 sfx oblate I3
+   252 sfx oblate I3
+   259 sfx oblate I3
+   291 sfx jump P4
+   354 sfx stomp W5
+   391 sfx jump P4
+   438 sfx oblate I3
+   444 sfx oblate I3
+   466 sfx stomp W5
+   484 sfx oblate I3
+   489 sfx oblate I3
+   504 sfx stomp W5
+   524 sfx stomp W5
+   542 sfx oblate I3
+   565 sfx stomp W5
+   581 sfx oblate I3
+   605 sfx stomp W5
+   625 sfx stomp W5
+   755 sfx checkpoint I7
+   755 duck on
+   782 duck off
+   791 sfx jump P4
+   832 sfx jump P4
+   954 stop-song
+   954 jingle boss_intro
+  1044 jingle boss_surprise
+  1044 sfx boss_telegraph W7
+  1044 duck on
+  1067 sfx jump P4
+  1082 song boss
+  1084 stop-sfx boss_telegraph
+  1084 duck off
+  1179 sfx boss_breathe W7
+  1179 duck on
+  1214 sfx boss_hit W8
+  1242 sfx jump P4
+  1244 duck off
+  1274 sfx boss_telegraph W7
+  1274 duck on
+  1310 stop-sfx boss_telegraph
+  1310 duck off
+  1399 sfx boss_breathe W7
+  1399 duck on
+  1435 duck off
+  1459 sfx bills_hang W6
+  1594 sfx boss_telegraph W7
+  1594 duck on
+  1630 stop-sfx boss_telegraph
+  1630 duck off
+  1719 sfx boss_breathe W7
+  1719 duck on
+  1748 sfx boss_hit W8
+  1776 sfx jump P4
+  1778 duck off
+  1808 sfx boss_telegraph W7
+  1808 duck on
+  1840 stop-sfx boss_telegraph
+  1840 duck off
+  1914 sfx boss_breathe W7
+  1914 duck on
+  1950 duck off
+  1962 sfx bills_hang W6
+  2097 sfx boss_telegraph W7
+  2097 duck on
+  2129 stop-sfx boss_telegraph
+  2129 duck off
+  2203 sfx boss_breathe W7
+  2203 duck on
+  2226 stop-song
+  2226 jingle boss_defeat
+  2239 duck off
+  2254 sfx jump P4
+  2381 song cafe_zauner
+  2549 sfx jump P4
+  2586 stop-song
+  2586 cut-sfx P W A
+  2586 jingle fanfare_finale
