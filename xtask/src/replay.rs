@@ -27,6 +27,14 @@ cargo xtask replay <file|name> --cue-log
     Prints the replay's sound cues, one `frame cue` line each (the cue
     director, jnr_audio::cues; goldens: `cargo xtask cues`).
 
+cargo xtask replay <file|name> --audio [out.wav]
+    The run's offline soundtrack: the cues mixed as the app plays them
+    (jnr_audio::mix, D-114) -> preview/replays/<replay>.wav (or out.wav),
+    <stem>_audio.png (cue labels, waveform, spectrogram over the run) and
+    <stem>_audio.json (peak, clamps, time over -1 dBFS, RMS per second, cue
+    timeline). Fails if the mix clamps or crosses the -1 dBFS ceiling.
+    Sounds without a source in audio/ yet are silent and listed.
+
 cargo xtask filmstrip <file|name> [--every N]
     Contact sheet of every Nth frame (default 30, plus the last frame),
     labelled with the frame number -> preview/filmstrips/<replay>.png
@@ -202,14 +210,41 @@ pub fn run_replay(root: &Path, args: &[String]) -> ExitCode {
     let mut target = None;
     let mut shots = false;
     let mut cue_log = false;
+    let mut audio = false;
+    let mut audio_out: Option<PathBuf> = None;
     for a in args {
         match a.as_str() {
             "--shots" => shots = true,
             "--cue-log" => cue_log = true,
+            "--audio" => audio = true,
             "help" | "-h" | "--help" => return usage_ok(),
+            _ if audio && audio_out.is_none() && a.ends_with(".wav") => {
+                audio_out = Some(PathBuf::from(a))
+            }
             _ if target.is_none() => target = Some(a.as_str()),
             _ => return usage_err(&format!("unexpected argument `{a}`")),
         }
+    }
+    if audio {
+        return match target {
+            Some("--all") | None => usage_err("--audio needs one replay file or name"),
+            Some(t) => {
+                exit(
+                    content::resolve_replay(root, t).and_then(|p| {
+                        match crate::replay_audio::run(root, &p, audio_out.as_deref()) {
+                            Ok(text) => {
+                                print!("{text}");
+                                Ok(())
+                            }
+                            Err(text) => {
+                                print!("{text}");
+                                Err("the mix fails its lints (clamp, ceiling)".into())
+                            }
+                        }
+                    }),
+                )
+            }
+        };
     }
     if cue_log {
         return match target {
