@@ -40,7 +40,7 @@ jumpnrun/
 │  ├─ sprites/**/*.sprite
 │  ├─ generators/*.toml       # parameters for procedural art (parallax, water, tiles)
 │  └─ sprites/ui/font.sprite  # bitmap font incl. ÄÖÜäöüß„“– (see jnr-render)
-├─ audio/                     # sound sources (MA): sfx/*.sfx, jingles/*.sfx, instruments/*.inst, music/*.song
+├─ audio/                     # sound sources (MA): sfx/*.sfx, jingles/*.sfx, instruments/*.inst, music/*.song, targets.toml (lint targets)
 ├─ content/
 │  ├─ levels/01_salzburg.level
 │  ├─ text/de.toml            # all player-visible German text, keyed
@@ -260,6 +260,10 @@ hold_ms = 20
 decay_ms = 120
 volume_pct = 70
 ```
+
+### Tooling (`cargo xtask audio`, E56)
+
+`xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`); a new kind (E57's songs) adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
 
 ## Content formats
 

@@ -12,5 +12,8 @@ jnr-artkit = { workspace = true, features = ["png"] }
 jnr-core.workspace = true
 jnr-render.workspace = true
 jnr-assets.workspace = true
+jnr-audio.workspace = true
+serde.workspace = true
+toml.workspace = true
 # Decoding golden screenshots.
 png.workspace = true

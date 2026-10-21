@@ -1,0 +1,9 @@
+# Lint fixture for `duration` (xtask/src/audio/lint.rs): 142 ms against a duration_ms = 150 target.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 35

@@ -1,0 +1,25 @@
+# Lint fixture for `clamp` (xtask/src/audio/lint.rs): Three in-phase squares at 40 % sum to 120 %: clamped.
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 40
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 40
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+freq_hz = 440
+attack_ms = 2
+hold_ms = 60
+decay_ms = 80
+volume_pct = 40

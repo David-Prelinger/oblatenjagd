@@ -1,0 +1,15 @@
+# Review targets of every sound in audio/sfx/ and audio/jingles/, read by
+# `cargo xtask audio lint` (docs/validation.md, "Audio"). One table per id:
+#
+#   class       = "normal"      # required: loud | normal | soft | ambience | jingle
+#                               # (docs/audio-design.md, section 3)
+#   peak_dbfs   = -8            # optional: the SFX table's peak, overrides the class (±1 dB)
+#   duration_ms = 150           # optional: rendered length (±10 ms)
+#   centroid_hz = [1500, 6000]  # optional: spectral-centroid band (the sound's character)
+#   placeholder = true          # a stand-in: linted, but never a golden
+#
+# Example (the design's jump, docs/audio-design.md section 6):
+#
+#   [jump]
+#   class = "normal"
+#   duration_ms = 150
