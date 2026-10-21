@@ -1,0 +1,12 @@
+# Mozart, 6 Ländlerische Tänze K. 606, No. 1: Violino I, the first strain (pickup + 8 bars,
+# repeated in the score), 3/4, B-flat major, as printed. Read from page 1 of the edition
+# below (IMSLP #24865, the page-1 preview of „Mozart_Werke_Breitkopf_Serie_24_16_KV606").
+# Grid: eighths. The pickup is the last three eighths of the bar before.
+source = "W. A. Mozart, 6 Ländlerische Tänze K. 606, No. 1, Violino I, first strain (bars 0-8)"
+edition = "Mozarts Werke (AMA), Serie 24 Supplement No. 16, ed. G. Nottebohm, Leipzig: Breitkopf & Härtel 1886, plate W.A.M. 606, p. 1 (IMSLP #24865)"
+steps_per_beat = 2
+notes = '''
+bb5/1 a5 bb5 |
+d6 bb5 f5 d5 eb5 c5 | g5 f5 d5 bb4 d5 bb4 | f5 eb5 c5 a4 c5 a4 | f5/3 bb5/1 a5 bb5 |
+d6 bb5 f5 d5 eb5 c5 | g5 f5 d5 bb4 d5 bb4 | f5 eb5 c5 a4 c5 a4 | bb4/3
+'''

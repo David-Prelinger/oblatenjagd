@@ -1,0 +1,11 @@
+# M3 in the café, the plucked bass (audio-design §2.1): triangle, A 1 / D 80 / S 0.
+range = ["e1", "g3"]
+
+[[layer]]
+wave = "triangle"
+attack_ms = 1
+decay_ms = 80
+sustain_pct = 0
+release_ms = 20
+volume_pct = 80
+lowpass_hz = 1500

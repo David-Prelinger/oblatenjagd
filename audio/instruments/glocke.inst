@@ -1,0 +1,59 @@
+# The church bell (audio-design §5, `hurry`): sines at 0.5 (hum), 1.0 (prime), 1.19
+# (the minor-third tierce, +301 cents), 1.5 (fifth, +702 cents) and 2.0 (nominal) of the
+# played note, decaying 1.6 / 1.2 / 0.9 / 0.7 / 0.6 s, plus a 5 ms strike transient (noise
+# band-passed at 3 kHz). Played on A4 = 440 Hz.
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "sine"
+detune_cents = -1200
+attack_ms = 2
+decay_ms = 1600
+sustain_pct = 0
+release_ms = 100
+volume_pct = 30
+
+[[layer]]
+wave = "sine"
+attack_ms = 2
+decay_ms = 1200
+sustain_pct = 0
+release_ms = 100
+volume_pct = 34
+
+[[layer]]
+wave = "sine"
+detune_cents = 301
+attack_ms = 2
+decay_ms = 900
+sustain_pct = 0
+release_ms = 100
+volume_pct = 24
+
+[[layer]]
+wave = "sine"
+detune_cents = 702
+attack_ms = 2
+decay_ms = 700
+sustain_pct = 0
+release_ms = 100
+volume_pct = 16
+
+[[layer]]
+wave = "sine"
+detune_cents = 1200
+attack_ms = 2
+decay_ms = 600
+sustain_pct = 0
+release_ms = 100
+volume_pct = 14
+
+[[layer]]
+wave = "noise"
+detune_cents = 2400
+attack_ms = 1
+decay_ms = 5
+sustain_pct = 0
+release_ms = 1
+volume_pct = 30
+bandpass = { hz = 3000, q_pct = 150 }

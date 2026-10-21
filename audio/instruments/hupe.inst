@@ -1,0 +1,13 @@
+# Strobl's car horn (audio-design §5 `strobl`): pulse 50 %, a short swell and a held
+# blare, low-passed at 2 kHz. Played as A4 + C-sharp5 together (`arp_ms = 0`).
+range = ["c4", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 50
+attack_ms = 5
+decay_ms = 50
+sustain_pct = 80
+release_ms = 30
+volume_pct = 50
+lowpass_hz = 2000

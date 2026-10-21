@@ -391,42 +391,11 @@ impl Music {
     }
 }
 
-/// Music cues without a source yet (S2 is authoring them): the one place
-/// where a cue id or a level's `music` may lack its `audio/music/<id>.song`
-/// (or `audio/jingles/<id>.sfx`). The `jnr-assets` tests fail for an entry
-/// whose source exists, so remove it when its song lands; MA's acceptance
-/// expects the list to be empty.
-pub const PENDING_MUSIC: &[Music] = &[
-    Music::Title,
-    Music::RouteMap,
-    Music::Salzburg,
-    Music::StGilgen,
-    Music::Brunnwinkl,
-    Music::Falkenstein,
-    Music::StWolfgang,
-    Music::Wolfgangsee,
-    Music::Unterwasser,
-    Music::Strobl,
-    Music::BadIschl,
-    Music::CafeZauner,
-    Music::BossIntro,
-    Music::BossSurprise,
-    Music::Boss,
-    Music::BossDefeat,
-    Music::FanfareClear,
-    Music::FanfareFinale,
-    Music::Death,
-    Music::GameOver,
-    Music::Hurry,
-    Music::EndingMap,
-    Music::Kaffeehaus,
-    Music::Credits,
-    Music::Ende,
-];
-
-/// The most entries [`PENDING_MUSIC`] may have. Lower it whenever songs
-/// land; never raise it (a test checks the list against it).
-pub const PENDING_MUSIC_MAX: usize = 25;
+/// Music cues without a source yet: the one place where a cue id or a
+/// level's `music` may lack its `audio/music/<id>.song`. Empty since all 25
+/// songs landed (MA); a test keeps it empty, so a new `Music` cue must land
+/// with its song.
+pub const PENDING_MUSIC: &[Music] = &[];
 
 /// Which voices a [`Cue::CutSfx`] stops.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

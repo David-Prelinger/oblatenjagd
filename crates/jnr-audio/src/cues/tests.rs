@@ -409,16 +409,12 @@ fn begin_starts_fresh_with_the_level_piece_or_silence() {
 }
 
 #[test]
-fn pending_music_has_no_duplicates_and_only_shrinks() {
-    for (i, m) in PENDING_MUSIC.iter().enumerate() {
-        assert!(
-            !PENDING_MUSIC[..i].contains(m),
-            "`{}` twice in PENDING_MUSIC",
-            m.id()
-        );
-    }
-    assert!(
-        PENDING_MUSIC.len() <= PENDING_MUSIC_MAX,
-        "PENDING_MUSIC grew past PENDING_MUSIC_MAX ({PENDING_MUSIC_MAX}): it may only shrink"
+fn pending_music_is_empty() {
+    // Every music cue has its source since MA (milestone acceptance): the
+    // list may never grow again.
+    assert_eq!(
+        PENDING_MUSIC,
+        &[] as &[Music],
+        "PENDING_MUSIC must stay empty: every music cue needs its .song"
     );
 }

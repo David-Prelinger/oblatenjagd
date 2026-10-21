@@ -1,0 +1,14 @@
+# The `death` cue's „plumps" (audio-design §5): the Helikon's triangle falling a fourth
+# (C3 to G2 = -500 cents) over 300 ms, then ringing out.
+range = ["e1", "f3"]
+
+[[layer]]
+wave = "triangle"
+slide_cents = -500
+slide_ms = 300
+attack_ms = 3
+decay_ms = 300
+sustain_pct = 60
+release_ms = 250
+volume_pct = 80
+lowpass_hz = 1200

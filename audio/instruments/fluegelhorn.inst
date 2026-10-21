@@ -1,0 +1,23 @@
+# M1 Melodie, the Flügelhorn (audio-design §2.1): pulse 25 %, A 8 / D 80 / S 70 % / R 60,
+# a brass scoop from -30 cents to the note over 20 ms at every onset, vibrato 5 Hz
+# ±15 cents after 200 ms. Low-passed at 5 kHz so the pulse's upper harmonics don't alias
+# on the top notes (the K. 606 strain reaches D6).
+# Duty 75 % is the design's 25 % pulse upside down: the same harmonics (the same timbre),
+# but the tall spike points down, against the Tenorhorn's 25 % spike, so the lead, the
+# second voice and the Helikon's onsets stack less (the music bus: -8 dBFS peak at
+# -20 dBFS RMS).
+range = ["e3", "d6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 75
+detune_cents = -30
+slide_cents = 30
+slide_ms = 20
+attack_ms = 8
+decay_ms = 80
+sustain_pct = 70
+release_ms = 60
+volume_pct = 60
+lowpass_hz = 5000
+vibrato = { depth_cents = 15, rate_hz = 5, delay_ms = 200 }

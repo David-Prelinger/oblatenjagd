@@ -374,7 +374,7 @@ let wav = jnr_audio::wav::write(&song.pcm);                // bytes for load_sou
 ```
 
 - `Bank { sfx, jingles, instruments, songs, quotes }` by id; `has_music(Music)` is a `.song` or a `jingles/*.sfx`. A song renders through `song_render::render_in`, so an underwater twin (`length_of`) gets its stage piece's length. `bank::transpose(&Sfx, semitones)` moves every fixed oscillator pitch (filters and timing stay) for the pitched variants.
-- `jnr_audio::cues::PENDING_MUSIC` lists the music cues without a source yet (all 25 at E58b); tests in `jnr-assets` fail for a missing cue that isn't pending and for a pending one that exists, and `levels lint` accepts a level `music` only if it is embedded or pending. The list must be empty for MA's acceptance.
+- `jnr_audio::cues::PENDING_MUSIC` lists the music cues without a source yet (all 25 at E58b, empty since MA; a test keeps it empty); tests in `jnr-assets` fail for a missing cue that isn't pending and for a pending one that exists, and `levels lint` accepts a level `music` only if it is embedded or pending.
 
 ### Cues (`jnr_audio::cues`, E58a, D-113/D-114)
 

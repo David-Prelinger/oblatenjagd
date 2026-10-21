@@ -1,0 +1,39 @@
+# The zither with a mordent (audio-design §5 `brunnwinkl`): the note, its upper whole
+# tone and back, 30 ms each, then the note rings (the arp cycles every 240 ms, so a long
+# note flicks once more while it decays). The second voice (duty 88 %) as in `zither`.
+range = ["d3", "d6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 12
+detune_cents = -6
+attack_ms = 2
+decay_ms = 400
+sustain_pct = 0
+release_ms = 200
+volume_pct = 35
+lowpass_hz = 2200
+arp = { every_ms = 30, semitones = [0, 2, 0, 0, 0, 0, 0, 0] }
+
+[[layer]]
+wave = "pulse"
+duty_pct = 88
+detune_cents = 6
+attack_ms = 2
+decay_ms = 400
+sustain_pct = 0
+release_ms = 200
+volume_pct = 35
+lowpass_hz = 2200
+arp = { every_ms = 30, semitones = [0, 2, 0, 0, 0, 0, 0, 0] }
+
+# The zither's sympathetic strings: a quiet triangle at the note ringing 1.5 s, so the
+# tune doesn't fall silent between plucks.
+[[layer]]
+wave = "triangle"
+attack_ms = 5
+decay_ms = 1500
+sustain_pct = 0
+release_ms = 200
+volume_pct = 30
+lowpass_hz = 2000

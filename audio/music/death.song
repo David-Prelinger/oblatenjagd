@@ -1,0 +1,26 @@
+# `death` „Autsch-Jodler" (audio-design §5): a yodel falling apart. Octave flips falling
+# by step, G5 G4 F5 F4 E5 E4 at 100 ms each, legato, a 100 ms rest, then the Helikon
+# „plumps": C3 sliding down to G2 over 300 ms with a bass-drum hit at its start.
+# 1 000 ms of notes + the 300 ms release. The grid: 150 BPM, sixteenths = 100 ms.
+[meta]
+id = "death"
+kind = "jingle"
+tempo_bpm = 150
+meter = "3/4"
+steps_per_beat = 4
+key = "c major"
+bars = 1
+order = ["A"]
+source = "original"
+
+[channels]
+lead  = { instrument = "fluegelhorn", volume_pct = 54 }
+bass  = { instrument = "helikon_plumps", volume_pct = 48 }
+drums = { instrument = "schlagwerk", volume_pct = 15 }
+
+[pattern.A]
+score = '''
+lead  | g5/1 g4 f5 f4 e5 e4 r/6 |
+bass  | r/7 c3/3 r/2            |
+drums | r/7 K/3 r/2             |
+'''

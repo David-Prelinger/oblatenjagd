@@ -1,0 +1,33 @@
+# `boss_intro` (audio-design §5): the arena locks, „Hinten anstellen!". Haydn, Symphony
+# No. 94, Andante, bars 1-2 of the theme, plucked and quiet: C4 C4 E4 E4 | G4 G4 E4.
+# 2/4 at 160 BPM, so the 8 eighths last exactly 1 500 ms = the intro's 90 frames.
+# The Helikon holds C3 under it (the strings' bass on beat 1), which also keeps the cue
+# sounding to its end. The design's pianissimo (-18 dB under the music bus) is below the
+# jingle lint's RMS floor (-19 dBFS), so the cue sits at the floor; the contrast comes
+# from `boss_surprise` at full jingle level.
+[meta]
+id = "boss_intro"
+kind = "jingle"
+tempo_bpm = 160
+meter = "2/4"
+steps_per_beat = 2
+key = "c major"
+bars = 2
+order = ["A"]
+source = "Joseph Haydn, Symphony No. 94, II. Andante, bars 1-2"
+edition = "Clementi's piano adaptation, London: Clementi, Collard & Collard, c. 1823 (Internet Archive surprisehaydnsce00hayd)"
+
+[channels]
+lead = { instrument = "zupf", volume_pct = 54 }
+bass = { instrument = "helikon", volume_pct = 56 }
+
+[pattern.A]
+score = '''
+lead | c4/1 c4 e4 e4 | g4 g4 e4/2 |
+bass | c3/4          | c3/4       |
+'''
+
+[[quote]]
+fixture = "haydn_94_andante"
+channel = "lead"
+bar = 1

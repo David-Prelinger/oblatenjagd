@@ -1,0 +1,14 @@
+# `tutti` upside down (pulse 75 %: the same spectrum, opposite polarity), with a 3 ms
+# late entry, for the lower notes of the `boss_surprise` chord.
+range = ["g2", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 75
+delay_ms = 3
+attack_ms = 2
+decay_ms = 600
+sustain_pct = 0
+release_ms = 20
+volume_pct = 60
+lowpass_hz = 4000

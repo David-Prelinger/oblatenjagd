@@ -1,0 +1,23 @@
+# `hurry` „Kirchturmuhr" (audio-design §5): ZEIT drops to 60, and the church tower strikes
+# three times, 500 ms apart; the last strike rings out for 500 ms and fades over 100 ms:
+# 1.6 s. The bell (`glocke`) is struck on A4 = 440 Hz: hum, prime, tierce, fifth and
+# nominal (0.5 / 1.0 / 1.19 / 1.5 / 2.0) with a 5 ms strike transient. Each strike cuts
+# the one before (one voice), so the next strike's onset is clean.
+[meta]
+id = "hurry"
+kind = "jingle"
+tempo_bpm = 120
+meter = "3/4"
+steps_per_beat = 1
+key = "a major"
+bars = 1
+order = ["A"]
+source = "original"
+
+[channels]
+bell = { instrument = "glocke", volume_pct = 41 }
+
+[pattern.A]
+score = '''
+bell | a4/1 a4 a4 |
+'''
