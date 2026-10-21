@@ -1,0 +1,18 @@
+# The Kellner's tray is a bounce pad (D-105; Stage 9 "New mechanics"): the
+# first 183 frames of cafe_zauner_solver.replay. Resi runs in from the
+# door, hops onto the 2-high vitrine at 18-19 (108) and drops off it onto
+# Kellner #1's tray as he reaches its face: a bounce without damage or
+# points (129, „Komm' gleich!"), JUMP held lifts her over the coat
+# stand's hat shelf through its 3 Oblaten (143-156, the only points:
+# 600), she lands on the shelf (160) and runs on down into the pen ahead
+# of him (183). No hurt; the Kellner walks on.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=600 oblaten=3 power=normal player_x>=440
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40

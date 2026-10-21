@@ -1,0 +1,25 @@
+# Any contact with a Kellner but the tray from above hurts (D-105; Stage 9
+# "New mechanics"): cafe_zauner_luster_route_big's first 300 frames: an
+# Oblate, the M-box at 12 bumped (106), its Mozartkugel turns at the
+# 2-high vitrine at 18-19 and she grows (165, Zuckerschock, 1000), onto
+# the ?-box at 17 (242) and the vitrine (279). Then she walks down into
+# pen 1 (330) and on to the right until Kellner #1 comes back from the
+# far vitrine and meets her head-on: Zuckerschock -> Normal (394), no
+# death, no stomp, no points. Blinking she walks on and jumps onto
+# Vitrine A (32-34, landed 467), where she stands (x 518).
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 event=PowerUp event=Hurt no_event=Stomped power=normal score=1200 player_y<=186
+---
+R 98
+J 12
+- 65
+R 32
+RJ 36
+R 14
+- 43
+R 130
+RJ 20
+R 8
+- 120

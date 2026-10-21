@@ -546,8 +546,9 @@ mod tests {
 
     /// D-036: each stage tour is the title intro, then the stage's solver
     /// route unchanged, then 800 idle frames for the Maibaum sequence (and
-    /// the route map). A re-solve that changes a route must be copied into
-    /// its tour.
+    /// the route map); Café Zauner's tour idles 3381 frames instead, through
+    /// the finale and the whole ending to the marked title (M7). A re-solve
+    /// that changes a route must be copied into its tour.
     #[test]
     fn stage_tours_replay_the_solver_route() {
         let frames = |name: &str| -> Vec<u64> {
@@ -557,18 +558,19 @@ mod tests {
         };
         let (none, start) = (0, u64::from(InputFrame::START.bits()));
         let intro: Vec<u64> = [vec![none; 20], vec![start], vec![none; 150]].concat();
-        for stage in [
-            "salzburg",
-            "st_gilgen",
-            "brunnwinkl",
-            "falkenstein",
-            "st_wolfgang",
-            "wolfgangsee",
-            "strobl",
-            "bad_ischl",
+        for (stage, outro) in [
+            ("salzburg", 800),
+            ("st_gilgen", 800),
+            ("brunnwinkl", 800),
+            ("falkenstein", 800),
+            ("st_wolfgang", 800),
+            ("wolfgangsee", 800),
+            ("strobl", 800),
+            ("bad_ischl", 800),
+            ("cafe_zauner", 3381),
         ] {
             let route = frames(&format!("{stage}_solver.replay"));
-            let expected = [intro.clone(), route.clone(), vec![none; 800]].concat();
+            let expected = [intro.clone(), route.clone(), vec![none; outro]].concat();
             let tour = frames(&format!("{stage}_tour.replay"));
             if let Some(i) = first_difference(&tour, &expected) {
                 let part = if i < intro.len() {
@@ -576,15 +578,15 @@ mod tests {
                 } else if i < intro.len() + route.len() {
                     "the solver route"
                 } else {
-                    "the Maibaum outro `- 800`"
+                    "the outro (`- 800`; Café Zauner `- 3381`)"
                 };
                 panic!(
                     "tests/replays/{stage}_tour.replay differs at frame {i}, in {part} (tour {} \
                      frames, expected {}). The tour must be `- 20`, `S 1`, `- 150`, the inputs \
-                     of tests/replays/{stage}_solver.replay unchanged, then `- 800` (D-036). \
-                     If `cargo xtask solve {stage} --write` changed the route, re-copy its \
-                     inputs into the tour, update its `expect` frames and re-pick the shot \
-                     frames (new goldens need an art-director verdict).",
+                     of tests/replays/{stage}_solver.replay unchanged, then `- {outro}` \
+                     (D-036). If `cargo xtask solve {stage} --write` changed the route, \
+                     re-copy its inputs into the tour, update its `expect` frames and \
+                     re-pick the shot frames (new goldens need an art-director verdict).",
                     tour.len(),
                     expected.len()
                 );

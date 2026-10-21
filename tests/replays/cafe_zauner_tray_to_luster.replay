@@ -1,0 +1,30 @@
+# A tray bounce up to a chandelier (D-105; Stage 9 "New mechanics"): the
+# first 183 frames of cafe_zauner_solver.replay (the tray bounce off
+# Kellner #1, cafe_zauner_tray_bounce), then a running jump onto Vitrine A
+# (32-34, 2 high) and a brake on it (landed 220, standing at x 554). She
+# waits there while Kellner #2 paces pen B; as he comes back to the
+# vitrine's face she hops off it (611, JUMP tapped), holds JUMP again on the
+# way down and lands on his tray (637: a bounce, no damage, no points),
+# which lifts her onto chandelier L1 (39-41, row 11 = 4 up; landed 663)
+# through one of its Oblaten; she walks on along the band and stops on it
+# (712) with a second one. The hop shifted with the inputs after it:
+# 603 … 628 reach L1 (26 frames); earlier or later she misses the tray,
+# lands on the floor and he walks into her.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=1000 oblaten=5 player_y<=154 player_y>=154 player_x>=620 state=playing
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 14
+L 14
+- 399
+RJ 2
+R 10
+RJ 30
+R 10
+- 50

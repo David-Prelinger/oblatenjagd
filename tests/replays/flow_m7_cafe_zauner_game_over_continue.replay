@@ -1,0 +1,206 @@
+# M7 flow (D-017, D-047, D-106): game over in Café Zauner -> continue
+# restarts Café Zauner (not the run's first stage, Strobl) and the boss.
+# Title flow with the run started in Strobl: flow_m6_bad_ischl_to_cafe_zauner's
+# 5703 frames (Strobl and Bad Ischl cleared, the Café Zauner intro from
+# 5643), 90 more frames of the intro, play from 5793 (play frame = frame
+# - 5793). Life 1: cafe_zauner_boss_win_normal's inputs to its frame 1316
+# (hit 1 at 7007), then m7_boss_death_reset's (the round-2 volley's first
+# bill: a death at 7364). Respawn at the checkpoint (112) through the
+# intro, play from 7574. Lives 2 and 3, the same 1011 frames each from
+# the respawn: a walk to the step, onto the Tortenvitrine, right until
+# the arena locks, back onto the refuge, a step off onto his head in his
+# first breather (hits at 8042 and 9053: the boss has 1 hit each time),
+# back onto the refuge, then a walk across the floor into him at the
+# right wall in his volley (deaths at 8375 and 9386). Game over at 9446
+# with the boss on 1 hit; START at 9526 -> the Café Zauner intro, play at
+# its start (9676): 3 lives, score 0, 0 Oblaten, Normal, the boss back at
+# his spawn with no hits; 30 frames of play.
+level  = strobl
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver dies_at frames=9386..9386 event=CheckpointReached
+expect = state=playing stage=cafe_zauner lives=3 score=0 oblaten=0 power=normal boss_hits=0 player_x>=34 player_y>=218 player_y<=218
+---
+- 20
+S 1       # START: Strobl intro
+- 150     # play from 171
+# --- strobl_solver.replay (1729 frames) ---
+RB 96
+RBJ 36
+RB 40
+RBJ 36
+RB 48
+RBJ 36
+RB 104
+RBJ 12
+RB 14
+LBJ 12
+LB 2
+RB 8
+RBJ 20
+RB 45
+RBJ 36
+RB 108
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 31
+RB 205
+RBJ 36
+RB 40
+RBJ 36
+RB 120
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 20
+RB 94
+RBJ 36
+RB 20
+RBJ 36
+RB 16
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+# --- tally, route map (Wait), Bad Ischl intro: play from 2942 ---
+- 1042
+# --- bad_ischl_solver.replay (1851 frames) ---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 36
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 6
+RB 56
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56
+# --- tally, route map (Wait), the Café Zauner intro ---
+- 910
+# --- 90 more frames of the Café Zauner intro: play from 5793 ---
+- 90
+# --- life 1: cafe_zauner_boss_win_normal to its frame 1316, then m7_boss_death_reset (death 7364) ---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+R 40
+- 215
+- 210     # dying, the intro: play from the checkpoint at 7574
+# --- life 2 (from the checkpoint): lock, hit 1 (8042), death (8375), the intro ---
+R 44
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 60
+R 200
+- 181
+# --- life 3: the same without the final wait (hit 9053, death 9386), game over at 9446 ---
+R 44
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 60
+R 200
+- 110     # dying, the game over screen
+S 1       # 9526: continue -> the Café Zauner intro
+- 180     # the intro, then 30 frames of play from 9676

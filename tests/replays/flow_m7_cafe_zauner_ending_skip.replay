@@ -1,0 +1,182 @@
+# M7 flow (D-107; Stage 9 "Finale and ending"): START through every phase
+# of the ending at the first frame it counts, in the real stage. Title
+# flow with the run started in Café Zauner (the route's last station):
+# START (21), the intro, cafe_zauner_solver.replay unchanged from 171:
+# the boss beaten, the goal_stollen touched in the air (2449), the Serve,
+# the tally and the clear panel; the ending's Map from 2887. A press at
+# 2893 is ignored (the first 30 frames of a phase); then START at the
+# first allowed frame of each phase (30 frames in, 60 in the Bill and
+# Ende): Map -> Scene 2917, -> Bill 2947, -> Credits 3007, page by page
+# (3037, 3067, 3097, 3127, 3157), -> Ende 3187, -> the title 3247 with
+# the „durchgespielt" mark; the replay ends on it (3277). The ending's
+# frames follow the tally, so a new time_limit for Café Zauner moves
+# every press.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2449..2449 deaths=0 no_event=Hurt
+expect = state=title cleared=true stage=cafe_zauner score=0 lives=3 oblaten=0 power=normal
+---
+- 20
+S 1       # frame 21: START -> intro
+- 150     # play from 171
+# --- cafe_zauner_solver.replay inputs, unchanged ---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 328
+LBJ 12
+LB 10
+RB 3
+RBJ 20
+RB 11
+LBJ 12
+LB 2
+RB 38
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 16
+RB 22
+LBJ 12
+LB 2
+RB 6
+LB 8
+RB 38
+LBJ 12
+LB 2
+RB 3
+LB 14
+RB 14
+LBJ 12
+LB 2
+RB 22
+L 4
+RBJ 6
+RB 6
+R 14
+L 4
+LBJ 12
+LB 2
+RB 3
+L 4
+RB 3
+- 364
+LBJ 12
+LB 10
+RBJ 36
+RB 12
+# --- end of cafe_zauner_solver.replay ---
+- 443
+S 1       # 2893: ignored (6 frames into the Map)
+- 23
+S 1       # 2917: Map -> Scene
+- 29
+S 1       # 2947: Scene -> Bill
+- 59
+S 1       # 3007: Bill -> Credits page 1
+- 29
+S 1       # 3037: page 2
+- 29
+S 1       # 3067: page 3
+- 29
+S 1       # 3097: page 4
+- 29
+S 1       # 3127: page 5
+- 29
+S 1       # 3157: page 6
+- 29
+S 1       # 3187: Ende
+- 59
+S 1       # 3247: the title with the mark
+- 30

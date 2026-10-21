@@ -1,0 +1,180 @@
+# Stage 9 golden tour (M7, D-036 style): the real game from the title with
+# the run started in Café Zauner (`level = cafe_zauner`, the route's last
+# station, D-047): START at frame 21, stage intro 21..170, then the inputs
+# of cafe_zauner_solver.replay unchanged from frame 171 (re-copy them after
+# `cargo xtask solve cafe_zauner --write`; the xtask tour coupling test
+# checks it), then 3381 idle frames: the finale, the whole ending and the
+# title with the „durchgespielt" mark (the replay ends there, 5830).
+# Play frame = tour frame - 171 (stage clock likewise until the goal).
+# The finale: the goal_stollen touched in the air (2449), the Serve after
+# she lands, the tally (2544; its length follows the time left, so a new
+# time_limit moves every later frame: re-pick the ending shots), the
+# clear panel (2707), then the ending: Map 2887, Scene 3127, Bill 3487,
+# Credits 4087 (6 pages of 180), Ende 5167, the title 5767.
+# Shots, per section:
+#   intro               60 „Etappe 9: Café Zauner"
+#   1 Windfang          181 the glass door with the queue outside and the
+#                       „Bus 150? / Wurscht!" board, 302 the tray bounce
+#                       off Kellner #1 („Komm' gleich!")
+#   2 Salon             475 chandeliers L1 and L2 over pens B and C
+#   3 Die Schlange      686 the queue on its dots, mid-chain
+#   4 Vor der Theke     892 the checkpoint („Zwischenstopp") beside
+#                       „Reserviert / seit 1832"
+#   5 Die Kuchentheke   1000 the arena lock, „Hinten anstellen!"; 1170 a
+#                       dash (round 1, to the left wall); 1458 a breather
+#                       stomp from the counter (hit 1, „Unerhört!"); 1760
+#                       a volley (round 2, three bills); 2422 the third
+#                       hit, the bell lifted („Bitte sehr!"); 2440 the bow
+#   finale              2500 the Serve (the plate held up on the counter)
+#   ending              3007 Map, 3327 Scene, 3700 Bill, 4357 Credits
+#                       page 2 (the cast), 5287 Ende
+#   title               5785 the marked title („Durchgespielt!
+#                       Mahlzeit!", „Nochmal? Drück START", the Stollen
+#                       at her feet; the run started in the café, so the
+#                       title's backdrop is the café)
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2449..2449 deaths=0 no_event=Hurt
+expect = state=title cleared=true score=0 lives=3 oblaten=0 power=normal
+shots  = 60:intro 181:door 302:tray_bounce 475:salon 686:queue 892:checkpoint 1000:anstellen 1170:dash 1458:breather_stomp 1760:volley 2422:bell 2440:bow 2500:serve 3007:ending_map 3327:ending_scene 3700:ending_bill 4357:credits 5287:ende 5785:title_cleared
+---
+- 20
+S 1
+- 150
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 84
+RBJ 36
+RB 56
+RBJ 36
+RB 2
+L 4
+LB 16
+LBJ 12
+LB 2
+RB 10
+- 328
+LBJ 12
+LB 10
+RB 3
+RBJ 20
+RB 11
+LBJ 12
+LB 2
+RB 38
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+L 4
+RB 4
+LBJ 12
+LB 16
+RB 22
+LBJ 12
+LB 2
+RB 6
+LB 8
+RB 38
+LBJ 12
+LB 2
+RB 3
+LB 14
+RB 14
+LBJ 12
+LB 2
+RB 22
+L 4
+RBJ 6
+RB 6
+R 14
+L 4
+LBJ 12
+LB 2
+RB 3
+L 4
+RB 3
+- 364
+LBJ 12
+LB 10
+RBJ 36
+RB 12
+- 3381
