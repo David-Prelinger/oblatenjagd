@@ -722,6 +722,13 @@ pub struct EnemyTuning {
     pub offizier_attention: u16,
     /// The sabre zone `[w, h]` px: centred on him, from his hitbox top up.
     pub offizier_sabre: [i32; 2],
+    /// Kellner (D-105); the hitbox top is his tray.
+    pub kellner_hitbox: [i32; 2],
+    /// He walks at this speed (the Nordic-Walker's turn rules).
+    pub kellner_speed: Fx,
+    /// Frames his `bounce` pose lasts after a tray bounce (the frame of
+    /// the bounce included; looks only).
+    pub kellner_bounce_pose: u16,
 }
 
 /// Frames of a Gams hop on flat ground until it lands (the frame whose
@@ -1144,6 +1151,28 @@ impl EnemyTuning {
         Ok(())
     }
 
+    /// The M7 Kellner's keys (D-105): a hitbox that fits his 16×32 sprite,
+    /// a positive speed and a bounce pose of at least one frame.
+    fn validate_kellner(&self) -> Result<(), ParseError> {
+        let [w, h] = self.kellner_hitbox;
+        if !(1..=TILE_PX).contains(&w) || !(1..=32).contains(&h) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_hitbox must be 1..=16 px wide and 1..=32 px high",
+            ));
+        }
+        if self.kellner_speed <= Fx::ZERO || self.kellner_speed >= Fx::from_px(12) {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_speed must be > 0 and < 12 px/frame (3072)",
+            ));
+        }
+        if self.kellner_bounce_pose == 0 {
+            return Err(ParseError::new(
+                "tuning.toml: enemies.kellner_bounce_pose must be >= 1",
+            ));
+        }
+        Ok(())
+    }
+
     /// The M4 keys of the Operettensänger and the Souvenirstand (D-068,
     /// D-069).
     fn validate_singer_and_stand(&self) -> Result<(), ParseError> {
@@ -1327,6 +1356,7 @@ impl Tuning {
         self.enemies.validate_traffic()?;
         self.enemies.validate_kurgast()?;
         self.enemies.validate_offizier()?;
+        self.enemies.validate_kellner()?;
         let i = &self.items;
         let e = &self.enemies;
         for (name, [w, h]) in [
@@ -2352,6 +2382,29 @@ mod tests {
             ("kurgast_wake", "0"),
             ("kurgast_berth", "-1"),
             ("kurgast_berth", "33"),
+        ] {
+            let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
+            let err = Tuning::parse(&text).unwrap_err().to_string();
+            assert!(err.contains(field), "{field} = {bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn kellner_keys_are_validated() {
+        let t = Tuning::parse(REAL).unwrap().enemies;
+        // D-105: 12×26 (the top is the tray), 1.0 px/frame; the `bounce`
+        // pose for 8 frames (E45).
+        assert_eq!(t.kellner_hitbox, [12, 26]);
+        assert_eq!(t.kellner_speed, Fx(256), "1.0 px/frame");
+        assert_eq!(t.kellner_bounce_pose, 8);
+        for (field, bad) in [
+            ("kellner_hitbox", "[17, 26]"),
+            ("kellner_hitbox", "[0, 26]"),
+            ("kellner_hitbox", "[12, 0]"),
+            ("kellner_hitbox", "[12, 33]"),
+            ("kellner_speed", "0"),
+            ("kellner_speed", "3072"),
+            ("kellner_bounce_pose", "0"),
         ] {
             let text = REAL.replace(&format!("{field} = "), &format!("{field} = {bad} #"));
             let err = Tuning::parse(&text).unwrap_err().to_string();

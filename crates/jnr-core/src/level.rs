@@ -273,11 +273,17 @@ pub enum SpawnKind {
     /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
     /// salute on the stage clock, D-096).
     Offizier,
+    /// Enemy `kellner` (a fast walker with a tray that bounces, D-105).
+    Kellner,
+    /// `wartender` (a queuer, D-105): in the simulation a Selfie-Tourist
+    /// that never walks (the `still` machine, legal in real levels); the
+    /// renderer draws the `wartender` look by spawn column, facing right.
+    Wartender,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 34] = [
+    pub const ALL: [SpawnKind; 36] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -312,6 +318,8 @@ impl SpawnKind {
         SpawnKind::Kurgast,
         SpawnKind::Fensterladen,
         SpawnKind::Offizier,
+        SpawnKind::Kellner,
+        SpawnKind::Wartender,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -352,6 +360,8 @@ impl SpawnKind {
             SpawnKind::Kurgast => "kurgast",
             SpawnKind::Fensterladen => "fensterladen",
             SpawnKind::Offizier => "offizier",
+            SpawnKind::Kellner => "kellner",
+            SpawnKind::Wartender => "wartender",
         }
     }
 
@@ -1948,6 +1958,30 @@ P.sSC.tfG
             "{ entity = \"goal\", still = true }",
         );
         assert!(err(&on_fiaker).contains("field \"still\""));
+    }
+
+    #[test]
+    fn a_wartender_and_a_kellner_take_no_fields() {
+        // D-105: `wartender` and `kellner` are plain names; a Wartender is
+        // still by its kind, not by a `still` field.
+        let with = |entity: &str| {
+            SMALL
+                .replace(
+                    "\"G\" = { entity = \"goal\" }",
+                    &format!("\"G\" = {{ entity = \"goal\" }}\n\"t\" = {entity}"),
+                )
+                .replace(".P.--..", ".Pt--..")
+        };
+        for (name, kind) in [
+            ("wartender", SpawnKind::Wartender),
+            ("kellner", SpawnKind::Kellner),
+        ] {
+            let l = Level::parse(&with(&format!("{{ entity = \"{name}\" }}"))).unwrap();
+            let s = l.entities.iter().find(|e| e.kind == kind).unwrap();
+            assert!(!s.still, "{name}");
+            let fielded = with(&format!("{{ entity = \"{name}\", still = true }}"));
+            assert!(err(&fielded).contains("field \"still\""), "{name}");
+        }
     }
 
     #[test]

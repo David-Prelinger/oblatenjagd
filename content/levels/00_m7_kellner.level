@@ -1,0 +1,44 @@
+# Grey-box test level for the Kellner and the Wartende (M7 task E45, D-105;
+# not part of the journey; side camera). The Stage 1-5 rows: floor on row 12
+# (feet y 192).
+# Sections (columns): start 0-9 with an `M`-box at 4 (row 8); the pen
+# between 2-high walls at 10 and 25 (14 free tiles, D-105) with the Kellner
+# at 18; a chandelier 4 tiles up (one-way, row 8, 17-19) with 3 Oblaten on
+# it (row 7), reached off his tray (a bounce with JUMP held; a jump from a
+# wall top falls short); a refuge 3 tiles up (one-way, row 9, 22-24: he passes under
+# her) at the right wall. Then a queue of
+# five Wartende 3 apart (32, 35, 38, 41, 44: 2 free tiles between heads)
+# with nothing else in its columns. Goal at 54.
+# Replays: tests/replays/m7_kellner_*.replay.
+
+[meta]
+id = "m7_kellner"
+time_limit = 300
+
+[legend]
+"#" = "solid"
+"-" = "oneway"
+"M" = { tile = "oblaten_box", contains = "mozartkugel" }
+"o" = { entity = "oblate" }
+"K" = { entity = "kellner" }
+"W" = { entity = "wartender" }
+"P" = { entity = "player_start" }
+"G" = { entity = "goal" }
+
+[map]
+grid = '''
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+............................................................
+.................ooo........................................
+....M............---........................................
+......................---...................................
+..........#..............#..................................
+..P.......#.......K......#......W..W..W..W..W.........G.....
+############################################################
+############################################################
+'''

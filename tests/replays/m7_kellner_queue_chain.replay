@@ -1,0 +1,26 @@
+# The queue as a stomp chain (D-105): past the Kellner (the tray bounce
+# route), a jump onto the first Wartender and four bounces, JUMP held for
+# about 10 frames after each stomp (a 30-frame, 45 px hop at walk speed):
+# 100 + 200 + 400 + 800 + 1000 = 2500 without touching the floor.
+level  = m7_kellner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped score=2500 player_x>=740
+---
+R 66
+RJ 6
+R 8
+- 20
+R 130
+RJ 20
+R 35
+RJ 58
+R 19
+RJ 12
+R 18
+RJ 12
+R 18
+RJ 12
+R 18
+RJ 12
+R 60
