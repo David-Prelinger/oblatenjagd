@@ -1,0 +1,25 @@
+# `marmor` with an "Abstand halten" floor dot (solid, flush, no relief):
+# a flat Y sticker ellipse with o shade and a k outline, two k
+# footprints (soles + heels) on it, under the c lip. Stage 9 queue.
+sprite = tile_marmor_punkt
+size   = 16x16
+origin = 0,0
+anim   = idle frames=1
+---
+frame idle 0
+cccccccccccccccc
+wwwwkkkkkkkkiiii
+wwkkYYYYYYYYkkii
+wkYYYYYYYYkkYYki
+kYYYYkkYYkkkYYYk
+kYYYkkkYYkkkYYYk
+kYYYkkkYYYkYYYok
+kYYYYkYYYkkYYYok
+kYYYkkYYYkkYYook
+ikYYkkYYYYYYYokw
+iikkooooooookkww
+iimmkkkkkkkkwwww
+mmiiiiiiwwwiiwww
+iiiiiiiiwiiwwwww
+iiiiiiiiwwwwwwww
+iiiiiiiiwwwwwwww
