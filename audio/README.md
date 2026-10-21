@@ -49,7 +49,12 @@ Instruments (`instruments/`, audio-design §2.1): `fluegelhorn` (M1), `klarinett
 and `helikon_plumps` (the `death` fall C3 to G2). S2b adds `zupf` (the `boss_intro` pizzicato),
 `tutti`/`tutti_tief` (the `boss_surprise` chord, opposite polarities), `pfiff` (the boss
 galop's steam whistle), the salon set `stehgeiger`, `klavier`, `pizzicato` and the `salon` kit
-(`T` triangel, `D` theke, `W` besen, `Z` tasse), and `spieluhr` (`ende`).
+(`T` triangel, `D` theke, `W` besen, `Z` tasse), and `spieluhr` (`ende`). S2c adds `zither` and
+`zither_mordent` (Brunnwinkl; low-passed and with a quiet resonance layer, so the plucked piece
+reaches the bus RMS), `biene`, `stimmung` (Bad Ischl's tuning), `schmalz` (St. Wolfgang's
+octave scoop), `hupe` (Strobl's car horn), the underwater set `spieluhr_nass`, `triangel_bass`
+and the `wasser` kit (`P` plip), and kit letters `R` rand, `L` schlurf, `H` dampf, `I` blinker,
+`Q` radglocke and `G` glocke in `schlagwerk`.
 
 Mixing notes for songs (the music bus wants peak ≤ −8 dBFS at RMS −20 ± 2):
 - Every note restarts its oscillator at phase 0, so onsets on the same step add their peaks.
@@ -70,4 +75,6 @@ Quotes (`quotes/`): `mozart_k606_1` and `mozart_k596` are read from the AMA page
 (IMSLP #562645, the AMA file could not be opened). `oblaten_motiv` and `oblaten_motiv_moll`
 are the leitmotif. `haydn_94_andante` is read from Clementi's 1823 piano adaptation
 (Internet Archive), `strauss_tritsch_tratsch` from the Haslinger first edition (IMSLP page-1
-preview).
+preview). S2c: `strauss_radetzky` (Haslinger preview, checked against the 1859 Richault print),
+`haydn_kaiserhymne` (Erk 1839), `summ_summ_summ` (Hoffmann 1843), `reidinger_dumpa` (Reidinger
+1884).

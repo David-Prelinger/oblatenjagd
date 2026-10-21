@@ -1,0 +1,15 @@
+# St. Wolfgang's curtain (audio-design §5): the Stehgeiger sliding up an octave over
+# 400 ms (the „Schmalz" scoop), then holding with a wide vibrato.
+range = ["f3", "e6"]
+
+[[layer]]
+wave = "saw"
+slide_cents = 1200
+slide_ms = 400
+attack_ms = 40
+decay_ms = 100
+sustain_pct = 85
+release_ms = 120
+volume_pct = 60
+lowpass_hz = 3000
+vibrato = { depth_cents = 30, rate_hz = 6, delay_ms = 400 }

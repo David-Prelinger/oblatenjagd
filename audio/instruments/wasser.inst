@@ -1,0 +1,13 @@
+# Percussion under water (audio-design §5 `unterwasser`).
+#   P plip: a bubble, sine 600 -> 1 200 Hz in 40 ms
+[kit]
+P = "plip"
+
+[[patch.plip.layer]]
+wave = "sine"
+freq_hz = 600
+slide_to_hz = 1200
+slide_ms = 40
+attack_ms = 2
+decay_ms = 45
+volume_pct = 40

@@ -1,0 +1,107 @@
+# `unterwasser` „Es wird scho glei dumpa" (audio-design §5): Stage 6 under water. 3/4,
+# 84 BPM (bar 2.143 s), A major (the 1884 print is in A-flat; up a semitone, as in the
+# common printed versions). Rendered at `wolfgangsee`'s exact length (`length_of`): both
+# start together and the mix swaps between them, so they stay in step.
+# 29 bars (62.1 s natural, 0.5 % from the steamer's 61.9 s): the design's 16 bars at
+# 84 BPM last 34.3 s, too far from `wolfgangsee` to share its length (the lint allows
+# 3 %), so the tune comes a third time, with a short coda.
+# Bar 1: a bubble and the pickup. Bars 2-9: the song's first period (Reidinger 1884,
+#   pickup + 8 bars) on the music box (M1). Bars 10-17: the same an octave lower on M2,
+#   M1 striking a high pedal E6 once per bar (on beat 2). Bars 18-25: the tune on M1 again over M2's
+#   held chord tones (entering an eighth late, so the onsets don't stack). Bars 26-29: coda, M2 sinking A G-sharp F-sharp E (back to the pickup).
+# Everything through a 1.2 kHz low-pass (the instruments' filters): it gets „dumpa"
+# under the lake. A soft triangle bass on 1, a bubble „plip" on beat 3 of every second
+# bar. No text is used.
+[meta]
+id = "unterwasser"
+kind = "loop"
+tempo_bpm = 84
+meter = "3/4"
+steps_per_beat = 4            # sixteenths: a bar has 12 steps
+key = "a major"
+bars = 29
+order = ["I", "T1", "T2", "T3", "C"]
+source = "Anton Reidinger (after a folk tune), Krippllied „Es wird scho glei dumpa“, first period"
+edition = "Anton Reidinger, Kripplgsangl und Kripplspiel, 1884, p. 1 (scan on Wikimedia Commons: Anton Reidinger - Krippllied.jpg)"
+length_of = "wolfgangsee"
+
+[channels]
+lead   = { instrument = "spieluhr_nass", volume_pct = 35 }
+second = { instrument = "spieluhr_nass", volume_pct = 35 }
+bass   = { instrument = "triangel_bass", volume_pct = 14 }
+drums  = { instrument = "wasser", volume_pct = 18 }
+
+[pattern.I]
+score = '''
+lead   | r/10 e4/2     |
+bass   | a1/12         |
+drums  | r/8 P/4       |
+'''
+
+[pattern.T1]
+score = '''
+lead   | a4/4 a4 b4    | c#5/3 e5/1 e5/6 d5/2 | c#5/4 c#5 b4 | b4/8 e4/4     |
+second | r/12          | r/12          | r/12          | r/12          |
+bass   | a1/4 r/8      | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+
+lead   | a4/4 a4 b4    | c#5/3 e5/1 e5/6 d5/2 | c#5/4 c#5 b4 | a4/8 r/4     |
+second | r/12          | r/12          | r/12          | r/10 e3/2     |
+bass   | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      | a1/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+'''
+
+[pattern.T2]
+score = '''
+lead   | r/4 e6/8@55     | r/4 e6/8@55     | r/4 e6/8@55     | r/4 e6/8@55     |
+second | a3/4 a3 b3    | c#4/3 e4/1 e4/6 d4/2 | c#4/4 c#4 b3 | b3/8 e3/4     |
+bass   | a1/4 r/8      | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+
+lead   | r/4 e6/8@55     | r/4 e6/8@55     | r/4 e6/8@55     | r/10 e4/2     |
+second | a3/4 a3 b3    | c#4/3 e4/1 e4/6 d4/2 | c#4/4 c#4 b3 | a3/8 r/4     |
+bass   | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      | a1/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+'''
+
+[pattern.T3]
+score = '''
+lead   | a4/4 a4 b4    | c#5/3 e5/1 e5/6 d5/2 | c#5/4 c#5 b4 | b4/8 e4/4     |
+second | r/2 c#4/10        | r/2 a3/10         | r/2 e3/10         | r/2 g#3/10        |
+bass   | a1/4 r/8      | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+
+lead   | a4/4 a4 b4    | c#5/3 e5/1 e5/6 d5/2 | c#5/4 c#5 b4 | a4/8 r/4     |
+second | r/2 c#4/10        | r/2 a3/10         | r/2 e3/10         | r/2 c#3/10        |
+bass   | a1/4 r/8      | a1/4 r/8      | e2/4 r/8      | a1/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+'''
+
+[pattern.C]
+score = '''
+lead   | r/4 e6/8@55   | r/12          | r/4 e6/8@55   | r/12          |
+second | r/2 a3/10         | r/2 g#3/10        | r/2 f#3/10        | r/2 e3/10         |
+bass   | a1/4 r/8      | e2/4 r/8      | d2/4 r/8      | e2/4 r/8      |
+drums  | r/12          | r/8 P/4       | r/12          | r/8 P/4       |
+'''
+
+[[quote]]
+fixture = "reidinger_dumpa"
+channel = "lead"
+bar = 1
+step = 10
+transpose = 1
+
+[[quote]]
+fixture = "reidinger_dumpa"
+channel = "second"
+bar = 9
+step = 10
+transpose = -11
+
+[[quote]]
+fixture = "reidinger_dumpa"
+channel = "lead"
+bar = 17
+step = 10
+transpose = 1

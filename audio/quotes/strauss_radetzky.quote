@@ -1,0 +1,17 @@
+# Johann Strauss (Vater), Radetzky-Marsch op. 228: the first strain after the 4-bar
+# introduction, pickup + 8 bars of the print's 4/4 (= 16 bars of 2/4), D major, the top
+# line of the piano's right hand (grace notes left out; E-sharp is the printed spelling).
+# Grid: eighths. Read from the Richault print (Paris [1859], plate R. 1233, arranged by
+# Alkan; Gallica btv1b10073696j via Wikimedia Commons), whose melody matches the page-1
+# preview of the Haslinger edition named in audio-design §5 (Vienna, plate T.H. 10,996,
+# IMSLP; the PDF is behind a captcha and the preview is too small to read alone).
+source = "Johann Strauss (Vater), Radetzky-Marsch op. 228, first strain (pickup + 8 bars of 4/4)"
+edition = "Vienna: Tobias Haslinger, plate T.H. 10,996 [1848] (IMSLP, page-1 preview), checked bar by bar against Paris: Richault, plate R. 1233 [1859] (Gallica btv1b10073696j)"
+steps_per_beat = 2
+notes = '''
+f#5/1 e#5 |
+f#5 r f#5 e#5 f#5 r f#5 e#5 | f#5 r e5 r d5 r f#5 e#5 |
+f#5 r f#5 e#5 f#5 r f#5 e#5 | f#5 r b5 r a5 r a5 f#5 |
+g5 r b5 r a5 r a5 e5 | f#5 r b5 r a5 r a5 f#5 |
+e5 r c#6/2 d5/1 r b5/2 | c#5/1 r a5 g#5 a5 b5 a5 g5
+'''

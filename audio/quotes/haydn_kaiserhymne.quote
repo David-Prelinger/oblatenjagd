@@ -1,0 +1,10 @@
+# Haydn, „Gott erhalte Franz den Kaiser" (Hob. XXVIa:43): the melody's first four notes
+# („Gott er-hal-te"), F major as printed, 4/4 with a half-bar upbeat. Bad Ischl plays
+# only these, as a chorale in half notes (`compare = "pitches"`); D-113's restriction:
+# this phrase only, only in `bad_ischl`, no text. Grid: eighths.
+source = "Joseph Haydn, Gott erhalte Franz den Kaiser, Hob. XXVIa:43, melody, first four notes"
+edition = "Ludwig Erk (ed.), Die deutschen Volkslieder mit ihren Singweisen, Bd. 1 Heft 4, Berlin 1839, No. 43, pp. 49-50 (Wikimedia Commons)"
+steps_per_beat = 2
+notes = '''
+f4/3 g4/1 | a4/2 g4/2
+'''

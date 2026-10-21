@@ -1,0 +1,118 @@
+# `bad_ischl` „Kurkonzert" (audio-design §5): Stage 8. 2/4, 112 BPM (bar 1.071 s),
+# D major (the Radetzky-Marsch's key), Trio G major. Intro 4 + A 16 + B 16 + C 4 = 40
+# bars, 42.9 s. D-114: a loop plays from sample 0, so after the chorale the spa band
+# tunes up again (C's A7 resolves onto their A) instead of the design's cymbal crash.
+# Intro (1-4) „Die Kurkapelle stimmt": four band voices on A4, detuned -40/+25/-15/+40
+#   cents, sliding together over bars 1-2 (`stimmung`); a snare roll in bars 3-4 and the
+#   march's pickup.
+# A (5-20): Johann Strauss (Vater), Radetzky-Marsch op. 228, the first strain after the
+#   march's introduction, as printed (its 8 bars of 4/4 = 16 bars of 2/4), Flügelhorn
+#   with the Tenorhorn in thirds. Bars 5-12 with the band's drums; bars 13-20 with the
+#   New Year's Concert clap-along: claps on every beat, the drums drop out.
+# B (21-36): original „Kurpark-Trio" in G major: a slow promenade (Kurgäste in
+#   bathrobes), the slippers shuffling on beat 2.
+# C (37-40): Haydn, „Gott erhalte Franz den Kaiser", its first four notes only, as a
+#   solemn chorale in half notes in D (Flügelhorn 3 dB down, the band held, no
+#   percussion). D-113's restriction: this phrase only, only here, no text, never as a
+#   victory, ending or credits music.
+[meta]
+id = "bad_ischl"
+kind = "loop"
+tempo_bpm = 112
+meter = "2/4"
+steps_per_beat = 4            # sixteenths: a bar has 8 steps
+key = "d major"
+bars = 40
+order = ["I", "A", "B", "C"]
+source = "Johann Strauss (Vater), Radetzky-Marsch op. 228 (A); Joseph Haydn, Gott erhalte Franz den Kaiser, Hob. XXVIa:43 (C, first four notes)"
+edition = "Radetzky: Vienna, Haslinger, plate T.H. 10,996 (IMSLP preview), checked against Paris, Richault, plate R. 1233 [1859]; Kaiserhymne: L. Erk, Die deutschen Volkslieder mit ihren Singweisen, Berlin 1839"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 28 }
+second = { instrument = "tenorhorn", volume_pct = 21 }
+bass   = { instrument = "helikon", volume_pct = 20 }
+chords = { instrument = "begleitung", volume_pct = 20, arp_ms = 17 }
+drums  = { instrument = "schlagwerk", volume_pct = 8 }
+stimm  = { instrument = "stimmung", volume_pct = 30 }
+
+[pattern.I]
+score = '''
+stimm  | a4/8          | _/8           | r/8           | r/8           |
+lead   | r/8           | r/8           | r/8           | r/4 f#5/2 e#5!/2 |
+drums  | r/8           | r/8           | S/1@25 S@30 S@35 S@40 S@45 S@50 S@55 S@60 | S/1@65 S@70 S@75 S@80 S@85 S@90 S@100 S@110 |
+'''
+
+[pattern.A]
+score = '''
+lead   | f#5/2 r f#5 e#5! | f#5/2 r f#5 e#5! | f#5/2 r e5 r | d5/2 r f#5 e#5! |
+second | d5/2 r d5 c#5   | d5/2 r d5 c#5   | d5/2 r c#5 r  | b4/2 r d5 c#5  |
+bass   | d2/4 a1        | d2/4 a1        | d2/4 a1       | d2/4 a1        |
+chords | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' |
+drums  | [K,B]/4 K      | K/4 K          | K/4 K         | K/4 K          |
+
+lead   | f#5/2 r f#5 e#5! | f#5/2 r f#5 e#5! | f#5/2 r b5 r | a5/2 r a5 f#5 |
+second | d5/2 r d5 c#5   | d5/2 r d5 c#5   | d5/2 r g5 r   | f#5/2 r f#5 d5 |
+bass   | d2/4 a1        | d2/4 a1        | d2/4 a1       | d2/4 a1        |
+chords | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' |
+drums  | K/4 K          | K/4 K          | K/4 K         | K/4 K          |
+
+lead   | g5/2 r b5 r    | a5/2 r a5 e5   | f#5/2 r b5 r  | a5/2 r a5 f#5  |
+second | e5/2 r g5 r    | e5/2 r e5 c#5  | d5/2 r g5 r   | f#5/2 r f#5 d5 |
+bass   | a1/4 e2        | a1/4 e2        | d2/4 a1       | d2/4 a1        |
+chords | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' |
+drums  | X/4 X          | X/4 X          | X/4 X         | X/4 X          |
+
+lead   | e5/2 r c#6/4   | d5/2 r b5/4    | c#5/2 r a5 g#5! | a5/2 b5 a5 g5 |
+second | c#5/2 r a5/4   | b4/2 r g5/4    | a4/2 r e5 e5  | f#5/2 g5 f#5 e5 |
+bass   | a1/4 e2        | g1/4 d2        | a1/4 e2       | d2/4 a1        |
+chords | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c#4,e4,a4]' r [c#4,e4,a4]' | r/2 [c4!,f#4,a4]' r [c4!,f#4,a4]' |
+drums  | X/4 X          | X/4 X          | X/4 X         | X/4 X          |
+'''
+
+[pattern.B]
+key = "g major"
+score = '''
+lead   | b4/4 d5       | g5/8          | f#5/4 e5      | d5/8          |
+second | g4/4 b4       | e5/8          | d5/4 c5       | b4/8          |
+bass   | g1/4 d2       | g1/4 d2       | d2/4 a1       | g1/4 d2       |
+chords | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c4,f#4,a4]' r [c4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' |
+drums  | r/4 L         | r/4 L         | r/4 L         | r/4 L         |
+
+lead   | c5/4 e5       | a5/8          | g5/4 f#5      | g5/8          |
+second | a4/4 c5       | f#5/8         | e5/4 d5       | e5/8          |
+bass   | c2/4 g1       | d2/4 a1       | g1/4 d2       | g1/4 d2       |
+chords | r/2 [c4,e4,g4]' r [c4,e4,g4]' | r/2 [c4,f#4,a4]' r [c4,f#4,a4]' | r/2 [d4,g4,b4]' r [c4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' |
+drums  | r/4 L         | r/4 L         | r/4 L         | r/4 L         |
+
+lead   | b4/4 d5       | e5/8          | d5/4 c5       | b4/8          |
+second | g4/4 b4       | c5/8          | a4/4 a4       | g4/8          |
+bass   | g1/4 d2       | c2/4 g1       | d2/4 a1       | g1/4 d2       |
+chords | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c4,e4,g4]' r [c4,e4,g4]' | r/2 [c4,f#4,a4]' r [c4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' |
+drums  | r/4 L         | r/4 L         | r/4 L         | r/4 L         |
+
+lead   | a4/4 c5       | f#5/8         | g5/4 b4       | a4/2 c#5! e5 g5 |
+second | f#4/4 a4      | d5/8          | d5/4 g4       | e4/2 a4 c#5! e5 |
+bass   | d2/4 a1       | d2/4 a1       | g1/4 d2       | a1/4 e2       |
+chords | r/2 [c4,f#4,a4]' r [c4,f#4,a4]' | r/2 [c4,f#4,a4]' r [c4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c#4!,e4,g4]' r [c#4!,e4,g4]' |
+drums  | r/4 L         | r/4 L         | r/4 L         | r/4 L         |
+'''
+
+[pattern.C]
+score = '''
+lead   | d5/8@71       | e5/8@71       | f#5/8@71      | e5/8@71       |
+second | [f#3,a3,d4]/8 | [e3,a3,c#4]/8 | [f#3,a3,d4]/8 | [e3,g3,c#4]/8 |
+bass   | d2/8          | a1/8          | d2/8          | a1/8          |
+'''
+
+[[quote]]
+fixture = "strauss_radetzky"
+channel = "lead"
+bar = 4
+step = 4
+
+[[quote]]
+fixture = "haydn_kaiserhymne"
+channel = "lead"
+bar = 37
+transpose = 9
+compare = "pitches"     # a chorale in half notes (§5)

@@ -7,6 +7,12 @@
 #   X klatschen        a hand clap: 4 noise bursts 10 ms apart, band-pass 1.2 kHz
 #   T triangel         sine 4.2 kHz, decay 300 ms
 #   M trommel_dumpf    the muffled funeral drum: grosse_trommel with D 400, low-pass 300 Hz
+#   R rand             the stick click: the snare's rim without the body, 15 ms
+#   L schlurf          slippers in the Kurpark: noise low-pass 600 Hz, 80 ms
+#   H dampf            the paddle wheel's chuff: noise low-pass 800 Hz, 60 ms
+#   I blinker          the indicator tick: the triangle filtered to a click
+#   Q radglocke        a bicycle bell: sine 2 kHz, two strikes
+#   G glocke           the church bell (the `hurry` bell on A4), one strike
 [kit]
 K = "grosse_trommel"
 S = "kleine_trommel"
@@ -15,6 +21,12 @@ C = "becken_kurz"
 X = "klatschen"
 T = "triangel"
 M = "trommel_dumpf"
+R = "rand"
+L = "schlurf"
+H = "dampf"
+I = "blinker"
+Q = "radglocke"
+G = "glocke"
 
 [[patch.grosse_trommel.layer]]
 wave = "sine"
@@ -100,3 +112,95 @@ attack_ms = 1
 decay_ms = 15
 volume_pct = 20
 lowpass_hz = 300
+
+[[patch.rand.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 15
+volume_pct = 45
+bandpass = { hz = 2500, q_pct = 200 }
+
+[[patch.schlurf.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 20
+decay_ms = 60
+volume_pct = 40
+lowpass_hz = 600
+highpass_hz = 100
+
+[[patch.dampf.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 5
+decay_ms = 55
+volume_pct = 45
+lowpass_hz = 800
+highpass_hz = 100
+
+[[patch.blinker.layer]]
+wave = "sine"
+freq_hz = 4200
+attack_ms = 1
+decay_ms = 8
+volume_pct = 20
+
+[[patch.blinker.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 1
+decay_ms = 4
+volume_pct = 10
+highpass_hz = 3000
+
+[[patch.radglocke.layer]]
+wave = "sine"
+freq_hz = 2000
+attack_ms = 1
+decay_ms = 250
+volume_pct = 22
+repeat = { count = 2, every_ms = 90 }
+
+[[patch.radglocke.layer]]
+wave = "sine"
+freq_hz = 5200
+attack_ms = 1
+decay_ms = 120
+volume_pct = 8
+repeat = { count = 2, every_ms = 90 }
+
+[[patch.glocke.layer]]
+wave = "sine"
+freq_hz = 220
+attack_ms = 2
+decay_ms = 1600
+volume_pct = 12
+
+[[patch.glocke.layer]]
+wave = "sine"
+freq_hz = 440
+attack_ms = 2
+decay_ms = 1200
+volume_pct = 14
+
+[[patch.glocke.layer]]
+wave = "sine"
+freq_hz = 524
+attack_ms = 2
+decay_ms = 900
+volume_pct = 10
+
+[[patch.glocke.layer]]
+wave = "sine"
+freq_hz = 660
+attack_ms = 2
+decay_ms = 700
+volume_pct = 7
+
+[[patch.glocke.layer]]
+wave = "sine"
+freq_hz = 880
+attack_ms = 2
+decay_ms = 600
+volume_pct = 6

@@ -1,0 +1,89 @@
+# `brunnwinkl` „Bienen-Landler" (audio-design §5): Stage 3. 3/4, 120 BPM (bar 1.5 s),
+# G major. Intro 2 + A 16 + B 8 + A' 8 = 34 bars, 51 s. No percussion (a hamlet of five
+# houses). D-114: a loop plays from sample 0, so the intro comes round each loop.
+# Intro (1-2): the zither alone, an open G chord broken upwards.
+# A (3-18): the zither tune as a waggle dance: each 4-bar phrase traces a figure eight
+#   around its first note (3-4-5-4-3-2-1-2-3 from it, crossing the start note twice);
+#   the first note of each phrase's second bar is played with a mordent (`zither_mordent`,
+#   30 ms up and back). Long notes are played as a zither tremolo (repeated eighths).
+#   Helikon soft on 1, the Nachschlag very soft on 2 and 3.
+# B (19-26): „Summ, summ, summ" (traditional, Hoffmann's 1843 print), first 8 bars, on
+#   the buzzing `biene`; its 2/4 bars stretched into the Ländler's 3/4 (same notes and
+#   rests, the bee dances); the zither rests.
+# A' (27-34): A's second half, ending on D7 back into the intro.
+[meta]
+id = "brunnwinkl"
+kind = "loop"
+tempo_bpm = 120
+meter = "3/4"
+steps_per_beat = 2            # eighths: a bar has 6 steps
+key = "g major"
+bars = 34
+order = ["I", "A", "B", "A2"]
+source = "Traditional (Volksweise), Summ, summ, summ (B section)"
+edition = "Hoffmann von Fallersleben, Fünfzig Kinderlieder, Leipzig 1843, No. 43, p. 49 (GDZ Göttingen PPN362458375, via Wikimedia Commons)"
+
+[channels]
+lead   = { instrument = "zither", volume_pct = 46 }
+mord   = { instrument = "zither_mordent", volume_pct = 46 }
+second = { instrument = "biene", volume_pct = 36 }
+bass   = { instrument = "helikon", volume_pct = 21 }
+chords = { instrument = "begleitung", volume_pct = 13, arp_ms = 17 }
+
+[pattern.I]
+score = '''
+lead   | g3/1 b3 d4 g4 b4 d5 | g5/1@100 g5/1@70 g5/1@85 g5/1@70 g5/1@80 g5/1@65       |
+'''
+
+[pattern.A]
+score = '''
+lead   | b4/3 c5/1 d5/2 | r/2 b4/1@100 b4/1@70 b4/1@85 b4/1@70     | a4/2 g4 a4    | b4/1@100 b4/1@70 b4/1@85 b4/1@70 b4/1@80 b4/1@65          |
+mord   | r/6           | c5/2 r/4      | r/6           | r/6           |
+bass   | g2/2 r/4      | c3/2 r/4      | a2/2 r/4      | g2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' |
+
+lead   | d5/3 e5/1 f#5/2 | r/2 d5/1@100 d5/1@70 d5/1@85 d5/1@70    | c5/2 b4 c5    | d5/1@100 d5/1@70 d5/1@85 d5/1@70 d5/1@80 d5/1@65          |
+mord   | r/6           | e5/2 r/4      | r/6           | r/6           |
+bass   | d2/2 r/4      | c3/2 r/4      | a2/2 r/4      | d2/2 r/4      |
+chords | r/2 [d4,f#4,a4]' [d4,f#4,a4]' | r/2 [c4,e4,g4]' [d4,f#4,a4]' | r/2 [b3,d4,g4]' [a3,c4,e4]' | r/2 [d4,f#4,c5]' [d4,f#4,c5]' |
+
+lead   | g4/3 a4/1 b4/2 | r/2 g4/1@100 g4/1@70 g4/1@85 g4/1@70     | f#4/2 e4 f#4  | g4/1@100 g4/1@70 g4/1@85 g4/1@70 g4/1@80 g4/1@65          |
+mord   | r/6           | a4/2 r/4      | r/6           | r/6           |
+bass   | g2/2 r/4      | d2/2 r/4      | d2/2 r/4      | g2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [d4,f#4,a4]' [d4,f#4,a4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' |
+
+lead   | b4/3 c5/1 d5/2 | r/2 b4/1@100 b4/1@70 b4/1@85 b4/1@70     | a4/2 g4 a4    | b4/1@100 b4/1@70 b4/1@85 b4/1@70 b4/1@80 b4/1@65          |
+mord   | r/6           | c5/2 r/4      | r/6           | r/6           |
+bass   | g2/2 r/4      | c3/2 r/4      | a2/2 r/4      | g2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' |
+'''
+
+[pattern.B]
+score = '''
+second | d5/4 c5/2    | b4/2 r/4      | a4/1 b4 c5/2 a4 | g4/2 r/4      |
+bass   | g2/2 r/4      | g2/2 r/4      | a2/2 r/4      | g2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [c4,e4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' |
+
+second | b4/1 c5 d5/2 b4 | a4/1 b4 c5/2 a4 | b4/1 c5 d5/2 b4 | a4/1 b4 c5/2 a4 |
+bass   | g2/2 r/4      | d2/2 r/4      | g2/2 r/4      | d2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [d4,f#4,c5]' [d4,f#4,c5]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [d4,f#4,c5]' [d4,f#4,c5]' |
+'''
+
+[pattern.A2]
+score = '''
+lead   | g4/3 a4/1 b4/2 | r/2 g4/1@100 g4/1@70 g4/1@85 g4/1@70     | f#4/2 e4 f#4  | g4/1@100 g4/1@70 g4/1@85 g4/1@70 g4/1@80 g4/1@65          |
+mord   | r/6           | a4/2 r/4      | r/6           | r/6           |
+bass   | g2/2 r/4      | d2/2 r/4      | d2/2 r/4      | g2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [d4,f#4,a4]' [d4,f#4,a4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' |
+
+lead   | b4/3 c5/1 d5/2 | r/2 b4/1@100 b4/1@70 b4/1@85 b4/1@70     | a4/2 g4 a4    | a4/1@100 a4/1@70 a4/1@85 a4/1@70 a4/1@80 a4/1@65          |
+mord   | r/6           | c5/2 r/4      | r/6           | r/6           |
+bass   | g2/2 r/4      | c3/2 r/4      | a2/2 r/4      | d2/2 r/4      |
+chords | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [b3,d4,g4]' [b3,d4,g4]' | r/2 [a3,c4,e4]' [a3,c4,e4]' | r/2 [d4,f#4,c5]' [d4,f#4,c5]' |
+'''
+
+[[quote]]
+fixture = "summ_summ_summ"
+channel = "second"
+bar = 19
+compare = "pitches"     # the 2/4 tune stretched into 3/4 bars
