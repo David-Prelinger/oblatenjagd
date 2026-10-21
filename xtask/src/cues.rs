@@ -9,8 +9,9 @@
 //!   `$CARGO_TARGET_DIR/reports/cues/<replay>.cues` and names the first
 //!   differing line.
 //! - `cargo xtask cues --accept <replay>|--all` writes the current logs
-//!   (a new replay name adds a golden). Cue logs are text: no reviewer gate,
-//!   but a commit that changes one says why (docs/validation.md L6b).
+//!   (a new replay name adds a golden), only from replays that pass their
+//!   expectations. Cue logs are text: no reviewer gate, but a commit that
+//!   changes one says why (docs/validation.md L6b, D-121).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -191,7 +192,16 @@ fn accept_all(root: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Cue logs are only accepted from replays that pass (expectations and
+/// determinism), like golden screenshots.
 fn write_golden(root: &Path, name: &str, replay: &Path) -> Result<(), String> {
+    let played = crate::replay::play(root, replay, &[])?;
+    if !played.failures.is_empty() {
+        return Err(format!(
+            "refusing to accept the cue log of {name}: the replay fails: {}",
+            played.failures.join("; ")
+        ));
+    }
     let text = cue_log(root, replay)?;
     let dir = cues_dir(root);
     fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
@@ -251,9 +261,37 @@ mod tests {
         assert!(!log.contains(" song "), "the testbed has no music: {log}");
     }
 
+    /// The cues' SFX ids are exactly the authored `audio/sfx/*.sfx` files
+    /// (S1; E58b checks them against the embedded bank).
     #[test]
-    fn every_cue_golden_matches() {
-        let (ok, text) = check_report(&root());
-        assert!(ok, "{text}");
+    fn every_sfx_id_has_an_authored_file() {
+        let mut files: Vec<String> = content::files_with_ext(&root().join("audio/sfx"), "sfx")
+            .expect("audio/sfx is readable")
+            .iter()
+            .map(|p| content::replay_name(p))
+            .collect();
+        files.sort();
+        let mut ids: Vec<String> = jnr_audio::cues::Sfx::ALL
+            .iter()
+            .map(|s| s.id().to_owned())
+            .collect();
+        ids.sort();
+        assert_eq!(ids, files);
+    }
+
+    #[test]
+    fn accept_refuses_a_failing_replay() {
+        let root = root();
+        let dir = crate::target_dir(&root).join("tmp/cues-test");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("failing.replay");
+        fs::write(
+            &path,
+            "level = testbed\nseed = 1\nsource = handwritten\nexpect = complete frames=1..1\n---\nR 5\n",
+        )
+        .unwrap();
+        let err = write_golden(&root, "failing", &path).unwrap_err();
+        assert!(err.contains("refusing"), "{err}");
+        assert!(!cues_dir(&root).join("failing.cues").exists());
     }
 }

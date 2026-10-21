@@ -97,7 +97,8 @@ fn ticked(text: &str) -> Vec<&str> {
     text.split('`').skip(1).step_by(2).collect()
 }
 
-/// Every cue id is one of the design's: SFX ids in §6, music ids exactly
+/// Every cue id is one of the design's: each SFX with its voice, priority
+/// and length as in its §6 row, the music ids exactly
 /// the first column of §5's overview table (pitched variants are the
 /// same ids, [`PITCHED`]).
 #[test]
@@ -106,20 +107,36 @@ fn every_cue_id_is_in_the_design() {
         .split("## 6. SFX")
         .nth(1)
         .and_then(|s| s.split("## 7.").next())
-        .unwrap();
-    let sfx_ids = ticked(sfx_section);
-    for s in Sfx::ALL {
-        assert!(
-            sfx_ids.contains(&s.id()),
-            "{}: not in audio-design §6",
-            s.id()
-        );
+        .expect("audio-design.md has `## 6. SFX` before `## 7.`");
+    // Every table row of §6 whose SFX column starts with one of our ids:
+    // `| trigger | `id` … | V / prio | N ms … | …`.
+    for sfx in Sfx::ALL {
+        let row = sfx_section
+            .lines()
+            .filter(|l| l.starts_with('|'))
+            .map(|l| l.split('|').map(str::trim).collect::<Vec<_>>())
+            .find(|cells| cells.len() > 4 && ticked(cells[2]).first() == Some(&sfx.id()))
+            .unwrap_or_else(|| panic!("`{}`: no row in audio-design §6", sfx.id()));
+        let (voice, prio) = row[3]
+            .split_once(" / ")
+            .unwrap_or_else(|| panic!("`{}`: voice/prio cell `{}`", sfx.id(), row[3]));
+        assert_eq!(voice, sfx.voice().name(), "`{}`: voice", sfx.id());
+        let prio: u8 = prio
+            .parse()
+            .unwrap_or_else(|_| panic!("`{}`: priority `{prio}`", sfx.id()));
+        assert_eq!(prio, sfx.prio(), "`{}`: priority", sfx.id());
+        let ms: u32 = row[4]
+            .split(|c: char| !c.is_ascii_digit())
+            .find(|w| !w.is_empty())
+            .and_then(|w| w.parse().ok())
+            .unwrap_or_else(|| panic!("`{}`: duration cell `{}`", sfx.id(), row[4]));
+        assert_eq!(ms, sfx.ms(), "`{}`: length (ms)", sfx.id());
     }
     let overview = DESIGN
         .split("### Overview")
         .nth(1)
         .and_then(|s| s.split("### ").next())
-        .unwrap();
+        .expect("audio-design.md §5 has a `### Overview` table");
     let mut theirs: Vec<&str> = overview
         .lines()
         .filter_map(|l| l.strip_prefix("| `"))
@@ -168,7 +185,11 @@ fn cue_lines_read_as_text() {
         "     1 cut-sfx P W A"
     );
     assert_eq!(log_line(1, &Cue::Song(Music::Title)), "     1 song title");
-    assert_eq!(log_line(1, &Cue::Hold(true)), "     1 hold on");
+    assert_eq!(log_line(1, &Cue::HoldSong(true)), "     1 hold-song on");
+    assert_eq!(
+        log_line(1, &Cue::HoldJingle(false)),
+        "     1 hold-jingle off"
+    );
     assert_eq!(ms_to_frames(150), 9);
     assert_eq!(ms_to_frames(1000), 60);
     assert_eq!(ms_to_frames(25), 2);
@@ -277,18 +298,20 @@ fn pause_cuts_sfx_holds_the_song_and_resumes_in_place() {
         vec![
             Cue::CutSfx(Cut::All),
             Cue::Sfx(Sfx::Pause.play()),
-            Cue::Hold(true),
-            Cue::Duck(true)
-        ]
+            Cue::HoldSong(true),
+            Cue::HoldJingle(true),
+        ],
+        "no duck in the pause: everything is held"
     );
     let log = run(&mut g, &mut d, "-", 40);
-    assert_eq!(cues(&log), vec![Cue::Duck(false)]);
+    assert_eq!(cues(&log), vec![]);
     let log = run(&mut g, &mut d, "S", 1);
     assert_eq!(
         cues(&log),
         vec![
             Cue::Sfx(Sfx::Pause.pitched(PAUSE_OUT_SEMITONES)),
-            Cue::Hold(false),
+            Cue::HoldSong(false),
+            Cue::HoldJingle(false),
             Cue::Duck(true)
         ],
         "no new song: the loop resumes where it was"
@@ -306,11 +329,50 @@ fn zeit_60_rings_the_bells_and_holds_the_piece_for_their_length() {
         log,
         vec![
             (60, Cue::Jingle(Music::Hurry)),
-            (60, Cue::Hold(true)),
-            (60 + 96, Cue::Hold(false)),
+            (60, Cue::HoldSong(true)),
+            (60 + 96, Cue::HoldSong(false)),
         ]
     );
     assert_eq!(g.time_left(), 61 - 3);
+}
+
+/// A pause during the ZEIT-60 bells holds the jingle (it isn't stopped)
+/// and keeps the song held until the bells' 96 frames are over.
+#[test]
+fn a_pause_holds_a_running_jingle_in_place() {
+    let level = flat("time_limit = 61\nmusic = \"salzburg\"");
+    let mut g = Game::new_at(&level, &tuning(), 1, Start::Title);
+    let mut d = Director::new();
+    d.begin(&g);
+    run(&mut g, &mut d, "S", 1);
+    run(&mut g, &mut d, "-", 150);
+    let log = run(&mut g, &mut d, "-", 60);
+    assert_eq!(
+        cues(&log),
+        vec![Cue::Jingle(Music::Hurry), Cue::HoldSong(true)]
+    );
+    let bells = g.frame();
+    let log = run(&mut g, &mut d, "S", 1);
+    assert_eq!(
+        cues(&log),
+        vec![
+            Cue::CutSfx(Cut::All),
+            Cue::Sfx(Sfx::Pause.play()),
+            Cue::HoldJingle(true)
+        ],
+        "the bells are held, not stopped"
+    );
+    run(&mut g, &mut d, "-", 9);
+    let log = run(&mut g, &mut d, "S", 1);
+    assert!(!cues(&log).contains(&Cue::HoldSong(false)), "{log:?}");
+    assert!(cues(&log).contains(&Cue::HoldJingle(false)), "{log:?}");
+    let log = run(&mut g, &mut d, "-", 100);
+    assert_eq!(
+        log.iter()
+            .find(|(_, c)| *c == Cue::HoldSong(false))
+            .map(|(f, _)| *f),
+        Some(bells + 96)
+    );
 }
 
 #[test]

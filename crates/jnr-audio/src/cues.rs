@@ -17,9 +17,15 @@
 //! - [`Cue::Jingle`] stops the current jingle and plays this one once
 //!   (songs and jingles are both "music": the music volume, the duck and the
 //!   mute act on both); [`Cue::StopJingle`] stops it.
-//! - [`Cue::Hold`]: the song's volume to 0 and back (pause, the ZEIT-60
-//!   bells); the loop keeps running, so it resumes in place (D-114).
-//! - [`Cue::Duck`]: music −6 dB while an SFX of priority ≥ 7 plays.
+//! - [`Cue::HoldSong`]: the song's volume to 0 and back (pause, the
+//!   ZEIT-60 bells); the loop keeps running, so it resumes in place
+//!   (D-114). [`Cue::HoldJingle`] does the same to the playing jingle
+//!   (pause only), so a jingle survives a pause (its rest is heard if it
+//!   is still running on resume).
+//! - [`Cue::StopJingle`] may come for a jingle that already ended
+//!   (stopping an idle sound is harmless).
+//! - [`Cue::Duck`]: music −6 dB while an SFX of priority ≥ 7 plays (not
+//!   while paused: everything is held then).
 //! - [`Cue::Underwater`]: swap the song's volume with its underwater twin
 //!   ([`Music::underwater_twin`]), which the app started muted on the same
 //!   frame as the song (D-114).
@@ -401,7 +407,8 @@ pub enum Cue {
     StopSong,
     Jingle(Music),
     StopJingle,
-    Hold(bool),
+    HoldSong(bool),
+    HoldJingle(bool),
     Duck(bool),
     Underwater(bool),
 }
@@ -424,7 +431,8 @@ impl fmt::Display for Cue {
             Cue::StopSong => f.write_str("stop-song"),
             Cue::Jingle(m) => write!(f, "jingle {}", m.id()),
             Cue::StopJingle => f.write_str("stop-jingle"),
-            Cue::Hold(b) => write!(f, "hold {}", on(b)),
+            Cue::HoldSong(b) => write!(f, "hold-song {}", on(b)),
+            Cue::HoldJingle(b) => write!(f, "hold-jingle {}", on(b)),
             Cue::Duck(b) => write!(f, "duck {}", on(b)),
             Cue::Underwater(b) => write!(f, "underwater {}", on(b)),
         }
@@ -686,8 +694,8 @@ pub struct Director {
     voices: Voices,
     /// The song playing (`None`: silence).
     song: Option<Music>,
-    /// The jingle playing and the frame it ends.
-    jingle: Option<(Music, u32)>,
+    /// The last jingle started and not stopped (it may have ended).
+    jingle: Option<Music>,
     paused: bool,
     /// The ZEIT-60 bells hold the song until this frame.
     hurry_until: Option<u32>,
@@ -697,8 +705,10 @@ pub struct Director {
     under_frames: u16,
     over_frames: u16,
     underwater: bool,
-    /// Last emitted [`Cue::Hold`] and [`Cue::Duck`] states.
+    /// Last emitted [`Cue::HoldSong`], [`Cue::HoldJingle`] and
+    /// [`Cue::Duck`] states.
     held: bool,
+    jingle_held: bool,
     ducked: bool,
 }
 
@@ -742,11 +752,12 @@ impl Director {
         if died {
             self.cut(&mut out, Cut::All);
             self.stop_song(&mut out);
-            self.jingle(&mut out, Music::Death, now);
+            self.jingle(&mut out, Music::Death);
         }
         if game_over {
             self.cut(&mut out, Cut::All);
-            self.jingle(&mut out, Music::GameOver, now);
+            self.stop_song(&mut out);
+            self.jingle(&mut out, Music::GameOver);
         }
         let cleared = events.contains(&Event::LevelComplete);
         if cleared {
@@ -760,7 +771,7 @@ impl Director {
             } else {
                 Music::FanfareClear
             };
-            self.jingle(&mut out, fanfare, now);
+            self.jingle(&mut out, fanfare);
         }
 
         // Entering a mode or phase.
@@ -782,7 +793,12 @@ impl Director {
             }
         }
 
-        if let Some(p) = &prev {
+        // A death or game over step derives nothing more (no boss music,
+        // no bells after the death cue).
+        if let Some(p) = &prev
+            && !died
+            && !game_over
+        {
             self.derived(g, p, &snap, &mut out, &mut req);
         }
 
@@ -804,11 +820,6 @@ impl Director {
         }
         if self.hurry_until.is_some_and(|t| now >= t) {
             self.hurry_until = None;
-        }
-        if let Some((_, end)) = self.jingle
-            && now >= end
-        {
-            self.jingle = None;
         }
 
         // Under water (Stage 6): a swap after 20 frames below or above.
@@ -834,9 +845,13 @@ impl Director {
         let hold = self.paused || self.hurry_until.is_some();
         if hold != self.held {
             self.held = hold;
-            out.push(Cue::Hold(hold));
+            out.push(Cue::HoldSong(hold));
         }
-        let duck = self.voices.ducking(now);
+        if self.paused != self.jingle_held {
+            self.jingle_held = self.paused;
+            out.push(Cue::HoldJingle(self.paused));
+        }
+        let duck = !self.paused && self.voices.ducking(now);
         if duck != self.ducked {
             self.ducked = duck;
             out.push(Cue::Duck(duck));
@@ -855,7 +870,6 @@ impl Director {
         out: &mut Vec<Cue>,
         req: &mut Vec<Play>,
     ) {
-        let now = g.frame();
         // START accepted on the title, „Weiter?", the map or the ending
         // (§6.3 `ui_start`); pause has its own sound.
         let by_start = matches!(
@@ -867,7 +881,7 @@ impl Director {
         }
         match to {
             Phase::Title => {
-                self.stop_jingle(out, now);
+                self.stop_jingle(out);
                 self.start_song(out, Some(Music::Title));
             }
             // After a death the death cue's tail keeps ringing; otherwise
@@ -875,7 +889,7 @@ impl Director {
             Phase::StageIntro => {
                 if from != Some(Phase::Dying) {
                     self.stop_song(out);
-                    self.stop_jingle(out, now);
+                    self.stop_jingle(out);
                 }
             }
             Phase::Playing => {
@@ -890,7 +904,6 @@ impl Director {
             Phase::Paused => {
                 self.paused = true;
                 self.cut(out, Cut::All);
-                self.stop_jingle(out, now);
                 req.push(Sfx::Pause.play());
             }
             // The events start their jingles (`Died`, `GameOver`,
@@ -905,10 +918,10 @@ impl Director {
             }
             Phase::Ending(EndingPhase::Map) => {
                 self.stop_song(out);
-                self.jingle(out, Music::EndingMap, now);
+                self.jingle(out, Music::EndingMap);
             }
             Phase::Ending(EndingPhase::Scene) => {
-                self.stop_jingle(out, now);
+                self.stop_jingle(out);
                 self.start_song(out, Some(Music::Kaffeehaus));
             }
             // The Kaffeehaus waltz runs on across the bill.
@@ -916,7 +929,7 @@ impl Director {
             Phase::Ending(EndingPhase::Credits) => self.start_song(out, Some(Music::Credits)),
             Phase::Ending(EndingPhase::Ende) => {
                 self.stop_song(out);
-                self.jingle(out, Music::Ende, now);
+                self.jingle(out, Music::Ende);
             }
         }
     }
@@ -942,9 +955,9 @@ impl Director {
         // ZEIT drops to 60: the church bells; outside the boss fight they
         // hold the stage piece while they ring.
         if snap.phase == Phase::Playing && prev.time_left == 61 && snap.time_left == 60 {
-            self.jingle(out, Music::Hurry, now);
+            self.jingle(out, Music::Hurry);
             if !boss_fighting(snap.boss) {
-                self.hurry_until = Some(now + ms_to_frames(Music::Hurry.jingle_ms()));
+                self.hurry_until = Some(now.saturating_add(ms_to_frames(Music::Hurry.jingle_ms())));
             }
         }
         // The ending's bill: a till per line, a coin for the tip.
@@ -993,12 +1006,12 @@ impl Director {
         match is {
             st::INTRO if was == st::WAIT => {
                 self.stop_song(out);
-                self.jingle(out, Music::BossIntro, now);
+                self.jingle(out, Music::BossIntro);
             }
             st::TELEGRAPH => {
                 if was == st::INTRO {
-                    self.jingle(out, Music::BossSurprise, now);
-                    let at = now + ms_to_frames(Music::BossSurprise.jingle_ms());
+                    self.jingle(out, Music::BossSurprise);
+                    let at = now.saturating_add(ms_to_frames(Music::BossSurprise.jingle_ms()));
                     self.scheduled = Some((at, Music::Boss));
                 }
                 if seen {
@@ -1015,9 +1028,9 @@ impl Director {
             st::VOLLEY if seen => req.push(Sfx::BillsHang.play()),
             st::DONE => {
                 self.stop_song(out);
-                self.jingle(out, Music::BossDefeat, now);
+                self.jingle(out, Music::BossDefeat);
                 // The Tusch, 1 s of silence, then the stage piece again.
-                let at = now + ms_to_frames(Music::BossDefeat.jingle_ms()) + 60;
+                let at = now.saturating_add(ms_to_frames(Music::BossDefeat.jingle_ms()) + 60);
                 let song = g.level().meta.music.as_deref().and_then(Music::level_song);
                 self.scheduled = song.map(|m| (at, m));
             }
@@ -1082,13 +1095,15 @@ impl Director {
         }
     }
 
-    fn jingle(&mut self, out: &mut Vec<Cue>, m: Music, now: u32) {
-        self.jingle = Some((m, now + ms_to_frames(m.jingle_ms())));
+    fn jingle(&mut self, out: &mut Vec<Cue>, m: Music) {
+        self.jingle = Some(m);
         out.push(Cue::Jingle(m));
     }
 
-    fn stop_jingle(&mut self, out: &mut Vec<Cue>, now: u32) {
-        if self.jingle.take().is_some_and(|(_, end)| now < end) {
+    /// Stops the last jingle, also when it has ended already (the design
+    /// lengths are not the rendered ones).
+    fn stop_jingle(&mut self, out: &mut Vec<Cue>) {
+        if self.jingle.take().is_some() {
             out.push(Cue::StopJingle);
         }
     }

@@ -276,7 +276,7 @@ let mut d = Director::new();
 let cues: Vec<Cue> = d.begin(&game);              // the first frame (title music, or the stage piece)
 game.step(input); let cues = d.step(&game, input); // after every step; reads game.events()
 enum Cue { Sfx(Play), StopSfx(Sfx), CutSfx(Cut), Song(Music), StopSong, Jingle(Music), StopJingle,
-           Hold(bool), Duck(bool), Underwater(bool) }
+           HoldSong(bool), HoldJingle(bool), Duck(bool), Underwater(bool) }
 struct Play { sfx: Sfx, semitones: i8 }            // pitched variants: cues::PITCHED (pre-rendered)
 ```
 

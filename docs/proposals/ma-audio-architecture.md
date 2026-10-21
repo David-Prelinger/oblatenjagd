@@ -601,16 +601,22 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
   (used for `boss_telegraph` when the dash starts and `hohes_c` when the singer is defeated); `CutSfx(All | KeepItems)`; `Song(m)` stop the
   song, start `m` looping from sample 0 at the current hold/duck volume and above water (for
   `wolfgangsee` also start `unterwasser`, or the low-passed fallback, muted on the same
-  frame); `StopSong`; `Jingle(m)` stop the jingle, play `m` once; `StopJingle`;
-  `Hold(bool)` song volume 0 / back (the loop keeps running: pause and the ZEIT-60 bells);
-  `Duck(bool)` music −6 dB; `Underwater(bool)` swap the song and its twin's volumes. Mute
+  frame); `StopSong`; `Jingle(m)` stop the jingle, play `m` once; `StopJingle` (also
+  sent for a jingle that already ended: the design lengths are not the rendered ones, and
+  stopping an idle sound is harmless); `HoldSong(bool)` song volume 0 / back (the loop keeps
+  running: pause and the ZEIT-60 bells); `HoldJingle(bool)` the same for the playing jingle
+  (pause only: a jingle is held in place like the song, D-114, so the bells or `boss_intro`
+  survive a pause; the jingle keeps running silently, so its rest is heard only if it is
+  still running on resume); `Duck(bool)` music −6 dB (never while paused); `Underwater(bool)` swap the song and its twin's volumes. Mute
   (M) stays app state and never reaches the director.
 - **Music rules as built**: Title → `title`; START on the title, „Weiter?", the map or the
   ending → `ui_start`; StageIntro (not after a death) → stop song and jingle (silence);
   Playing from anything but Paused → the level's piece from sample 0 (also every respawn and
   the first frame of `start = playing` games; a level without `music` is silent); Paused →
-  cut all SFX, stop the jingle, `pause`, `Hold(true)`; resume → `pause` at −2 semitones, `Hold(false)`;
-  `Died` → cut all, stop song, `death`; `GameOver` → cut all, `game_over`; `LevelComplete`
+  cut all SFX, `pause`, `HoldSong(true)`, `HoldJingle(true)`; resume → `pause` at −2
+  semitones, both holds off; `Died` → cut all, stop song, `death`; `GameOver` → cut all,
+  `game_over`; a `Died` or `GameOver` step derives nothing else (no boss music, no bells,
+  and stopping the song clears a scheduled song and the bells' hold); `LevelComplete`
   → stop song, cut P/W/A, `fanfare_clear` (or `fanfare_finale` when the clear starts in
   `Serve`); tally ticks on every 3rd Tally frame while the bonus grows, `tally_end` on the
   first Clear frame; the route map → `route_map` (once per visit); the ending: Map →
@@ -621,7 +627,16 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
   the boss fight it also holds the piece for the jingle's 96 frames. In the fight (the
   Oberkellner neither `WAIT` nor `DONE`) the jingle plays over the boss music without a hold
   (**deviation**: the design puts the bells on SFX voice I there; as a jingle they take no
-  SFX voice, which changes nothing audible but keeps one bell render).
+  SFX voice, which changes nothing audible but keeps one bell render; the game-designer's
+  OK is asked at the MA review).
+- **Stage songs have no intro bars**: D-114 songs loop from sample 0, so "the stage piece
+  from bar 1 (intro bars included)" (audio-design §4) becomes the loop from its start; the
+  design's intro bars are either part of the loop or dropped (E57's song format decides),
+  and the stage intro screen stays silent as in §4.
+- **The map's START fires `ui_start`**: a START press that leaves the title, „Weiter?", the
+  route map (a skip in Arrive/Walk or the press in Wait) or an ending phase gives `ui_start`
+  (§6.3 lists the map skip too); Wait → StageIntro also stops `route_map` (golden
+  `flow_route_carry_over`).
 - **Boss**: `WAIT → INTRO` stop song, `boss_intro`; `INTRO → TELEGRAPH` `boss_surprise` and
   `boss` from 36 frames later (the chord's 600 ms); every `TELEGRAPH` start
   `boss_telegraph` (stopped when the `DASH` starts), `BREATHE` `boss_breathe`, `STUN`
@@ -640,7 +655,8 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
   `tests/golden/cues/<replay>.cues` (verify step `cue-logs`, also an xtask unit test).
   Goldens: `testbed_route`, `salzburg_tour`, `cafe_zauner_boss_win_normal`,
   `wolfgangsee_gelse_dive`, `flow_game_over`, `qa_flow_pause_stops_timer`,
-  `qa_m7_time_up_in_fight`, `flow_m7_cafe_zauner_ending_skip`, `m4_enemies_axe_singer`. No reviewer gate (D-121): they are
+  `qa_m7_time_up_in_fight`, `flow_m7_cafe_zauner_ending_skip`, `m4_enemies_axe_singer`,
+  `flow_route_carry_over`. `--accept` refuses a replay that fails its expectations. No reviewer gate (D-121): they are
   text and their diffs read like the design's tables; a commit that changes one says why
   (the game-designer reviews the Stage 1 tour and the boss win as part of MA's review task).
 - **Level music**: `music = "<id>"` in the 9 journey levels (the level ids are the §5 ids);
