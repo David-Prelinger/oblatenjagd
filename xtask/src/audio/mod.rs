@@ -852,7 +852,7 @@ mod tests {
         let (ok, text) = lint_report(&root, Some("placeholder_fanfare"));
         assert!(!ok);
         assert!(text.contains("placeholder_fanfare.song:21:"), "{text}");
-        assert!(text.contains("error[music-bar-length]"), "{text}");
+        assert!(text.contains("error[score]"), "{text}");
 
         // A song's targets entry must match its kind; a bad id is reported.
         fs::write(

@@ -151,6 +151,12 @@ pub fn check_quote(song: &Song, r: &QuoteRef, quote: &Quote) -> Result<(), Strin
         .iter()
         .filter(|e| e.step + e.len > start)
     {
+        if e.step < start && matches!(e.sound, Sound::Rest) {
+            // A rest straddling the start: only its part from the start on.
+            push_rest(&mut line, start, e.step + e.len - start);
+            at = e.step + e.len;
+            continue;
+        }
         if e.step < start {
             return Err(format!(
                 "{}: quote `{}`: a note is still sounding at bar {} step {}",
@@ -172,7 +178,22 @@ pub fn check_quote(song: &Song, r: &QuoteRef, quote: &Quote) -> Result<(), Strin
     let qs = quote.steps_per_beat;
     let ss = song.steps_per_beat;
     for (i, &(want, wlen)) in quote.notes.iter().enumerate() {
-        let want = want.map(|n| Note((n.0 as i32 + r.transpose) as u8));
+        let want = match want {
+            None => None,
+            Some(n) => {
+                let t = n.0 as i32 + r.transpose;
+                if !(12..=119).contains(&t) {
+                    return Err(format!(
+                        "{}: quote `{}` note {}: {n} transposed by {} leaves the note range c0..b8",
+                        song.loc(r.at),
+                        quote.id,
+                        i + 1,
+                        r.transpose
+                    ));
+                }
+                Some(Note(t as u8))
+            }
+        };
         let Some(&(got, gstart, glen, ev)) = line.get(i) else {
             return Err(format!(
                 "{}: quote `{}`: note {} ({}) is missing: the song ends first",

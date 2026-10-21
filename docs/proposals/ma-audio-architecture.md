@@ -564,7 +564,7 @@ Notes for E57 and the sound-designer:
 ## As built (E57)
 
 `crates/jnr-audio` modules `song` (format, parser, timeline), `song_render`, `music_lint`,
-`quote`; `xtask/src/audio_song.rs` (bank loading, `lint_songs`, `render_song_report`, the
+`quote`; `xtask/src/audio_song.rs` (bank loading, `lint_songs`, `render_song_file`, the
 piano roll). The format, lints and roll are documented in `docs/architecture.md` ("`.song`",
 "`.quote`"); the decisions are D-120. Deviations from the sketch above:
 
@@ -574,12 +574,14 @@ piano roll). The format, lints and roll are documented in `docs/architecture.md`
   Channels may set `arp_ms`. Tokens add accents (`>`), staccato (`'`), `@velocity`, kit
   chords `[K,S]`.
 - **Monophonic channels and arpeggiated chords** (D-120). The cut uses E55's `CUT_FADE`; the
-  renderer caches uncut voices and applies the cut while mixing (a unit test pins it to
-  `add_note_until`/`add_sfx_until`), so a voice is synthesised once however its cuts differ.
+  renderer caches uncut voices and applies the cut to the summed voice while mixing, so a
+  voice is synthesised once however its cuts differ. For a one-layer voice this equals
+  `add_note_until`/`add_sfx_until` sample for sample (unit test); a multi-layer voice may
+  differ by a few LSBs, since those fade each layer before summing.
 - **Limits**: jingles ≤ 10 s (not 6 s); loop alignment ≤ 2048 frames (≤ 0.24 % at 20 s).
 - **Melody fixtures** are `.quote` files plus `[[quote]]` in the song (pitches, lengths,
   transpose, augmentation, or pitches only), checked by the `quote` lint.
-- **Lints**: as listed in the proposal, plus `bars`, `loop-point`, `length-of`, `provenance`,
+- **Lints**: as listed in the proposal (bar lengths as a parse error instead), plus `bars`, `length-of`, `provenance`,
   `accidental`, and a `clash` heuristic (semitone/7th/9th between melodic channels on beats).
   `order` naming a missing pattern, unequal bar counts, > 6 channels and > 3-note chords are
   parse errors (`file:line:col`), not lints. Every lint has a failing and a passing fixture
@@ -589,6 +591,13 @@ piano roll). The format, lints and roll are documented in `docs/architecture.md`
   **15 ms** (budget 50 ms; the test prints it and asserts < 50 ms in release, < 1 s in debug).
   The 24 s placeholder polka: 7 ms through xtask. The loop wrap equals the middle of three
   passes played in a row, sample for sample.
+- **Review fixes** (code review of d6d73a6): bar lengths are checked in `Song::parse` (a
+  `score` error at the bar; an over-long bar used to spill into the next pattern, put events
+  out of order and underflow in the renderer), so the `bar-length` and `loop-point` lints are
+  gone; `render_song` is total for hand-made unsorted events; `length_of` is resolved in
+  `jnr-audio` (`song_render::{resolve_length, render_in}`); `tempo_pct` must be 50..=200;
+  quotes compare the part of a rest that straddles their start and reject transposes past
+  b8; chord tokens take no spaces.
 - **Placeholders**: `crates/jnr-audio/tests/fixtures/music/` (four instruments, two quotes,
   `placeholder_polka.song`, `placeholder_fanfare.song`); `audio/music/` stays empty for the
   sound-designer.
@@ -616,9 +625,9 @@ Notes for E58 (embedding, cues):
 - Load `audio/music/*.song`, `audio/quotes/*.quote` and `audio/instruments/*.inst`;
   `Song::parse` errors are build errors, `lint_song` errors too (warnings → `cargo:warning`).
   `LintContext` needs all songs (for `length_of`) and all quotes.
-- Render with `render_song(&song, &instruments, &RenderOptions::default())`; a `length_of`
-  song needs `length_frames: Some(song_frames(target, &opts))` (see `render_song_report`).
-  The hurry variant is `tempo_pct: 112`. Jingles' `render.pcm` is longer than
-  `length_frames` (the release).
+- Render with `jnr_audio::song_render::render_in(&songs, &instruments, id, &opts)`: it
+  resolves `length_of` (`resolve_length`: the target loop's length at the same tempo), and
+  xtask uses it too. The hurry variant is `tempo_pct: 112` (allowed 50..=200). A jingle's
+  `render.pcm` is longer than its `length_frames` (the release).
 - A loop's PCM length is always a multiple of 4096 (tested per fixture song); keep a test
   that does this over `audio/music/` once songs exist.

@@ -21,10 +21,7 @@ use jnr_artkit::image::Image;
 use jnr_audio::music_lint::Level;
 use jnr_audio::patch::InstrumentKind;
 use jnr_audio::song::{Event, Song, SongKind, Sound};
-use jnr_audio::song_render::song_frames;
-use jnr_audio::{
-    Instrument, LintContext, Quote, RenderOptions, SongRender, lint_song, render_song,
-};
+use jnr_audio::{Instrument, LintContext, Quote, RenderOptions, SongRender, lint_song};
 
 /// Every instrument, song and quote fixture under one directory.
 pub struct SongBank {
@@ -166,22 +163,11 @@ pub fn song_kind(path: &Path) -> Option<SongKind> {
         .map(|s| s.kind)
 }
 
-/// Renders `id` from `bank` (a `length_of` song at its target's length).
+/// Renders `id` from `bank` through `jnr_audio::song_render::render_in`
+/// (a `length_of` song at its target's length).
 pub fn render_in(bank: &SongBank, id: &str, opts: &RenderOptions) -> Result<SongRender, String> {
-    let song = &bank.songs[id];
-    let mut opts = *opts;
-    if let (Some(target), None) = (&song.length_of, opts.length_frames) {
-        let t = bank
-            .songs
-            .get(target)
-            .ok_or_else(|| format!("{}: `length_of` names no song `{target}`", song.file))?;
-        let at = RenderOptions {
-            length_frames: None,
-            ..opts
-        };
-        opts.length_frames = Some(song_frames(t, &at)?);
-    }
-    render_song(song, &bank.instruments, &opts).map_err(|e| e.to_string())
+    jnr_audio::song_render::render_in(&bank.songs, &bank.instruments, id, opts)
+        .map_err(|e| e.to_string())
 }
 
 /// Parses and renders a song file with the instruments, songs and quotes
@@ -288,7 +274,7 @@ fn lanes(song: &Song, instruments: &BTreeMap<String, Instrument>) -> Vec<Lane> {
                 })
                 .collect();
             let lo = notes.iter().min().copied().unwrap_or(60).saturating_sub(1);
-            let hi = notes.iter().max().copied().unwrap_or(60) + 1;
+            let hi = notes.iter().max().copied().unwrap_or(60).saturating_add(1);
             let range = match inst.map(|i| &i.kind) {
                 Some(InstrumentKind::Melodic { range, .. }) => Some((range.0.0, range.1.0)),
                 _ => None,
@@ -368,7 +354,7 @@ pub fn piano_roll(song: &Song, instruments: &BTreeMap<String, Instrument>) -> Im
                                 let label = format!("c{}", n / 12 - 1);
                                 text(
                                     &mut img,
-                                    MARGIN - 4 * label.len() as u32 - 1,
+                                    MARGIN.saturating_sub(4 * label.len() as u32 + 1),
                                     y.saturating_sub(2),
                                     &label,
                                     DIM_TEXT,
@@ -383,7 +369,7 @@ pub fn piano_roll(song: &Song, instruments: &BTreeMap<String, Instrument>) -> Im
                         let short: String = name.chars().take(5).collect();
                         text(
                             &mut img,
-                            MARGIN - 4 * short.len() as u32 - 1,
+                            MARGIN.saturating_sub(4 * short.len() as u32 + 1),
                             y,
                             &short,
                             DIM_TEXT,
@@ -595,17 +581,22 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("jnr-audio-song-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         fs::copy(fixtures().join("lead.inst"), dir.join("lead.inst")).unwrap();
-        let text = fs::read_to_string(fixtures().join("placeholder_fanfare.song"))
-            .unwrap()
-            .replace("e4/2 |", "e4/3 |");
-        fs::write(dir.join("placeholder_fanfare.song"), text).unwrap();
+        let good = fs::read_to_string(fixtures().join("placeholder_fanfare.song")).unwrap();
+        let song = dir.join("placeholder_fanfare.song");
+        // A bar of the wrong length is a parse error at the bar (line 21).
+        fs::write(&song, good.replace("e4/2 |", "e4/3 |")).unwrap();
+        let (errors, report) = lint_songs(&root(), &dir, None);
+        assert_eq!(errors, 1, "{report}");
+        assert!(report.contains("placeholder_fanfare.song:21:"), "{report}");
+        assert!(report.contains("error[score]"), "{report}");
+        // Parsed, the missing `bass` instrument (and quote fixture) are lints.
+        fs::write(&song, good).unwrap();
         let (errors, report) = lint_songs(&root(), &dir, None);
         fs::remove_dir_all(&dir).unwrap();
-        assert!(errors >= 2, "{report}");
-        // The bar is on line 21; the missing `bass` instrument is reported too.
-        assert!(report.contains("placeholder_fanfare.song:21:"), "{report}");
-        assert!(report.contains("error[music-bar-length]"), "{report}");
+        assert_eq!(errors, 2, "{report}");
+        assert!(report.contains("placeholder_fanfare.song:17:"), "{report}");
         assert!(report.contains("error[music-instrument]"), "{report}");
+        assert!(report.contains("error[music-quote]"), "{report}");
     }
 
     #[test]

@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use jnr_audio::music_lint::Level;
 use jnr_audio::song::Sound;
-use jnr_audio::song_render::{LOOP_ALIGN, natural_frames};
+use jnr_audio::song_render::{LOOP_ALIGN, natural_frames, render_in};
 use jnr_audio::{
     ErrorKind, Instrument, LintContext, ParseError, Quote, RenderOptions, Song, lint_song,
     render_song,
@@ -482,21 +482,85 @@ fn lints(text: &str, code: &str) -> Vec<(usize, Level)> {
 use Level::{Error, Warning};
 
 #[test]
-fn lint_bar_length() {
-    assert_eq!(
-        lints(&t("| c5/2 e5   |", "| c5/2 e5/1 |"), "bar-length"),
-        [(19, Error)]
+fn bar_lengths_are_parse_errors() {
+    check(
+        err(&t("| c5/2 e5   |", "| c5/2 e5/1 |")),
+        ErrorKind::Score,
+        19,
+        "bar 1: 3 steps; a 2/4 bar has 4",
+    );
+    // The last bar of the song too long: no event can ring over the loop end.
+    check(
+        err(&t(
+            "| c5/4      |\nbass  | c3/2 g2",
+            "| c5/6      |\nbass  | c3/2 g2",
+        )),
+        ErrorKind::Score,
+        19,
+        "bar 4: 6 steps",
     );
 }
 
+/// Review regression: an over-long bar in pattern A used to spill into B,
+/// put events out of order and underflow in the renderer.
 #[test]
-fn lint_loop_point() {
-    // Pattern A is last in the order: its last bar rings over the end.
+fn an_over_long_bar_is_rejected_and_rendering_is_total() {
+    let text =
+        t("| c5/2 e5   |", "| c5/1 d5 e5 f5 g5 a5 |").replace("| e5/2 g5   |", "| c5/4      |");
+    check(err(&text), ErrorKind::Score, 19, "bar 1: 6 steps");
+
+    // A hand-made song with events out of order still renders (no panic).
+    let b = bank();
+    let mut song = Song::parse("t.song", T).unwrap();
+    let lead = &mut song.events[0];
+    let moved = lead.remove(1);
+    lead.insert(4, moved);
+    let r = render_song(&song, &b.instruments, &RenderOptions::default()).unwrap();
+    assert_eq!(r.render.pcm.samples.len() % LOOP_ALIGN as usize, 0);
+}
+
+#[test]
+fn tempo_pct_is_bounded() {
+    let b = bank();
+    let song = &b.songs["placeholder_polka"];
+    for bad in [0, 49, 201] {
+        let opts = RenderOptions {
+            tempo_pct: bad,
+            length_frames: None,
+        };
+        let e = render_song(song, &b.instruments, &opts).unwrap_err();
+        assert!(e.to_string().contains("tempo_pct"), "{e}");
+    }
+}
+
+/// `length_of` is resolved in jnr-audio (`render_in`), also at the hurry tempo.
+#[test]
+fn length_of_and_hurry_through_render_in() {
+    let b = bank();
+    let mut songs = b.songs.clone();
     let text = t(
-        "| c5/4      |\nbass  | c3/2 g2",
-        "| c5/6      |\nbass  | c3/2 g2",
-    );
-    assert_eq!(lints(&text, "loop-point"), [(19, Error)]);
+        "source = \"original\"\n",
+        "source = \"original\"\nlength_of = \"placeholder_polka\"\n",
+    )
+    .replace("tempo_bpm = 120", "tempo_bpm = 100");
+    songs.insert("t".into(), Song::parse("t.song", &text).unwrap());
+    for tempo_pct in [100, 112] {
+        let opts = RenderOptions {
+            tempo_pct,
+            length_frames: None,
+        };
+        let target = render_in(&songs, &b.instruments, "placeholder_polka", &opts).unwrap();
+        let r = render_in(&songs, &b.instruments, "t", &opts).unwrap();
+        assert_eq!(r.length_frames, target.length_frames, "{tempo_pct} %");
+        assert_eq!(r.render.pcm.samples.len(), target.render.pcm.samples.len());
+    }
+    let mut missing = songs.clone();
+    missing.remove("placeholder_polka");
+    let e = render_in(&missing, &b.instruments, "t", &RenderOptions::default()).unwrap_err();
+    assert!(e.to_string().starts_with("t.song:11:"), "{e}");
+    assert!(e.to_string().contains("no song `placeholder_polka`"), "{e}");
+    let e = render_in(&songs, &b.instruments, "nope", &RenderOptions::default()).unwrap_err();
+    assert!(e.to_string().contains("no song `nope`"), "{e}");
 }
 
 #[test]
@@ -628,7 +692,7 @@ fn lint_quote_and_provenance() {
     // Pitches only: other lengths pass, other notes don't.
     let squeezed = t(
         "| c5/2 e5   | g5/2 e5   |",
-        "| c5/2 c5 | e5/1 e5 g5 g5 | e5/2 |",
+        "| c5/2 c5 | e5/1 e5 g5 g5 | e5/2 r |",
     )
     .replace("| f5/2 d5   | c5/4      |\nbass", "| c5/4      |\nbass")
     .replace(
@@ -639,6 +703,52 @@ fn lint_quote_and_provenance() {
     assert_eq!(lints(&pitches, "quote"), []);
     let exact = format!("{squeezed}{HAYDN}transpose = 12\n");
     assert_eq!(lints(&exact, "quote").len(), 1);
+}
+
+#[test]
+fn quotes_split_a_straddling_rest_and_reject_out_of_range_transposes() {
+    // The Haydn quote played from bar 1 step 1, after a rest of 2 steps
+    // that straddles the quote's start.
+    let plays = t(
+        "| c5/2 e5   | g5/2 e5   |",
+        "| r/2 c5/1 c5 | e5 e5 g5 g5 | e5/2 r |",
+    )
+    .replace("| f5/2 d5   | c5/4      |\nbass", "| c5/4      |\nbass")
+    .replace(
+        "source = \"original\"",
+        "source = \"Haydn\"\nedition = \"Rietz\"",
+    );
+    let ok = format!(
+        "{plays}\n[[quote]]\nfixture = \"haydn_94_andante\"\nchannel = \"lead\"\nbar = 1\nstep = 2\ntranspose = 12\n"
+    );
+    assert_eq!(lints(&ok, "quote"), []);
+    // From step 1 the rest straddles the start: its second half is
+    // compared (a rest where c5 is expected), not reported as "sounding".
+    let b = bank();
+    let rest_first = Song::parse("t.song", &ok.replace("step = 2", "step = 1")).unwrap();
+    let all: Vec<String> = lint_song(&rest_first, &b.ctx())
+        .iter()
+        .filter(|l| l.code == "quote")
+        .map(|l| l.to_string())
+        .collect();
+    assert_eq!(all.len(), 1);
+    assert!(
+        all[0].contains("expected c5 for 1/2 beat(s), found r for 1/2 beat(s)"),
+        "{}",
+        all[0]
+    );
+
+    // A fixture note pushed past b8 is a mismatch, not a wrapped u8.
+    let song = Song::parse("t.song", &ok).unwrap();
+    let high = Quote {
+        id: "high".into(),
+        source: "x".into(),
+        edition: "x".into(),
+        steps_per_beat: 2,
+        notes: vec![(Some(jnr_audio::note::Note(119)), 1)],
+    };
+    let e = jnr_audio::quote::check_quote(&song, &song.quotes[0], &high).unwrap_err();
+    assert!(e.contains("leaves the note range"), "{e}");
 }
 
 #[test]

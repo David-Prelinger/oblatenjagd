@@ -1,12 +1,12 @@
 //! Music lints for `.song` files: what can be checked from the text alone.
 //! Errors fail `audio lint`; warnings are heuristics a reviewer reads.
+//! (Bar lengths are a parse error, so every pattern and the loop end sit on
+//! bar lines.)
 //!
 //! | Code | Level | Rule |
 //! |---|---|---|
 //! | `instrument` | error | every channel's instrument exists and fits its tokens (kit letters vs. notes) |
 //! | `bars` | error | `bars` = the bars of `order` |
-//! | `bar-length` | error | every bar sums to `meter × steps_per_beat` steps |
-//! | `loop-point` | error | nothing rings over the song end: the loop point is the bar line at the end |
 //! | `range` | error | every note lies in its instrument's `range` |
 //! | `key` | error | notes outside the pattern's key carry `!` |
 //! | `length` | error | loops 20–90 s, jingles ≤ 10 s (at the written tempo) |
@@ -123,28 +123,10 @@ pub fn lint_song(song: &Song, ctx: &LintContext) -> Vec<Lint> {
     }
 
     // Per pattern (each once, however often `order` plays it).
-    let bar_steps = song.bar_steps();
     for p in &song.patterns {
         for (ci, line) in p.lines.iter().enumerate() {
             let ch = &song.channels[ci];
-            for (bi, bar) in line.iter().enumerate() {
-                let sum: u32 = bar.tokens.iter().map(|t| t.len).sum();
-                if sum != bar_steps {
-                    push(
-                        bar.at,
-                        Error,
-                        "bar-length",
-                        format!(
-                            "pattern {} `{}` bar {}: {sum} steps; a {} bar has {bar_steps} ({} beats x {} steps)",
-                            p.name,
-                            ch.name,
-                            bi + 1,
-                            song.meter,
-                            song.meter.beats,
-                            song.steps_per_beat
-                        ),
-                    );
-                }
+            for bar in line {
                 for t in &bar.tokens {
                     let Sound::Notes(tones) = &t.sound else {
                         continue;
@@ -187,27 +169,6 @@ pub fn lint_song(song: &Song, ctx: &LintContext) -> Vec<Lint> {
                     }
                 }
             }
-        }
-    }
-
-    let total = song.total_steps();
-    for (ci, events) in song.events.iter().enumerate() {
-        if let Some(e) = events.iter().find(|e| e.step + e.len > total) {
-            push(
-                e.at,
-                Error,
-                "loop-point",
-                format!(
-                    "`{}` sounds {} step(s) past the end of the song (bar {}): {}",
-                    song.channels[ci].name,
-                    e.step + e.len - total,
-                    song.bars,
-                    match song.kind {
-                        SongKind::Loop => "the loop point must be the bar line at the end",
-                        SongKind::Jingle => "a jingle ends on a bar line (its release rings on)",
-                    }
-                ),
-            );
         }
     }
 
