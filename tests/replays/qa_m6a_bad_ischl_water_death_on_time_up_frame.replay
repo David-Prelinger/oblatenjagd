@@ -1,0 +1,63 @@
+# QA M6 acceptance (transitions): a fall into the Traun (notch 1) on the
+# frame the ZEIT clock runs out. qa_m6_bad_ischl_relaxed's inputs to 2030,
+# she brakes at notch 1's edge (x 1885) and idles; RIGHT from 12604 walks
+# her into the water at 12630, the time-up frame. Expected: one death,
+# one life lost, a normal respawn.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=12630..12630 lives=2 event=Respawned no_event=GameOver state=playing
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 236
+- 10574
+R 60
+- 200

@@ -1,0 +1,120 @@
+# QA M6 acceptance (D-102 Ampel lamp-housing test, camera at other heights):
+# qa_m6_ampel1_counts_camera_raised's inputs to 2800 (big Resi on the
+# Gastgarten terrace's right part, Ampel #1 counting), then three standing
+# jumps: the camera moves between y 48 and 57 and the counter never pauses
+# (64 -> 238 over 2796-2970). Then she stands on the terrace while the cars
+# drive beneath her. Expected: no hurt, still big.
+level  = strobl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt power=big state=playing
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 8
+R 16
+RJ 4
+R 32
+RJ 24
+R 44
+RJ 12
+R 16
+L 8
+R 12
+L 12
+- 30
+R 20
+RJ 8
+R 16
+RJ 24
+R 28
+L 8
+LJ 12
+RJ 20
+R 16
+RJ 24
+R 36
+L 4
+- 4
+L 4
+- 120
+RJ 16
+R 12
+RJ 8
+R 24
+- 8
+R 8
+- 4
+R 4
+- 12
+J 14
+- 80
+R 24
+RJ 16
+R 60
+J 4
+RJ 4
+R 40
+- 4
+L 8
+- 4
+R 12
+RJ 36
+R 4
+RJ 16
+R 8
+L 4
+J 4
+RJ 12
+R 24
+L 4
+- 4
+L 4
+- 30
+R 52
+RJ 8
+R 64
+RJ 4
+R 28
+RJ 24
+R 100
+RJ 4
+R 16
+RJ 8
+R 28
+RJ 16
+R 20
+RJ 4
+R 40
+- 4
+L 8
+J 12
+RJ 4
+L 8
+R 4
+- 330
+R 56
+RJ 36
+R 164
+RJ 28
+R 16
+RJ 24
+R 40
+RJ 20
+R 12
+RJ 28
+R 32
+L 4
+- 4
+L 4
+- 48
+J 36
+- 24
+J 36
+- 24
+J 36
+- 324

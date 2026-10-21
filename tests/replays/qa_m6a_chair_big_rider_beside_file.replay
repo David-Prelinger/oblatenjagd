@@ -1,0 +1,92 @@
+# QA M6 acceptance (D-102 kurgast_berth, big Resi): big Resi stands on Kurgast
+# #4's deck chair, hanging 11 px over its right edge towards file B.
+# qa_m6_bad_ischl_relaxed's inputs to the Trinkhalle steps (2691), then she
+# steps off them onto Kurgast #4 (stomp 2701, chair x 2796-2812), lands on
+# the chair (2722) and brakes to x 2811 (hitbox 2811-2823). File B marches
+# left towards the chair and turns at its berth (lead never left of x 2828,
+# 5 px clear of her). She stands there for 1200 frames (the rest pauses
+# while she stands on him). Expected: never hurt, still big, still on the chair.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt event=Stomped power=big state=playing player_y>=194 player_y<=194
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 260
+RJ 4
+R 32
+RJ 12
+R 24
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 36
+RJ 36
+R 20
+RJ 28
+R 34
+L 11
+- 43
+R 40
+RJ 4
+R 8
+RJ 4
+R 16
+RJ 4
+R 124
+RJ 12
+R 17
+L 6
+- 30
+L 6
+- 1200

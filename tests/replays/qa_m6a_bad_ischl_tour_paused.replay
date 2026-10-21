@@ -1,0 +1,68 @@
+# QA M6 acceptance (pause): bad_ischl_tour's inputs with a 301-frame pause
+# (START at 1100, START again 300 frames later) in the Kurpark, with file B
+# and Kurgast #4 in view. The drill runs on the stage clock, so nothing
+# changes but the timing: LevelComplete exactly 301 frames later (2022 ->
+# 2323), no hurt.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=2323..2323 deaths=0 no_event=Hurt
+---
+- 20
+S 1
+- 150
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 42
+RBJ 12
+S 1
+- 299
+S 1
+RBJ 24
+RB 136
+RBJ 20
+RB 16
+RBJ 36
+RB 40
+RBJ 36
+RB 18
+RBJ 33
+RB 69
+RBJ 12
+RB 78
+RBJ 36
+RB 6
+RBJ 12
+RB 18
+RBJ 20
+RB 62
+RBJ 20
+RB 24
+RBJ 36
+RB 24
+RBJ 36
+RB 18
+RBJ 36
+RB 56
+- 800

@@ -1,0 +1,39 @@
+# QA M6 acceptance (D-102 kerb, other direction): after the respawn at the
+# Bad Ischl checkpoint (152, 1326; qa_m6_checkpoint_kerb_stops_walk_left's
+# inputs) RIGHT is held for 400 frames: she walks along the promenade into
+# the Kurpark and stops at the Trinkhalle steps' face (x 2756). Expected:
+# no further death, no hurt after the respawn.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=1 dies_at frames=1266..1266 lives=2 state=playing player_x>=2740 no_event=GameOver
+---
+RB 96
+RBJ 20
+RB 58
+RBJ 12
+RB 20
+RBJ 34
+RB 12
+RBJ 36
+RB 108
+RBJ 36
+RB 56
+RBJ 36
+RB 18
+RBJ 20
+RB 28
+RBJ 36
+RB 104
+RBJ 36
+RB 18
+RBJ 33
+RB 27
+RBJ 31
+RB 43
+RBJ 36
+RB 136
+RBJ 20
+RB 18
+RBJ 36
+R 562

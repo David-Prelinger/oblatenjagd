@@ -1,0 +1,136 @@
+# QA M6 acceptance (D-102 sabre zone, fresh probe): big Resi on the bench
+# (cols 249-250), the perch between singer #2 and file C. qa_m6_bad_ischl_relaxed's
+# inputs (walking, Zuckerschock) to her landing on the bench's left end
+# (3722), then RIGHT for 8 frames: she stops at x 4015 (hitbox 4015-4027,
+# 1 px still on the bench, top 208) and stands. File C's front officer
+# halts at x 4024 and presents (3840-3880): his 8x10 sabre zone (x
+# 4016-4024) overlaps her horizontally but ends at the bench top (y 208),
+# level with her feet (strict overlap). Expected: never hurt, still big,
+# still on the bench after two more drill cycles.
+level  = bad_ischl
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=Died power=big state=playing player_x>=4011 player_y<=178
+---
+- 90
+R 122
+- 14
+J 24
+- 150
+R 20
+RJ 20
+R 24
+RJ 12
+R 24
+RJ 4
+R 24
+RJ 12
+R 104
+RJ 12
+R 36
+- 30
+RJ 28
+R 12
+RJ 28
+R 32
+RJ 4
+R 20
+L 12
+- 240
+R 12
+RJ 28
+R 56
+RJ 36
+R 12
+RJ 4
+R 28
+RJ 4
+R 24
+RJ 8
+R 48
+RJ 36
+R 12
+RJ 32
+R 12
+L 4
+RJ 4
+R 24
+L 8
+- 204
+R 12
+RJ 24
+R 40
+RJ 24
+R 260
+RJ 4
+R 32
+RJ 12
+R 24
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 36
+RJ 36
+R 20
+RJ 28
+R 34
+L 11
+- 43
+R 40
+RJ 4
+R 8
+RJ 4
+R 16
+RJ 4
+R 124
+RJ 12
+R 20
+RJ 4
+R 172
+RJ 36
+R 12
+RJ 4
+R 40
+RJ 36
+R 12
+RJ 28
+R 56
+RJ 8
+R 56
+- 4
+L 8
+- 60
+R 24
+RJ 4
+R 36
+L 8
+LJ 4
+RJ 24
+R 4
+RJ 36
+R 16
+RJ 32
+R 20
+- 4
+R 6
+- 12
+J 14
+- 20
+L 10
+RJ 18
+R 10
+RJ 20
+R 54
+- 22
+R 10
+RJ 14
+R 40
+RJ 14
+R 24
+- 1
+L 5
+- 4
+R 8
+- 900
