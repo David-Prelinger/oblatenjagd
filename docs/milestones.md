@@ -278,7 +278,7 @@ Art (pixel-artist, art-director APPROVED)
 - [x] Café enemies package (art-director APPROVED round 2): `kellner`, `wartender` (three looks), `oberkellner` (all anims), `rechnung`
 - [x] Café package (art-director APPROVED round 2): tiles `marmor`, `marmor_punkt`, `stuck`, `vitrine`, `theke`, `luster`; props `zauner_tuer`, `garderobe`, `kuchentheke`, `luster_deko`, `stollen_glocke`, `stollen_teller`; layer `bg_zauner_salon`. The HUD must read over the `stuck` band (one shot)
 - [x] Ending package: `ending_cafe`, `ending_zettel` (art-director APPROVED round 2)
-- [ ] The full contact sheet (E44's pages) reviewed once with every M1–M7 sprite
+- [x] The full contact sheet (E44's pages) reviewed once with every M1–M7 sprite (art-director APPROVED at M7 acceptance)
 
 Levels (level-designer)
 - [x] `09_cafe_zauner.level` (140 × 17, `camera = "side"`, `camera_top = 92`, background `bg_zauner_salon` factor 16) with the 5 sections and the arena as specified; app `options::LEVELS` line; solver finishes it (or the D-106 fallback); `min_jump_window = 5` holds; the narrowest window and the named timings (Kellner #1 at the vitrine drop, the queue hops, the arena entry) recorded for the game-designer (D-073 style)
