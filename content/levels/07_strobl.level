@@ -124,6 +124,7 @@
 
 [meta]
 id = "strobl"
+music = "strobl"
 title_key = "stage.strobl.title"
 time_limit = 230
 min_jump_window = 5

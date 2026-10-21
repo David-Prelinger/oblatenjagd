@@ -86,6 +86,7 @@
 
 [meta]
 id = "brunnwinkl"
+music = "brunnwinkl"
 title_key = "stage.brunnwinkl.title"
 time_limit = 200
 min_jump_window = 6

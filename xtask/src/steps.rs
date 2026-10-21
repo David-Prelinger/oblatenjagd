@@ -33,6 +33,7 @@ pub fn verify_steps() -> Vec<StepFn> {
         solver as StepFn,
         replays,
         goldens,
+        cue_logs,
         audio_goldens,
         wasm_smoke,
         vnc_smoke,
@@ -143,6 +144,13 @@ fn goldens(root: &Path) -> Step {
     let started = Instant::now();
     let (ok, output) = golden::check_report(root);
     finish("goldens", "cargo xtask golden", started, ok, &output)
+}
+
+/// L6b: the cue logs of the replays with a golden (`xtask/src/cues.rs`).
+fn cue_logs(root: &Path) -> Step {
+    let started = Instant::now();
+    let (ok, output) = crate::cues::check_report(root);
+    finish("cue-logs", "cargo xtask cues", started, ok, &output)
 }
 
 fn audio_goldens(root: &Path) -> Step {

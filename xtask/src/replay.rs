@@ -23,6 +23,10 @@ cargo xtask replay <file|name|--all> [--shots]
     --shots renders the `shots` frames
     -> preview/replays/<replay>_<shot>.png (1x) and <replay>_<shot>_x4.png
 
+cargo xtask replay <file|name> --cue-log
+    Prints the replay's sound cues, one `frame cue` line each (the cue
+    director, jnr_audio::cues; goldens: `cargo xtask cues`).
+
 cargo xtask filmstrip <file|name> [--every N]
     Contact sheet of every Nth frame (default 30, plus the last frame),
     labelled with the frame number -> preview/filmstrips/<replay>.png
@@ -197,13 +201,24 @@ pub fn all_replays(root: &Path) -> Result<Vec<PathBuf>, String> {
 pub fn run_replay(root: &Path, args: &[String]) -> ExitCode {
     let mut target = None;
     let mut shots = false;
+    let mut cue_log = false;
     for a in args {
         match a.as_str() {
             "--shots" => shots = true,
+            "--cue-log" => cue_log = true,
             "help" | "-h" | "--help" => return usage_ok(),
             _ if target.is_none() => target = Some(a.as_str()),
             _ => return usage_err(&format!("unexpected argument `{a}`")),
         }
+    }
+    if cue_log {
+        return match target {
+            Some("--all") | None => usage_err("--cue-log needs one replay file or name"),
+            Some(t) => exit(content::resolve_replay(root, t).and_then(|p| {
+                print!("{}", crate::cues::cue_log(root, &p)?);
+                Ok(())
+            })),
+        };
     }
     let paths = match target {
         Some("--all") => all_replays(root),

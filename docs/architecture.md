@@ -60,7 +60,7 @@ jnr-app ──► jnr-render ──► jnr-core
    └──► jnr-assets ──► jnr-artkit   (runtime: atlas data types only)
             ▲              │
             └─ (build.rs) ◄┘          (build time: parse, lint, pack, codegen)
-jnr-audio ──► (jnr-core only, from E58 for the cues)
+jnr-audio ──► jnr-core   (the cues read events and game state; E58a)
 xtask ──► everything (never the other way round)
 ```
 
@@ -84,7 +84,9 @@ impl Game {
 }
 
 #[derive(Clone, Copy)] pub struct InputFrame(u8);  // bitflags: LEFT RIGHT UP DOWN JUMP RUN START
-pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, /* later: Stomped, OblateCollected, PowerUp, Hurt, ... */ }
+pub enum Event { Jumped, Landed, Died, Respawned, LevelComplete, OblateCollected, PowerUp, Hurt, ExtraLife, BlockBumped,
+                 BrickBroken, Stomped, CheckpointReached, GameOver, HacklThrown, AxeHit, CrawlStarted, Stroke,
+                 Bounced /* MA, D-113: output only, never hashed */ }
 ```
 
 Modules (M0, + `entity` in M1, + `swim` in M5): `fx` (fixed-point), `input`, `tuning`, `level`, `physics` (boxes + tile collision), `player`, `camera`, `game`, `text` (the `Texts` table), `replay` (replay file parse/format, `Replay::run` / `new_game` + `run_game`, expectation checks; see `validation.md` L5), `route` (the journey and the run's levels, M2), plus `hash` (FNV-1a) and `rng` (xorshift64*).
@@ -162,7 +164,7 @@ loop {
   - `--record`: `record::Recorder` RLE-encodes the input of every step and tracks a `replay::Outcome`; on exit (window close, Escape, `--exit-after`) it writes a replay with `source = human` and a derived `expect` (`complete frames=N..N`, else `state=<mode> player_x>=<x>`; always `deaths=<n>`), creating directories, and prints `recorded: <path>`. Not combinable with `--replay`.
 - Escape and closing the window (native) end the loop cleanly (`prevent_quit`), so the recording can be written; the process exits 0.
 - Debug keys (debug builds): F1 hitboxes, F2 frame-step, F3 slow-mo, F12 save framebuffer PNG.
-- Audio: maps core `Event`s to sounds (macroquad audio). Audio is optional; a missing sound never fails. Platform layer as built in E54 (D-114 … D-116, D-118), below; the cue wiring and real sounds come with E59.
+- Audio: plays the cues of `jnr_audio::cues::Director` (fed after every `Game::step`, see "jnr-audio" → "Cues") through macroquad audio. Audio is optional; a missing sound never fails. Platform layer as built in E54 (D-114 … D-116, D-118), below; the cue wiring and real sounds come with E59.
 - Wasm: built with `cargo xtask wasm`, served from `web/` with any static server. All assets are embedded (`include_bytes!`), so no fetching at runtime.
 
 Implemented (M0):
@@ -360,6 +362,24 @@ Test fixtures for both formats are in `crates/jnr-audio/tests/fixtures/music/` (
 `xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`, `Song` = `audio/music/*.song`, rendered and drawn by `xtask/src/audio_song.rs`); a new kind adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
 
 
+### Cues (`jnr_audio::cues`, E58a, D-113/D-114)
+
+Pure mapping from the simulation to sound commands; the app only executes them. As built in detail: `docs/proposals/ma-audio-architecture.md` → "As built (E58a)".
+
+```rust
+let mut d = Director::new();
+let cues: Vec<Cue> = d.begin(&game);              // the first frame (title music, or the stage piece)
+game.step(input); let cues = d.step(&game, input); // after every step; reads game.events()
+enum Cue { Sfx(Play), StopSfx(Sfx), CutSfx(Cut), Song(Music), StopSong, Jingle(Music), StopJingle,
+           HoldSong(bool), HoldJingle(bool), Duck(bool), Underwater(bool) }
+struct Play { sfx: Sfx, semitones: i8 }            // pitched variants: cues::PITCHED (pre-rendered)
+```
+
+- `Sfx` (the 25 must SFX: id, voice P/W/I/A, priority 1–9, design length), `Music` (25 songs and jingles of audio-design §5; `level_song`, `underwater_twin`), `sfx_for(Event, Power) -> EventSound` (exhaustive `match`: a new `Event` doesn't compile until its sound is decided).
+- `Voices` holds the §6.1 rules (per step one sound per voice, highest priority first; a busy voice is replaced only by an equal or higher priority; cuts; priority ≥ 7 ducks). The director derives the rest from a small snapshot of the previous step (mode/phase, `time_left`, the tally bonus, the ending timer, the Oberkellner's state, the singing Operettensänger by spawn index), the camera (off-screen entities are silent) and the swim API (`swim::swim_surface`, the water line for the underwater swap).
+- A level names its piece with `[meta] music = "<id>"` (`levels lint`: required in journey levels, a `Music::level_song` id); `music` is not hashed.
+- Cue logs: `cargo xtask replay <file> --cue-log`, goldens `tests/golden/cues/*.cues` (`cargo xtask cues`, validation.md L6b).
+
 ## Content formats
 
 ### Level (`content/levels/*.level`)
@@ -384,7 +404,7 @@ background = [                       # far to near; factor in 1/16 of the camera
   { sprite = "bg_rooftops", factor = 8 },
   # optional factor_y (0..=32, sixteenths, default 0): sinks the layer as the camera climbs (D-054)
 ]
-music = "salzburg"
+music = "salzburg"                   # [meta]: the stage piece (a jingle-free song id of audio-design §5; required in journey levels, MA)
 
 [legend]
 "#" = "ground"

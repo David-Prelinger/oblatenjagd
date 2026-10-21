@@ -232,6 +232,7 @@ dependencies = [
 name = "jnr-audio"
 version = "0.1.0"
 dependencies = [
+ "jnr-core",
  "serde",
  "toml",
 ]

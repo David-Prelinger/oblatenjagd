@@ -12,12 +12,14 @@
 //!   scores), [`song_render`]: songs to PCM (loop alignment, wrapped tails,
 //!   a voice cache), [`music_lint`]: what can be checked from the text,
 //!   [`quote`]: melody fixtures of quoted tunes.
+//! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
 //!
 //! The crate follows the `jnr-core` determinism rules (integers only, no
 //! `HashMap` iteration, no time/fs/threads/global RNG; enforced by
 //! `cargo xtask arch-lint`), so a render is bit-identical on native and wasm
 //! and its hash can serve as a golden.
 
+pub mod cues;
 pub mod error;
 pub mod music_lint;
 pub mod note;
