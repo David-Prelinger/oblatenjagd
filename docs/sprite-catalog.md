@@ -1,4 +1,4 @@
-# Sprite catalog (M1, M2, M3, M4, M5, M6)
+# Sprite catalog (M1, M2, M3, M4, M5, M6, M7)
 
 The contract between pixel-artist and engine: sprite names, sizes, origins and animation names. The engine looks sprites up by these names and falls back to grey boxes when one is missing, so art and code can be built in parallel. Sizes are maxima unless marked exact; the hitboxes in `game-design.md` are gameplay numbers and live in `content/tuning.toml` / the engine, not here.
 
@@ -424,3 +424,60 @@ Same rules as Stages 1–6 (tileable, ≤ 640×180, bottom-aligned, `factor_y` 0
 | `bg_strobl` (near, new) | 13 | Sommerfrische villas and guest houses with green shutters and wooden balconies, the Bürglstein's wooded hump with a glimpse of the walkway, the B158 as a thin `m` line with a short queue of tiny cars, the Postalm road's hairpins on the hill behind (thin `m` lines: `F` is far-layer only), a few `G j` trees. Open between house groups and hills down to row 112 (`bg_wolfgangsee` shows through); opaque `G`/`j` hedge from row 112 down. 640×≤ 140 (as built 640×128) |
 | `bg_katrin` (far, new) | 3 | the mountains above Bad Ischl: the Katrin (a long wooded ridge with a rocky summit, the cable car's line a 1 px `F` diagonal up its flank), the Siriuskogel's small hump, a far Dachstein glimpse with `h` snow. Far-layer colours only. 640×≤ 150 |
 | `bg_badischl` (near, new) | 13 | the spa town behind the street: Biedermeier houses `c p o` with `n R` roofs, the Stadtpfarrkirche's tall tower `c o` under a pointed copper spire `t T` with an `m` cross (the one the route map shows), the Kurhaus's long roof, villa gardens with `G j` trees, the Traun's tree line. Opaque from its lowest roofline down. 640×≤ 140 |
+
+## M7 additions: Café Zauner, the Oberkellner, the ending
+
+Specs in `game-design.md` → "Stage 9: Café Zauner" (incl. "The Oberkellner" and "Finale and ending"); decisions D-104 … D-108. Same conventions as above. Colour notes are starting points; art-style.md and the art-director decide. Stage 9 is a room with a **fixed camera at y 92**: the floor's top is screen y 148, the ceiling (rows 0–6) shows only as the screen's top 20 px behind the HUD, and every sprite is always seen at that framing. The interior palette is warm and calm (cream walls, dark-green wainscoting, brass, marble), so the enemies' outlines (`k`) and the Oblaten carry the play. No new player sprites or anims.
+
+### Enemies (group `enemies`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `kellner` (a waiter with a tray) | 16×32 | 8,32 | `walk` 4f/6t loop (brisk, short steps, the tray steady) · `bounce` held (the tray dipped 2 px and his face annoyed: shown for 8 frames after a tray bounce; fallback `walk`) · `squished` held (sitting, tray on his head, cups intact: bump or axe). Black waistcoat `d k`, white shirt sleeves `w i`, a long white apron `w` to his shins, black trousers and shoes, a neat side parting `n`. **The tray is the hitbox top: its flat silver top line `i w` on sprite row 6, 14–16 px wide** (the bounce surface must read as one), held on his raised flat hand; on it a Melange cup `w` with an `O` crema dot and a glass of water `s h` (rows 0–5, small: nothing above row 6 reads as a surface). Faces right, `mirror = auto` |
+| `wartender` (a tourist waiting in the queue) | 16×24 | 8,24 | three looks as anims: `idle_0`/`idle_1`/`idle_2` 2f/40t loop (shifts weight, checks the phone), `selfie_0`/`_1`/`_2` 2f (the Selfie-Tourist convention: frame 0 = phone up, frame 1 = flash; the engine picks the frame), `squished_0`/`_1`/`_2` held (sits down on the floor dot, sulking). Look 0: sun hat and Tracht jacket, look 1: a baseball cap and a backpack, look 2: a Dirndl and a straw hat with a camera on a strap (the queue is mixed; no national caricature). **Always drawn facing right** (towards the counter: the queue doesn't see Resi coming), no mirror. Same scale and outline as `selfie_tourist`, so a stomp target reads the same |
+| `oberkellner` (the boss) | 32×48 | 16,48 | `idle` 2f/30t loop (Wait: polishing a glass with his napkin, the tray on the counter behind him, not in his hand) · `anstellen` held (Intro: the tray up, the other hand's index finger raised, eyebrows up) · `telegraph` 2f/6t loop (tray high, steam `w` rising from the cup, one foot scraping; leaning towards the far wall) · `dash` 4f/4t loop (a long stride, coat tails flying, the tray perfectly level) · `verschnaufen` 2f/12t loop (the breather: **tray lowered to his side**, mopping his brow with the napkin, his pomaded head `d` with an `i` shine is the top: it must read at once as "open") · `zahlen` 2f/8t loop (the volley: notepad out, pencil scribbling, tray up again) · `stun` 2f/6t loop (spinning half-turns, cups wobbling, bow tie askew) · `verbeugen` held (Done: a deep bow, napkin over the arm) · `servieren` held (optional, for the ending scene's look reference only). Tails `d k`, a white shirt front `w`, black bow tie, a silver tray `i w m` **whose flat top line is the hitbox top (36 px above his feet = sprite row 12) in every tray-up anim**; in `verschnaufen` his head top is at sprite row 18 (the 16×30 hitbox). A grand moustache `n`, upright posture: dignified, never ridiculous; no real person's likeness. Faces right, `mirror = auto` |
+| `rechnung` (a bill) | 12×12 | 6,12 | `flutter` 2f/8t loop (a white `w` slip with `m` lines and a short `r` total, tilting left/right) · `hang` 2f/12t loop (the 30-frame hang at the ceiling, a slow wobble) |
+
+### Items and goal (group `props`)
+
+| Sprite | Size | Origin | Animations |
+|---|---|---|---|
+| `stollen_glocke` (the goal: the Zaunerstollen on a plate under a glass bell) | 16×32 | 8,32 | `zu` held (the bell closed: a `s h w` glass dome with a `w` glint, a brass knob `Y o` on top, the Stollen inside slightly dimmed) · `offen` held (the bell lifted and hovering 6 px higher; the Stollen bright) · `leer` held (only the empty plate and the bell, after the touch). The Stollen is the `zaunerstollen` item's look on a white plate `w i`: a dark chocolate log `l` with an `O` glaze highlight, the cut end `c o` showing the wafer layers. Front layer, drawn from the `goal_stollen` cell's bottom centre on the counter top |
+| `stollen_teller` (the served Zaunerstollen) | 16×12 | 8,12 | `idle` held — the plate with the Stollen and a small fork, the same look as in the bell. Drawn by the renderer above Resi's head in Serve and at her feet on the title after the ending |
+
+### Tiles (group `tiles`, 16×16, `tile_<name>`)
+
+| Tile | Kind | Look |
+|---|---|---|
+| `marmor` | solid | the café floor: a chequerboard of pale and grey marble `w i` / `m i` with faint `i` veins, a 1 px `c` lip on top (walkable); autotiled left/right ends not needed (it runs wall to wall) |
+| `marmor_punkt` | solid | `marmor` with an „Abstand halten" floor dot: a round `Y` sticker with a `k` outline and two `k` footprints, flush with the floor (no relief) |
+| `stuck` | solid | the stucco ceiling: cream `c w` with a `o` cornice (egg-and-dart) on its bottom row. Only the bottom 20 px of row 6 are on screen, behind the HUD labels: keep it calm and light enough that the outlined HUD text reads (prove it with a shot), no `k` |
+| `vitrine` | solid | a glass cake display: a dark-wood `l O` base with brass `Y` feet, a glass case `s h` with a `w` glint on its corners, cakes inside (Sachertorte `l`, a pink Punschkrapfen `p`, a Gugelhupf `o O`, a Zaunerstollen slice); top: a flat marble lid `w i` with a 1 px `c` lip = the surface. **Autotiled** (16 frames): a block 2–3 wide and 2–3 high reads as one display (base row only at the bottom, the lid only on top, glass between) |
+| `theke` | solid | the counter: dark polished wood `l O` panels with a brass rail `Y o` near the bottom, a marble top `w i` (the surface); autotiled like `vitrine`. The shelves behind it are the `kuchentheke` prop |
+| `luster` | one-way | a chandelier's brass ring as a platform: top 5 px = a `Y o` brass band (the walking surface, flat over the full width), crystal drops `w s` and small `Y` bulbs hanging below it (nothing stands on the ring: upright bulbs would read as spikes). Autotiled left/right ends (curved ring ends); a 3-wide run reads as one chandelier. The chains to the ceiling are part of `bg_zauner_salon` (thin `o` lines), not the tile |
+
+Reused in M7: `oneway_wood` (the coat stand's hat shelf), `oblaten_box`, `oblaten_box_empty`, `invisible` (if a prop needs it).
+
+### Props (group `props`, M7)
+
+All are `prop` entities (bottom centre at the cell, optional `dx`, `layer`); collision stays with tiles (D-030/D-031). `PROP_SPRITES` in jnr-core and the catalog test in `xtask/src/levels.rs` must include this table (engine task; the test reads the tables by heading). The fixed camera (y 92) shows level y 92–271: a back prop standing on the floor (y 240) may be up to 128 px tall before it reaches the ceiling cornice.
+
+| Sprite | Size | Origin | Animations / notes |
+|---|---|---|---|
+| `zauner_tuer` (the café's entrance door) | 48×80 | bottom centre | `idle` 2f/30t loop — `layer = "back"`; a dark-green `G j` double door with brass handles `Y`, tall glass panes `s h` showing the Pfarrgasse outside: a sliver of street, the queue as tiny figures (one moves in frame 1), a gold `Y` script mark over the door (no letters). Behind the start |
+| `garderobe` (the coat stand) | 48×64 | bottom centre | `idle` held — `layer = "back"`; a bentwood coat stand `l O` with hats, a Lodenmantel `G`, an umbrella; its **hat shelf lines up with the `oneway_wood` row 12** (the tile is the shelf; the art is behind and around it, D-038) |
+| `kuchentheke` (the counter's back shelves) | 48×96 | bottom centre | `idle` held — `layer = "back"`; glass-fronted shelves `l O s` over the counter with Gugelhupf, Ischler Törtchen, stacked Oblaten tins `R w` and Stollen boxes, a brass cash register `Y o` (no digits); behind cols 137–139 |
+| `luster_deko` (a chandelier as decoration) | 32×32 | bottom centre | `idle` 2f/30t loop (a crystal glints) — `layer = "back"`; a smaller, muted chandelier hanging from the ceiling, for the arena and the salon's ceiling between the platform chandeliers. Must read as background (no `k`, no flat brass band like `luster`'s top, D-038) |
+
+### Backgrounds (group `bg`)
+
+| Layer | Factor (1/16) | Content |
+|---|---|---|
+| `bg_zauner_salon` | **16** (moves with the room), `factor_y` 0 | the café's back wall, **opaque over the full 180 px** (the sky is never drawn): cream `c w` walls with a dark-green `G j` wainscoting up to ~40 px above the floor line, gold-framed `Y o` mirrors and paintings (blank or landscapes: the Katrin, the Traun), tall windows `s h` onto the Pfarrgasse (the queue outside, the Stadtpfarrkirche's spire as on the route map), wall sconces, the chandeliers' thin `o` chains rising into the ceiling, and further back along the wall **marble tables with Thonet chairs and guests reading newspapers on wooden holders** (smaller, muted: far furniture, nothing reads as a ledge, D-038). The ceiling band (top 20 px) matches `stuck`. 640×180, tileable |
+
+### UI (group `ui`)
+
+| Sprite | Size | Notes |
+|---|---|---|
+| `ending_cafe` | 288×120, origin 0,0 | the ending scene (drawn at 16, 12 on navy `B`) in a gold `Y o O` picture frame (a Biedermeier frame, 4 px): Resi (her `player` look, seated, from the side) at a marble table on a Thonet chair, the Zaunerstollen on its plate, a Melange and a glass of water on a silver tray; the Oberkellner bowing beside the table; through the window behind them the Pfarrgasse with the queue and **Postbus 150 driving past, full** (faces at the windows, as in the `postbus` `halt` anim). Anims: `idle` 2f/20t loop (steam from the cup; one queue member shifts). No text |
+| `ending_zettel` | ≤ 176×144, origin 0,0 | the bill for the Bill phase: a paper slip `w c` with a torn zigzag bottom edge, a small gold `Y` script mark at the top (no letters), faint `i` ruled lines; the engine draws the texts and numbers on it (text area ≥ 160×112, lines at a 12 px pitch). Fallback: the D-037 panel |
