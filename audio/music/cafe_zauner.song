@@ -12,7 +12,8 @@
 #   chords stay chords: the violin double-stops E over the inner voice's chromatic fall
 #   (D-sharp, D, C-sharp, B, A), the chatter of the queue. Bar 18 ends on B7.
 # B (19-26): original „Komm' gleich!" strain in D major: running sixteenths (the waiters'
-#   hurry), ending on the counter bell (beat 2 of bar 26).
+#   hurry) with the Klavier in parallel thirds, ending on the counter bell (beat 2 of
+#   bar 26) and the E4 pickup into A'.
 # A' (27-34): A's last 8 bars, the last one turned into E7, back into the clinks.
 [meta]
 id = "cafe_zauner"
@@ -70,11 +71,13 @@ drums  | T/2 W r W       | r/2 W r W           | T/2 W r W          | r/2 W r W 
 key = "d major"
 score = '''
 lead   | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | g4/1 f#4 e4 f#4 g4 a4 b4 g4 | a4/1 g4 f#4 g4 a4 b4 c#5 a4 | d5/2 a4 f#4 d4 |
+second | d4/1 c#4 b3 c#4 d4 e4 f#4 d4 | e4/1 d4 c#4 d4 e4 f#4 g4 e4 | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | a4/2 f#4 d4 a3 |
 bass   | d2/4 a1       | g2/4 d2       | a2/4 e2       | d2/4 a1       |
 chords | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [d4,g4,b4]' r [d4,g4,b4]' | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' |
 drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W r W     |
 
-lead   | e4/1 d4 c#4 d4 e4 f#4 g4 e4 | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | g4/1 e4 c#4 e4 a4/2 g4 | f#4/2 d4 r/4 |
+lead   | e4/1 d4 c#4 d4 e4 f#4 g4 e4 | f#4/1 e4 d4 e4 f#4 g4 a4 f#4 | g4/1 e4 c#4 e4 a4/2 g4 | f#4/2 d4 r e4 |
+second | c#4/1 b3 a3 b3 c#4 d4 e4 c#4 | d4/1 c#4 b3 c#4 d4 e4 f#4 d4 | e4/1 c#4 a3 c#4 e4/2 e4 | r/8 |
 bass   | a2/4 e2       | d2/4 a1       | a2/4 e2       | d2/4 r        |
 chords | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r [d4,f#4,a4]' | r/2 [c#4,e4,g4]' r [c#4,e4,g4]' | r/2 [d4,f#4,a4]' r/4 |
 drums  | T/2 W r W     | r/2 W r W     | T/2 W r W     | r/2 W D/4     |

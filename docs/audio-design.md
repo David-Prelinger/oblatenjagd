@@ -20,7 +20,7 @@ Nobody can listen during development. Everything below is written to be checked 
 
 | Ch | Role | Default patch | Notes |
 |---|---|---|---|
-| M1 | **Melodie** (lead) | `fluegelhorn`: pulse 25 %, A 8 / D 80 / S 0.7 / R 60; a scoop from −30 cents to 0 over 20 ms at each note start (brass attack); vibrato 5 Hz ±15 cents after 200 ms | per piece also `klarinette` (pulse 50 %, lowpass 2.5 kHz: odd harmonics like a real clarinet), `stehgeiger` (saw, lowpass 3 kHz, vibrato 6 Hz ±25 cents from 40 ms, A 40), `zither` (pulse 12.5 %, A 2 / D 400 / S 0 / R 200, two voices ±6 cents), `spieluhr` (triangle + sine bell an octave up at −12 dB, A 2 / D 600 / S 0) |
+| M1 | **Melodie** (lead) | `fluegelhorn`: pulse 25 %, A 8 / D 80 / S 0.7 / R 60; a scoop from −30 cents to 0 over 20 ms at each note start (brass attack); vibrato 5 Hz ±15 cents after 200 ms | per piece also `klarinette` (pulse 50 %, lowpass 2.5 kHz: odd harmonics like a real clarinet), `stehgeiger` (saw, lowpass 3 kHz, vibrato 6 Hz ±25 cents from 40 ms, A 40), `zither` (pulse 12.5 %, A 2 / D 400 / S 0 / R 200, two voices ±6 cents), `spieluhr` (triangle + sine bell an octave up at −12 dB, A 2 / D 600 / S 0; *as built, S2b review*: plus a quiet sine at the note with D 2 000 ms, the comb's resonance, so a held last note fades instead of stopping dead; recheck for smearing when `unterwasser` uses it) |
 | M2 | **Zweite Stimme** (thirds/sixths below M1, or counter-melody) | `tenorhorn`: pulse 25 %, 3 dB under M1, no scoop. *As built (S2a review, accepted)*: the `fluegelhorn` uses duty 75 %, the 25 % pulse inverted (identical harmonics, opposite polarity), so lead and second-voice onsets don't stack their peaks | `klavier` in the café (pulse 12.5 %, A 1 / D 250 / S 0.2 / R 80) |
 | M3 | **Bass „Helikon"** | `helikon`: triangle, lowpass 1.2 kHz, A 5 / D 120 / S 0.4 / R 40 (staccato) | `pizzicato` in the café (triangle, A 1 / D 80 / S 0) |
 | M4 | **Nachschlag** (the "pah" of oom-pah) | `begleitung`: pulse 50 %, the chord as a frame-rate arpeggio (root, third, fifth, 16.7 ms per note, the chip-tune chord), staccato 90 ms | `orgel` in Falkenstein (square 50 % + octave, sustained, no arpeggio) |
@@ -78,9 +78,9 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | **LevelComplete** (`goal_stollen`) | cue `fanfare_finale` |
 | **Route map** (Arrive) | `route_map` from bar 1, loops through Walk and Wait (also through Teaser on test routes) |
 | **Swimming under water** (Stage 6) | crossfade to `unterwasser` (section 5, S6u) |
-| **Arena lock** (Stage 9: the Oberkellner leaves `WAIT`) | café piece fades out over 250 ms; cue `boss_intro` |
+| **Arena lock** (Stage 9: the Oberkellner leaves `WAIT`) | café piece fades out over 250 ms; cue `boss_intro`, played at a **cue gain of −12 dB** (S2b review: the render sits at the jingle lint level; the cue director applies the gain, so the Paukenschlag lands ~12 dB above it) |
 | **First Telegraph** | cue `boss_surprise`, then `boss` loops |
-| **Boss beaten** (`DONE`) | boss loop cut, cue `boss_defeat` (Tusch), 1 s silence, then `cafe_zauner` from its **loop point** until the bell |
+| **Boss beaten** (`DONE`) | boss loop cut, cue `boss_defeat` (Tusch), 1 s silence, then `cafe_zauner` from its **loop point** until the bell. *As built (D-114, S2b review)*: the loop point is bar 1, so the café resumes with its two cup clinks (service is back) |
 | **Ending** | Map: `ending_map` (once); Scene and Bill: `kaffeehaus` (one continuous loop across both phases); Credits: `credits`; Ende: `ende` (once); then the marked title with `title`. A START skip starts the next phase's cue at once (100 ms crossfade); a credits page skip doesn't touch the music |
 | Death in the arena | as every death; after the respawn at the checkpoint the café piece starts from bar 1, and the boss cues come again at the next lock |
 
@@ -107,17 +107,17 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 | `unterwasser` | Stage 6 under water | 3/4 | 84 | A | 0 + 16 | 34.3 s | „Es wird scho glei dumpa" (trad. / Reidinger) | nice (fallback must) |
 | `strobl` | Stage 7 | 2/4 | 132 | B♭, Trio E♭ | 2 + 40 | 36.4 s | original | must |
 | `bad_ischl` | Stage 8 | 2/4 | 112 | D, Trio G | 4 + 36 | 38.6 s | Strauss I Radetzky-Marsch; Haydn Kaiserhymne (4 bars, nice) | must |
-| `cafe_zauner` | Stage 9 | 2/4 | 144 | A | 2 + 32 | 26.7 s | Strauss II Tritsch-Tratsch-Polka | must |
+| `cafe_zauner` | Stage 9 | 2/4 | 144 | A | 34 (intro inside the loop, D-114) | 28.3 s | Strauss II Tritsch-Tratsch-Polka | must |
 | `boss_intro` | arena lock | 2/4 | 160 | C | 2 (once) | 1.5 s | Haydn Symphony 94, Andante | must |
 | `boss_surprise` | first telegraph | – | – | G major chord | once | 0.6 s | Haydn Symphony 94 („Paukenschlag") | must |
-| `boss` | the fight | 2/4 | 160 (nice: 168/176) | C minor, B E♭ | 0 + 24 | 18.0 s | original | must |
+| `boss` | the fight | 2/4 | 160 (nice: 168/176) | C minor, B E♭ | 0 + 32 (A B A′ B) | 24.0 s | original | must |
 | `boss_defeat` | third hit | – | – | C | once | 1.5 s | Tusch (original) | must |
 | `fanfare_clear` | Maibaum | 6/8 | ♩. = 96 | F | once, ~5 bars | ~6.3 s | Mozart K. 596 | must |
-| `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 80 | F | once, ~6 bars | ~9 s | Mozart K. 596 + leitmotif | must |
+| `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 88 | F | once, 7 bars | 9.6 s | Mozart K. 596 + leitmotif | must |
 | `death` | Died | – | – | – | once | 1.25 s | original | must |
 | `game_over` | GameOver | 2/4 | 60 | B♭ minor → B♭ | once, 4 bars | 8.0 s | original | must |
 | `hurry` | ZEIT 60 | – | – | bells | once | 1.6 s | original | must |
-| `ending_map` | ending Map | 2/4 | 100 | B♭ | once, 3 bars | ~3.6 s | Tusch + leitmotif | must |
+| `ending_map` | ending Map | 2/4 | 132 | B♭ | once, 4 bars | ~3.7 s | Tusch + leitmotif | must |
 | `kaffeehaus` | ending Scene + Bill | 3/4 | 132 | E♭ | 0 + 32 | 43.6 s | original (title theme as a waltz) | must |
 | `credits` | ending Credits | 2/4 | 116 | E♭ → B♭ | 0 + 34 | 35.2 s | original (title march) | must |
 | `ende` | ending Ende | 3/4 | 84 | B♭ | once, 2 bars | ~4 s | leitmotif | must |
@@ -213,6 +213,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 - **B (19–26)**: original „Komm' gleich!" strain in D major: running sixteenths (the waiters' hurry), ending on a counter bell (`triangel` at 2.6 kHz, one strike).
 - **A′ (27–34)**: A's last 8 bars, E7 into bar 3.
 - **Stage identity**: *Tritsch-Tratsch* means chit-chat; everybody gossips in the queue. Strauss spent his summers in Ischl.
+- *As built (S2b review, accepted)*: intro inside the loop (D-114), 34 bars = 28.3 s; the strain is read from the Haslinger first edition's IMSLP preview (piano, p. 3) and played an octave down on the Stehgeiger (E6 → E5, leads ≤ C6); its double stops stay double stops. The run in bars 14 and 32 dips to F♯3, a semitone under a real violin's G string: accepted for a chip patch (range F3–E6) to keep the quote intact.
 
 ### Boss: `boss_intro`, `boss_surprise`, `boss`, `boss_defeat` (all must)
 - **`boss_intro`** (on the lock frame, when „Hinten anstellen!" appears): **Haydn, Symphony No. 94 „mit dem Paukenschlag" (*Surprise*), Andante, bars 1–2 of the theme**: C4 C4 E4 E4 | G4 G4 E4 (♪ ♪ ♪ ♪ | ♪ ♪ ♩), *pianissimo* (−18 dB under the music bus norm), M1 pulse 12.5 % with A 1 / D 120 / S 0 (plucked strings), M3 C3 on beat 1. At **160 BPM** the 8 eighths last exactly **1 500 ms = the intro's 90 frames**. Verify the notes against the Rietz/Breitkopf score.
@@ -223,6 +224,10 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
   - A′ (17–24): A with the leitmotif in minor (1–♭3–5–4: C5 E♭5 G5 F5) in bar 23, G7 in bar 24.
   - The music does **not** follow the dash and breather (their lengths vary); those reads are SFX (section 6).
   - **Nice**: tempo by hits taken, 160 / 168 / 176 BPM, switching on the next bar line after a hit.
+- *As built (S2b review, accepted)*:
+  - `boss_intro`: the notes are read from **Clementi's piano adaptation** („The Surprise … adapted for the piano forte", London: Clementi, Collard & Collard, c. 1823; Internet Archive `surprisehaydnsce00hayd`), because the Rietz/Breitkopf score is captcha-gated on IMSLP. It is a 19th-century print, PD everywhere, and two bars of the theme leave no room for editing. The pianissimo can't be rendered (jingle RMS floor −19 dBFS), so the cue director plays it at **−12 dB cue gain** (effective peak ≈ −18, RMS ≈ −31 dBFS; section 4). The Helikon holds C3 through both bars (it keeps the cue sounding to its last eighth; tail lint).
+  - `boss_surprise`: the chord rolls up from G2 at 17 ms per note (50 ms in all, a chip chord, like the Nachschlag) so the onsets don't stack into one spike; it still reads as one hit.
+  - `boss`: A B A′ B = 32 bars = 24 s (the loop lint's 20 s floor); B's second pass ends on G7 into bar 1. The bar-7 climb touches D6 for one quarter (over the ≤ C6 rule, accepted as in `salzburg`).
 - **`boss_defeat`** (first frame of `DONE`): a **Tusch** (the brass band's honour flourish): `kleine_trommel` roll (32nds, crescendo) under a held C major chord (M3 C3, M2 E4, M4 G4 arpeggio, M1 C5) for 1 200 ms, then a final `grosse_trommel` + `becken` hit; 1.5 s in all. Then 1 s silence and `cafe_zauner` from bar 3.
 
 ### `fanfare_clear` „Komm, lieber Mai" (must)
@@ -231,7 +236,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 - The Maibaum is a May custom, and Mozart wrote the May song four months before he died. **Nice**: a Wurstkranz touch adds the first 300 ms of `oneup` (the Juchizer) over the fanfare.
 
 ### `fanfare_finale` (must)
-- On `LevelComplete` at the `goal_stollen`. The same K. 596 phrase at ♩. = 80, full band with M2 in sixths and the `becken` on every phrase start, then a 2-bar coda: the **leitmotif** in augmentation (F A C B♭ → F) and a 1.5 s Tusch. About 9 s: it covers the Serve (1.5 s) and the Tally.
+- On `LevelComplete` at the `goal_stollen`. The same K. 596 phrase at ♩. = 80, full band with M2 in sixths and the `becken` on every phrase start, then a 2-bar coda: the **leitmotif** in augmentation (F A C B♭ → F) and a 1.5 s Tusch. About 9 s: it covers the Serve (1.5 s) and the Tally. *As built (S2b review, accepted)*: ♩. = 88, not 80 (at 80 the 7 bars, vamp + phrase + coda, run 10.5 s, over the 10 s jingle cap); 9.6 s, the Tusch bar is 1.36 s.
 
 ### `death` „Autsch-Jodler" (must)
 - 1 000 ms + 300 ms release, on the music channels (the piece is cut). *As built (S2a review, accepted)*: 1 250 ms in all (600 ms yodel, 100 ms rest, the 300 ms slide, then its ring-out and release); it ends inside the 60-frame Dying phase plus the respawn and still reads as one fall.
@@ -246,7 +251,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 - Every Salzkammergut stage has a church tower; the bells say „Zeit wird's".
 
 ### Ending cues (must)
-- **`ending_map`** (Map phase, once): a 1.5 s Tusch on B♭, then the leitmotif broad (B♭4 D5 F5 E♭5 → D5, ♩ ♩ ♩ ♩ | 𝅗𝅥) at 100 BPM, M1 + M2 sixths + full accompaniment; ≈ 3.6 s, then silence until the Scene (or the next cue on a skip).
+- **`ending_map`** (Map phase, once): a 1.5 s Tusch on B♭, then the leitmotif broad (B♭4 D5 F5 E♭5 → D5, ♩ ♩ ♩ ♩ | 𝅗𝅥) at 100 BPM, M1 + M2 sixths + full accompaniment; ≈ 3.6 s, then silence until the Scene (or the next cue on a skip). *S2b review*: the Tusch bar plus ♩ ♩ ♩ ♩ | 𝅗𝅥 needs **4** 2/4 bars (v1's "3 bars" was an arithmetic slip); at 100 BPM that is 4.8 s, longer than the Map phase (240 frames = 4.0 s), so the cue plays at **132 BPM** (4 bars = 3.64 s + release, Tusch 0.9 s) and ends before the Scene.
 - **`kaffeehaus`** „Kaffeehaus-Walzer" (Scene and Bill, one loop across both): 3/4, 132 BPM, E♭ major, 32 bars (A 16 + B 16), loops from bar 1. The **title march's A tune recast as a salon waltz** (the classic march-into-waltz variation), salon instrumentation as `cafe_zauner`, no percussion except one cup clink on bar 1. Resi finally sits.
 - **`credits`**: 2/4, 116 BPM, the title march **Trio (16 bars, E♭) then A (16 bars, B♭)**, full band, ending in a 2-bar Tusch; 34 bars ≈ 35 s (longer than six 3 s pages; at Ende it crossfades to `ende`).
 - **`ende`** „Pfiat di": 3/4, 84 BPM, 2 bars, `spieluhr` alone: the leitmotif (B♭4 D5 F5 | E♭5 → B♭4 𝅗𝅥.), ≈ 4 s, then silence until the title.
@@ -363,7 +368,7 @@ Everything else is derived. No other core change is needed for MA.
 | *6 Ländlerische Tänze* K. 606, No. 1 (1791, B♭) | `salzburg` A | W. A. Mozart († 1791) | composer † 235 years; edition AMA (Breitkopf 1886) | [IMSLP K. 606](https://imslp.org/wiki/6_L%C3%A4ndlerische_T%C3%A4nze,_K.606_(Mozart,_Wolfgang_Amadeus)) |
 | *Eine kleine Nachtmusik* K. 525, I., bars 1–4 (1787) | `salzburg` C | Mozart | as above; transcribed from **Mozart's autograph** (Vienna, 10 Aug 1787; IMSLP #562645), accepted in the S2a review: the AMA file (IMSLP #01776) was captcha-gated, and a manuscript carries no editorial layer at all, so it satisfies the PD rule at least as well | [IMSLP K. 525](https://imslp.org/wiki/Eine_kleine_Nachtmusik,_K.525_(Mozart,_Wolfgang_Amadeus)) |
 | *Sehnsucht nach dem Frühling* K. 596 (14 Jan 1791, F) | `fanfare_clear`, `fanfare_finale` | Mozart (text Overbeck † 1821, not used) | as above; AMA Serie VII | [IMSLP K. 596](https://imslp.org/wiki/Sehnsucht_nach_dem_Fr%C3%BChling,_K.596_(Mozart,_Wolfgang_Amadeus)) |
-| Symphony No. 94 „Surprise", Andante theme + the *fortissimo* G major chord (1791, premiered London 1792) | `boss_intro`, `boss_surprise` | Joseph Haydn († 1809) | † 217 years; Rietz/Breitkopf c. 1855 | [IMSLP Hob. I:94](https://imslp.org/wiki/Symphony_No.94_in_G_major,_Hob.I:94_(Haydn,_Joseph)), [Wikipedia](https://en.wikipedia.org/wiki/Symphony_No._94_(Haydn)) |
+| Symphony No. 94 „Surprise", Andante theme + the *fortissimo* G major chord (1791, premiered London 1792) | `boss_intro`, `boss_surprise` | Joseph Haydn († 1809) | † 217 years; read from Clementi's piano adaptation (London, c. 1823, [Internet Archive](https://archive.org/details/surprisehaydnsce00hayd)), accepted in the S2b review because the Rietz/Breitkopf score (c. 1855) is captcha-gated | [IMSLP Hob. I:94](https://imslp.org/wiki/Symphony_No.94_in_G_major,_Hob.I:94_(Haydn,_Joseph)), [Wikipedia](https://en.wikipedia.org/wiki/Symphony_No._94_(Haydn)) |
 | „Gott erhalte Franz den Kaiser" Hob. XXVIa:43 (1797), bars 1–4 | `bad_ischl` C (nice, restricted) | Haydn | as above; text Haschka not used. Restricted use (section 5) because the tune is also Germany's anthem | [IMSLP Kaiserlied](https://imslp.org/wiki/Das_Kaiserlied,_Hob.XXVIa:43_(Haydn,_Joseph)), [Wikipedia](https://en.wikipedia.org/wiki/Gott_erhalte_Franz_den_Kaiser), [Kaisermesse Bad Ischl, 18 Aug](https://www.salzkammergut.at/oesterreich-veranstaltung/detail/430078154/kaisermesse.html) |
 | Radetzky-Marsch op. 228 (premiered 31 Aug 1848), first strain | `bad_ischl` A | Johann Strauss (Vater) († 1849) | † 177 years; Haslinger 1848 | [IMSLP op. 228](https://imslp.org/wiki/Radetzky-Marsch,_Op.228_(Strauss_Sr.,_Johann)), [Wikipedia](https://en.wikipedia.org/wiki/Radetzky_March) |
 | Tritsch-Tratsch-Polka op. 214 (1858, A major), first strain | `cafe_zauner` A | Johann Strauss (Sohn) († 3 June 1899) | † 127 years; Haslinger 1858–59 | [IMSLP op. 214](https://imslp.org/wiki/Tritsch-Tratsch-Polka,_Op.214_(Strauss_Jr.,_Johann)), [Wikipedia J. Strauss II](https://en.wikipedia.org/wiki/Johann_Strauss_II); Ischl summers: [Bad Ischl music history (sample)](https://content.e-bookshelf.de/media/reading/L-22583705-8ddf81bddb.pdf) |

@@ -1,12 +1,11 @@
 # `ending_map` (audio-design §5, ending Map phase): a Tusch on B-flat, then the
 # Oblaten-Motiv broad (B-flat4 D5 F5 E-flat5 as four quarters, then D5 as a half), the
-# Flügelhorn with the Tenorhorn in sixths and thirds and the full band. 2/4, 100 BPM.
-# Four bars = 4.8 s, not the design's 3 bars / 3.6 s: the Tusch bar (1.2 s) plus four
-# quarters plus a half need four 2/4 bars.
+# Flügelhorn with the Tenorhorn in sixths and thirds and the full band. 2/4, 132 BPM
+# (S2b review: it must end inside the 4.0 s Map phase): four bars = 3.64 s.
 [meta]
 id = "ending_map"
 kind = "jingle"
-tempo_bpm = 100
+tempo_bpm = 132
 meter = "2/4"
 steps_per_beat = 4
 key = "bb major"
