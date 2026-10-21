@@ -10,7 +10,8 @@ publish.workspace = true
 jnr-core.workspace = true
 jnr-render.workspace = true
 jnr-assets.workspace = true
-macroquad.workspace = true
+# `audio`: quad-snd playback (D-114/D-115); wasm needs build.rs + web/audio.js (D-116).
+macroquad = { workspace = true, features = ["audio"] }
 
 # Native only: PNG export for --screenshot-at and F12 (not built for wasm).
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

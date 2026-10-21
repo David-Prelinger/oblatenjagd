@@ -1,4 +1,5 @@
-# PLACEHOLDER (E55 test fixture): a hand clap, four band-passed noise bursts 10 ms apart.
+# E55 test fixture for jnr-audio (not a game sound; the sound-designer authors those in audio/).
+# A hand clap: four band-passed noise bursts 10 ms apart.
 [[layer]]
 wave = "noise"
 freq_hz = 20000

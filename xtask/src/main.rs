@@ -14,6 +14,7 @@ mod levels;
 mod par;
 #[cfg(test)]
 mod popup_clearance;
+mod pulse;
 mod replay;
 mod report;
 mod scrolllint;

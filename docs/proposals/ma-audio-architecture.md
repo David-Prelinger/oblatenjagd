@@ -417,6 +417,23 @@ the packages (verified: no autospawn).
 6. **Disk**: the Pulse packages add some tens of MB to the image (the root filesystem
    showed no measurable change at 59 GB, 75 % used).
 
+## As built (E54)
+
+E54 implemented the platform part as proposed (decisions as recorded: D-114 … D-116, D-118).
+Deviations and details:
+
+- **Feature switch** in `crates/jnr-app/Cargo.toml` (`macroquad = { workspace = true, features = ["audio"] }`), not in the workspace `Cargo.toml`, so only the app pulls in quad-snd.
+- **No startup grace** (a first version waited 10 frames; removed after review): a send before the audio thread dies succeeds silently, and the hook sets the flag before the thread drops its receiver, so loading on frame 1 is safe. While muted, loads are neither started nor polled.
+- **No-device run**: `vnc-smoke` always makes a second short run with `PULSE_SERVER=unix:/nonexistent` and asserts exactly one `audio unavailable (` line and no `Audio thread died`, so the no-device path stays covered when a Pulse daemon runs.
+- **One null sink per run** (`jnr_null_<pid>`, passed as `PULSE_SINK`, unloaded afterwards) instead of a shared `jnr_null` set as the default sink; the daemon starts with no sink. `parec` runs with `--latency-msec=50` (with the default latency a short run recorded nothing).
+- **`--test-tone`** (native debug flag) instead of the spike's beep per jump: until E59 wires cues, `vnc-smoke` passes it and, with Pulse, asserts the captured peak (≥ 1000; measured 3000) and no clipping, not ≥ 5 SFX onsets (that is E59's job).
+- **`JNR_PULSE=off`** makes xtask treat Pulse as absent in the main run. The daemon xtask starts stays running.
+- **`vnc-smoke` always** checks the app log for `Audio thread died` (with and without Pulse).
+- **Imports pin**: an xtask test compares `wasm-audio-imports.txt` with the `extern "C"` block of quad-snd's `src/web_snd.rs` in the cargo registry and the `Cargo.lock` version with `QUAD_SND_VERSION` (both variants of the proposal at once). The sha256 test shells out to `sha256sum` (no new crate).
+- **Licence**: quad-snd 0.2.8 ships no licence file; `web/audio.js.LICENSE-MIT` is the MIT text of `gl.js.LICENSE-MIT` (same author, crate licence `MIT/Apache-2.0`).
+- The panic message goes to stderr. A quad-snd panic on the main thread (an undecodable WAV in `Sound::load`) is deliberately **not** swallowed: our WAVs come from our own writer, and such a panic is a bug.
+- `Audio::calls()` counts gated backend calls; a unit test already proves `--mute` makes 0 calls (E59 extends it to real cues).
+
 ## As built (E55)
 
 `crates/jnr-audio` (modules `patch`, `note`, `synth`, `tables`, `render`, `wav`, `error`); the
@@ -458,6 +475,23 @@ above:
   E57's "90 s, 6 channels < 50 ms" will need the song renderer to reuse identical
   pattern renders (see the notes for E57 below) or a lighter target.
 
+### E55 review fixes
+
+- `vibrato` gained `delay_ms`, `to_depth_cents` and `ramp_ms` (delayed, growing and fading
+  vibrato from `docs/audio-design.md` §2.1/§6); layers gained `slide_delay_ms`.
+- **API changes**: `Vibrato` has three more fields (`delay_ms`, `to_depth_cents`,
+  `ramp_ms`) and `Layer` one (`slide_delay_ms`); `synth::Voice` has `slide_start`. Code
+  that builds these structs literally needs the new fields (`Vibrato` is `Default`). New:
+  `render::add_sfx_until`, `render::add_note_until`, `render::CUT_FADE` (existing
+  signatures unchanged).
+- Behaviour: a note's gate now counts from its onset including a layer's `delay_ms`; an
+  ADSR release from level 0 has no samples (a gate-0 note is silent and as long as its
+  delay).
+- Fixtures moved to `crates/jnr-audio/tests/fixtures/`; `audio/` has only a README.
+- Arch-lint: `as_float`, `Value::Float` and `toml::Value` are forbidden in jnr-audio.
+- The pinned hash changed (its patch now also uses vibrato delay/ramp and slide delay); it
+  still matches a wasm32 build run in Node.
+
 Notes for E56/E57:
 
 - E56: `render_sfx(&Sfx) -> Render` gives the PCM and the clamp count; `wav::write` the
@@ -466,7 +500,7 @@ Notes for E56/E57:
 - E57: build songs with `render::add_note(&mut mix, start, layers, note, gate, volume_pct)`
   and `render::add_sfx` for kit hits (`InstrumentKind::Kit { hits }`), then `to_pcm`. A note
   sounds `gate + release` samples, so the loop-wrap tail is `mix[loop_len..]` folded back
-  onto the start. Identical (instrument, note, gate, volume) voices render identically, so a
+  onto the start; `add_note_until` cuts a note early with a 2 ms fade. Identical (instrument, note, gate, volume) voices render identically, so a
   per-song cache of rendered notes or whole pattern instances is safe and the obvious speed-up.
 
 ## As built (E56)

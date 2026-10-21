@@ -64,7 +64,7 @@ jnr-audio ──► (jnr-core only, from E58 for the cues)
 xtask ──► everything (never the other way round)
 ```
 
-- `jnr-audio` is pure and wasm-safe like `jnr-core` (`serde` + `toml` only; never macroquad, quad-snd, rand) and under the same determinism source scan (D-117). `jnr-render` never depends on it.
+- `jnr-audio` is pure and wasm-safe like `jnr-core` (`serde` + `toml` only; never macroquad, quad-snd, rand) and under the same determinism source scan (D-117); it also may not mention `as_float`, `Value::Float` or `toml::Value` (every audio number is an integer key). `jnr-render` never depends on it.
 
 - `jnr-artkit` depends by default only on `serde` + `toml` (generator params; pure and wasm-safe, like jnr-core) and builds for wasm; PNG encoding is behind its `png` feature, which only xtask enables.
 
@@ -162,7 +162,7 @@ loop {
   - `--record`: `record::Recorder` RLE-encodes the input of every step and tracks a `replay::Outcome`; on exit (window close, Escape, `--exit-after`) it writes a replay with `source = human` and a derived `expect` (`complete frames=N..N`, else `state=<mode> player_x>=<x>`; always `deaths=<n>`), creating directories, and prints `recorded: <path>`. Not combinable with `--replay`.
 - Escape and closing the window (native) end the loop cleanly (`prevent_quit`), so the recording can be written; the process exits 0.
 - Debug keys (debug builds): F1 hitboxes, F2 frame-step, F3 slow-mo, F12 save framebuffer PNG.
-- Audio: maps core `Event`s to sounds (macroquad audio). Audio is optional; a missing sound never fails.
+- Audio: maps core `Event`s to sounds (macroquad audio). Audio is optional; a missing sound never fails. Platform layer as built in E54 (D-114 … D-116, D-118), below; the cue wiring and real sounds come with E59.
 - Wasm: built with `cargo xtask wasm`, served from `web/` with any static server. All assets are embedded (`include_bytes!`), so no fetching at runtime.
 
 Implemented (M0):
@@ -171,6 +171,15 @@ Implemented (M0):
 - F12 (native debug builds) saves the framebuffer as shown (incl. F1 overlay) to `$CARGO_TARGET_DIR/preview/f12_<frame>.png` (else `./f12_<frame>.png`) and prints the path. F2/F3 are not implemented yet.
 - PNG encoding uses the `png` crate as a native-only dependency of `jnr-app`.
 - Wasm uses `Options::default()` (no command line). `web/index.html` loads `web/gl.js` (unmodified copy of miniquad's loader, version in `web/README.md`) and `jnr-app.wasm`; it sets `<body data-wasm="loaded">` once the module is instantiated. `cargo xtask wasm [--debug] [--serve] [--port N]` builds (release by default) and assembles `$CARGO_TARGET_DIR/web/`; `cargo xtask wasm-smoke` (a `verify` step) loads it in headless Chromium (SwiftShader WebGL) and checks the marker and the screenshot `$CARGO_TARGET_DIR/preview/wasm_smoke.png` (not blank, ≥ 25 % sky colour `s`).
+
+Implemented (MA, E54): audio platform (`src/audio.rs`, the only code that touches `macroquad::audio`):
+- `jnr-app` enables macroquad's `audio` feature in its own `Cargo.toml` (quad-snd 0.2.8; the workspace entry stays `default-features = false`).
+- **Panic guard** (native, D-115): `audio::install_panic_guard()` runs in `main()` before `Window::from_config` (macroquad creates the audio context, and quad-snd its thread, while it sets up the window). The pure `classify_panic(file, thread)` treats a panic located in `quad-snd` on a thread other than `main` as the audio thread dying (no device: `Can't open PCM device.`): it sets the static `AUDIO_DEAD`, prints one line `jnr-app: audio unavailable (<msg>), playing silently` and swallows the panic. Everything else, including a quad-snd panic on the main thread (an undecodable WAV), goes to the previous hook. libasound's own `ALSA lib …` stderr lines remain (cosmetic).
+- **Backend gate**: every macroquad audio call goes through `Audio::may_call()`, which refuses while the thread is dead (an injectable probe, `audio_dead` in the app, a stub in tests), after a load timeout or while muted, and counts the calls it allows (`calls()`: load starts, frames with load polls, plays, stops; for E59's `--mute` counter test). Unit tests: a dead probe gives 0 calls, `off() == Some(NoDevice)` and the queued tone never loads; muted gives 0 calls. `Audio`'s `Drop` leaks loaded `Sound`s when the thread is dead (their drop would send a delete). Result: no `Audio thread died` lines (quad-snd prints one per call otherwise); `vnc-smoke` asserts it.
+- **Frame-budgeted loader**: `Load<T>` pins a load future and polls it once per render frame with `Waker::noop()`; after `LOAD_BUDGET_FRAMES` (120) without a result it reports `TimedOut`, `Audio` logs `audio load timed out after 120 frames; audio off` once and stays off; the game runs on (the wasm-without-`audio.js` case, where `load_sound_from_bytes` never returns). Natively a load finishes on its first poll. Loads start on the first frame: a send to quad-snd before its thread dies succeeds silently, and the guard sets the flag before the dying thread drops its receiver, so no later call reaches a dead channel. While muted, nothing is started or polled. `Audio::update()` runs once per render frame, never blocks.
+- **Mute**: `--mute` (native CLI) starts muted: nothing is loaded or played. The **M** key (`MUTE_KEY`, both platforms, not a game key; a test checks it is not in `KEY_MAP`) toggles mute, stops everything playing when muting, and logs `sound off`/`sound on`. No player-visible text.
+- **Test tone** (debug, native): `--test-tone` queues a 0.3 s 440 Hz square WAV (44.1 kHz mono i16, amplitude 6000, played at volume 0.5) and plays it once when loaded (`jnr-app: test tone played`, logged only when `play()` returns true). It is the only sound until E59; `vnc-smoke` uses it.
+- **wasm**: `crates/jnr-app/build.rs` emits, only for `wasm32`, `cargo:rustc-link-arg-bins=--allow-undefined-file=<manifest>/wasm-audio-imports.txt` with exactly the 9 `audio_*` imports of quad-snd's `web_snd.rs` (D-116; quad-snd lacks `wasm_import_module`, and rustc no longer allows undefined symbols on wasm32). `web/audio.js` is an unmodified copy of quad-snd 0.2.8's `js/audio.js` (sha256 and licence in `web/README.md`, `audio.js.LICENSE-MIT` next to it); `index.html` loads it after `gl.js`, and `xtask wasm` copies both into the web dir. xtask tests pin it: the quad-snd version in `Cargo.lock` equals `QUAD_SND_VERSION`, the imports list equals the `extern "C"` block of the registry's `web_snd.rs`, `audio.js` matches the README's sha256, and `index.html` loads it between `gl.js` and the module. The browser `AudioContext` stays suspended until the first key press (autoplay policy; `audio.js` resumes it).
 
 ## jnr-artkit + jnr-assets: asset pipeline
 
@@ -198,18 +207,23 @@ TOML, integers only, units in the key names. 1–8 `[[layer]]`s, summed:
 | `duty_pct` | 1..=99 | 50 | pulse only |
 | `freq_hz` | 20..=20000 | required | noise: the LFSR steps at 2 × `freq_hz` (20000 ≈ white) |
 | `slide_to_hz` | 20..=20000 | none | glide in cents (exponential in Hz) |
-| `slide_ms` | 0..=10000 | the whole sound | only with `slide_to_hz` |
+| `slide_ms` | 0..=10000 | the rest of the sound | only with `slide_to_hz` |
+| `slide_delay_ms` | 0..=10000 | 0 | the glide starts this long after the layer's start (e.g. a 1-up's last step); only with a slide |
 | `attack_ms`, `hold_ms`, `decay_ms` | 0..=10000 each | 0 | linear 0 → peak → peak → 0; at least one > 0 |
 | `volume_pct` | 0..=100 | required | of full scale; layers add up, clamps are counted |
-| `vibrato` | `{ depth_cents = 0..=1200, rate_hz = 0..=50 }` | off | rate ≥ 1 when depth > 0 |
+| `vibrato` | `{ depth_cents = 0..=1200, rate_hz = 0..=50, delay_ms = 0..=10000, to_depth_cents = 0..=1200, ramp_ms = 0..=10000 }` | off; `delay_ms` 0, `to_depth_cents` = `depth_cents`, `ramp_ms` 0 | off before `delay_ms` (the LFO starts at phase 0 there), then the depth goes linearly from `depth_cents` to `to_depth_cents` over `ramp_ms` (with `ramp_ms = 0`: `to_depth_cents` at once). A delayed vibrato: `{ depth_cents = 20, rate_hz = 6, delay_ms = 200 }`; growing: `depth_cents = 0, to_depth_cents = 50, ramp_ms = 500`; fading: `depth_cents = 100, to_depth_cents = 0, ramp_ms = 200`. `rate_hz` ≥ 1 when either depth > 0 |
 | `arp` | `{ every_ms = 1..=1000, semitones = [-24..=24; ≤ 8] }` | off | cycles through the list |
 | `tremolo` | `{ depth_pct = 0..=100, rate_hz = 1..=50 }` | off | gain × (1 − depth·(1+sin)/2) |
 | `lowpass_hz`, `highpass_hz` | 20..=20000 | off | one-pole; high-pass < low-pass |
-| `bandpass` | `{ hz = 20..=10000, to_hz = 20..=10000, q_pct = 100..=2000 }` | off | `to_hz` defaults to `hz`; Q = `q_pct`/100 |
+| `bandpass` | `{ hz = 20..=10000, to_hz = 20..=10000, q_pct = 100..=2000 }` | off | `to_hz` defaults to `hz`; Q = `q_pct`/100. Unity gain holds for a tone at the centre; it is no peak bound for broadband noise, whose peaks can exceed the input's, so check the clamp count. A **low-pass sweep** is approximated with a Q 1 band-pass sweep (`q_pct = 100`); `lowpass_hz` itself is fixed |
 | `delay_ms` | 0..=10000 | 0 | the layer starts later |
 | `repeat` | `{ count = 1..=64, every_ms = 1..=10000 }` | off | the whole layer again, `every_ms` apart |
 
 The sound's length is the longest layer's `delay + attack + hold + decay` (+ repeats).
+
+Cutting early (E57's notes, SFX retriggers): `render::add_sfx_until` and `add_note_until` take an absolute sample `until`; the voice is unchanged before it, fades out linearly over `CUT_FADE` = 88 samples (2 ms) from it, and adds nothing after; a voice starting at or after `until` adds nothing.
+
+The crate's test fixtures (example `.sfx`/`.inst` files) are in `crates/jnr-audio/tests/fixtures/`; `audio/` holds only game sounds.
 
 ```toml
 # audio/sfx/jump.sfx
@@ -227,7 +241,7 @@ volume_pct = 35
 
 ### `.inst` (`audio/instruments/*.inst`)
 
-**Melodic**: `range = ["e1", "f4"]` (note names `c4`, `f#3`, `bb2`, octaves 0..=8; `a4` = 440 Hz, equal temperament) and 1–8 `[[layer]]`s with the `.sfx` keys except `freq_hz`, `slide_to_hz`, `hold_ms` and `repeat`, plus `detune_cents` (−2400..=2400), `slide_cents` (−4800..=4800, needs `slide_ms`), and an ADSR: `attack_ms`, `decay_ms` (to sustain), `sustain_pct` (default 100), `release_ms`. A note held for `gate` samples sounds `gate + release` samples; a release before the end of attack or decay starts from the level reached.
+**Melodic**: `range = ["e1", "f4"]` (note names `c4`, `f#3`, `bb2`, octaves 0..=8; `a4` = 440 Hz, equal temperament) and 1–8 `[[layer]]`s with the `.sfx` keys except `freq_hz`, `slide_to_hz`, `hold_ms` and `repeat`, plus `detune_cents` (−2400..=2400), `slide_cents` (−4800..=4800, needs `slide_ms`), and an ADSR: `attack_ms`, `decay_ms` (to sustain), `sustain_pct` (default 100), `release_ms`. A note's `gate` (samples) is counted from its onset, a layer's `delay_ms` included, so every layer of a note sounds `gate + release` samples from the onset (a layer whose delay is ≥ the gate stays silent). A release before the end of attack or decay starts from the level reached; a release from level 0 (e.g. a gate of 0) has no samples.
 
 **Kit**: a `[kit]` table mapping single letters (A–Z, a–z) to patch names, and one `[[patch.<name>.layer]]` list per patch with `.sfx` keys. No `range` or top-level `[[layer]]`; every patch must be used.
 

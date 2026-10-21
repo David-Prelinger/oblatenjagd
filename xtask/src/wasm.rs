@@ -16,7 +16,7 @@ use crate::target_dir;
 pub const HELP: &str = "\
 cargo xtask wasm [--release | --debug] [--serve] [--port N]
     builds jnr-app for wasm32-unknown-unknown (release by default) and
-    assembles $CARGO_TARGET_DIR/web/ (index.html, gl.js, jnr-app.wasm);
+    assembles $CARGO_TARGET_DIR/web/ (index.html, gl.js, audio.js, jnr-app.wasm);
     --serve then serves it with `python3 -m http.server` (default port 8080)
 cargo xtask wasm-smoke
     assembles the release build, loads it in headless Chromium (SwiftShader
@@ -151,8 +151,8 @@ pub fn smoke(root: &Path, args: &[String]) -> ExitCode {
     }
 }
 
-/// Builds `jnr-app` for wasm and copies page, loader (+ its licence) and
-/// module into `$CARGO_TARGET_DIR/web/`. Returns that directory.
+/// Builds `jnr-app` for wasm and copies page, loader and audio plugin (+
+/// their licences) and module into `$CARGO_TARGET_DIR/web/`. Returns that directory.
 /// `quiet` hides cargo's progress output (errors are still shown).
 fn build_and_assemble(root: &Path, release: bool, quiet: bool) -> Result<PathBuf, String> {
     let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
@@ -190,6 +190,11 @@ fn build_and_assemble(root: &Path, release: bool, quiet: bool) -> Result<PathBuf
         (root.join("web/index.html"), "index.html"),
         (root.join("web/gl.js"), "gl.js"),
         (root.join("web/gl.js.LICENSE-MIT"), "gl.js.LICENSE-MIT"),
+        (root.join("web/audio.js"), "audio.js"),
+        (
+            root.join("web/audio.js.LICENSE-MIT"),
+            "audio.js.LICENSE-MIT",
+        ),
         (wasm, WASM_NAME),
     ];
     for (from, name) in files {
@@ -547,6 +552,61 @@ fn analyse(rgba: &[u8], sky: [[u8; 3]; 2]) -> Result<String, String> {
     ))
 }
 
+/// The quad-snd version whose `js/audio.js` is in `web/` and whose JS
+/// imports `crates/jnr-app/wasm-audio-imports.txt` lists (D-116).
+#[cfg(test)]
+const QUAD_SND_VERSION: &str = "0.2.8";
+
+/// The version of `package` in a `Cargo.lock`.
+#[cfg(test)]
+fn locked_version(lock: &str, package: &str) -> Option<String> {
+    let mut lines = lock.lines();
+    while let Some(line) = lines.next() {
+        if line.trim() == format!("name = \"{package}\"") {
+            let version = lines.next()?.trim().strip_prefix("version = \"")?;
+            return Some(version.trim_end_matches('"').to_owned());
+        }
+    }
+    None
+}
+
+/// quad-snd's `src/web_snd.rs` from the cargo registry.
+#[cfg(test)]
+fn quad_snd_web_source(version: &str) -> Result<String, String> {
+    let home = std::env::var_os("CARGO_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cargo")))
+        .ok_or("neither CARGO_HOME nor HOME is set")?;
+    let registry = home.join("registry/src");
+    let entries = fs::read_dir(&registry).map_err(|e| format!("{}: {e}", registry.display()))?;
+    for entry in entries.flatten() {
+        let file = entry
+            .path()
+            .join(format!("quad-snd-{version}/src/web_snd.rs"));
+        if let Ok(text) = fs::read_to_string(&file) {
+            return Ok(text);
+        }
+    }
+    Err(format!(
+        "quad-snd-{version}/src/web_snd.rs not found under {} (run `cargo fetch`)",
+        registry.display()
+    ))
+}
+
+/// The function names declared in the first `extern "C" { ... }` block.
+#[cfg(test)]
+fn extern_fns(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .skip_while(|l| l.trim() != "extern \"C\" {")
+        .skip(1)
+        .take_while(|l| l.trim() != "}")
+        .filter_map(|l| l.trim().strip_prefix("fn "))
+        .filter_map(|rest| rest.split('(').next())
+        .map(str::to_owned)
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -686,6 +746,75 @@ mod tests {
         assert!(js.starts_with("var PROMPT_TOP = 0.69"), "{js}");
         assert!(js.contains("var PROMPT_BOTTOM = 0.78"), "{js}");
         assert!(js.contains("miniquad_add_plugin"));
+    }
+
+    fn repo_root() -> &'static Path {
+        Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()
+    }
+
+    #[test]
+    fn index_loads_audio_js_after_gl_js_and_before_the_module() {
+        let html = fs::read_to_string(repo_root().join("web/index.html")).unwrap();
+        let gl = html.find("<script src=\"gl.js\"></script>").unwrap();
+        let audio = html.find("<script src=\"audio.js\"></script>").unwrap();
+        let load = html.find("load(\"jnr-app.wasm\")").unwrap();
+        assert!(gl < audio && audio < load, "{html}");
+    }
+
+    #[test]
+    fn audio_js_matches_the_sha256_in_the_readme() {
+        let root = repo_root();
+        let out = Command::new("sha256sum")
+            .arg(root.join("web/audio.js"))
+            .output()
+            .expect("sha256sum (coreutils)");
+        assert!(out.status.success());
+        let text = String::from_utf8(out.stdout).unwrap();
+        let sha = text.split_whitespace().next().unwrap();
+        let readme = fs::read_to_string(root.join("web/README.md")).unwrap();
+        assert!(
+            readme.contains(&format!("`{sha}`")),
+            "web/audio.js has sha256 {sha}, which web/README.md does not record"
+        );
+        assert!(readme.contains(&format!("quad-snd {QUAD_SND_VERSION}")));
+        assert!(root.join("web/audio.js.LICENSE-MIT").is_file());
+    }
+
+    #[test]
+    fn audio_imports_list_matches_the_locked_quad_snd() {
+        let root = repo_root();
+        let lock = fs::read_to_string(root.join("Cargo.lock")).unwrap();
+        assert_eq!(
+            locked_version(&lock, "quad-snd").as_deref(),
+            Some(QUAD_SND_VERSION),
+            "quad-snd changed in Cargo.lock: re-check crates/jnr-app/wasm-audio-imports.txt \
+             and web/audio.js against the new crate, then update QUAD_SND_VERSION"
+        );
+        let listed: Vec<String> =
+            fs::read_to_string(root.join("crates/jnr-app/wasm-audio-imports.txt"))
+                .unwrap()
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .map(str::to_owned)
+                .collect();
+        let source = quad_snd_web_source(QUAD_SND_VERSION).unwrap_or_else(|e| panic!("{e}"));
+        let declared = extern_fns(&source);
+        assert_eq!(declared.len(), 9, "{declared:?}");
+        assert_eq!(
+            listed, declared,
+            "wasm-audio-imports.txt vs quad-snd's web_snd.rs"
+        );
+    }
+
+    #[test]
+    fn extern_fns_reads_the_extern_block_only() {
+        let src = "use x;\nextern \"C\" {\n    fn a(x: u32);\n    fn b() -> bool;\n}\n\
+                   pub extern \"C\" fn c() -> u32 { 1 }\nfn d() {}\n";
+        assert_eq!(extern_fns(src), ["a", "b"]);
+        let lock = "[[package]]\nname = \"quad-snd\"\nversion = \"0.2.8\"\n";
+        assert_eq!(locked_version(lock, "quad-snd").as_deref(), Some("0.2.8"));
+        assert_eq!(locked_version(lock, "quad"), None);
     }
 
     #[test]

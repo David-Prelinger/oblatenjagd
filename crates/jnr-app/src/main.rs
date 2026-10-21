@@ -8,11 +8,12 @@
 //!
 //! Native builds take command line flags (`--help`, see `cli.rs`); wasm
 //! always starts the default level with default options.
-//! Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, F1 debug
-//! overlay, F12 (native debug builds) save the framebuffer as PNG, Escape
+//! Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, M sound
+//! on/off, F1 debug overlay, F12 (native debug builds) save the framebuffer as PNG, Escape
 //! (native) quit. `--replay` feeds inputs from a replay file instead of the
 //! keyboard; `--record` writes the played inputs as a replay on exit.
 
+mod audio;
 #[cfg(not(target_arch = "wasm32"))]
 mod cli;
 mod options;
@@ -63,6 +64,9 @@ const KEY_MAP: [(KeyCode, InputFrame); 12] = [
     (KeyCode::Enter, InputFrame::START),
     (KeyCode::KpEnter, InputFrame::START),
 ];
+
+/// Toggles the sound (both platforms, outside the game input).
+const MUTE_KEY: KeyCode = KeyCode::M;
 
 /// The input bits for the keys held right now.
 fn input_from(held: impl Fn(KeyCode) -> bool) -> InputFrame {
@@ -233,6 +237,10 @@ fn after_frame(opts: &Options, game: &Game, ctx: &RenderContext, fb: &mut Frameb
 
 fn main() {
     let opts = startup_options();
+    // Before the window: macroquad creates the audio context (and quad-snd
+    // its thread) while it sets the window up.
+    #[cfg(not(target_arch = "wasm32"))]
+    audio::install_panic_guard();
     macroquad::Window::from_config(window_conf(opts.scale), run(opts));
 }
 
@@ -248,6 +256,10 @@ async fn run(opts: Options) {
     let mut accumulator = 0.0;
     let mut debug_overlay = false;
     let mut recording = start_recording(&opts, &game);
+    let mut audio = audio::Audio::new(opts.mute);
+    if opts.test_tone {
+        audio.queue_test_tone();
+    }
     // Closing the window only sets a flag; the loop below ends cleanly.
     #[cfg(not(target_arch = "wasm32"))]
     prevent_quit();
@@ -268,6 +280,10 @@ async fn run(opts: Options) {
         if is_key_pressed(KeyCode::F1) {
             debug_overlay = !debug_overlay;
         }
+        if is_key_pressed(MUTE_KEY) {
+            audio.toggle_mute();
+        }
+        audio.update();
         let keyboard = input_from(is_key_down);
         for _ in 0..ticks_due(&mut accumulator, f64::from(get_frame_time())) {
             let input = opts.input.input_for(game.frame(), keyboard);
@@ -347,6 +363,12 @@ mod tests {
                 .with(InputFrame::RUN)
         );
         assert_eq!(input_from(|k| k == KeyCode::Enter), InputFrame::START);
+    }
+
+    #[test]
+    fn mute_key_is_not_a_game_key() {
+        assert!(KEY_MAP.iter().all(|(key, _)| *key != MUTE_KEY));
+        assert!(![KeyCode::F1, KeyCode::F12, KeyCode::Escape].contains(&MUTE_KEY));
     }
 
     #[test]

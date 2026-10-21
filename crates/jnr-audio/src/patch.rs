@@ -10,12 +10,13 @@
 //! duty_pct = 25            # pulse only (1..=99, default 50)
 //! freq_hz = 330            # sfx: the start pitch (noise: the LFSR steps at 2 × freq_hz)
 //! slide_to_hz = 660        # optional: glide (in cents) to this pitch ...
-//! slide_ms = 60            # ... over this time (default: the whole sound)
+//! slide_ms = 60            # ... over this time (default: the rest of the sound)
+//! slide_delay_ms = 0       # ... starting this long after the layer's start
 //! attack_ms = 2            # linear 0 -> peak
 //! hold_ms = 30             # peak
 //! decay_ms = 90            # linear peak -> silence
 //! volume_pct = 60          # 0..=100 of full scale
-//! vibrato = { depth_cents = 20, rate_hz = 6 }   # optional
+//! vibrato = { depth_cents = 20, rate_hz = 6 }   # optional; also delay_ms, to_depth_cents, ramp_ms
 //! arp = { every_ms = 50, semitones = [0, 7] }   # optional
 //! tremolo = { depth_pct = 60, rate_hz = 25 }   # optional amplitude wobble
 //! lowpass_hz = 6000        # optional one-pole filters
@@ -121,11 +122,16 @@ pub enum Envelope {
     },
 }
 
-/// Pitch wobble: a sine of `rate_hz` and ± `depth_cents`.
+/// Pitch wobble: a sine of `rate_hz`. Off for the first `delay_ms` (the
+/// LFO starts at phase 0 there), then ± `depth_cents`, ramping linearly to
+/// ± `to_depth_cents` over `ramp_ms` (a growing or fading vibrato).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Vibrato {
     pub depth_cents: u32,
     pub rate_hz: u32,
+    pub delay_ms: u32,
+    pub to_depth_cents: u32,
+    pub ramp_ms: u32,
 }
 
 /// Arpeggio: every `every_ms` the next semitone offset of the list (cycling).
@@ -167,6 +173,8 @@ pub struct Layer {
     /// Glide time; `None` = the whole sound (`.sfx`) or no glide (`.inst`
     /// without `slide_cents`).
     pub slide_ms: Option<u32>,
+    /// The glide starts this long after the layer's start (0 = at once).
+    pub slide_delay_ms: u32,
     pub envelope: Envelope,
     pub volume_pct: u32,
     pub vibrato: Vibrato,
@@ -282,6 +290,7 @@ struct RawLayer {
     detune_cents: Num,
     slide_cents: Num,
     slide_ms: Num,
+    slide_delay_ms: Num,
     attack_ms: Num,
     hold_ms: Num,
     decay_ms: Num,
@@ -325,6 +334,9 @@ struct RawRepeat {
 struct RawVibrato {
     depth_cents: Spanned<i64>,
     rate_hz: Spanned<i64>,
+    delay_ms: Option<Spanned<i64>>,
+    to_depth_cents: Option<Spanned<i64>>,
+    ramp_ms: Option<Spanned<i64>>,
 }
 
 #[derive(Deserialize)]
@@ -527,13 +539,11 @@ fn layer(src: &Src, sl: &Spanned<RawLayer>, ctx: Ctx) -> Result<Layer, ParseErro
     };
     let slides = l.slide_to_hz.is_some() || l.slide_cents.is_some();
     if !slides {
-        forbid(
-            src,
-            &l.slide_ms,
-            "slide_ms",
-            "without `slide_to_hz`/`slide_cents`",
-        )?;
+        let why = "without `slide_to_hz`/`slide_cents`";
+        forbid(src, &l.slide_ms, "slide_ms", why)?;
+        forbid(src, &l.slide_delay_ms, "slide_delay_ms", why)?;
     }
+    let slide_delay_ms = num(src, &l.slide_delay_ms, "slide_delay_ms", 0, MAX_MS, 0)? as u32;
     let slide_ms = match &l.slide_ms {
         Some(v) => Some(bounded(src, v, "slide_ms", 0, MAX_MS)? as u32),
         None => None,
@@ -586,16 +596,29 @@ fn layer(src: &Src, sl: &Spanned<RawLayer>, ctx: Ctx) -> Result<Layer, ParseErro
             let r = v.get_ref();
             let depth = bounded(src, &r.depth_cents, "depth_cents", 0, 1200)?;
             let rate = bounded(src, &r.rate_hz, "rate_hz", 0, 50)?;
-            if depth > 0 && rate == 0 {
+            let to_depth = match &r.to_depth_cents {
+                Some(v) => bounded(src, v, "to_depth_cents", 0, 1200)?,
+                None => depth,
+            };
+            let opt_ms = |v: &Option<Spanned<i64>>, key: &str| match v {
+                Some(v) => bounded(src, v, key, 0, MAX_MS),
+                None => Ok(0),
+            };
+            let delay = opt_ms(&r.delay_ms, "delay_ms")?;
+            let ramp = opt_ms(&r.ramp_ms, "ramp_ms")?;
+            if (depth > 0 || to_depth > 0) && rate == 0 {
                 return Err(src.err(
                     r.rate_hz.span(),
                     ErrorKind::Range,
-                    "`rate_hz` must be 1..=50 when `depth_cents` > 0",
+                    "`rate_hz` must be 1..=50 when `depth_cents` or `to_depth_cents` > 0",
                 ));
             }
             Vibrato {
                 depth_cents: depth as u32,
                 rate_hz: rate as u32,
+                delay_ms: delay as u32,
+                to_depth_cents: to_depth as u32,
+                ramp_ms: ramp as u32,
             }
         }
     };
@@ -698,6 +721,7 @@ fn layer(src: &Src, sl: &Spanned<RawLayer>, ctx: Ctx) -> Result<Layer, ParseErro
         wave,
         pitch,
         slide_ms,
+        slide_delay_ms,
         envelope,
         volume_pct,
         vibrato,

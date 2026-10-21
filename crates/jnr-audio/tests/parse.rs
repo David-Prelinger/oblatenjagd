@@ -5,11 +5,11 @@ use jnr_audio::{ErrorKind, Instrument, InstrumentKind, ParseError, Sfx, Wave};
 const GOOD_LAYER: &str = "wave = \"pulse\"\nfreq_hz = 440\ndecay_ms = 100\nvolume_pct = 50\n";
 
 fn sfx_err(text: &str) -> ParseError {
-    Sfx::parse("audio/sfx/test.sfx", text).expect_err("should fail")
+    Sfx::parse("tests/fixtures/test.sfx", text).expect_err("should fail")
 }
 
 fn inst_err(text: &str) -> ParseError {
-    Instrument::parse("audio/instruments/test.inst", text).expect_err("should fail")
+    Instrument::parse("tests/fixtures/test.inst", text).expect_err("should fail")
 }
 
 #[track_caller]
@@ -28,36 +28,29 @@ fn check(e: ParseError, kind: ErrorKind, line: usize, needle: &str) {
 
 #[test]
 fn the_fixtures_parse() {
-    let jump = Sfx::parse(
-        "audio/sfx/jump.sfx",
-        include_str!("../../../audio/sfx/jump.sfx"),
-    )
-    .unwrap();
+    let jump = Sfx::parse("tests/fixtures/jump.sfx", include_str!("fixtures/jump.sfx")).unwrap();
     assert_eq!(jump.id, "jump");
     assert_eq!(jump.layers[0].wave, Wave::Pulse { duty_pct: 25 });
     for (file, text) in [
         (
-            "audio/sfx/oblate.sfx",
-            include_str!("../../../audio/sfx/oblate.sfx"),
+            "tests/fixtures/oblate.sfx",
+            include_str!("fixtures/oblate.sfx"),
         ),
         (
-            "audio/sfx/klatschen.sfx",
-            include_str!("../../../audio/sfx/klatschen.sfx"),
+            "tests/fixtures/klatschen.sfx",
+            include_str!("fixtures/klatschen.sfx"),
         ),
     ] {
         Sfx::parse(file, text).unwrap();
     }
     let tuba = Instrument::parse(
-        "audio/instruments/tuba.inst",
-        include_str!("../../../audio/instruments/tuba.inst"),
+        "tests/fixtures/tuba.inst",
+        include_str!("fixtures/tuba.inst"),
     )
     .unwrap();
     assert!(matches!(tuba.kind, InstrumentKind::Melodic { ref layers, .. } if layers.len() == 2));
-    let kit = Instrument::parse(
-        "audio/instruments/kit.inst",
-        include_str!("../../../audio/instruments/kit.inst"),
-    )
-    .unwrap();
+    let kit =
+        Instrument::parse("tests/fixtures/kit.inst", include_str!("fixtures/kit.inst")).unwrap();
     let InstrumentKind::Kit { hits } = kit.kind else {
         panic!("kit expected")
     };
@@ -151,10 +144,43 @@ fn key_not_allowed_here() {
         6,
         "without `slide_to_hz`",
     );
+    check(
+        sfx_err(&format!("[[layer]]\n{GOOD_LAYER}slide_delay_ms = 10\n")),
+        ErrorKind::Key,
+        6,
+        "`slide_delay_ms` is not allowed",
+    );
+}
+
+#[test]
+fn errors_point_at_the_column_of_the_value() {
+    let e = sfx_err("[[layer]]\nwave = \"pulse\"\nfreq_hz = 5\n");
+    assert_eq!((e.line, e.col), (3, 11), "{e}");
+    assert!(
+        e.to_string()
+            .starts_with("tests/fixtures/test.sfx:3:11: error[range]"),
+        "{e}"
+    );
 }
 
 #[test]
 fn range() {
+    check(
+        sfx_err(&format!(
+            "[[layer]]\n{GOOD_LAYER}vibrato = {{ depth_cents = 0, rate_hz = 0, to_depth_cents = 9 }}\n"
+        )),
+        ErrorKind::Range,
+        6,
+        "rate_hz",
+    );
+    check(
+        sfx_err(&format!(
+            "[[layer]]\n{GOOD_LAYER}vibrato = {{ depth_cents = 9, rate_hz = 5, ramp_ms = 20000 }}\n"
+        )),
+        ErrorKind::Range,
+        6,
+        "`ramp_ms` = 20000",
+    );
     check(
         sfx_err("[[layer]]\nwave = \"pulse\"\nfreq_hz = 5\n"),
         ErrorKind::Range,
