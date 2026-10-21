@@ -1,6 +1,6 @@
 # Audio design (Milestone MA)
 
-Status: **design v1** (game-designer, MA planning; decision D-113). Owner of the musical and sound intent: game-designer. Owner of the patches and patterns: `sound-designer` (created in MA). The engine decides the implementation (synth, pattern format, mixer, streaming vs. pre-render) and records it; this document fixes **what** is heard, **when**, and **how loud**.
+Status: **as built at MA acceptance** (design v1 by the game-designer, MA planning, D-113; *as built* notes from the S1/S2 reviews and the MA acceptance review mark where the build differs, mostly through D-114's playback model: hard cuts instead of fades and crossfades, no master bus). "Nice" items not mentioned as built are not built (backlog, milestone task S3). Owner of the musical and sound intent: game-designer. Owner of the patches and patterns: `sound-designer` (created in MA). The engine decides the implementation (synth, pattern format, mixer, streaming vs. pre-render) and records it; this document fixes **what** is heard, **when**, and **how loud**.
 
 Nobody can listen during development. Everything below is written to be checked without ears: exact triggers (events or state), durations in ms and frames (1 frame = 16.7 ms at 60 Hz), pitches as note names (A4 = 440 Hz, equal temperament), envelopes as A/D/S/R in ms, levels in dBFS, and for music: tempo, meter, key, bars, loop point, channel roles and the source of every quoted melody. "Must" ships in MA; "nice" ships if time allows (cut order at the end).
 
@@ -57,8 +57,9 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | SFX "soft" (stroke, tally tick, selfie click, footsteps, telegraph extras) | peak −14 … −16 dBFS |
 | Ambience loops (nice) | peak −24 … −26 dBFS |
 
+- *As built (D-114, D-122; MA acceptance)*: there is **no master bus** and no soft clip. Headroom is budgeted per sound by this table (lints: `audio/targets.toml` classes, songs as class `song`, jingles as `jingle`) and proven offline: the `audio-mix` verify step mixes every replay with a cue-log golden exactly as the app plays it and fails on any sample above **−1 dBFS** or any clamped sample. Loudest moments measured at acceptance: Stage 1 tour −2.19 dBFS (`oblate` + `salzburg` + `stomp`), ending skip −2.0 (`ende` + `ui_start`), boss win −3.73 (`cafe_zauner` + `roof_bounce`); RMS over a run ≈ −20 dBFS, the music's own −20 ± 2 target. The SFX read clearly over the band in both mixes.
 - **Relative balance**: music sits ~6 dB under the "normal" SFX, so a jump is always heard over a full band.
-- **Ducking**: while an SFX with priority ≥ 7 plays, the music bus is lowered **−6 dB** (attack 20 ms, release 250 ms).
+- **Ducking**: while an SFX with priority ≥ 7 plays, the music bus is lowered **−6 dB** (attack 20 ms, release 250 ms). *As built (D-122)*: −6.02 dB (50 % volume), switched without ramps; leaving the pause (`pause`, I9) ducks too. *MA acceptance review, required change*: ducking lowers the **song only, never a jingle** (jingles are music cues that don't compete with SFX, section 2.2). Reason: the first `boss_telegraph` (W7) starts on the frame of `boss_surprise`, so the ducked Paukenschlag (peak −6.1 → −12.2 dBFS) came out ~4 dB under the `boss` loop that follows it (peak −8.2) and lost its *fortissimo*; the ZEIT-60 bells in the fight and the Tusch's first frames were ducked the same way.
 - **All content below 10 kHz** except clicks and paper-rustle noise (`bills_hang`, centroid ~9 kHz, accepted in the S1 review: the engine renders at 44 100 Hz), so a 22 050 Hz output rate is acceptable (engine's call; 44 100 Hz is fine too). Band-limited oscillators recommended for square/saw above C6 (aliasing would read as noise).
 - **DC offset** < 0.5 % of full scale in every render; every cue starts and ends at zero (fade-in/out ≥ 2 ms) so nothing clicks.
 
@@ -71,7 +72,7 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | **Stage intro** (150 frames) | silence; SFX `station_gong` (nice) when it follows the title, the map or a continue, **not** after a death (the death cue's tail is still ringing) |
 | **Playing** begins (after the intro; in `start = playing` games: the first frame and every `Respawned`) | the stage piece from **bar 1** (intro bars included), normal tempo |
 | **Pause** (START) | music **pauses in place** (no duck, silence), every SFX voice is cut (10 ms), SFX `pause`; on resume `pause` (2 semitones lower is nice, section 6.3) and the music continues from where it stopped |
-| **ZEIT drops to 60** (the HUD turns red; the first frame of play with `time_left == 60` after a frame with 61) | music cue `hurry` (the piece pauses for 1.6 s, then resumes where it was); **nice**: from then on the piece plays **+12 % tempo** (until the next respawn or stage). In the boss fight the bells play on SFX voice I over the boss music instead (no pause mid-fight) |
+| **ZEIT drops to 60** (the HUD turns red; the first frame of play with `time_left == 60` after a frame with 61) | music cue `hurry` (the piece pauses for 1.6 s, then resumes where it was); **nice**: from then on the piece plays **+12 % tempo** (until the next respawn or stage). In the boss fight the bells play over the boss music instead (no pause mid-fight). *As built (E58a, accepted in the MA review)*: in the fight (Oberkellner neither `WAIT` nor `DONE`) the bells are the same `hurry` **jingle**, not an SFX on voice I, and the boss loop is not held: the bells can't be stolen by an Oblate or a checkpoint on voice I, and they add ~3 dB over the boss loop (time-up-in-fight mix). Known edge, accepted: ZEIT 60 inside the 2.1 s of `boss_intro` + `boss_surprise` or the Tusch replaces that jingle (one jingle at a time). The +12 % render variant exists in `jnr-audio` but no cue plays it (nice, not built) |
 | **Died** | music cut at once, all SFX voices cut, cue `death` (1.25 s in all, release included; the Dying phase is 60 frames) |
 | **GameOver** event | cue `game_over` (cuts any tail of `death`); after it, silence until START |
 | **LevelComplete** (Maibaum) | music cut, all SFX cut except voice I, cue `fanfare_clear`; then the SFX `tally_tick` / `tally_end`; the Clear panel is silent |
@@ -80,9 +81,10 @@ Music jingles (fanfares, death, game over, hurry, Tusch) are **music cues**, not
 | **Swimming under water** (Stage 6) | crossfade to `unterwasser` (section 5, S6u) |
 | **Arena lock** (Stage 9: the Oberkellner leaves `WAIT`) | café piece fades out over 250 ms; cue `boss_intro`, played at a **cue gain of −12 dB** (S2b review: the render sits at the jingle lint level; the cue director applies the gain, so the Paukenschlag lands ~12 dB above it) |
 | **First Telegraph** | cue `boss_surprise`, then `boss` loops |
-| **Boss beaten** (`DONE`) | boss loop cut, cue `boss_defeat` (Tusch), 1 s silence, then `cafe_zauner` from its **loop point** until the bell. *As built (D-114, S2b review)*: the loop point is bar 1, so the café resumes with its two cup clinks (service is back) |
-| **Ending** | Map: `ending_map` (once); Scene and Bill: `kaffeehaus` (one continuous loop across both phases); Credits: `credits`; Ende: `ende` (once); then the marked title with `title`. A START skip starts the next phase's cue at once (100 ms crossfade); a credits page skip doesn't touch the music |
+| **Boss beaten** (`DONE`) | boss loop cut, cue `boss_defeat` (Tusch), 1 s silence, then `cafe_zauner` from its **loop point** until the bell. *As built (D-114, S2b review)*: the loop point is bar 1, so the café resumes with its two cup clinks (service is back). *MA review*: a player who reaches the `goal_stollen` within 2.5 s skips the rest (`fanfare_finale` cuts the Tusch; ending-skip replay: 28 frames after `DONE`); accepted, the snare roll reads as the finale's lead-in |
+| **Ending** | Map: `ending_map` (once); Scene and Bill: `kaffeehaus` (one continuous loop across both phases); Credits: `credits`; Ende: `ende` (once); then the marked title with `title`. A START skip starts the next phase's cue at once (100 ms crossfade); a credits page skip doesn't touch the music. *As built (D-114)*: every fade and crossfade in this table (10 ms stops, the 100 ms skip, the 250 ms café fade-out at the lock, the 300 ms underwater swap) is a hard cut or volume swap; quad-snd has no fades, and every cue edge starts and ends at zero, so nothing clicks |
 | Death in the arena | as every death; after the respawn at the checkpoint the café piece starts from bar 1, and the boss cues come again at the next lock |
+| Test levels (`testbed`, `items`, `m4_enemies` …) | no `[meta] music` (D-121: only the 9 journey levels must have it), so their play is silent apart from SFX and jingles |
 
 **Loops**: every piece loops at a bar line from its last bar to its **loop point** (the first bar after its intro). The last bar must lead into the loop bar (usually a dominant). *As built (D-114, accepted in the S2a review)*: a loop plays from sample 0, so the loop point is always bar 1 and a piece's intro bars come round once per loop (`title`: the post-horn call every 37 s, like a Postbus at its stop; `salzburg`: a 2-bar um-pa-pa breath before the K. 606 strain). No separate intro jingles are made; the last bar leads into bar 1. The seam is sample-continuous (no gap, no click; checked, section 9).
 
@@ -111,7 +113,7 @@ Bar length = beats per bar × 60 / BPM. "Loop bars" = the looped part; total = i
 | `boss_intro` | arena lock | 2/4 | 160 | C | 2 (once) | 1.5 s | Haydn Symphony 94, Andante | must |
 | `boss_surprise` | first telegraph | – | – | G major chord | once | 0.6 s | Haydn Symphony 94 („Paukenschlag") | must |
 | `boss` | the fight | 2/4 | 160 (nice: 168/176) | C minor, B E♭ | 0 + 32 (A B A′ B) | 24.0 s | original | must |
-| `boss_defeat` | third hit | – | – | C | once | 1.5 s | Tusch (original) | must |
+| `boss_defeat` | third hit | 3/4 (as built) | 120 | C | once | 1.5 s | Tusch (original) | must |
 | `fanfare_clear` | Maibaum | 6/8 | ♩. = 96 | F | once, ~5 bars | ~6.3 s | Mozart K. 596 | must |
 | `fanfare_finale` | `goal_stollen` | 6/8 | ♩. = 88 | F | once, 7 bars | 9.6 s | Mozart K. 596 + leitmotif | must |
 | `death` | Died | – | – | – | once | 1.25 s | original | must |
@@ -278,6 +280,8 @@ Columns: **Trigger** (a core `Event`, or a state change the app derives; "first 
 6. **Ducking**: priority ≥ 7 ducks the music (section 3).
 7. A mute (M) silences everything without stopping the clocks: pieces and loops keep advancing, so unmuting is in place.
 
+*As built (D-121, D-122; checked in the MA review against the 10 cue-log goldens)*: rules 1–6 hold in every log (one id per step, the Oblate rattle restarts, the off-screen boss and singer cues are gated, Died/GameOver/Pause cut all, LevelComplete keeps I). The 5 ms steal fade is a hard stop (cue edges start at zero). Voice A (ambience) is not built (nice).
+
 ### 6.2 Core events
 
 | Event | SFX id | Voice / prio | Duration | Synthesis and pitch contour | Peak | Prio |
@@ -425,19 +429,21 @@ No player-visible text is needed for MA except the optional mute toast: `ui.soun
 
 ## Proposed MA tasks (design view)
 
+*Historical*: the planning list as merged into `docs/milestones.md` (MA), which is the live checklist. Ticked here as of the MA acceptance review.
+
 The orchestrator merges this with the engine plan. G = game-designer, S = sound-designer, E = engine, Q = qa-tester, O = orchestrator.
 
 - [x] (G) Audio design (`docs/audio-design.md`) and D-113; mute toast texts in de.toml
-- [ ] (O) Create the `sound-designer` agent and the `sfx-authoring` skill (patch and pattern conventions, the PD rule of section 7, the level table of section 3, how to read a piano roll and a cue log)
-- [ ] (E) `jnr-audio`: oscillators (pulse with duty, triangle, saw, sine, noise), ADSR, pitch slides, vibrato, arpeggio, simple lowpass/highpass/bandpass; offline render to WAV; stats (peak, RMS, DC, centroid, loop seam); `xtask audio render|stats`
-- [ ] (E) Pattern text format (tracker style, rows per beat, channels M1–M5 (+M6), per-channel patch, loop point, header with `source`/`edition`/`bars`), parser and lints (bar lengths per meter, loop point on a bar line, notes in range); `xtask audio roll` piano rolls; melody fixture tests
-- [ ] (E) Core: `Event::Bounced` with the tests of section 6.4 (no hash or replay change)
-- [ ] (E) Cue mapper (pure: events + state diff + input → cues), voice manager (P/W/I/A, priorities, stealing, dedupe, off-screen rule), music player (intro + loop, pause in place, cuts, crossfades, the parallel underwater track or the fallback filter, nice tempo steps), mixer (buses, ducking, soft clip, ceiling); `xtask replay --audio-log` and cue-log goldens
-- [ ] (E) `jnr-app`: re-enable macroquad's `audio` feature; play the mixer's output (streaming or pre-rendered, engine's call: record it, incl. memory on wasm); M mute; wasm unlock on the first key; silent and panic-free without a device; nice: volume keys and the toast
-- [ ] (S) The 25 must SFX (section 6), with stats in range
-- [ ] (S) Music, must, in this order: `title`, `death`, `fanfare_clear`, `hurry`, `game_over`, `route_map`, `salzburg`, the boss set, `cafe_zauner`, `fanfare_finale`, the ending set, then stages 2–8 and the underwater fallback; each quote transcribed from its PD edition with its header filled in
+- [x] (O) Create the `sound-designer` agent and the `sfx-authoring` skill (patch and pattern conventions, the PD rule of section 7, the level table of section 3, how to read a piano roll and a cue log)
+- [x] (E) `jnr-audio`: oscillators (pulse with duty, triangle, saw, sine, noise), ADSR, pitch slides, vibrato, arpeggio, simple lowpass/highpass/bandpass; offline render to WAV; stats (peak, RMS, DC, centroid, loop seam); `xtask audio render|stats`
+- [x] (E) Pattern text format (tracker style, rows per beat, channels M1–M5 (+M6), per-channel patch, loop point, header with `source`/`edition`/`bars`), parser and lints (bar lengths per meter, loop point on a bar line, notes in range); `xtask audio roll` piano rolls; melody fixture tests
+- [x] (E) Core: `Event::Bounced` with the tests of section 6.4 (no hash or replay change)
+- [x] (E) Cue mapper (pure: events + state diff + input → cues), voice manager (P/W/I/A, priorities, stealing, dedupe, off-screen rule), music player (intro + loop, pause in place, cuts, crossfades, the parallel underwater track or the fallback filter, nice tempo steps), mixer (buses, ducking, soft clip, ceiling); `xtask replay --audio-log` and cue-log goldens (as built: D-114, D-121, D-122; no voice A, no tempo steps, no master bus; the MA review's jingle-ducking change is open)
+- [x] (E) `jnr-app`: re-enable macroquad's `audio` feature; play the mixer's output (streaming or pre-rendered, engine's call: record it, incl. memory on wasm); M mute; wasm unlock on the first key; silent and panic-free without a device; nice: volume keys and the toast
+- [x] (S) The 25 must SFX (section 6), with stats in range
+- [x] (S) Music, must, in this order: `title`, `death`, `fanfare_clear`, `hurry`, `game_over`, `route_map`, `salzburg`, the boss set, `cafe_zauner`, `fanfare_finale`, the ending set, then stages 2–8 and the underwater fallback; each quote transcribed from its PD edition with its header filled in
 - [ ] (S) Nice SFX and nice music (the cut order of section 10 in reverse)
 - [ ] (G) Review: every piano roll against section 5 and every quote against its score; the cue logs of a Stage 1 tour and the Normal boss win; the levels table; verdict per piece
 - [ ] (Q) Cue logs over every flow: title → intro → play → pause → hurry → death → game over → continue → clear → map → … → ending → marked title; the Stage 6 dive and surface switch; the boss telegraph/breather/volley/defeat cues; no SFX twice per step; mute in every mode; the wasm smoke with audio
 - [ ] (E/G, nice) The music credits page (section 11) with the ending re-cut
-- [ ] (O) Docs: architecture.md (jnr-audio, the cue mapper, the app's audio), validation.md (audio checks), agentic-setup.md (the new agent and skill), a `Bounced` line in game-design.md's event notes
+- [x] (O) Docs: architecture.md (jnr-audio, the cue mapper, the app's audio), validation.md (audio checks), agentic-setup.md (the new agent and skill), a `Bounced` line in game-design.md's event notes
