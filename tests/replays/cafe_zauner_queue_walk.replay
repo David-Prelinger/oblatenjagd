@@ -16,9 +16,9 @@ seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt score=2600 player_x>=1580
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

@@ -9,9 +9,9 @@ seed   = 1
 source = handwritten
 expect = dies_at frames=12000..12000 deaths=1 no_event=Hurt boss_hits=0 lives=2 player_x>=1790 state=playing
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

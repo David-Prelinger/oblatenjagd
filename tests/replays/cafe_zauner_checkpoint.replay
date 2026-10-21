@@ -17,9 +17,9 @@ source = handwritten
 expect = deaths=1 dies_at frames=1623..1623 event=CheckpointReached event=Respawned event=BlockBumped event=PowerUp
 expect = boss_hits=0 power=big lives=2 score=10200 state=playing
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

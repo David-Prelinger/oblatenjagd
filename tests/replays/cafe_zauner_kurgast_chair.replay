@@ -16,9 +16,9 @@ seed   = 1
 source = handwritten
 expect = deaths=0 no_event=Hurt event=Stomped score=2300 oblaten=11 player_y<=138 player_y>=138 player_x>=896 state=playing
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

@@ -8,9 +8,9 @@ seed   = 1
 source = handwritten
 expect = deaths=1 no_event=LevelComplete boss_hits=0 player_x>=2210 state=playing
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

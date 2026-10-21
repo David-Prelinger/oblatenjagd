@@ -16,9 +16,9 @@ seed   = 1
 source = handwritten
 expect = complete frames=2722..2722 deaths=0 event=PowerUp event=Hurt boss_hits=3 power=normal score=25200
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

@@ -1,16 +1,21 @@
 # The upper route as Zuckerschock (D-110: a big Resi's head meets the
 # ceiling after ~18 px of rise above a band). From the start she takes the
-# Mozartkugel from the M-box at 12 (PowerUp 165), crosses pen 1 and pen B
-# on the vitrines and L1 (tray bounces off both Kellner), pen C on the
-# ?-box at 52 and Vitrine C, without a hurt, and stands on Vitrine D at
-# 1285. Then at walk speed: Vitrine D -> L3 (1337), L3 -> L4 (1444), L4 ->
-# L5 (1555), L5 -> L6 (1666), the 18 Oblaten, off L6 onto the floor (1783).
-# No stomp in the queue, no hurt, still big. Each hop's press shifted
-# alone (as in cafe_zauner_luster_route): 10, 8, 7, 8.
+# Mozartkugel from the M-box at 12 (bumped 106; PowerUp 165) and hops onto
+# the vitrine at 18-19 (re-cut for D-111: the ?-box that stood at 17 is
+# at 8 now). From 557 a beam search (no hurt, big kept): tray bounces off
+# Kellner #1 (608) onto Vitrine A and off Kellner #2 (676), the ?-box at
+# 52 (783), a stomp on Kurgast #1 (801), Vitrine C, Vitrine D (884); she
+# brakes and stands on it (x 1119.6; the D-110 cut stood at 1119.1).
+# Then at walk speed, the D-110 inputs unchanged: Vitrine D -> L3 (987),
+# L3 -> L4 (1094), L4 -> L5 (1205), L5 -> L6 (1316), the 18 Oblaten, off
+# L6 onto the floor (1432). No stomp in the queue, no hurt, still big.
+# Each hop's press shifted alone (D-100, every other input at its frame;
+# judged 40 frames after the landing on standing on the target band with
+# no hurt): 10, 7, 8, 8 (D-110 cut: 10, 8, 7, 8).
 level  = cafe_zauner
 seed   = 1
 source = handwritten
-expect = deaths=0 no_event=Hurt power=big oblaten=35 score=8100 player_x>=1600
+expect = deaths=0 no_event=Hurt power=big oblaten=21 score=5300 player_x>=1600
 ---
 R 98
 J 12
@@ -19,28 +24,33 @@ R 32
 RJ 36
 R 14
 - 300
-R 44
-RJ 36
-R 14
-- 60
 R 16
-RJ 36
-R 14
-- 60
-R 32
-RJ 8
-R 14
-- 60
-RJ 24
-R 14
-- 100
 RB 16
-RBJ 24
-RB 14
-- 60
-RJ 8
-R 14
-- 60
+RBJ 1
+RB 2
+RJ 1
+R 2
+- 4
+R 8
+RJ 36
+R 2
+RBJ 36
+RB 2
+- 16
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RJ 1
+R 2
+- 16
+RBJ 36
+RB 2
+RJ 19
+L 16
+- 30
 R 21
 RJ 14
 R 20

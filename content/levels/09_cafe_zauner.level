@@ -7,10 +7,13 @@
 #   1 Windfang & Garderobe 0-29: zauner_tuer (back) col 1, start 2, Bus
 #        150? / Wurscht! (bus) 4, 5 Oblaten 7-11 on row 12 (the spec's row
 #        13 at 6-10 sat on both sign boards, D-088), Sie werden / platziert
-#        11, M-box 12 and ?-box 17 (row 11, 4 up; the spec's 14 and 16
-#        stood in front of the back wall's mirror, bg x 215-264: the box
-#        bottom met the mirror's bottom bar at screen 99-101, a shelf
-#        illusion; 12 and 17 keep 7 px clear of its frame). Vitrine 18-19
+#        11, ?-box 8 (row 11, over the Oblate at 8; D-111: was 17, where it
+#        closed the walking jump onto the vitrine) and M-box 12 (row 11, 4
+#        up; the spec's 14 stood in front of the back wall's mirror, bg x
+#        215-264: the box bottom met the mirror's bottom bar at screen
+#        99-101, a shelf illusion; 12 keeps 7 px clear of its frame).
+#        Cols 13-17 free floor before the vitrine (D-111 reach rule: 2
+#        columns in front of a step-up free up to 3 tiles). Vitrine 18-19
 #        (2 high): the Mozartkugel turns there. Pen 20-31 (walls 18-19 and
 #        Vitrine A, 12 free tiles): Kellner #1 at 28, the hat shelf
 #        oneway_wood 23-25 (row 12, 3 up) with the garderobe prop (back,
@@ -53,7 +56,7 @@
 # 10, 36, 50, 123, 130 (x mod 640 = 168, 584, 168, 56, 168); L1-L6 on
 # the planned columns (D-104 art exception 2).
 # Oblaten: 46 placed + 3 in ?-boxes = 49 (target 50 +- 10).
-# time_limit 200 provisional (D-045: QA's relaxed run sets it).
+# time_limit 200 final (D-111: QA's relaxed run 57.4 s, the clamp).
 # Solver (with the boss, E46 ranking; re-solved for D-110): complete 2278,
 # 15 jumps, narrowest counted window 12 (frame 388, x 969: from pen C's
 # floor over Vitrine C onto Vitrine D), the others 14+ (route-bounded)
@@ -129,7 +132,7 @@ grid = '''
 ..........4.........................4...o.........4.....ooo....................oo.....oo.....oo............................4......4.........
 .......................................ooo.................................ooo....ooo....ooo....ooo.........................................
 .......................ooo..............................---...............-----..-----..-----..-----........................................
-............M....?.....................---..........?................oo.....................................?......M......................G.
+........?...M..........................---..........?................oo.....................................?......M......................G.
 .......ooooo...........+++......................ooo.............ooo..VV....................................ooooo........VV...............TTT
 ..................VV............VVV.............VVV.............VVV..VV.................................................VV...............TTT
 .1P.a......b......VV.c..2...k..dVVV..e......kf..VVV.g.......ujt.VVV.iVV..w..w..w..w..w..w..w..w..w...l.......h..C..n..==VV............K.3TTT

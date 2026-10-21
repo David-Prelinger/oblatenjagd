@@ -12,9 +12,9 @@ expect = complete frames=3167..3167 deaths=0 no_event=Hurt boss_hits=3 score=242
 - 10
 S 1
 - 150
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20

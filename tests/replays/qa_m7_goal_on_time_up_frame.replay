@@ -9,9 +9,9 @@ seed   = 1
 source = handwritten
 expect = complete frames=12000..12000 deaths=0 no_event=Died boss_hits=3 state=stage_clear
 ---
-RB 76
+RB 88
 RBJ 20
-RB 27
+RB 15
 RBJ 20
 RB 40
 RBJ 20
