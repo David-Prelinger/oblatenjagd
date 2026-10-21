@@ -568,3 +568,86 @@ fn the_route_map_waits_for_the_fanfare() {
     assert_eq!(map(Some(now)), (vec![Cue::Song(Music::RouteMap)], None));
     assert_eq!(map(None), (vec![Cue::Song(Music::RouteMap)], None));
 }
+
+/// The rendered lengths of the boss jingles and the bells (as the bank
+/// renders them at E64), so the logs match the cue goldens.
+fn boss_lengths() -> JingleFrames {
+    let mut l = JingleFrames::default();
+    for (m, f) in [
+        (Music::BossIntro, 93),
+        (Music::BossSurprise, 38),
+        (Music::BossDefeat, 95),
+        (Music::Hurry, 96),
+    ] {
+        l.frames.insert(m, f);
+    }
+    l
+}
+
+/// The music cues (songs, jingles) of a replay on `00_m7_boss.level`.
+fn m7_boss_music(replay: &str) -> Vec<(u32, Cue)> {
+    let level = Level::parse(include_str!("../../../../content/levels/00_m7_boss.level")).unwrap();
+    let replay = jnr_core::Replay::parse(replay).unwrap();
+    let mut g = replay.new_game(&[level], &tuning()).unwrap();
+    let mut d = Director::new(boss_lengths());
+    let mut out: Vec<(u32, Cue)> = d.begin(&g).into_iter().map(|c| (0, c)).collect();
+    for input in replay.frames() {
+        g.step(input);
+        let f = g.frame();
+        out.extend(d.step(&g, input).into_iter().map(|c| (f, c)));
+    }
+    out.retain(|(_, c)| matches!(c, Cue::Song(_) | Cue::Jingle(_)));
+    out
+}
+
+/// E64: ZEIT 60 on the arena-lock frame: the lock's `boss_intro` comes
+/// first and the bells wait for it and the chord after it.
+#[test]
+fn zeit60_on_the_lock_frame_waits_for_the_boss_jingles() {
+    let log = m7_boss_music(include_str!(
+        "../../../../tests/replays/qa_ma_cues_zeit60_on_lock_frame.replay"
+    ));
+    let at = |f: u32| -> Vec<Cue> { log.iter().filter(|(g, _)| *g == f).map(|x| x.1).collect() };
+    assert_eq!(at(14400), vec![Cue::Jingle(Music::BossIntro)]);
+    assert_eq!(
+        at(14528),
+        vec![Cue::Song(Music::Boss), Cue::Jingle(Music::Hurry)]
+    );
+}
+
+/// E64: ZEIT 60 on the DONE frame: the bells wait for the Tusch.
+#[test]
+fn zeit60_on_the_done_frame_waits_for_the_tusch() {
+    let log = m7_boss_music(include_str!(
+        "../../../../tests/replays/qa_ma_cues_zeit60_on_done_frame.replay"
+    ));
+    let at = |f: u32| -> Vec<Cue> { log.iter().filter(|(g, _)| *g == f).map(|x| x.1).collect() };
+    assert_eq!(at(14400), vec![Cue::Jingle(Music::BossDefeat)]);
+    assert_eq!(at(14495), vec![Cue::Jingle(Music::Hurry)]);
+}
+
+/// E64: ZEIT 60 on the frame the boss loop is due: the loop starts on
+/// time, the bells play over it (only the café piece waits for them).
+#[test]
+fn zeit60_on_the_boss_loop_frame_starts_the_loop_on_time() {
+    let log = m7_boss_music(include_str!(
+        "../../../../tests/replays/qa_ma_cues_zeit60_on_boss_loop_due.replay"
+    ));
+    let at = |f: u32| -> Vec<Cue> { log.iter().filter(|(g, _)| *g == f).map(|x| x.1).collect() };
+    assert_eq!(
+        at(14400),
+        vec![Cue::Jingle(Music::Hurry), Cue::Song(Music::Boss)]
+    );
+}
+
+/// E64: the bells move only the stage piece after the Tusch, never the
+/// boss loop.
+#[test]
+fn the_bells_never_move_the_boss_loop() {
+    use state::oberkellner as st;
+    let mut d = short_director();
+    d.scheduled = Some((100, Music::Boss));
+    d.now = 100;
+    d.bells(100, Some(st::TELEGRAPH), &mut Vec::new());
+    assert_eq!(d.scheduled, Some((100, Music::Boss)));
+}

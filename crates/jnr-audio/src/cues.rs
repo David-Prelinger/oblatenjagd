@@ -1069,6 +1069,9 @@ impl Director {
         {
             req.push(Sfx::TallyTick.play());
         }
+        // The Oberkellner first: a lock or a DONE on the ZEIT-60 frame
+        // starts its jingle before the bells, which then wait for it (E64).
+        self.boss(g, prev.boss, snap.boss, out, req);
         // ZEIT drops to 60: the church bells (after a boss jingle that
         // plays, which they would cut).
         if snap.phase == Phase::Playing && prev.time_left == 61 && snap.time_left == 60 {
@@ -1092,7 +1095,6 @@ impl Director {
                 }
             }
         }
-        self.boss(g, prev.boss, snap.boss, out, req);
         self.singers(g, prev, snap, out, req);
     }
 
@@ -1183,16 +1185,20 @@ impl Director {
 
     /// The ZEIT-60 church bells; outside the boss fight they hold the
     /// stage piece while they ring.
-    /// A song scheduled to start while they ring (the café piece after the
-    /// Tusch) waits until they are over (E63, game-designer review: its cup
-    /// clinks would land on a bell strike).
+    /// The stage piece scheduled after the Tusch waits until they are over
+    /// (E63, game-designer review: its cup clinks would land on a bell
+    /// strike); the boss loop doesn't: in the fight the bells play over the
+    /// boss music (E64).
     fn bells(&mut self, now: u32, boss: Option<u8>, out: &mut Vec<Cue>) {
         self.jingle(out, Music::Hurry);
         let end = now.saturating_add(self.lengths.of(Music::Hurry));
         if !boss_fighting(boss, self.scheduled.is_some()) {
             self.hurry_until = Some(end);
         }
-        self.scheduled = self.scheduled.map(|(at, m)| (at.max(end), m));
+        self.scheduled = self.scheduled.map(|(at, m)| match m {
+            Music::Boss => (at, m),
+            _ => (at.max(end), m),
+        });
     }
 
     /// True while a boss jingle the bells wait for plays.
