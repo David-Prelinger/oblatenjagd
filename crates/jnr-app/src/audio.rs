@@ -25,8 +25,8 @@
 //!
 //! Mix levels: every sound is rendered at its design level (D-113's level
 //! table, checked offline by `cargo xtask audio lint`), so the app plays
-//! SFX at [`SFX`] and music at [`FULL`]; a duck is [`DUCK_GAIN`] (−6 dB), a
-//! hold is 0 (the constants are `jnr_audio::cues`'s percents, shared with
+//! SFX at [`SFX`] and music at [`FULL`]; a duck is [`DUCK_GAIN`] (−6 dB, the
+//! song and its twin only: a jingle is never ducked, D-123), a hold is 0 (the constants are `jnr_audio::cues`'s percents, shared with
 //! the offline mix) (D-114: the loop keeps running and resumes in place).
 
 use std::future::Future;
@@ -49,7 +49,7 @@ pub const LOAD_BUDGET_FRAMES: u32 = 120;
 pub const FULL: f32 = jnr_audio::cues::MUSIC_VOLUME_PCT as f32 / 100.0;
 /// SFX volume (`jnr_audio::cues::SFX_VOLUME_PCT`).
 pub const SFX: f32 = jnr_audio::cues::SFX_VOLUME_PCT as f32 / 100.0;
-/// The music's volume while an SFX of priority ≥ 7 plays (−6 dB, §3;
+/// The song's (and twin's, never a jingle's) volume while an SFX of priority ≥ 7 plays (−6 dB, §3;
 /// `jnr_audio::cues::DUCKED_MUSIC_VOLUME_PCT`).
 pub const DUCK_GAIN: f32 = jnr_audio::cues::DUCKED_MUSIC_VOLUME_PCT as f32 / 100.0;
 
@@ -207,7 +207,8 @@ pub enum Op {
 ///   underwater twin muted on the same frame, if the bank has it).
 /// - `Jingle`: stop the old jingle, play the new one once.
 /// - `HoldSong`/`HoldJingle`: volume 0 and back; `Duck`: music at
-///   [`DUCK_GAIN`]; `Underwater`: swap the song's and its twin's volumes
+///   [`DUCK_GAIN`] for the song and its twin, never the jingle (D-123);
+///   `Underwater`: swap the song's and its twin's volumes
 ///   (ignored without a twin).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Mixer {
@@ -256,7 +257,8 @@ impl Mixer {
         if self.hold_jingle {
             0.0
         } else {
-            self.duck_gain() * cue_gain(self.jingle)
+            // Never ducked (D-123).
+            FULL * cue_gain(self.jingle)
         }
     }
 
@@ -368,9 +370,6 @@ impl Mixer {
             Cue::Duck(b) => {
                 self.duck = b;
                 self.music_volumes(&mut out);
-                if let Some(m) = self.jingle {
-                    out.push(Op::Volume(SoundId::Music(m), self.jingle_volume()));
-                }
             }
             Cue::Underwater(b) => {
                 if self.twin.is_some() && self.underwater != b {
@@ -1161,7 +1160,7 @@ mod tests {
         use jnr_audio::mix::{Sound as MixSound, Sounds, mix};
         use jnr_audio::render::Pcm;
         const T: usize = jnr_audio::FRAMES_PER_TICK as usize;
-        let timelines: [&[Cue]; 6] = [
+        let timelines: [&[Cue]; 8] = [
             &[Cue::Song(Music::Wolfgangsee), Cue::Jingle(Music::BossIntro)],
             &[
                 Cue::Song(Music::Wolfgangsee),
@@ -1196,6 +1195,18 @@ mod tests {
                 Cue::Duck(true),
                 Cue::Duck(false),
                 Cue::StopJingle,
+            ],
+            // Duck during a jingle: only the song drops (D-123).
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Jingle(Music::Hurry),
+                Cue::Duck(true),
+            ],
+            &[
+                Cue::Song(Music::Wolfgangsee),
+                Cue::Duck(true),
+                Cue::Jingle(Music::BossIntro),
+                Cue::Underwater(true),
             ],
         ];
         for with_twin in [true, false] {
@@ -1354,17 +1365,12 @@ mod tests {
         };
         assert_eq!(vols(&m), [Some(FULL), Some(0.0), Some(FULL), None]);
         m.apply(Cue::Duck(true), twin);
-        assert_eq!(
-            vols(&m),
-            [Some(DUCK_GAIN), Some(0.0), Some(DUCK_GAIN), None]
-        );
+        // The duck lowers the song, never the jingle (D-123).
+        assert_eq!(vols(&m), [Some(DUCK_GAIN), Some(0.0), Some(FULL), None]);
         m.apply(Cue::Underwater(true), twin);
-        assert_eq!(
-            vols(&m),
-            [Some(0.0), Some(DUCK_GAIN), Some(DUCK_GAIN), None]
-        );
+        assert_eq!(vols(&m), [Some(0.0), Some(DUCK_GAIN), Some(FULL), None]);
         m.apply(Cue::HoldSong(true), twin);
-        assert_eq!(vols(&m), [Some(0.0), Some(0.0), Some(DUCK_GAIN), None]);
+        assert_eq!(vols(&m), [Some(0.0), Some(0.0), Some(FULL), None]);
         m.apply(Cue::HoldJingle(true), twin);
         m.apply(Cue::Duck(false), twin);
         assert_eq!(vols(&m), [Some(0.0), Some(0.0), Some(0.0), None]);
@@ -1408,16 +1414,23 @@ mod tests {
                 Op::Volume(music(Music::Unterwasser), DUCK_GAIN)
             ]
         );
-        // A jingle plays at the ducked volume; the pause holds both.
+        // A jingle plays at full volume during a duck (D-123); unducking
+        // touches only the song and its twin; the pause holds both.
         assert_eq!(
             m.apply(Cue::Jingle(Music::Hurry), twin),
             [Op::Play {
                 id: music(Music::Hurry),
                 looped: false,
-                volume: DUCK_GAIN
+                volume: FULL
             }]
         );
-        m.apply(Cue::Duck(false), twin);
+        assert_eq!(
+            m.apply(Cue::Duck(false), twin),
+            [
+                Op::Volume(music(Music::Wolfgangsee), 0.0),
+                Op::Volume(music(Music::Unterwasser), FULL)
+            ]
+        );
         assert_eq!(
             m.apply(Cue::HoldSong(true), twin),
             [
