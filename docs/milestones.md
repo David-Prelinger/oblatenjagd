@@ -307,7 +307,7 @@ Planning
 - [x] Architecture spike: macroquad audio natively, in wasm and without a sound device; render cost; plan (D-114 … D-118)
 
 Engine
-- [ ] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
+- [x] E54 Platform: `audio` feature, wasm link fix, `web/audio.js`, panic guard, frame-budgeted loader, `--mute` and M, Pulse null sink for `vnc-smoke`, Dockerfile
 - [ ] E55 `jnr-audio`: `.sfx`/`.inst` parser, integer synth, renderer, WAV writer, arch-lint rules
 - [ ] E56 `xtask audio render/lint/golden` for SFX (WAV, wave and spectrogram PNGs, JSON stats, signal lints, PCM-hash goldens; `check` and `verify` steps)
 - [ ] E57 `.song` format and renderer (loop alignment to 4096 frames, wrapped tails), music lints (meter, key, ranges, loop point), piano roll, melody fixture tests for quotes
