@@ -1,7 +1,7 @@
 # QA M6 acceptance: the whole playable journey in one run of the real game,
 # from the title through Salzburg, St. Gilgen, Brunnwinkl, Falkenstein (the
 # Hackl), St. Wolfgang, the Wolfgangsee, Strobl and Bad Ischl to the Cafe
-# Zauner teaser and the title, carrying the Hackl the whole way, never hurt.
+# Zauner intro, carrying the Hackl the whole way, never hurt.
 # Frames 0-25577: qa_m5_accept_full_route's inputs to the start of Strobl
 # play (25578, Hackl, lives 6, score 115800, 30 Oblaten).
 # Strobl (clock = frame - 25578): strobl_hackl_axes's Strobl inputs (its
@@ -19,8 +19,11 @@
 # Kurkapelle and the singers; an extra life on the 100th Oblate; from B2
 # (30812) a hurt-free solver beam search (power kept) over the D-102 pier
 # to the goal: Bad Ischl LevelComplete at 31174 as Hackl. Idle: tally,
-# the route map Bad Ischl -> Cafe Zauner (31660) and its teaser, the
-# title (31904) with the run reset to Salzburg.
+# the route map Bad Ischl -> Cafe Zauner (31660) in Wait, the Cafe Zauner
+# intro (32024) with the run carried over (Hackl, lives 7, score 154150);
+# the replay ends in the intro (32084). Re-cut for D-108 (M7): it ended
+# on the teaser and the title; Stage 9 is playable now (the whole route
+# to the ending is qa_m7_accept_full_route).
 # Re-cut for D-102 (E42): Strobl's 230 s shorten its tally by 10 frames
 # (10 idle frames fewer before Bad Ischl, whose inputs keep their clock),
 # the kerb hop, and the new route from B2 on (the old one clipped the
@@ -31,7 +34,7 @@ seed   = 1
 source = handwritten
 start  = title
 expect = complete frames=1772..1772 deaths=0 no_event=Died no_event=Hurt no_event=GameOver event=AxeHit event=ExtraLife event=CheckpointReached event=Stroke
-expect = state=title stage=salzburg power=normal score=0 lives=3 oblaten=0
+expect = state=stage_intro stage=cafe_zauner power=hackl score=154150 lives=7 oblaten=22
 ---
 - 20
 S 1
@@ -1026,4 +1029,4 @@ BJR 36
 BR 2
 BJR 36
 BR 18
-- 761    # tally, route map -> Cafe Zauner, teaser, title (31904)
+- 910    # tally, route map -> Cafe Zauner (Wait), the Cafe Zauner intro (32024)

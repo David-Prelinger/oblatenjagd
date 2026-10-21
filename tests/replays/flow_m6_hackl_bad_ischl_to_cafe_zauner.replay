@@ -1,0 +1,58 @@
+# M6 route map in Hackl form (D-098, D-072): Bad Ischl -> Café Zauner:
+# the walk, the map in Wait with Hackl Resi on the Café Zauner dot
+# (primary label slots on this screen), then the Café Zauner intro with
+# the Hackl carried over. A test route puts the
+# `hackl` level in Bad Ischl's slot (station 8 of 9; the D-047 `route`
+# header, as flow_hackl_carry_over does), so the screen is the real Bad
+# Ischl -> Café Zauner one without a Hackl route through Stages 4-8: the
+# first 1343 frames of bad_ischl_hackl_axes (title, the hackl run, its
+# Maibaum at 1343), then idle: the tally, the route map (1652, the walk
+# from 1692), the map in Wait, and with no START the Café Zauner intro
+# (2016): Hackl, score 5450, lives 3; the replay ends in the intro
+# (2076). Shot: the map in Wait as Hackl (1784; the Normal form is
+# bad_ischl_tour's `route_map`). Re-cut for D-108 (M7): was
+# flow_m6_hackl_bad_ischl_teaser (teaser, then the title); the route
+# header gains cafe_zauner as station 9, the shot `teaser` became
+# `route_map` at the same frame.
+level  = hackl
+seed   = 1
+source = handwritten
+start  = title
+route  = salzburg st_gilgen brunnwinkl falkenstein st_wolfgang wolfgangsee strobl hackl cafe_zauner
+expect = complete frames=1343..1343 deaths=0 no_event=Hurt
+expect = state=stage_intro stage=cafe_zauner power=hackl score=5450 lives=3
+shots  = 1784:route_map
+---
+# --- the first 1343 frames of bad_ischl_hackl_axes ---
+- 20
+S 1
+- 150
+R 40
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 120
+- 20
+L 15
+- 20
+RJ 50
+R 110
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 50
+R 40
+- 40
+B 1
+- 60
+R 209
+# --- tally, route map (Wait), the Café Zauner intro ---
+- 733

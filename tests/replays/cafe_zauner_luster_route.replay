@@ -1,0 +1,52 @@
+# The upper route over the queue (D-110): the 5-wide chandeliers L3 74-78,
+# L4 81-85, L5 88-92, L6 95-99 (row 10, 2-tile gaps). The queue chain's
+# prefix to Vitrine D (the solver's route, standing on it at 483), then at
+# walk speed (no run button): a held jump from Vitrine D onto L3 (3-tile
+# gap, 2 up; landed 524), and from the right part of each band a short hop
+# (JUMP 6 frames: the ceiling is 3 tiles above the band) onto the next
+# (L4 635, L5 746, L6 856), taking all 18 Oblaten on rows 8-9, then off
+# L6 onto the floor right of 99 (972). No stomp (score 1700 + 18 x 200),
+# no hurt. Each hop's press shifted alone (D-100, every other input at its
+# frame; judged on the expectations and, cut 40 frames after the landing,
+# on standing on the target band): Vitrine D -> L3 10 (-5..4, the walk
+# before it limits), L3 -> L4 13, L4 -> L5 13, L5 -> L6 12. All >= 8.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt no_event=PowerUp power=normal score=5300 oblaten=26 player_x>=1600
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 16
+L 4
+- 40
+R 6
+RJ 18
+R 20
+- 40
+R 48
+RJ 6
+R 20
+- 40
+R 45
+RJ 6
+R 20
+- 40
+R 44
+RJ 6
+R 20
+- 40
+R 50
+- 30

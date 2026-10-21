@@ -1,0 +1,66 @@
+# The queue one at a time (D-110 (a)): the queue chain's prefix to
+# Vitrine D, a step off it onto the floor at 71-72 (506), then nine single
+# stomps: from a standstill a hop with JUMP tapped (1-10 frames, released
+# before the stomp, so the bounce is low) onto the next Wartender's head,
+# a little steering to the right, and she lands where he stood (his dot)
+# and stops there, 100 each (the chain restarts on every landing):
+# stomps at 576, 630, 694, 757, 830, 890, 956, 1019, 1088 (x 1161 ...
+# 1543), on the floor after each. No
+# hurt, all nine squished (score 1700 + 900). Windows, each hop cut after
+# its 50-frame stand: the press shifted alone (D-100, the steering after
+# it at its frame) 8 / 6 / 7 / 7 / 11 / 6 / 8 / 10 / 37; the hop shifted
+# as a whole (press and steering together, from a standstill) 42 / 10 /
+# 23 / 29 / 24 / 23 / 27 / 30 / 50.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = deaths=0 no_event=Hurt score=2600 player_x>=1580
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 16
+L 4
+- 40
+R 3
+- 60
+RJ 10
+R 6
+- 50
+RJ 1
+R 8
+- 50
+RJ 4
+R 12
+- 50
+RJ 1
+R 16
+- 50
+RJ 6
+R 8
+- 50
+RJ 3
+R 12
+- 50
+RJ 3
+R 14
+- 50
+RJ 1
+R 16
+- 50
+RJ 3
+R 12
+- 50
+R 40
+- 20

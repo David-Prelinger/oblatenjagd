@@ -1,0 +1,79 @@
+# The Oberkellner beaten as Normal without a hurt (D-106) in the real
+# stage, from the left refuge only (the patient way): the solver's route
+# to the queue's head (frame 676), she stops at x 1745 and then plays the
+# grey box's m7_boss_win_normal (the arena is 09's columns 120-139 =
+# 00_m7_boss's 20-39): a tap onto the step at 118 behind the M-box (115,
+# not bumped), a held jump onto the Tortenvitrine (120-121), right until
+# the arena locks (frame 954: camera x 1920, „Hinten anstellen!"), back
+# and onto the refuge before his first dash (telegraph 1044-1083, dash
+# left from 1084). In every breather at the left wall she steps off the
+# refuge onto his head: hits at 1214, 1748, 2226 (1000, 1000, 5000), lands
+# beside the stunned waiter and hops back onto the refuge; the round-2 and
+# round-3 volleys fall while she waits there. After the bow she crosses
+# the floor and jumps onto the counter: the armed goal_stollen (2586,
+# 10 000). Every fight frame is the grey box's + 635.
+# Each press shifted alone (D-100: every other input at its frame, ±40,
+# judged on complete + no death + no hurt + three hits): tap onto the step
+# 28 (0..27; earlier she lands short of the step and the fixed later
+# inputs miss the refuge), onto the vitrine 35, onto the refuge after the
+# lock 81 (±40 max), the step-offs 29 / 26 / 46 (with the braking: 33 /
+# 28 / 41; with the hop back: 57 / 46 / 46), the hops back onto the
+# refuge in the stun 29 / 29 / 66, the jump onto the counter 53. All >= 8.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+expect = complete frames=2586..2586 deaths=0 no_event=Hurt no_event=PowerUp boss_hits=3 power=normal score=24200
+---
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30
