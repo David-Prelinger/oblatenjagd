@@ -622,6 +622,16 @@ impl Voices {
     }
 }
 
+/// Playback volumes in percent, shared by the app (E59) and the offline
+/// mix (E60), so both play the same thing: every sound is rendered at its
+/// design level (D-113's level table), so SFX and music play at 100 %; a
+/// duck is 50 % (−6 dB, §3); a hold is 0 (D-114).
+pub const SFX_VOLUME_PCT: u32 = 100;
+/// Music (songs and jingles) at full level.
+pub const MUSIC_VOLUME_PCT: u32 = 100;
+/// Music while ducked ([`Cue::Duck`]).
+pub const DUCKED_MUSIC_VOLUME_PCT: u32 = 50;
+
 /// SFX of this priority or more duck the music (§3, §6.1).
 pub const DUCK_PRIO: u8 = 7;
 

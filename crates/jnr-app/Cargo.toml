@@ -10,6 +10,8 @@ publish.workspace = true
 jnr-core.workspace = true
 jnr-render.workspace = true
 jnr-assets.workspace = true
+# The cue director and the sound bank (pure; the app only plays what they say).
+jnr-audio.workspace = true
 # `audio`: quad-snd playback (D-114/D-115); wasm needs build.rs + web/audio.js (D-116).
 macroquad = { workspace = true, features = ["audio"] }
 

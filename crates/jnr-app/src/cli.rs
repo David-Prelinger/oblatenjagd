@@ -35,8 +35,6 @@ Options:
                                 (directories are created); not with --replay
   --mute                        start with sound off (nothing is loaded; M turns
                                 it on)
-  --test-tone                   debug: play a short 440 Hz test tone once audio
-                                is up (checks the sound device)
   -h, --help                    show this help
 
 Keys: arrows move, X/Space jump, Y/Z/Shift run, Enter start, Escape quit,
@@ -96,7 +94,6 @@ pub fn parse_args_with(
             "--replay" => replay_path = Some(PathBuf::from(value()?)),
             "--record" => opts.record = Some(PathBuf::from(value()?)),
             "--mute" => opts.mute = true,
-            "--test-tone" => opts.test_tone = true,
             "--scale" => {
                 let scale: u32 = number(flag, value()?)?;
                 if !(1..=MAX_SCALE).contains(&scale) {
@@ -275,7 +272,6 @@ mod tests {
             "--screenshot-at",
             "0:b.png",
             "--mute",
-            "--test-tone",
         ]);
         assert_eq!(
             opts,
@@ -290,18 +286,14 @@ mod tests {
                 start: jnr_core::Start::Title,
                 route: Vec::new(),
                 mute: true,
-                test_tone: true,
             }
         );
     }
 
     #[test]
-    fn mute_and_test_tone_are_off_by_default() {
-        let opts = run(&["--mute"]);
-        assert!(opts.mute && !opts.test_tone);
-        let opts = run(&["--test-tone"]);
-        assert!(!opts.mute && opts.test_tone);
-        assert!(!Options::default().mute && !Options::default().test_tone);
+    fn mute_is_off_by_default() {
+        assert!(run(&["--mute"]).mute);
+        assert!(!Options::default().mute);
     }
 
     #[test]

@@ -285,6 +285,29 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
     }
     let liveness = check_liveness(&dom).map_err(|e| format!("{e}; {see}"))?;
 
+    // 1b) The same without audio.js (E59): the audio loads time out and the
+    //     game must keep running.
+    let na_log = preview.join("wasm_smoke_no_audio.log");
+    let na_out = preview.join("wasm_smoke_no_audio_dom.html");
+    let na_url = format!("http://127.0.0.1:{port}/smoke_no_audio.html");
+    run_chromium(
+        &chromium,
+        &preview,
+        &["--dump-dom"],
+        &na_url,
+        &na_out,
+        &na_log,
+    )?;
+    let na_dom = fs::read_to_string(&na_out).unwrap_or_default();
+    let na_see = format!("see {} and {}", na_out.display(), na_log.display());
+    if !na_dom.contains("data-wasm=\"loaded\"") {
+        return Err(format!(
+            "without audio.js the wasm module did not instantiate; {na_see}"
+        ));
+    }
+    let na_liveness =
+        check_liveness(&na_dom).map_err(|e| format!("without audio.js: {e}; {na_see}"))?;
+
     // 2) Did it draw the game? (Screenshot.)
     let shot_log = preview.join("wasm_smoke.log");
     let shot_arg = format!("--screenshot={}", shot.display());
@@ -312,7 +335,7 @@ pub fn smoke_check(root: &Path) -> Result<String, String> {
         )
     })?;
     Ok(format!(
-        "module loaded, {liveness}, {w}x{h} screenshot {}, {summary}",
+        "module loaded, {liveness}, without audio.js {na_liveness}, {w}x{h} screenshot {}, {summary}",
         shot.display()
     ))
 }
@@ -340,7 +363,21 @@ fn write_probe_page(dir: &Path) -> Result<(), String> {
         f64::from(PROMPT_BAND.0) / height,
         f64::from(PROMPT_BAND.1) / height
     );
-    for (name, text) in [("smoke.html", page), ("smoke.js", js)] {
+    // The same page without audio.js (D-115: the budgeted loads give up,
+    // the game runs on silently).
+    let audio_tag = "<script src=\"audio.js\"></script>";
+    if !page.contains(audio_tag) {
+        return Err(format!(
+            "{} does not load audio.js with `{audio_tag}`: update the wasm-smoke probe",
+            index.display()
+        ));
+    }
+    let no_audio = page.replacen(audio_tag, "", 1);
+    for (name, text) in [
+        ("smoke.html", page),
+        ("smoke_no_audio.html", no_audio),
+        ("smoke.js", js),
+    ] {
         let path = dir.join(name);
         fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
     }

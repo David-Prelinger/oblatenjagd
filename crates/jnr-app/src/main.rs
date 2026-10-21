@@ -257,9 +257,9 @@ async fn run(opts: Options) {
     let mut debug_overlay = false;
     let mut recording = start_recording(&opts, &game);
     let mut audio = audio::Audio::new(opts.mute);
-    if opts.test_tone {
-        audio.queue_test_tone();
-    }
+    // What to play: the cue director, fed after every step (E58/E59).
+    let mut director = jnr_audio::cues::Director::new();
+    let mut first_cues = director.begin(&game);
     // Closing the window only sets a flag; the loop below ends cleanly.
     #[cfg(not(target_arch = "wasm32"))]
     prevent_quit();
@@ -284,10 +284,12 @@ async fn run(opts: Options) {
             audio.toggle_mute();
         }
         audio.update();
+        audio.cues(&std::mem::take(&mut first_cues));
         let keyboard = input_from(is_key_down);
         for _ in 0..ticks_due(&mut accumulator, f64::from(get_frame_time())) {
             let input = opts.input.input_for(game.frame(), keyboard);
             game.step(input);
+            audio.cues(&director.step(&game, input));
             record_step(&mut recording, input, &game);
             if !ctx.is_for(game.level()) {
                 ctx = RenderContext::for_level(atlas, &texts, game.level());
