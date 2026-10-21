@@ -1,0 +1,30 @@
+# `boss_defeat` (audio-design §5): the third hit, a Tusch, the brass band's honour
+# flourish. A held C major chord (Helikon C3, Tenorhorn E4, the Nachschlag rolling
+# C4-E4-G4, Flügelhorn C5) over a snare roll in 32nds (62.5 ms at this grid) swelling for
+# 1 187 ms, then the bass drum and the cymbal together; 1.5 s in all (3/4 at 120 BPM).
+[meta]
+id = "boss_defeat"
+kind = "jingle"
+tempo_bpm = 120
+meter = "3/4"
+steps_per_beat = 8
+key = "c major"
+bars = 1
+order = ["A"]
+source = "original"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 32 }
+second = { instrument = "tenorhorn", volume_pct = 22 }
+bass   = { instrument = "helikon", volume_pct = 18 }
+chords = { instrument = "orgel_satz", volume_pct = 26, arp_ms = 17 }
+drums  = { instrument = "schlagwerk", volume_pct = 20 }
+
+[pattern.A]
+score = '''
+lead   | c5/19 r/5         |
+second | e4/19 r/5         |
+bass   | c3/19 r/5         |
+chords | [c4,e4,g4]/19 r/5 |
+drums  | S/1@30 S@34 S@38 S@42 S@46 S@50 S@54 S@58 S@62 S@66 S@70 S@74 S@78 S@82 S@86 S@90 S@94 S@98 S@102 [K,B]/5@130 |
+'''

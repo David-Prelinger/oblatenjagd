@@ -1,0 +1,24 @@
+# The steam whistle of the boss galop (audio-design §5 `boss` bar 8, „Vorsicht, heiß!"):
+# a sine with a little breath noise, sliding up a fifth (+700 cents) over 400 ms.
+range = ["c4", "c6"]
+
+[[layer]]
+wave = "sine"
+slide_cents = 700
+slide_ms = 400
+attack_ms = 20
+decay_ms = 100
+sustain_pct = 80
+release_ms = 60
+volume_pct = 60
+vibrato = { depth_cents = 10, rate_hz = 7, delay_ms = 300 }
+
+[[layer]]
+wave = "noise"
+detune_cents = 1200
+attack_ms = 20
+decay_ms = 100
+sustain_pct = 70
+release_ms = 60
+volume_pct = 12
+bandpass = { hz = 2500, q_pct = 200 }

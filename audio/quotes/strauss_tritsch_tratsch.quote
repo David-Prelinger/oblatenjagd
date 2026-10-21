@@ -1,0 +1,15 @@
+# Johann Strauss (Sohn), Tritsch-Tratsch-Polka op. 214, the Polka's first strain: the
+# pickup and 16 bars, 2/4, A major, the top line of the piano's right hand as printed
+# (p. 3; grace notes left out). Bars 2-3 and 10-11 are chords: the top line holds E6
+# while an inner voice falls chromatically (D#6 D6 C#6 B5 A5); the song plays them as
+# chords, and the check takes their top note. Grid: sixteenths.
+source = "Johann Strauss (Sohn), Tritsch-Tratsch-Polka op. 214, Polka, first strain (pickup + 16 bars)"
+edition = "First edition, piano, Vienna: Carl Haslinger, plate C.H. 12226, [1858-59], p. 3 (IMSLP #253257)"
+steps_per_beat = 4
+notes = '''
+e5/2 |
+e6/2 r/4 e5/2 | e6/2 r/4 e6/2 | e6/2 e6 e6 e6 | e6/2 r/4 f#5/2 |
+b5/2 r/4 f#5/2 | b5/2 r/4 g#4/1 a4 | b4/1 c#5 d5 e5 f#5 g#5 a5 b5 | c#6/2 r/4 e5/2 |
+e6/2 r/4 e5/2 | e6/2 r/4 e6/2 | e6/2 e6 e6 e6 | e6/2 r/4 g#5/2 |
+c#6/2 r/4 g#5/2 | c#6/2 r/4 f#4/1 g#4 | a#4/2 c#5 e5 a#5 | b5/6 b5/2
+'''

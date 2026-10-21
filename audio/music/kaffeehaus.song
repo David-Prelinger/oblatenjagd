@@ -1,0 +1,99 @@
+# `kaffeehaus` „Kaffeehaus-Walzer" (audio-design §5, ending Scene and Bill): 3/4, 132 BPM,
+# E-flat major, A 16 + B 16 = 32 bars, loops from bar 1 (43.6 s).
+# The title march recast as a salon waltz (the classic march-into-waltz variation):
+# A is the march's A tune, down a fifth into E-flat, every 2/4 bar stretched into a 3/4
+# bar (the Oblaten-Motiv opens it as ♪ ♪ ♪ ♩.); B is the march's Trio, in A-flat, as a
+# slow waltz. Bar 32 is B-flat7 back into bar 1.
+# Salon instrumentation as `cafe_zauner`: Stehgeiger, Klavier (a held second voice and
+# the waltz's chords on 2 and 3), pizzicato bass on 1; no percussion except one cup
+# clink in bar 1. Resi finally sits.
+[meta]
+id = "kaffeehaus"
+kind = "loop"
+tempo_bpm = 132
+meter = "3/4"
+steps_per_beat = 2            # eighths: a bar has 6 steps
+key = "eb major"
+bars = 32
+order = ["A", "B", "X"]
+source = "original"
+
+[channels]
+lead   = { instrument = "stehgeiger", volume_pct = 34 }
+second = { instrument = "klavier", volume_pct = 20 }
+bass   = { instrument = "pizzicato", volume_pct = 24 }
+chords = { instrument = "klavier", volume_pct = 20, arp_ms = 17 }
+drums  = { instrument = "salon", volume_pct = 12 }
+
+# A (1-16): the march's A tune as a waltz, E-flat major.
+[pattern.A]
+score = '''
+lead   | eb4/1 g4 bb4 ab4/3 | g4/4 f4/2      | f4/2 ab4/1 g4 f4/2 | bb4/4 g4/2    |
+second | bb3/6         | g3/4 f3/2     | d4/6          | g4/6          |
+bass   | eb2/2 r/4     | eb2/2 r/4     | bb1/2 r/4     | eb2/2 r/4     |
+chords | r/2 [eb4,g4,bb4]' [ab3,c4,eb4]' | r/2 [eb4,g4,bb4]' [bb3,d4,ab4]' | r/2 [bb3,d4,ab4]' [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' |
+drums  | Z/2 r/4       | r/6           | r/6           | r/6           |
+
+lead   | eb4/1 g4 bb4 ab4/3 | c5/4 bb4/2 | ab4/2 f4 d4   | f4/6          |
+second | bb3/6         | eb4/6         | f4/6          | d4/6          |
+bass   | eb2/2 r/4     | ab2/2 r/4     | bb1/2 r/4     | bb1/2 r/4     |
+chords | r/2 [eb4,g4,bb4]' [ab3,c4,eb4]' | r/2 [ab3,c4,eb4]' [eb4,g4,bb4]' | r/2 [bb3,d4,ab4]' [bb3,d4,ab4]' | r/2 [bb3,d4,f4]' [bb3,d4,f4]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+
+lead   | g4/2 bb4 eb5  | eb5/4 bb4/2   | c5/2 ab4/1 f4 ab4/2 | g4/4 eb4/2 |
+second | eb4/6         | g4/6          | ab3/6         | eb4/6         |
+bass   | eb2/2 r/4     | eb2/2 r/4     | f2/2 r/4      | eb2/2 r/4     |
+chords | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' | r/2 [f3,ab3,c4]' [f3,ab3,c4]' | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+
+lead   | f4/2 ab4/1 g4 f4/2 | bb4/2 g4/1 eb4 g4/2 | f4/2 d4/1 bb3 d4/2 | eb4/6 |
+second | d4/6          | g3/6          | ab3/6         | g3/6          |
+bass   | bb1/2 r/4     | eb2/2 r/4     | bb1/2 r/4     | eb2/2 r/4     |
+chords | r/2 [bb3,d4,ab4]' [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' | r/2 [bb3,d4,ab4]' [bb3,d4,ab4]' | r/2 [eb4,g4,bb4]' [eb4,g4,bb4]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+'''
+
+# B (17-31): the march's Trio as a slow waltz, A-flat major.
+[pattern.B]
+key = "ab major"
+score = '''
+lead   | ab4/4 c5/2    | eb5/4 db5/2   | db5/2 c5/4    | bb4/6         |
+second | eb4/6         | ab4/6         | f4/6          | g4/6          |
+bass   | ab2/2 r/4     | ab2/2 r/4     | db2/2 r/4     | eb2/2 r/4     |
+chords | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' | r/2 [ab3,c4,eb4]' [db4,f4,ab4]' | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' | r/2 [eb4,g4,db5]' [eb4,g4,db5]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+
+lead   | db5/4 bb4/2   | g4/4 eb4/2    | ab4/4 bb4/2   | c5/6          |
+second | g4/6          | db4/6         | eb4/6         | eb4/6         |
+bass   | eb2/2 r/4     | eb2/2 r/4     | ab2/2 r/4     | ab2/2 r/4     |
+chords | r/2 [eb4,g4,db5]' [eb4,g4,db5]' | r/2 [eb4,g4,db5]' [eb4,g4,db5]' | r/2 [ab3,c4,eb4]' [eb4,g4,db5]' | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+
+lead   | ab4/4 c5/2    | eb5/4 db5/2   | db5/2 f5/4    | eb5/6         |
+second | eb4/6         | ab4/6         | ab4/6         | c5/6          |
+bass   | ab2/2 r/4     | ab2/2 r/4     | db2/2 r/4     | ab2/2 r/4     |
+chords | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' | r/2 [ab3,c4,eb4]' [db4,f4,ab4]' | r/2 [db4,f4,ab4]' [db4,f4,ab4]' | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' |
+drums  | r/6           | r/6           | r/6           | r/6           |
+
+lead   | db5/4 c5/2    | bb4/4 eb4/2   | ab4/6         |
+second | ab4/6         | g4/6          | eb4/6         |
+bass   | db2/2 r/4     | eb2/2 r/4     | ab2/2 r/4     |
+chords | r/2 [db4,f4,ab4]' [ab3,c4,eb4]' | r/2 [eb4,g4,db5]' [eb4,g4,db5]' | r/2 [ab3,c4,eb4]' [ab3,c4,eb4]' |
+drums  | r/6           | r/6           | r/6           |
+'''
+
+# Bar 32: B-flat7, back into bar 1.
+[pattern.X]
+score = '''
+lead   | bb4/2 ab4 f4  |
+second | d4/6          |
+bass   | bb1/2 r/4     |
+chords | r/2 [bb3,d4,ab4]' [bb3,d4,ab4]' |
+drums  | r/6           |
+'''
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 1
+transpose = -7

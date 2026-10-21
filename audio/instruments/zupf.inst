@@ -1,0 +1,13 @@
+# Plucked strings for `boss_intro` (audio-design §5, Haydn's Andante pizzicato): pulse
+# 12 % (duty in whole percent), A 1 / D 120 / S 0.
+range = ["c3", "c6"]
+
+[[layer]]
+wave = "pulse"
+duty_pct = 12
+attack_ms = 1
+decay_ms = 120
+sustain_pct = 0
+release_ms = 20
+volume_pct = 60
+lowpass_hz = 4000

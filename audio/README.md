@@ -46,7 +46,10 @@ Instruments (`instruments/`, audio-design §2.1): `fluegelhorn` (M1), `klarinett
 `orgel_satz` (sustained band chords: the funeral march, the Tusch), `schlagwerk` (M5 kit:
 `K` grosse_trommel, `S` kleine_trommel, `B` becken, `C` becken_kurz (choked), `X` klatschen,
 `T` triangel, `M` trommel_dumpf), and the special colours `glocke` (the `hurry` church bell)
-and `helikon_plumps` (the `death` fall C3 to G2).
+and `helikon_plumps` (the `death` fall C3 to G2). S2b adds `zupf` (the `boss_intro` pizzicato),
+`tutti`/`tutti_tief` (the `boss_surprise` chord, opposite polarities), `pfiff` (the boss
+galop's steam whistle), the salon set `stehgeiger`, `klavier`, `pizzicato` and the `salon` kit
+(`T` triangel, `D` theke, `W` besen, `Z` tasse), and `spieluhr` (`ende`).
 
 Mixing notes for songs (the music bus wants peak ≤ −8 dBFS at RMS −20 ± 2):
 - Every note restarts its oscillator at phase 0, so onsets on the same step add their peaks.
@@ -65,4 +68,6 @@ Intros (D-114: a loop plays from sample 0): `title` (bars 1–4, the post-horn c
 Quotes (`quotes/`): `mozart_k606_1` and `mozart_k596` are read from the AMA pages on IMSLP
 (page-1 previews; the PDFs are behind a captcha), `mozart_k525_1` from Mozart's autograph
 (IMSLP #562645, the AMA file could not be opened). `oblaten_motiv` and `oblaten_motiv_moll`
-are the leitmotif.
+are the leitmotif. `haydn_94_andante` is read from Clementi's 1823 piano adaptation
+(Internet Archive), `strauss_tritsch_tratsch` from the Haslinger first edition (IMSLP page-1
+preview).

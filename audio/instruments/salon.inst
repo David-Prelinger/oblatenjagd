@@ -1,0 +1,54 @@
+# M5 in the café and the salon pieces (audio-design §2.1, §5 `cafe_zauner`, `kaffeehaus`).
+#   T triangel  sine 4.2 kHz, decay 300 ms (beat 1 of every second bar)
+#   D theke     the counter bell: sine 2.6 kHz, one strike, decay 400 ms
+#   W besen     the brush: noise low-pass 3 kHz, 40 ms (off-beats, very soft)
+#   Z tasse     a cup clink: sines 2 637 + 3 951 Hz, decay 150 ms
+[kit]
+T = "triangel"
+D = "theke"
+W = "besen"
+Z = "tasse"
+
+[[patch.triangel.layer]]
+wave = "sine"
+freq_hz = 4200
+attack_ms = 1
+decay_ms = 300
+volume_pct = 18
+
+[[patch.theke.layer]]
+wave = "sine"
+freq_hz = 2600
+attack_ms = 1
+decay_ms = 400
+volume_pct = 30
+
+[[patch.theke.layer]]
+wave = "sine"
+freq_hz = 6890
+attack_ms = 1
+decay_ms = 150
+volume_pct = 8
+
+[[patch.besen.layer]]
+wave = "noise"
+freq_hz = 20000
+attack_ms = 2
+decay_ms = 38
+volume_pct = 20
+lowpass_hz = 3000
+highpass_hz = 200
+
+[[patch.tasse.layer]]
+wave = "sine"
+freq_hz = 2637
+attack_ms = 1
+decay_ms = 150
+volume_pct = 30
+
+[[patch.tasse.layer]]
+wave = "sine"
+freq_hz = 3951
+attack_ms = 1
+decay_ms = 150
+volume_pct = 18

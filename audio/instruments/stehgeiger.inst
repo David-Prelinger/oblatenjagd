@@ -1,0 +1,13 @@
+# M1 in the café and the salon pieces, the Stehgeiger (audio-design §2.1): saw, low-pass
+# 3 kHz, vibrato 6 Hz ±25 cents from 40 ms, A 40 (the bow).
+range = ["f3", "e6"]
+
+[[layer]]
+wave = "saw"
+attack_ms = 40
+decay_ms = 100
+sustain_pct = 80
+release_ms = 80
+volume_pct = 60
+lowpass_hz = 3000
+vibrato = { depth_cents = 25, rate_hz = 6, delay_ms = 40 }

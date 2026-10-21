@@ -1,0 +1,33 @@
+# `boss_surprise` (audio-design §5): the first telegraph. Haydn's fortissimo G major
+# chord that wakes up the audience wakes up the waiter: G2 B3 D4 G4 on every channel,
+# A 2 / D 600, with the bass drum and the cymbal. 0.6 s (3/4 at 300 BPM = one bar).
+# The band hits it one frame apart from the bottom up (G2, B3, D4, G4 at 0, 17, 33 and
+# 50 ms: a chip-chord roll, as the Nachschlag rolls its chords), and G2 and D4 play the
+# pulse upside down (`tutti_tief`), so the onsets don't stack into one spike.
+[meta]
+id = "boss_surprise"
+kind = "jingle"
+tempo_bpm = 300
+meter = "3/4"
+steps_per_beat = 12          # one step = 16.7 ms, a frame
+key = "g major"
+bars = 1
+order = ["A"]
+source = "Joseph Haydn, Symphony No. 94, II. Andante, bar 16 (the fortissimo chord)"
+edition = "Clementi's piano adaptation, London: Clementi, Collard & Collard, c. 1823 (Internet Archive surprisehaydnsce00hayd)"
+
+[channels]
+lead   = { instrument = "tutti", volume_pct = 31 }
+second = { instrument = "tutti", volume_pct = 27 }
+bass   = { instrument = "tutti_tief", volume_pct = 32 }
+chords = { instrument = "tutti_tief", volume_pct = 27 }
+drums  = { instrument = "schlagwerk", volume_pct = 8 }
+
+[pattern.A]
+score = '''
+lead   | r/3 g4/33 |
+second | r/1 b3/35 |
+bass   | g2/36     |
+chords | r/2 d4/34 |
+drums  | [K,B]/36  |
+'''

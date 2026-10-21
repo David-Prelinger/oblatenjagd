@@ -1,0 +1,39 @@
+# `ending_map` (audio-design §5, ending Map phase): a Tusch on B-flat, then the
+# Oblaten-Motiv broad (B-flat4 D5 F5 E-flat5 as four quarters, then D5 as a half), the
+# Flügelhorn with the Tenorhorn in sixths and thirds and the full band. 2/4, 100 BPM.
+# Four bars = 4.8 s, not the design's 3 bars / 3.6 s: the Tusch bar (1.2 s) plus four
+# quarters plus a half need four 2/4 bars.
+[meta]
+id = "ending_map"
+kind = "jingle"
+tempo_bpm = 100
+meter = "2/4"
+steps_per_beat = 4
+key = "bb major"
+bars = 4
+order = ["A"]
+source = "original"
+
+[channels]
+lead   = { instrument = "fluegelhorn", volume_pct = 33 }
+second = { instrument = "tenorhorn", volume_pct = 25 }
+bass   = { instrument = "helikon", volume_pct = 22 }
+chords = { instrument = "begleitung", volume_pct = 22, arp_ms = 17 }
+tusch  = { instrument = "orgel_satz", volume_pct = 10, arp_ms = 0 }
+drums  = { instrument = "schlagwerk", volume_pct = 10 }
+
+[pattern.A]
+score = '''
+lead   | d5/8          | bb4/4 d5      | f5/4 eb5      | d5/8          |
+second | bb4/8         | d4/4 f4       | a4/4 c5       | bb4/8         |
+bass   | bb1/8         | bb1/4 f2      | f2/4 c3       | bb1/8         |
+chords | r/8           | r/2 [bb3,d4,f4]' r [bb3,d4,f4]' | r/2 [f3,a3,eb4]' r [f3,a3,eb4]' | r/8 |
+tusch  | [bb3,d4,f4]/8 | r/8           | r/8           | [bb3,d4,f4]/8 |
+drums  | S/1@30 S@40 S@50 S@60 S@70 S@80 S@95 S@110 | [K,B]/4 K | K/4 K | [K,B]/8@70 |
+'''
+
+[[quote]]
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 2
+compare = "pitches"     # broad: four even quarters (§5)
