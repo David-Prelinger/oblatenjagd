@@ -8,7 +8,14 @@
 //!   one-pole low/high-pass, volume.
 //! - [`render`]: patches to 44 100 Hz mono `i16` [`Pcm`], with clamp counting.
 //! - [`wav`]: RIFF/WAVE bytes from and to [`Pcm`].
+<<<<<<< HEAD
 //! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
+=======
+//! - [`song`]: the `.song` music format (TOML header + tracker-style
+//!   scores), [`song_render`]: songs to PCM (loop alignment, wrapped tails,
+//!   a voice cache), [`music_lint`]: what can be checked from the text,
+//!   [`quote`]: melody fixtures of quoted tunes.
+>>>>>>> ma-audio
 //!
 //! The crate follows the `jnr-core` determinism rules (integers only, no
 //! `HashMap` iteration, no time/fs/threads/global RNG; enforced by
@@ -17,16 +24,24 @@
 
 pub mod cues;
 pub mod error;
+pub mod music_lint;
 pub mod note;
 pub mod patch;
+pub mod quote;
 pub mod render;
+pub mod song;
+pub mod song_render;
 pub mod synth;
 pub mod tables;
 pub mod wav;
 
 pub use error::{ErrorKind, ParseError};
+pub use music_lint::{Lint, LintContext, lint_song};
 pub use patch::{Instrument, InstrumentKind, Layer, Sfx, Wave};
+pub use quote::Quote;
 pub use render::{Pcm, Render, render_note, render_sfx};
+pub use song::Song;
+pub use song_render::{RenderOptions, SongRender, render_song};
 
 /// Output sample rate (Hz).
 pub const SAMPLE_RATE: u32 = 44_100;

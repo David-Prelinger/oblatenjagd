@@ -7,6 +7,7 @@
 
 mod archlint;
 mod audio;
+mod audio_song;
 mod climblint;
 mod content;
 mod cues;

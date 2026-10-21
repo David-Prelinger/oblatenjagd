@@ -5,7 +5,7 @@
 //!
 //! ```toml
 //! [jump]
-//! class = "normal"             # loud | normal | soft | ambience | jingle
+//! class = "normal"             # loud | normal | soft | ambience | jingle | song
 //! peak_dbfs = -9               # optional: overrides the class peak (±1 dB)
 //! duration_ms = 150            # optional: the rendered length (±10 ms)
 //! centroid_hz = [800, 3000]    # optional: spectral-centroid band
@@ -28,8 +28,13 @@ pub enum Class {
     Soft,
     /// Ambience loops (nice): peak −24 … −26 dBFS.
     Ambience,
-    /// Longer one-shots in `audio/jingles/`: peak ≤ −6, RMS −17 ± 2 dBFS.
+    /// Longer one-shots (`audio/jingles/`, and `.song` jingles in
+    /// `audio/music/`): peak ≤ −6, RMS −17 ± 2 dBFS.
     Jingle,
+    /// A looping `.song` (`audio/music/`): peak ≤ −8, RMS −20 ± 2 dBFS,
+    /// 20–90 s. The default target of every loop (no `targets.toml` entry
+    /// needed; one may add `placeholder` or a `peak_dbfs`).
+    Song,
 }
 
 impl Class {
@@ -40,6 +45,7 @@ impl Class {
             Class::Soft => "soft",
             Class::Ambience => "ambience",
             Class::Jingle => "jingle",
+            Class::Song => "song",
         }
     }
 }

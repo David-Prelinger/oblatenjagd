@@ -357,7 +357,7 @@ enum Ctx {
     Inst,
 }
 
-fn from_toml<T: for<'de> Deserialize<'de>>(src: &Src) -> Result<T, ParseError> {
+pub(crate) fn from_toml<T: for<'de> Deserialize<'de>>(src: &Src) -> Result<T, ParseError> {
     toml::from_str(src.text).map_err(|e| {
         let span = e.span().unwrap_or(0..0);
         let msg = e.message().trim().to_owned();
@@ -382,7 +382,7 @@ fn from_toml<T: for<'de> Deserialize<'de>>(src: &Src) -> Result<T, ParseError> {
 
 /// The id from the file name: the stem after the last `/`, which must be
 /// `[a-z][a-z0-9_]*`, with extension `ext`.
-fn file_id(src: &Src, ext: &str) -> Result<String, ParseError> {
+pub(crate) fn file_id(src: &Src, ext: &str) -> Result<String, ParseError> {
     let name = src.file.rsplit(['/', '\\']).next().unwrap_or(src.file);
     let Some(stem) = name.strip_suffix(ext) else {
         return Err(src.err(
@@ -403,7 +403,7 @@ fn file_id(src: &Src, ext: &str) -> Result<String, ParseError> {
     Ok(stem.to_owned())
 }
 
-fn valid_id(s: &str) -> bool {
+pub(crate) fn valid_id(s: &str) -> bool {
     s.chars().next().is_some_and(|c| c.is_ascii_lowercase())
         && s.chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')

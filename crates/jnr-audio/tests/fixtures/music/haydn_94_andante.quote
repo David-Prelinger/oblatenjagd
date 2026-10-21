@@ -1,0 +1,8 @@
+# PLACEHOLDER transcription (E57 test fixture), taken from docs/audio-design.md §5
+# (`boss_intro`); the sound-designer checks it against the edition before use.
+source = "Joseph Haydn, Symphony No. 94 in G major, Hob. I:94, II. Andante, bars 1-2 of the theme"
+edition = "Breitkopf & Haertel, ed. J. Rietz, c. 1855 (IMSLP)"
+steps_per_beat = 2          # eighths in 2/4
+notes = '''
+c4/1 c4 e4 e4 | g4 g4 e4/2
+'''

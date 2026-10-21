@@ -196,8 +196,9 @@ Pure crate (E55): text patches → 44 100 Hz mono `i16` PCM, bit-identical on na
 
 - `patch`: `Sfx::parse(file, text)` and `Instrument::parse(file, text)`; the id is the file stem (`[a-z][a-z0-9_]*`). Errors are `file:line:col: error[<kind>]: message` with kinds `syntax`, `schema` (unknown/missing key, wrong type, any float), `key` (a key not allowed in this file kind or on this wave), `range`, `wave`, `layers`, `note`, `kit`, `id`.
 - `synth`: one layer = one voice. A `u32` phase accumulator whose increment is recomputed every 32 samples from the pitch in cents (slide + vibrato + arpeggio + detune) via `tables::scale_by_cents` (Q30 semitone and cent tables). Oscillators in Q15: `pulse` (zero-mean and peak-normalised for any duty), `triangle`, `saw`, `sine` (256-entry table, linear interpolation), `noise` (15-bit LFSR, taps 0/1, seed 1, stepping twice per period of `freq_hz`). Envelopes are linear Q16 segments whose boundaries are `ms_to_samples` of the cumulative times (exact to the sample). Filters: one-pole low-pass and high-pass (`a = w/(1+w)`, `w = 2π·fc/fs`), and a band-pass (Chamberlin state-variable filter, 2× oversampled, unity gain at the centre, centre glides in cents over the sound). Tremolo scales the gain.
-- `render`: voices are summed into an `i32` buffer (`add_sfx`, `add_note`; for songs, E57), then `to_pcm` clamps to ±32767 and **counts** clamped samples (`Render { pcm, clamped }`). `Pcm::fnv64()` is the golden fingerprint. `FRAMES_PER_TICK = 735`.
+- `render`: voices are summed into an `i32` buffer (`add_sfx`, `add_note`), then `to_pcm` clamps to ±32767 and **counts** clamped samples (`Render { pcm, clamped }`). `Pcm::fnv64()` is the golden fingerprint. `FRAMES_PER_TICK = 735`.
 - `wav`: `write(&Pcm)` (44-byte RIFF header, PCM 16-bit mono) and `read` (skips unknown chunks; for tests and tools).
+- `song` (E57): `Song::parse(file, text)`, the `.song` format below (error kinds also `score`, `pattern`, `channel`, `music`); `song.events` is the order laid out in time (per channel, ties merged). `song_render`: `render_song(&Song, &instruments, &RenderOptions) -> SongRender`. `music_lint`: `lint_song(&Song, &LintContext) -> Vec<Lint>` (`file:line:col: error[music-<code>]: …`). `quote`: `.quote` melody fixtures and `check_quote`.
 
 ### `.sfx` (`audio/sfx/*.sfx`, `audio/jingles/*.sfx`)
 
@@ -263,9 +264,103 @@ decay_ms = 120
 volume_pct = 70
 ```
 
+### `.song` (`audio/music/*.song`, E57)
+
+A song is a **loop** (it loops from sample 0, D-114) or a **jingle** (once: a stage intro, a fanfare, `game_over`). TOML header plus tracker-style scores in multi-line literal strings, bar-structured so that every channel's bars line up under each other, like a system in a score:
+
+```toml
+# audio/music/example.song
+[meta]
+id = "example"            # = the file stem
+kind = "loop"             # loop | jingle
+tempo_bpm = 120           # beats per minute; a beat is the meter's lower number
+meter = "2/4"             # 2/4 | 3/4 | 6/8 (6/8 counts eighths: dotted quarter = 66 is tempo_bpm = 198)
+steps_per_beat = 4        # the grid: a 2/4 bar has 2 x 4 = 8 steps
+key = "bb major"          # tonic (c, c#, db, ... bb, b) + major | minor
+bars = 24                 # the bars of `order` (checked)
+order = ["A", "B", "A"]   # patterns in playing order (repeat one by naming it again)
+source = "original"       # or the quoted work; then `edition` (the PD edition) is required
+# edition = "AMA, Breitkopf 1886"
+# length_of = "wolfgangsee"   # render to that song's exact length (the underwater track)
+
+[channels]                # 1..=6, top to bottom in the piano roll
+lead   = { instrument = "fluegelhorn", volume_pct = 40 }
+bass   = { instrument = "helikon", volume_pct = 30 }
+chords = { instrument = "begleitung", volume_pct = 20, arp_ms = 17 }  # default 17; 0 = together
+drums  = { instrument = "kit", volume_pct = 25 }
+
+[pattern.A]
+score = '''
+lead   | r/2 bb4 d5 f5 | eb5/4> d5 | c5/2 d5 eb5 c5 | bb4/4 _       |  # the Oblaten-Motiv
+bass   | bb2/4 f2      | bb2/4 f2  | f2/4 c3        | bb2/4 f2      |
+chords | r/2 [d4,f4,bb4]' r [d4,f4,bb4]' | r/2 [d4,f4,bb4]' r [d4,f4,bb4]' | r/2 [c4,f4,a4]' r [c4,f4,a4]' | r/2 [d4,f4,bb4]' r/4 |
+drums  | K/2 h K h     | K/2 h K h | K/2 h K h      | [K,S]/2 S S S |
+
+lead   | c5/4 a4       | ...                                       # the next bars: a new "system"
+'''
+
+[pattern.B]
+key = "f major"           # optional: this section's key (a Trio, a B section)
+score = '''
+...
+'''
+
+[[quote]]                 # optional, one per quoted tune (see `.quote`)
+fixture = "oblaten_motiv"
+channel = "lead"
+bar = 1                   # 1-based song bar
+step = 2                  # optional: steps into that bar (a pickup)
+# transpose = 0           # semitones from the fixture to the song
+# augment = 1             # the song's lengths are the fixture's times this
+# compare = "exact"       # exact (pitch and length) | pitches (a tune squeezed into another meter)
+```
+
+**Score lines**: `<channel> | bar | bar | …`, tokens separated by spaces. Several lines of the same channel in one score continue each other (a block of a few bars for every channel is a "system"); a channel without a line is silent in that pattern; all its present lines have the same number of bars. `#` at a line start or after a space starts a comment (`f#4` is a note).
+
+**Token**: `<sound>[/<steps>][>]['][@<velocity>]`.
+
+| Sound | Meaning |
+|---|---|
+| `c5`, `f#4`, `bb3` | a note (octaves 0..=8); `c#5!` marks a note outside the key as intended |
+| `[d4,f4,bb4]` | a chord of ≤ 3 notes, no spaces: one voice arpeggiated every `arp_ms` (the chip chord), the first note is the root; `arp_ms = 0` sounds the notes together |
+| `K`, `[K,S]` | kit letters (any letter of the kit except `r`), several struck together |
+| `r` | a rest (releases ring into it) |
+| `_` | a tie: the previous note or hit lasts longer, also across bar lines and patterns |
+
+`/<steps>`: the length (default: the previous token's of that channel in the pattern, across its lines; its first token in a pattern: one beat). Every bar must sum to meter × `steps_per_beat` (else a `score` error at the bar). `>` accent (velocity 125 %), `'` staccato (sounds half the length), `@<pct>` velocity 1..=200; the velocity scales the channel's `volume_pct`.
+
+**Rendering a song** (`song_render`):
+- Time: a song of `S` steps is `L` samples; step `k` starts at `k·L/S` (rounded down, spread evenly). A jingle's `L` is its natural length; a loop's is rounded to the nearest multiple of **4096 frames** (D-114): at most 2048 frames (46 ms) per loop. `RenderOptions { tempo_pct, length_frames }`: `tempo_pct` (50..=200; 112 is the "hurry" render, D-114); `length_frames` forces an exact length (a loop: a multiple of 4096). `song_render::render_in(&songs, &instruments, id, &opts)` resolves `length_of` (`resolve_length`: the target loop's length at the same tempo) and is what the game and xtask call.
+- **Channels are monophonic**: a new note, chord or hit cuts what still sounds on its channel (the `CUT_FADE` of `add_note_until`, applied to the summed voice: identical for one layer, a few LSBs of rounding apart for several); a rest doesn't cut.
+- **Loops wrap**: tails past the loop end are added at the start, and the last notes are cut by the channel's first onset one loop later, so the loop equals the steady state of playing it forever (tested sample-exact against three passes in a row).
+- **Cache**: identical voices (channel, notes or hits, gate, velocity) are synthesised once and added wherever they recur (the 90 s, 6-channel test song renders in ~15 ms in release).
+- A jingle's PCM runs on to the end of its last release.
+
+**Music lints** (`music_lint`; part of `cargo xtask audio lint`; a bar that doesn't fill the meter is already a `score` parse error, so patterns and the loop end sit on bar lines): errors `instrument` (exists; kit vs. melodic tokens; kit letters), `bars`, `range` (the instrument's `range`), `key` (outside the pattern's key without `!`; minor keys include the raised 6th and 7th), `length` (loops 20–90 s, jingles ≤ 10 s), `length-of` (the target exists, is a loop, ≤ 3 % apart), `quote`, `provenance` (quoting a PD fixture needs a non-"original" `source`); warnings `accidental` (`!` on an in-key note), `clash` (two melodic channels a semitone, 7th or 9th apart where one starts a note on a beat), `consonance` (beat 1, highest vs. lowest melodic channel: unison, 3rd, 5th, 6th or octave in ≥ 70 % of bars), `melody-range` (> 2 octaves), `repeat` (a pattern > 4 times in a row), `unused-pattern`.
+
+**Piano roll** (`cargo xtask audio render <id>|<file.song>` → `$CARGO_TARGET_DIR/preview/audio/<id>_roll.png`, next to the WAV, stats and spectrogram): 8 bars per row, one lane per channel, pitch upwards with a line and a label at every C, bar numbers and pattern names on top, bright bar lines and dim beat lines. Notes in the channel's colour (brighter = louder), a white onset column, drawn as long as they sound; `!` notes have a magenta top edge, notes the lints reject are red; kit lanes have one row per patch; a loop ends in a green line.
+
+### `.quote` (`audio/quotes/*.quote`, E57)
+
+A melody fixture: the first notes of a quoted tune, transcribed from its public-domain edition (D-113, audio-design §9.3). A song's `[[quote]]` must play it (the `quote` lint), so a pattern edit that breaks a quote fails. Single notes, `r` and `_` on the fixture's own grid; `|` is only for reading:
+
+```toml
+# audio/quotes/haydn_94_andante.quote
+source = "Joseph Haydn, Symphony No. 94, II. Andante, bars 1-2 of the theme"
+edition = "Breitkopf & Haertel, ed. J. Rietz, c. 1855 (IMSLP)"
+steps_per_beat = 2          # eighths in 2/4
+notes = '''
+c4/1 c4 e4 e4 | g4 g4 e4/2
+'''
+```
+
+The check takes the channel's notes (the top note of a chord) from the quote's bar and step on, merges consecutive rests, and compares pitches (plus `transpose`) and lengths in beats (times `augment`; `compare = "pitches"` skips lengths). The last fixture note may be held longer in the song. The first difference is reported with the song's `file:line:col`. The leitmotif is a fixture too (`source = "original"`).
+
+Test fixtures for both formats are in `crates/jnr-audio/tests/fixtures/music/` (placeholder instruments, `placeholder_polka.song`, `placeholder_fanfare.song`, two `.quote`s).
 ### Tooling (`cargo xtask audio`, E56)
 
-`xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`); a new kind (E57's songs) adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
+`xtask/src/audio/` renders, measures and lints sounds; it is the only place with f64 sound analysis (`stats.rs`: levels, DC, head/tail, an FFT for the centroid and the spectrogram). Sources are enumerated per `audio::Kind` (`Sfx` = `audio/sfx/*.sfx`, `Jingle` = `audio/jingles/*.sfx`, `Song` = `audio/music/*.song`, rendered and drawn by `xtask/src/audio_song.rs`); a new kind adds a variant with its directory, its render arm in `audio::render`, its target in `audio::target_for` and any extra review image in `audio::write_review` (the piano roll), and `render`, `lint` and `golden` handle it. Lint targets for `.sfx` sounds live in `audio/targets.toml` (class, optional peak, duration, centroid band, `placeholder`), outside the `.sfx` format: they are review data, not synth input. Commands, lints and the golden flow: `docs/validation.md`, "Audio".
+
 
 ### Cues (`jnr_audio::cues`, E58a, D-113/D-114)
 
