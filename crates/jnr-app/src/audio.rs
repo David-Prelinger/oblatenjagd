@@ -389,6 +389,21 @@ impl Mixer {
         self.underwater = false;
     }
 
+    /// Forgets the underwater twin (its render or load failed): the stage
+    /// song plays alone and `Underwater` is ignored, as in `jnr_audio::mix`
+    /// without the twin. Returns the song's volume op (it is audible again
+    /// if the mixer was under water).
+    pub fn drop_twin(&mut self) -> Vec<Op> {
+        let mut out = Vec::new();
+        if self.twin.take().is_some() {
+            self.underwater = false;
+            if let Some(m) = self.song {
+                out.push(Op::Volume(SoundId::Music(m), self.song_volume(false)));
+            }
+        }
+        out
+    }
+
     /// The song and its twin start together (D-114: they must stay in
     /// step): `Some(ops)` once every song the mixer plays is loaded (song
     /// first, then twin, at their current volumes), `None` while one still
@@ -416,6 +431,74 @@ impl Mixer {
         }
         out
     }
+}
+
+// ------------------------------------------------------------ bookkeeping
+// The decisions `Audio` makes about loads and unloads, as pure functions
+// (tested below without a sound device).
+
+/// Whether a finished load is kept: SFX and jingles always, a song only
+/// while it is the mixer's song or twin (else it was replaced while loading).
+pub fn keep_loaded(id: SoundId, songs: [Option<Music>; 2]) -> bool {
+    match id {
+        SoundId::Music(m) if m.is_song() => songs.contains(&Some(m)),
+        _ => true,
+    }
+}
+
+/// What happens to a sound that is unloaded.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Unload {
+    /// Dropped now (a delete call to quad-snd).
+    Drop,
+    /// Kept until sound is on again (muted: no backend calls).
+    Park,
+    /// Leaked: the backend is dead or off, a delete would hit a dead thread.
+    Forget,
+}
+
+/// [`Unload`] for a backend that is `gone` (dead or off) or `muted`.
+pub fn unload_action(gone: bool, muted: bool) -> Unload {
+    if gone {
+        Unload::Forget
+    } else if muted {
+        Unload::Park
+    } else {
+        Unload::Drop
+    }
+}
+
+/// What giving up on a sound (load error or timeout) changes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GiveUp {
+    /// It was the jingle waiting to start.
+    pub clear_jingle: bool,
+    /// It was the stage song: the song group can't start.
+    pub cancel_songs: bool,
+    /// It was the underwater twin: the song starts alone.
+    pub drop_twin: bool,
+}
+
+/// [`GiveUp`] for `id`, given the waiting jingle and the mixer's songs.
+pub fn give_up_effects(
+    id: SoundId,
+    jingle_to_start: Option<Music>,
+    songs: [Option<Music>; 2],
+) -> GiveUp {
+    let SoundId::Music(m) = id else {
+        return GiveUp::default();
+    };
+    GiveUp {
+        clear_jingle: jingle_to_start == Some(m),
+        cancel_songs: songs[0] == Some(m),
+        drop_twin: songs[1] == Some(m),
+    }
+}
+
+/// Whether a load timeout turns audio off: only while nothing has loaded
+/// yet (the missing-`audio.js` case); later it gives up that one sound.
+pub fn timeout_turns_audio_off(ever_loaded: bool) -> bool {
+    !ever_loaded
 }
 
 /// Why audio is off for good.
@@ -561,13 +644,9 @@ impl Audio {
         }
     }
 
-    /// Whether the mixer still wants `id` loaded (SFX and jingles always;
-    /// a song only while it is the mixer's song or twin).
+    /// Whether the mixer still wants `id` loaded ([`keep_loaded`]).
     fn wanted(&self, id: SoundId) -> bool {
-        match id {
-            SoundId::Music(m) if m.is_song() => self.mixer.songs().contains(&Some(m)),
-            _ => true,
-        }
+        keep_loaded(id, self.mixer.songs())
     }
 
     /// Once per render frame, after the frame's simulation steps (so a cue's
@@ -635,7 +714,7 @@ impl Audio {
                 }
                 LoadPoll::Waiting => still_pending.push((id, load)),
                 // Nothing ever loaded: the missing-audio.js case.
-                LoadPoll::TimedOut if !self.ever_loaded => {
+                LoadPoll::TimedOut if timeout_turns_audio_off(self.ever_loaded) => {
                     log_line(&format!(
                         "audio load timed out after {} frames; audio off",
                         load.polls()
@@ -656,15 +735,25 @@ impl Audio {
         }
     }
 
-    /// A sound that will never load: nothing waits for it any more.
+    /// A sound that will never load ([`give_up_effects`]): nothing waits for
+    /// it any more; a failed twin leaves the stage song to start alone.
     fn give_up(&mut self, id: SoundId) {
-        if let SoundId::Music(m) = id {
-            if self.jingle_to_start == Some(m) {
-                self.jingle_to_start = None;
-            }
-            if self.mixer.songs().contains(&Some(m)) {
-                self.songs_to_start = false;
-            }
+        let g = give_up_effects(id, self.jingle_to_start, self.mixer.songs());
+        if g.clear_jingle {
+            self.jingle_to_start = None;
+        }
+        if g.cancel_songs {
+            self.songs_to_start = false;
+        }
+        if g.drop_twin {
+            self.drop_twin();
+        }
+    }
+
+    /// The twin is gone: the mixer forgets it (the song plays alone).
+    fn drop_twin(&mut self) {
+        for op in self.mixer.drop_twin() {
+            self.exec(op);
         }
     }
 
@@ -728,13 +817,13 @@ impl Audio {
         self.loaded = kept;
         let gone = (self.dead)() || self.off.is_some();
         for (_, sound) in old {
-            if gone {
-                std::mem::forget(sound);
-            } else if self.muted {
-                self.to_unload.push(sound);
-            } else {
-                self.calls += 1;
-                drop(sound);
+            match unload_action(gone, self.muted) {
+                Unload::Forget => std::mem::forget(sound),
+                Unload::Park => self.to_unload.push(sound),
+                Unload::Drop => {
+                    self.calls += 1;
+                    drop(sound);
+                }
             }
         }
     }
@@ -759,13 +848,22 @@ impl Audio {
         }
     }
 
-    /// The song group (song and twin) to start together once loaded.
+    /// The song group (song and twin) to start together once loaded. A
+    /// twin that can't be rendered is dropped (the song plays alone); a song
+    /// that isn't in the bank (yet) starts nothing. With no song at all the
+    /// group is empty: `start_ops` then gives no ops and the flag clears in
+    /// `try_start`.
     fn start_songs(&mut self) {
-        for m in self.mixer.songs().into_iter().flatten() {
-            if !self.ensure_music(m) {
-                // Not in the bank (yet): nothing to start.
-                return;
-            }
+        let [song, twin] = self.mixer.songs();
+        if let Some(t) = twin
+            && !self.ensure_music(t)
+        {
+            self.drop_twin();
+        }
+        if let Some(m) = song
+            && !self.ensure_music(m)
+        {
+            return;
         }
         self.songs_to_start = true;
     }
@@ -818,6 +916,10 @@ impl Audio {
             }
         }
         self.muted = !self.muted;
+        if self.muted {
+            // A jingle cued before the mute is not started after it.
+            self.jingle_to_start = None;
+        }
         log_line(if self.muted { "sound off" } else { "sound on" });
         if self.active() {
             self.start_songs();
@@ -1133,6 +1235,77 @@ mod tests {
                 assert_eq!(f32::from(got), want, "twin {with_twin}: {tl:?}");
             }
         }
+    }
+
+    /// The bookkeeping decisions; each would fail without the E59 review
+    /// fixes (all loads kept, muted unloads leaked, any timeout killing
+    /// audio, a failed load leaving its waiters waiting).
+    #[test]
+    fn bookkeeping_keeps_parks_and_gives_up_as_decided() {
+        let songs = [Some(Music::Wolfgangsee), Some(Music::Unterwasser)];
+        // A finished load: a replaced song is not kept; SFX and jingles are.
+        assert!(keep_loaded(music(Music::Wolfgangsee), songs));
+        assert!(keep_loaded(music(Music::Unterwasser), songs));
+        assert!(!keep_loaded(music(Music::Strobl), songs));
+        assert!(keep_loaded(music(Music::Death), [None, None]));
+        assert!(keep_loaded(sfx(Sfx::Jump.play()), [None, None]));
+        // Unloading: muted parks, only a dead/off backend leaks.
+        assert_eq!(unload_action(false, false), Unload::Drop);
+        assert_eq!(unload_action(false, true), Unload::Park);
+        assert_eq!(unload_action(true, true), Unload::Forget);
+        assert_eq!(unload_action(true, false), Unload::Forget);
+        // Timeouts: only before anything loaded.
+        assert!(timeout_turns_audio_off(false));
+        assert!(!timeout_turns_audio_off(true));
+        // Giving up: the waiting jingle clears, the song cancels the group,
+        // the twin only drops itself.
+        let jingle = Some(Music::Hurry);
+        assert_eq!(
+            give_up_effects(music(Music::Hurry), jingle, songs),
+            GiveUp {
+                clear_jingle: true,
+                ..GiveUp::default()
+            }
+        );
+        assert_eq!(
+            give_up_effects(music(Music::Wolfgangsee), jingle, songs),
+            GiveUp {
+                cancel_songs: true,
+                ..GiveUp::default()
+            }
+        );
+        assert_eq!(
+            give_up_effects(music(Music::Unterwasser), None, songs),
+            GiveUp {
+                drop_twin: true,
+                ..GiveUp::default()
+            }
+        );
+        assert_eq!(
+            give_up_effects(sfx(Sfx::Jump.play()), jingle, songs),
+            GiveUp::default()
+        );
+    }
+
+    /// A failed twin: the stage song plays alone, audible even if the
+    /// mixer was under water, and the dive is ignored from then on.
+    #[test]
+    fn dropping_the_twin_leaves_the_song_alone_and_audible() {
+        let mut m = Mixer::default();
+        let twin = |t: Music| t == Music::Unterwasser;
+        m.apply(Cue::Song(Music::Wolfgangsee), twin);
+        m.apply(Cue::Underwater(true), twin);
+        assert_eq!(m.drop_twin(), [Op::Volume(music(Music::Wolfgangsee), FULL)]);
+        assert_eq!(m.songs(), [Some(Music::Wolfgangsee), None]);
+        assert!(m.apply(Cue::Underwater(true), twin).is_empty());
+        assert_eq!(m.music_volume(Music::Wolfgangsee), Some(FULL));
+        assert!(m.drop_twin().is_empty(), "only once");
+        // The group now starts with the song alone.
+        assert_eq!(
+            m.start_ops(|id| id == music(Music::Wolfgangsee))
+                .map(|o| o.len()),
+            Some(1)
+        );
     }
 
     /// D-114: the song and its twin start in the same update, even when
