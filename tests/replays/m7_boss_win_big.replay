@@ -1,0 +1,42 @@
+# The Oberkellner beaten as Zuckerschock with a hurt (D-106: "she may take
+# a hit"). Resi bumps the M-box, takes its Mozartkugel on the step
+# (frame 263, Big), climbs the refuge and locks the arena (443). She waits
+# on the floor at the left refuge's face: his first dash hits her there
+# (663: Big -> Normal, 120 frames of blinking; no death). Still blinking
+# she jumps up out of him in his breather and comes down on his head
+# (hit 1 at 737), lands beside the stunned waiter and hops onto the
+# refuge. Hits 2 and 3 as in m7_boss_win_normal (1273, 1751), then the
+# counter: the plain goal (2111).
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = complete frames=2111..2111 deaths=0 event=PowerUp event=Hurt boss_hits=3 power=normal score=8100
+---
+R 150
+RJ 20
+R 30
+RJ 20
+R 60
+- 40
+RJ 20
+R 105
+L 130
+- 124
+J 20
+- 42
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30

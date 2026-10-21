@@ -1,0 +1,18 @@
+# A tray bounce in the dash (D-106: tray up, from above, a bounce without
+# damage or points). Resi locks the arena (frame 319) and stays on the
+# floor; she jumps as his first dash comes at her (dash from 449) and
+# comes down on his raised tray (482): a bounce (`Stomped`), no hurt, no
+# points, no hit. She lands behind him while he runs on to the wall.
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = deaths=0 event=Stomped no_event=Hurt score=0 boss_hits=0 state=playing
+---
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+- 125
+J 20
+- 60

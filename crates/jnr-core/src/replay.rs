@@ -220,6 +220,9 @@ pub enum Expect {
     /// `swimming=<true|false>`: whether the player swims at the end
     /// (`Player::swimming`, D-076).
     Swimming(bool),
+    /// `boss_hits=N`: the level's Oberkellner has taken exactly N hits at
+    /// the end (D-106; fails in a level without one).
+    BossHits(u8),
 }
 
 /// What the expectation grammar supports (shown in "not supported yet" errors).
@@ -227,7 +230,7 @@ const SUPPORTED: &str = "complete [frames=a..b], deaths=N, deaths<=N, dies_at fr
                          player_x>=PX, player_y>=PX, player_y<=PX, \
                          state=<playing|dying|stage_clear|game_over|title|stage_intro|paused|route_map>, \
                          stage=<station id>, event=<Event>, no_event=<Event>, oblaten>=N, oblaten=N, score>=N, score=N, lives=N, \
-                         lives>=N, power=<normal|big|hackl>, swimming=<true|false>";
+                         lives>=N, power=<normal|big|hackl>, swimming=<true|false>, boss_hits=N";
 
 impl Expect {
     /// Parses the space-separated clauses of one `expect` value.
@@ -292,6 +295,14 @@ impl Expect {
                     "false" => false,
                     _ => return Err(format!("swimming must be true or false, not `{b}`")),
                 })
+            } else if let Some(n) = w.strip_prefix("boss_hits=") {
+                let hits = parse_u32(n, "boss_hits")?;
+                Expect::BossHits(
+                    u8::try_from(hits)
+                        .ok()
+                        .filter(|&h| h <= crate::enemies::OBERKELLNER_HITS)
+                        .ok_or_else(|| format!("boss_hits must be 0..=3, not `{n}`"))?,
+                )
             } else if let Some(name) = w.strip_prefix("no_event=") {
                 Expect::NoEvent(parse_event(name)?)
             } else if let Some(name) = w.strip_prefix("event=") {
@@ -333,6 +344,7 @@ impl Expect {
             Expect::LivesAtLeast(n) => o.lives >= n,
             Expect::Power(p) => o.power == p,
             Expect::Swimming(b) => o.swimming == b,
+            Expect::BossHits(n) => o.boss_hits == Some(n),
         };
         if ok {
             return Ok(());
@@ -382,6 +394,10 @@ impl Expect {
             Expect::Swimming(_) => {
                 format!("expected {self} at the end, got swimming={}", o.swimming)
             }
+            Expect::BossHits(_) => match o.boss_hits {
+                Some(h) => format!("expected {self} at the end, got boss_hits={h}"),
+                None => format!("expected {self} at the end, but the level has no oberkellner"),
+            },
         })
     }
 }
@@ -409,6 +425,7 @@ impl fmt::Display for Expect {
             Expect::LivesAtLeast(n) => write!(f, "lives>={n}"),
             Expect::Power(p) => write!(f, "power={}", p.name()),
             Expect::Swimming(b) => write!(f, "swimming={b}"),
+            Expect::BossHits(n) => write!(f, "boss_hits={n}"),
         }
     }
 }
@@ -739,6 +756,8 @@ pub struct Outcome {
     pub power: Power,
     /// Whether the player swims at the end.
     pub swimming: bool,
+    /// The Oberkellner's hits at the end (`None`: no Oberkellner).
+    pub boss_hits: Option<u8>,
 }
 
 impl Outcome {
@@ -759,6 +778,7 @@ impl Outcome {
             stage: game.station().map(|i| i as u8),
             power: game.player().power,
             swimming: game.player().swimming,
+            boss_hits: crate::enemies::boss_hits(game.entities()),
         }
     }
 
@@ -788,6 +808,7 @@ impl Outcome {
         self.stage = game.station().map(|i| i as u8);
         self.power = game.player().power;
         self.swimming = game.player().swimming;
+        self.boss_hits = crate::enemies::boss_hits(game.entities());
     }
 
     /// "deaths at frames 10, 20" or "no deaths".
@@ -1056,6 +1077,7 @@ RBJ 2
             stage: Some(1),
             power: Power::Big,
             swimming: false,
+            boss_hits: Some(2),
         }
     }
 
@@ -1170,6 +1192,20 @@ RBJ 2
                 .contains("unknown power `fire`")
         );
         assert_eq!(check("swimming=false", &o), Ok(()));
+        assert_eq!(check("boss_hits=2", &o), Ok(()));
+        assert_eq!(
+            check("boss_hits=3", &o),
+            Err("expected boss_hits=3 at the end, got boss_hits=2".to_owned())
+        );
+        let none = Outcome {
+            boss_hits: None,
+            ..outcome()
+        };
+        assert_eq!(
+            check("boss_hits=0", &none),
+            Err("expected boss_hits=0 at the end, but the level has no oberkellner".to_owned())
+        );
+        assert!(Expect::parse_clauses("boss_hits=4").is_err());
         assert_eq!(
             f("swimming=true", &o),
             "expected swimming=true at the end, got swimming=false"

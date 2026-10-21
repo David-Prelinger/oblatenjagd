@@ -19,6 +19,7 @@ mod m3;
 mod m4;
 mod m6_mix;
 mod modes;
+mod oberkellner;
 mod offiziere;
 mod reisebus;
 mod route;

@@ -273,11 +273,14 @@ pub enum SpawnKind {
     /// Enemy `offizier` (`lead`, `phase`: a marching file with a sabre
     /// salute on the stage clock, D-096).
     Offizier,
+    /// Enemy `oberkellner` (the boss of Stage 9 in his arena, the level's
+    /// last 20 columns, D-106; no fields).
+    Oberkellner,
 }
 
 impl SpawnKind {
     /// Every kind, in declaration order.
-    pub const ALL: [SpawnKind; 34] = [
+    pub const ALL: [SpawnKind; 35] = [
         SpawnKind::PlayerStart,
         SpawnKind::Goal,
         SpawnKind::Checkpoint,
@@ -312,6 +315,7 @@ impl SpawnKind {
         SpawnKind::Kurgast,
         SpawnKind::Fensterladen,
         SpawnKind::Offizier,
+        SpawnKind::Oberkellner,
     ];
 
     /// The legend name (`entity = "<name>"`); also the catalog sprite name
@@ -352,6 +356,7 @@ impl SpawnKind {
             SpawnKind::Kurgast => "kurgast",
             SpawnKind::Fensterladen => "fensterladen",
             SpawnKind::Offizier => "offizier",
+            SpawnKind::Oberkellner => "oberkellner",
         }
     }
 

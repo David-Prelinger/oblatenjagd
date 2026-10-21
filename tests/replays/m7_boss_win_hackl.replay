@@ -1,0 +1,53 @@
+# The Oberkellner beaten as Hackl (D-106: an axe in a breather is a hit,
+# axes bounce off the tray, one hit per breather). Resi bumps the H-box,
+# jumps onto it for the Hackl (frame 237), clears the M-box with a running
+# jump onto the left refuge (its RUN press throws an axe into the room)
+# and locks the arena on the floor (468). In his first telegraph (tray up)
+# she throws an axe at him: it bounces off the tray (584, no points). She
+# stays on the floor and jumps every dash as it passes under her (620,
+# 845, 1064). In each breather she throws once: hits at 730 (left wall),
+# 951 (right wall) and 1154 (left wall), 1000 + 1000 + 5000; right after
+# the first hit a second axe flies through the stunned waiter (735, no
+# hit). Every breather is hit, so no volley comes. Then the counter: the
+# plain goal (1343).
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = complete frames=1343..1343 deaths=0 no_event=Hurt event=AxeHit boss_hits=3 power=hackl score=8100
+---
+R 54
+- 30
+J 10
+- 50
+L 30
+- 30
+RJ 25
+R 10
+- 40
+R 30
+RB 20
+RBJ 25
+R 100
+- 105
+B 1
+- 59
+J 20
+- 60
+L 1
+B 1
+- 33
+B 1
+- 109
+J 20
+- 54
+R 1
+B 1
+- 143
+J 20
+- 40
+L 1
+B 1
+- 60
+R 120
+RJ 20
+R 30
