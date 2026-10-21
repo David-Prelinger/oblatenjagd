@@ -1,0 +1,44 @@
+# QA MA confirmation (E63): ZEIT 60 on the arena-lock frame loses the bells.
+# m7_boss_win_normal with 14081 idle frames first, so the lock (WAIT->INTRO)
+# lands on 14400, the ZEIT-60 frame. derived() rings the bells before boss()
+# sees the lock, so the cue log has '14400 jingle hurry' and
+# '14400 jingle boss_intro' on the same frame: the bells are replaced after
+# 0 frames and never heard, and bells_due is never set.
+# Expected (D-124, audio-design 4): the bells wait for the boss jingle:
+# '14528 jingle hurry' (after the chord's end, with '14528 song boss'),
+# no hurry at 14400. Check: cargo xtask replay <this> --cue-log
+# Fixed (E64): the lock is handled before the ZEIT check, so the bells wait
+# for boss_intro and boss_surprise: '14528 song boss', '14528 jingle hurry'.
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = deaths=0 boss_hits=3
+---
+- 14081
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30

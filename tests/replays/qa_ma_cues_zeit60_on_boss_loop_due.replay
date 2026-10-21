@@ -1,0 +1,46 @@
+# QA MA confirmation (E63): ZEIT 60 on the frame the boss loop is due (the
+# chord's rendered end) delays the boss loop by the bells' 96 frames.
+# m7_boss_win_normal with 13953 idle frames first: boss_surprise at 14362,
+# boss loop due 14400 = ZEIT 60. derived() rings the bells before the
+# deadline block; bells() pushes every scheduled song to the bells' end,
+# including the boss loop, so: '14400 jingle hurry', '14496 song boss'.
+# 1.6 s of bells alone mid-fight (no boss music), against 4: in the fight
+# the bells play over the boss music, no hold.
+# Expected: '14400 song boss' with '14400 jingle hurry' (as when ZEIT 60 is
+# one frame earlier or later, e.g. intro10: '14518 song boss' + hurry).
+# Check: cargo xtask replay <this> --cue-log
+# Fixed (E64): only the stage piece after the Tusch waits for the bells,
+# not the boss loop: '14400 jingle hurry', '14400 song boss'.
+level  = m7_boss
+seed   = 1
+source = handwritten
+expect = deaths=0 boss_hits=3
+---
+- 13953
+R 155
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30
