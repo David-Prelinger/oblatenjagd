@@ -2,7 +2,7 @@
 
 use jnr_audio::note::Note;
 use jnr_audio::patch::InstrumentKind;
-use jnr_audio::render::{CUT_FADE, add_sfx, add_sfx_until, to_pcm};
+use jnr_audio::render::{CUT_FADE, add_sfx, add_sfx_shifted, add_sfx_until, to_pcm};
 use jnr_audio::{Instrument, Sfx, ms_to_samples, render_note, render_sfx, wav};
 
 fn sfx(text: &str) -> Sfx {
@@ -96,6 +96,25 @@ fn pulse_pitch_is_correct() {
             "{hz} Hz duty {duty}: {zc} crossings"
         );
     }
+}
+
+/// A pitched variant (`cues::PITCHED`, E60): the whole sound moves by the
+/// offset, its length stays.
+#[test]
+fn shifted_effects_move_the_pitch_and_keep_the_length() {
+    let patch = tone("sine", 440, "");
+    let plain = render_sfx(&patch).pcm.samples;
+    for (cents, hz) in [(0, 440), (1200, 880), (-500, 330)] {
+        let mut mix = Vec::new();
+        add_sfx_shifted(&mut mix, 0, &patch, 100, cents);
+        let r = to_pcm(&mix).pcm.samples;
+        assert_eq!(r.len(), plain.len());
+        let zc = zero_crossings(&r) as i64;
+        assert!((zc - 2 * hz).abs() <= 2, "{cents} cents: {zc} crossings");
+    }
+    let mut mix = Vec::new();
+    add_sfx_shifted(&mut mix, 0, &patch, 100, 0);
+    assert_eq!(to_pcm(&mix).pcm.samples, plain);
 }
 
 #[test]

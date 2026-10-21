@@ -740,3 +740,54 @@ level music ids; **E58b** embeds the `.song` files (E57's format) and the `audio
   `sprout`, `ballast`, `liegestuhl`, `platsch`, `stempel`, `seite`, the ambience loops
   (`gelse`, `summen`, `dampf`), the music layers, the hurry +12 % tempo, the boss tempo
   steps, the map transposition and the climb layer; fades (cuts only, D-114).
+
+## As built (E60)
+
+`cargo xtask replay <file|name> --audio [out.wav]` (`xtask/src/replay_audio.rs`), the pure
+playback model `jnr_audio::mix` (new module, D-122) and the verify step `audio-mix`; usage in
+`docs/validation.md` L6c and the `replay-testing` skill.
+
+- **Shared core in `jnr-audio`**: `mix::mix(&Bank, &[(frame, Cue)], end_frame) -> Mix`
+  (PCM with clamp count, a `Span` per sound heard, the sounds missing from the bank) and
+  `mix::render_variant(&patch, semitones)` for the `cues::PITCHED` variants, built on the new
+  `render::add_sfx_shifted` (the voice's `offset_cents`; oscillators move, filters and timing
+  stay, so a variant keeps its length). **E58b/E59 should render the pitched WAVs with
+  `render_variant`** so the app plays what the offline mix measures; the volume constants
+  (`SFX_VOLUME_PCT` 100, `MUSIC_VOLUME_PCT` 100, `DUCK_VOLUME_PCT` 50) are the app's too.
+- **Playback rules** as in the E58a cue list: an SFX cue stops the voice's last sound and any
+  live copy of its id, then plays; `StopSfx`/`CutSfx` stop ids; `Song` stops song and twin,
+  starts the song (and its twin muted) from sample 0 and resets "under water"; `Jingle` once;
+  volumes are recomputed after each frame's cues (held 0, ducked 50 %, the twin swapped).
+  Stops are hard cuts (quad-snd). Loops end with the run; one-shots ring out (a final
+  fanfare is heard whole). Not modelled: the design's duck ramps and 5 ms steal fade (D-114:
+  cuts only).
+- **Sounds**: SFX from `audio/sfx/<id>.sfx`, music from `audio/music/<id>.song` (rendered with
+  `song_render::render_in`, default options) or `audio/jingles/<id>.sfx`. A missing source is
+  silent and listed (`silent (no source in audio/ yet): …`); a source that fails to parse is
+  an error. The low-passed `unterwasser` fallback (E58b) is not rendered here: without
+  `unterwasser.song` the twin is silent.
+- **Outputs**: `<name>.wav`, `<name>_audio.png` (instead of the proposal's `_spec.png`: cue
+  labels and ticks, waveform, spectrogram and time axis in one image, 2x) and
+  `<name>_audio.json` (instead of `_cues.txt`: stats, findings, detected onsets and the cue
+  timeline with frame, ms and sample; the plain timeline is `--cue-log`).
+- **Lints** (`replay_audio::lint`): `clamp` and `ceiling` (−1 dBFS), each with up to 8 places
+  and the sounds heard there; the command exits non-zero on a finding (files are written
+  first). `onsets` (64-sample blocks, +12 dB over the previous ~12 ms, ≥ −40 dBFS, 20 ms
+  debounce) checks timing in the test.
+- **Verify** (beyond the proposal): `audio-mix` mixes all 10 replays with cue-log goldens and
+  lints them (~0.5 s). With the committed bank (25 SFX, no music yet) all pass. Measured:
+  Stage 1 tour (`salzburg_tour`, 2572 frames): peak −3.62 dBFS at 27.35 s (`oblate` +
+  `stomp`), RMS −25.07 dBFS, 0 clamped, 0 ms over the ceiling; silent: `title`,
+  `route_map`, `salzburg`, `fanfare_clear`. Normal boss win (`cafe_zauner_boss_win_normal`,
+  2598 frames): peak −5.85 dBFS at 17.80 s (`boss_telegraph` + `jump`), RMS −24.35 dBFS, 0
+  clamped; silent: `cafe_zauner`, `boss_intro`, `boss_surprise`, `boss`, `boss_defeat`,
+  `fanfare_finale`. With the sound-designer's in-progress songs from `ma-s2` (not committed
+  here) the tour peaks at −2.19 dBFS (`oblate` + `salzburg` + `stomp`), still 1.2 dB under the
+  ceiling.
+- **Tests**: `jnr_audio::mix` unit tests (frame × 735, retrigger and voice stealing, cuts and
+  `KeepItems`, pitched variants, loops with hold/duck/underwater, jingles once and held,
+  missing sounds, clamps); `render::add_sfx_shifted` pitch and length; in xtask the E60
+  criterion (`testbed_route` onsets within one frame of the 7 jump cues), a clamping and an
+  over-ceiling mix detected with `jump` + `oblate` named, the three output files, the pitched
+  variants rendered, and placeholder songs (E57 fixtures as `salzburg`/`fanfare_clear`)
+  looping from their cue in the tour. `cues::cue_log` now uses the same `timeline` function.

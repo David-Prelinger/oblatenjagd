@@ -1047,3 +1047,11 @@ Short records of decisions and why. Newest at the bottom. Agents append here whe
 - **Cut is a cue**: `StopSfx(id)` (the boss telegraph at the dash, the high C when the singer is defeated) and `CutSfx(All | KeepItems)`.
 - **Cue-log goldens** (`tests/golden/cues/*.cues`) change through `cargo xtask cues --accept` without a reviewer verdict: they are text whose diff is the review, unlike images and PCM hashes. The commit message names the changed logs.
 - **Level music** is `[meta] music` (not hashed); journey levels must have it.
+
+## D-122 Offline mix: playback rules, volumes and the `audio-mix` step (engine-engineer, E60; D-114, D-121)
+- **One playback model, in the pure crate**: `jnr_audio::mix` plays a cue timeline the way the app does with quad-snd (a cue on frame `f` at sample `f × 735`; an SFX stops the sound last started on its voice and any live copy of its id; songs loop from sample 0, the underwater twin starts muted with its song; jingles play once; stops and cuts are hard, as quad-snd has no fades). The app (E59) follows the same rules; a later disagreement is fixed in one of the two, not documented as a difference.
+- **Volumes**: every SFX plays at 100 % (rendered at its design peak, audio-design §3), music at 100 %, ducked at 50 % (−6.02 dB), held at 0. The design's 20 ms/250 ms duck ramps and the 5 ms steal fade are not modelled (cuts only, D-114).
+- **Pitched variants** are renders with the patch's oscillators moved by the offset (`mix::render_variant`; filters, envelopes and timing as authored), not resampled copies, so a variant keeps its length.
+- **The run's end**: loops stop with the replay's last frame; one-shots ring out, so a final fanfare is heard whole.
+- **Headroom is a verify gate**: the `audio-mix` step mixes every replay with a cue-log golden and fails on any clamped sample or any sample above −1 dBFS, naming the sounds heard there. Sounds with no source yet are silent (listed), so the gate tightens by itself as the music arrives.
+

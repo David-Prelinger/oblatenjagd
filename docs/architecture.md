@@ -380,6 +380,10 @@ struct Play { sfx: Sfx, semitones: i8 }            // pitched variants: cues::PI
 - A level names its piece with `[meta] music = "<id>"` (`levels lint`: required in journey levels, a `Music::level_song` id); `music` is not hashed.
 - Cue logs: `cargo xtask replay <file> --cue-log`, goldens `tests/golden/cues/*.cues` (`cargo xtask cues`, validation.md L6b).
 
+### Offline mix (`jnr_audio::mix`, E60, D-122)
+
+`mix::mix(&Bank, &[(frame, Cue)], end_frame) -> Mix` plays a cue timeline into one `i32` buffer by D-114's playback rules (one live copy per SFX id, the voice's last sound stopped, hard stops, songs looping from sample 0, jingles once, hold/duck/underwater volumes; `SFX_VOLUME_PCT`, `MUSIC_VOLUME_PCT`, `DUCK_VOLUME_PCT`) and clamps it (`Render`, clamp count), with the `Span` of every sound heard and the sounds missing from the `Bank` (silent). `mix::render_variant(&patch, semitones)` renders a pitched variant (`render::add_sfx_shifted`: the oscillators move by the offset, filters and timing stay) — the app's `cues::PITCHED` WAVs use the same function. Used by `cargo xtask replay <file> --audio` (validation.md L6c).
+
 ## Content formats
 
 ### Level (`content/levels/*.level`)

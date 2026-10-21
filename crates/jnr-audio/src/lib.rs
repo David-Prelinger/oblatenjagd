@@ -13,6 +13,7 @@
 //!   a voice cache), [`music_lint`]: what can be checked from the text,
 //!   [`quote`]: melody fixtures of quoted tunes.
 //! - [`cues`]: game events and state to sound cues (the [`cues::Director`]).
+//! - [`mix`]: a cue timeline played offline into one buffer (D-114 playback).
 //!
 //! The crate follows the `jnr-core` determinism rules (integers only, no
 //! `HashMap` iteration, no time/fs/threads/global RNG; enforced by
@@ -21,6 +22,7 @@
 
 pub mod cues;
 pub mod error;
+pub mod mix;
 pub mod music_lint;
 pub mod note;
 pub mod patch;

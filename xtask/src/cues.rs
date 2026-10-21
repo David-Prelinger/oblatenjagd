@@ -17,8 +17,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use jnr_audio::cues::{Director, log_line};
-use jnr_core::Level;
+use jnr_audio::cues::log_line;
 
 use crate::content;
 
@@ -65,28 +64,12 @@ pub fn cues_dir(root: &Path) -> PathBuf {
 /// The cue log of the replay at `path`: a header line, then one line per
 /// cue (frame 0 = the game's first frame, before any step).
 pub fn cue_log(root: &Path, path: &Path) -> Result<String, String> {
-    let replay = content::load_replay(path)?;
-    let levels: Vec<Level> = content::all_levels(root)?
-        .into_iter()
-        .map(|(p, l)| l.map_err(|e| format!("{}: {e}", p.display())))
-        .collect::<Result<_, _>>()?;
-    let tuning = content::tuning(root)?;
-    let mut game = replay
-        .new_game(&levels, &tuning)
-        .map_err(|e| format!("{}: {e}", path.display()))?;
+    let timeline = crate::replay_audio::timeline(root, path)?;
     let name = content::replay_name(path);
     let mut text = format!("# cue log of tests/replays/{name}.replay (cargo xtask cues)\n");
-    let mut director = Director::new();
-    for cue in director.begin(&game) {
-        text.push_str(&log_line(game.frame(), &cue));
+    for (frame, cue) in &timeline.cues {
+        text.push_str(&log_line(*frame, cue));
         text.push('\n');
-    }
-    for input in replay.frames() {
-        game.step(input);
-        for cue in director.step(&game, input) {
-            text.push_str(&log_line(game.frame(), &cue));
-            text.push('\n');
-        }
     }
     Ok(text)
 }
