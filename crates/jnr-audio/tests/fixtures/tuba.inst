@@ -1,4 +1,4 @@
-# PLACEHOLDER (E55 test fixture; the sound-designer authors the real `tuba`).
+# E55 test fixture for jnr-audio (not a game sound; the sound-designer authors those in audio/).
 range = ["e1", "f4"]
 
 [[layer]]

@@ -458,6 +458,23 @@ above:
   E57's "90 s, 6 channels < 50 ms" will need the song renderer to reuse identical
   pattern renders (see the notes for E57 below) or a lighter target.
 
+### E55 review fixes
+
+- `vibrato` gained `delay_ms`, `to_depth_cents` and `ramp_ms` (delayed, growing and fading
+  vibrato from `docs/audio-design.md` §2.1/§6); layers gained `slide_delay_ms`.
+- **API changes**: `Vibrato` has three more fields (`delay_ms`, `to_depth_cents`,
+  `ramp_ms`) and `Layer` one (`slide_delay_ms`); `synth::Voice` has `slide_start`. Code
+  that builds these structs literally needs the new fields (`Vibrato` is `Default`). New:
+  `render::add_sfx_until`, `render::add_note_until`, `render::CUT_FADE` (existing
+  signatures unchanged).
+- Behaviour: a note's gate now counts from its onset including a layer's `delay_ms`; an
+  ADSR release from level 0 has no samples (a gate-0 note is silent and as long as its
+  delay).
+- Fixtures moved to `crates/jnr-audio/tests/fixtures/`; `audio/` has only a README.
+- Arch-lint: `as_float`, `Value::Float` and `toml::Value` are forbidden in jnr-audio.
+- The pinned hash changed (its patch now also uses vibrato delay/ramp and slide delay); it
+  still matches a wasm32 build run in Node.
+
 Notes for E56/E57:
 
 - E56: `render_sfx(&Sfx) -> Render` gives the PCM and the clamp count; `wav::write` the
@@ -466,5 +483,5 @@ Notes for E56/E57:
 - E57: build songs with `render::add_note(&mut mix, start, layers, note, gate, volume_pct)`
   and `render::add_sfx` for kit hits (`InstrumentKind::Kit { hits }`), then `to_pcm`. A note
   sounds `gate + release` samples, so the loop-wrap tail is `mix[loop_len..]` folded back
-  onto the start. Identical (instrument, note, gate, volume) voices render identically, so a
+  onto the start; `add_note_until` cuts a note early with a 2 ms fade. Identical (instrument, note, gate, volume) voices render identically, so a
   per-song cache of rendered notes or whole pattern instances is safe and the obvious speed-up.

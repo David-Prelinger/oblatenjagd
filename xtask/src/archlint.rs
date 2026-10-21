@@ -10,7 +10,8 @@
 //!    no other workspace crate, `jnr-audio` only on `jnr-core`;
 //!    c. no package depends on `xtask` (any dependency kind).
 //! 2. Determinism rules for the source of every [`DETERMINISTIC_CRATES`]
-//!    crate (`crates/<name>/src`, outside test code):
+//!    crate (`crates/<name>/src`, outside test code; jnr-audio also must not
+//!    mention `as_float`, `Value::Float` or `toml::Value`, [`CRATE_FORBIDDEN_TEXT`]):
 //!    a. no `f32`, `f64`, `HashMap`, `HashSet`, `Instant`, `SystemTime`
 //!    (whole words; `1.0f32` and `1_f32` are caught too);
 //!    b. no `std::time`, `std::fs`, `std::thread`, `core::time` (as text);
@@ -64,6 +65,10 @@ const WORKSPACE_DEPS: [(&str, &[&str]); 2] = [("jnr-core", &[]), ("jnr-audio", &
 /// Crates under the determinism source scan (rule 2): integers only, no
 /// hash-map iteration, no time/fs/threads (D-117 for jnr-audio).
 const DETERMINISTIC_CRATES: [&str; 2] = ["jnr-core", "jnr-audio"];
+/// Extra text forbidden per crate (substrings, outside test code): the audio
+/// parser must never read TOML floats (every number is an integer key).
+const CRATE_FORBIDDEN_TEXT: [(&str, &[&str]); 1] =
+    [("jnr-audio", &["as_float", "Value::Float", "toml::Value"])];
 /// Packages nothing may depend on.
 const NO_DEPENDENTS: [&str; 1] = ["xtask"];
 
@@ -119,7 +124,10 @@ pub fn determinism_violations(root: &Path) -> Vec<String> {
             let rel = file.strip_prefix(root).unwrap_or(&file).display();
             match fs::read_to_string(&file) {
                 Ok(text) => {
-                    for (line, what) in scan_source(&text) {
+                    let mut found = scan_source(&text);
+                    found.extend(forbidden_text(krate, &text));
+                    found.sort_by_key(|(line, _)| *line);
+                    for (line, what) in found {
                         problems.push(format!(
                             "{rel}:{line}: {what} is forbidden in {krate} (determinism rules, docs/architecture.md)"
                         ));
@@ -130,6 +138,22 @@ pub fn determinism_violations(root: &Path) -> Vec<String> {
         }
     }
     problems
+}
+
+/// [`CRATE_FORBIDDEN_TEXT`] of `krate` in `text` (outside test code).
+fn forbidden_text(krate: &str, text: &str) -> Vec<(usize, String)> {
+    let mut found = Vec::new();
+    for (name, tokens) in CRATE_FORBIDDEN_TEXT {
+        if name != krate {
+            continue;
+        }
+        for (lineno, line) in code_lines(text) {
+            for tok in tokens.iter().filter(|t| line.contains(*t)) {
+                found.push((lineno, format!("`{tok}`")));
+            }
+        }
+    }
+    found
 }
 
 fn cargo_metadata(root: &Path) -> Result<Value, String> {
@@ -978,7 +1002,7 @@ let d = core::time::Duration::ZERO;
     }
 
     #[test]
-    fn an_f32_in_jnr_audio_fails_the_lint() {
+    fn an_f32_or_a_toml_float_in_jnr_audio_fails_the_lint() {
         let root = fake_root(
             "audio-f32",
             &[
@@ -987,6 +1011,10 @@ let d = core::time::Duration::ZERO;
                     "crates/jnr-audio/src/synth.rs",
                     "pub fn gain(x: i32) -> i32 {\n    (x as f32 * 0.5) as i32\n}\n#[cfg(test)]\nmod tests { fn t() -> f64 { 1.0 } }\n",
                 ),
+                (
+                    "crates/jnr-audio/src/patch.rs",
+                    "fn f(v: &toml::Value) -> bool {\n    v.as_float().is_some()\n}\n",
+                ),
             ],
         );
         let found = determinism_violations(&root);
@@ -994,6 +1022,8 @@ let d = core::time::Duration::ZERO;
         assert_eq!(
             found,
             vec![
+                "crates/jnr-audio/src/patch.rs:1: `toml::Value` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
+                "crates/jnr-audio/src/patch.rs:2: `as_float` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
                 "crates/jnr-audio/src/synth.rs:2: `f32` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
                 "crates/jnr-audio/src/synth.rs:2: float literal `0.5` is forbidden in jnr-audio (determinism rules, docs/architecture.md)",
             ]

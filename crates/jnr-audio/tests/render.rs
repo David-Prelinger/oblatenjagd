@@ -2,7 +2,7 @@
 
 use jnr_audio::note::Note;
 use jnr_audio::patch::InstrumentKind;
-use jnr_audio::render::to_pcm;
+use jnr_audio::render::{CUT_FADE, add_sfx, add_sfx_until, to_pcm};
 use jnr_audio::{Instrument, Sfx, ms_to_samples, render_note, render_sfx, wav};
 
 fn sfx(text: &str) -> Sfx {
@@ -23,9 +23,9 @@ fn tone(wave: &str, hz: u32, extra: &str) -> Sfx {
 
 #[test]
 fn same_patch_renders_the_same_bits() {
-    let text = include_str!("../../../audio/sfx/oblate.sfx");
-    let a = render_sfx(&Sfx::parse("audio/sfx/oblate.sfx", text).unwrap());
-    let b = render_sfx(&Sfx::parse("audio/sfx/oblate.sfx", text).unwrap());
+    let text = include_str!("fixtures/oblate.sfx");
+    let a = render_sfx(&Sfx::parse("tests/fixtures/oblate.sfx", text).unwrap());
+    let b = render_sfx(&Sfx::parse("tests/fixtures/oblate.sfx", text).unwrap());
     assert_eq!(a, b);
     assert_eq!(a.pcm.fnv64(), b.pcm.fnv64());
 }
@@ -44,7 +44,8 @@ attack_ms = 3
 hold_ms = 40
 decay_ms = 60
 volume_pct = 30
-vibrato = { depth_cents = 25, rate_hz = 7 }
+vibrato = { depth_cents = 25, rate_hz = 7, delay_ms = 20, to_depth_cents = 5, ramp_ms = 40 }
+slide_delay_ms = 10
 arp = { every_ms = 20, semitones = [0, 4, 7] }
 lowpass_hz = 5000
 highpass_hz = 100
@@ -83,7 +84,7 @@ volume_pct = 10
     assert_eq!(r.pcm.samples.len(), ms_to_samples(103) as usize);
     assert_eq!(format!("{:016x}", r.pcm.fnv64()), PINNED);
 }
-const PINNED: &str = "403239ac59168ccb";
+const PINNED: &str = "d22bc56b3d2bf335";
 
 #[test]
 fn pulse_pitch_is_correct() {
@@ -156,11 +157,7 @@ fn clamps_are_counted() {
 #[test]
 fn wav_round_trips_a_render() {
     let pcm = render_sfx(
-        &Sfx::parse(
-            "audio/sfx/jump.sfx",
-            include_str!("../../../audio/sfx/jump.sfx"),
-        )
-        .unwrap(),
+        &Sfx::parse("tests/fixtures/jump.sfx", include_str!("fixtures/jump.sfx")).unwrap(),
     )
     .pcm;
     let bytes = wav::write(&pcm);
@@ -270,11 +267,8 @@ fn instrument_notes_have_pitch_and_release() {
 
 #[test]
 fn the_fixture_kit_renders_every_hit() {
-    let kit = Instrument::parse(
-        "audio/instruments/kit.inst",
-        include_str!("../../../audio/instruments/kit.inst"),
-    )
-    .unwrap();
+    let kit =
+        Instrument::parse("tests/fixtures/kit.inst", include_str!("fixtures/kit.inst")).unwrap();
     let InstrumentKind::Kit { hits } = &kit.kind else {
         panic!()
     };
@@ -283,4 +277,118 @@ fn the_fixture_kit_renders_every_hit() {
         assert_eq!(r.clamped, 0, "{letter}");
         assert!(r.pcm.samples.iter().any(|&v| v.abs() > 1000), "{letter}");
     }
+}
+
+/// Max − min of the distances between rising zero crossings.
+fn period_spread(s: &[i16]) -> usize {
+    let ups: Vec<usize> = (1..s.len())
+        .filter(|&i| s[i - 1] < 0 && s[i] >= 0)
+        .collect();
+    let d: Vec<usize> = ups.windows(2).map(|w| w[1] - w[0]).collect();
+    d.iter().max().unwrap() - d.iter().min().unwrap()
+}
+
+#[test]
+fn vibrato_waits_for_its_delay_and_ramps_its_depth() {
+    let plain = render_sfx(&tone("sine", 440, "")).pcm.samples;
+    let vib = render_sfx(&tone(
+        "sine",
+        440,
+        "vibrato = { depth_cents = 100, rate_hz = 6, delay_ms = 300 }\n",
+    ))
+    .pcm
+    .samples;
+    let delay = ms_to_samples(300) as usize; // 13230
+    // No jitter before the delay (the next control point after it is 13248).
+    assert_eq!(plain[..delay], vib[..delay]);
+    assert!(period_spread(&vib[..delay]) <= 1);
+    assert!(
+        period_spread(&vib[delay + 4410..]) >= 8,
+        "jitter after the delay"
+    );
+
+    // Fading vibrato (roof_bounce style): ±100 -> 0 over 200 ms.
+    let fade = render_sfx(&tone(
+        "sine",
+        440,
+        "vibrato = { depth_cents = 100, rate_hz = 8, to_depth_cents = 0, ramp_ms = 200 }\n",
+    ))
+    .pcm
+    .samples;
+    let w = ms_to_samples(200) as usize;
+    assert!(period_spread(&fade[..w]) >= 4);
+    assert!(period_spread(&fade[w + 64..]) <= 1, "steady after the ramp");
+
+    // Growing vibrato (zucker style): 0 -> ±50 over 500 ms.
+    let grow = render_sfx(&tone(
+        "sine",
+        440,
+        "vibrato = { depth_cents = 0, rate_hz = 8, to_depth_cents = 50, ramp_ms = 500 }\n",
+    ))
+    .pcm
+    .samples;
+    let early = period_spread(&grow[..ms_to_samples(60) as usize]);
+    let late = period_spread(&grow[ms_to_samples(600) as usize..]);
+    assert!(early <= 1 && late >= 4, "{early} {late}");
+}
+
+#[test]
+fn a_slide_can_start_late() {
+    let plain = render_sfx(&tone("sine", 200, "")).pcm.samples;
+    let late = render_sfx(&tone(
+        "sine",
+        200,
+        "slide_to_hz = 400\nslide_delay_ms = 500\nslide_ms = 100\n",
+    ))
+    .pcm
+    .samples;
+    let at = ms_to_samples(500) as usize; // 22050, a control point is at 22048
+    assert_eq!(plain[..22_048], late[..22_048]);
+    let tail = &late[ms_to_samples(700) as usize..];
+    let zc = zero_crossings(tail) as i64;
+    assert!((zc - 240).abs() <= 2, "400 Hz over the last 300 ms: {zc}");
+    assert!(at > 22_048);
+}
+
+#[test]
+fn notes_count_their_gate_from_the_onset_and_gate_zero_is_silent() {
+    let inst = Instrument::parse(
+        "x/pad.inst",
+        "range = [\"c2\", \"c6\"]\n[[layer]]\nwave = \"sine\"\ndelay_ms = 10\nattack_ms = 5\nrelease_ms = 20\nvolume_pct = 50\n",
+    )
+    .unwrap();
+    let InstrumentKind::Melodic { layers, .. } = &inst.kind else {
+        panic!()
+    };
+    let a4 = Note::parse("a4").unwrap();
+    let gate = ms_to_samples(50);
+    let r = render_note(layers, a4, gate);
+    assert_eq!(r.pcm.samples.len(), (gate + ms_to_samples(20)) as usize);
+    // Gate 0: no attack, no release, nothing after the delay.
+    let r = render_note(layers, a4, 0);
+    assert!(r.pcm.samples.iter().all(|&v| v == 0));
+    assert_eq!(r.pcm.samples.len(), ms_to_samples(10) as usize);
+    // A gate shorter than the delay: silent too.
+    let r = render_note(layers, a4, ms_to_samples(5));
+    assert!(r.pcm.samples.iter().all(|&v| v == 0));
+}
+
+#[test]
+fn a_cut_voice_fades_out_in_2_ms() {
+    let s = tone("pulse", 440, "");
+    let mut full = Vec::new();
+    add_sfx(&mut full, 100, &s, 100);
+    let mut cut = Vec::new();
+    let until = 100 + ms_to_samples(250) as usize;
+    add_sfx_until(&mut cut, 100, &s, 100, until);
+    assert_eq!(cut.len(), until + CUT_FADE);
+    assert_eq!(cut[..until], full[..until]);
+    for (i, &v) in cut[until..].iter().enumerate() {
+        assert!(v.abs() <= full[until + i].abs());
+    }
+    assert!(cut.last().unwrap().abs() < full[until].abs() / 40);
+    // A voice that starts at the cut adds nothing.
+    let mut none = vec![0; 10];
+    add_sfx_until(&mut none, 50, &s, 100, 50);
+    assert_eq!(none, vec![0; 10]);
 }

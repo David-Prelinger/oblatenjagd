@@ -71,7 +71,9 @@ pub struct Segment {
 }
 
 /// The envelope's segments after the delay. `gate` is how long an `Adsr`
-/// note is held (samples); `Ahd` ignores it.
+/// note is held (samples), counted from the voice start **including** the
+/// delay, so a note sounds `gate + release` samples from its onset; `Ahd`
+/// ignores it. A release from level 0 (e.g. a gate of 0) has no segment.
 pub fn segments(env: &Envelope, delay_ms: u32, gate: u32) -> Vec<Segment> {
     let seg = |len: u32, from: i64, to: i64| Segment { len, from, to };
     match *env {
@@ -103,7 +105,7 @@ pub fn segments(env: &Envelope, delay_ms: u32, gate: u32) -> Vec<Segment> {
             let sustain = PEAK * sustain_pct as i64 / 100;
             let mut out = Vec::new();
             let mut level = 0;
-            let mut left = gate;
+            let mut left = gate.saturating_sub(ms_to_samples(delay_ms));
             // Attack (cut short by an early release).
             let len = a.min(left);
             if len > 0 {
@@ -134,7 +136,9 @@ pub fn segments(env: &Envelope, delay_ms: u32, gate: u32) -> Vec<Segment> {
             if left > 0 {
                 out.push(seg(left, level, level));
             }
-            out.push(seg(r, level, 0));
+            if level > 0 {
+                out.push(seg(r, level, 0));
+            }
             out
         }
     }
@@ -145,9 +149,11 @@ pub struct Voice<'a> {
     pub layer: &'a Layer,
     /// Phase increment of the unmodulated start pitch.
     pub base_inc: u64,
-    /// Total glide (cents) and its length (samples; 0 = jump at once).
+    /// Total glide (cents), its length (samples; 0 = jump at once) and
+    /// when it starts (samples after the delay).
     pub slide_cents: i32,
     pub slide_samples: u32,
+    pub slide_start: u32,
     /// Constant pitch offset (cents), e.g. an instrument's detune.
     pub offset_cents: i32,
     /// Envelope segments after the delay (see [`segments`]).
@@ -176,11 +182,15 @@ impl Voice<'_> {
             Pitch::Fixed { .. } => 0,
             Pitch::Note { detune_cents, .. } => detune_cents,
         };
+        let slide_start = ms_to_samples(layer.slide_delay_ms);
         Voice {
             layer,
             base_inc,
             slide_cents,
-            slide_samples: layer.slide_ms.map_or(sound_len, ms_to_samples),
+            slide_samples: layer
+                .slide_ms
+                .map_or(sound_len.saturating_sub(slide_start), ms_to_samples),
+            slide_start,
             offset_cents,
             segments,
             gain_pct,
@@ -201,6 +211,7 @@ impl Voice<'_> {
             base_inc: inc_of_note(midi),
             slide_cents,
             slide_samples: layer.slide_ms.map_or(0, ms_to_samples),
+            slide_start: ms_to_samples(layer.slide_delay_ms),
             offset_cents,
             segments: segments(&layer.envelope, layer.delay_ms, gate),
             gain_pct,
@@ -362,16 +373,29 @@ impl Voice<'_> {
     /// Phase increment at `t` samples after the delay.
     fn inc_at(&self, t: u32, vib_inc: u64, arp_every: u32) -> u64 {
         let layer = self.layer;
-        let slide = if t >= self.slide_samples {
+        let slide = if t < self.slide_start {
+            0
+        } else if t - self.slide_start >= self.slide_samples {
             self.slide_cents
         } else {
-            (self.slide_cents as i64 * t as i64 / self.slide_samples as i64) as i32
+            let ts = t - self.slide_start;
+            (self.slide_cents as i64 * ts as i64 / self.slide_samples as i64) as i32
         };
-        let vibrato = if layer.vibrato.depth_cents == 0 {
+        let v = layer.vibrato;
+        let vib_delay = ms_to_samples(v.delay_ms);
+        let vibrato = if (v.depth_cents == 0 && v.to_depth_cents == 0) || t < vib_delay {
             0
         } else {
-            let lfo_phase = (vib_inc * t as u64) as u32;
-            layer.vibrato.depth_cents as i32 * tables::sine(lfo_phase) / FULL
+            let tv = t - vib_delay;
+            let ramp = ms_to_samples(v.ramp_ms);
+            let depth = if tv >= ramp {
+                v.to_depth_cents as i64
+            } else {
+                let (from, to) = (v.depth_cents as i64, v.to_depth_cents as i64);
+                from + (to - from) * tv as i64 / ramp as i64
+            };
+            let lfo_phase = (vib_inc * tv as u64) as u32;
+            (depth * tables::sine(lfo_phase) as i64 / FULL as i64) as i32
         };
         let arp = match layer.arp.semitones.len() {
             0 => 0,
