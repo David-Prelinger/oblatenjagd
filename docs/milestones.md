@@ -323,6 +323,7 @@ Sound (sound-designer, game-designer review)
 - [ ] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
 
 Platform
+- [ ] Every music cue has its `.song`: `jnr_audio::cues::PENDING_MUSIC` is empty; no placeholder among the must sounds
 - [ ] wasm build loads and plays (audio.js present; still runs without it); `wasm-smoke` and `vnc-smoke` green; verify runtime within budget (record it)
 
 **Acceptance:** see "Milestone acceptance" below, with the art-director step replaced by the game-designer's audio verdict on every piece and SFX (stats, spectrograms, piano rolls, the offline mixes of the Stage 1 solver run and the boss win); QA covers the cue logs over every flow, mute in every mode, and the Stage 6 dive/surface swap.
