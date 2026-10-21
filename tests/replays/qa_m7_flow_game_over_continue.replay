@@ -1,0 +1,131 @@
+# QA M7 (game over in the café): the relaxed run to the lock in the title
+# flow, then she stands on the arena floor: the first dash kills her
+# (2149), and twice more she walks from the checkpoint into the arena and
+# stands inside the waiting/intro Oberkellner when his telegraph starts
+# (2765, 3440): game over (3500). START at 3562 continues: Café Zauner from
+# its start (the checkpoint is cleared), 3 lives, score 0, Oblaten 0, the
+# boss reset; she walks right.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = deaths=3 event=GameOver stage=cafe_zauner score=0 lives=3 oblaten=0 boss_hits=0 state=playing
+---
+- 10
+S 1
+- 150
+- 90
+RB 76
+RBJ 20
+R 4
+L 10
+- 70
+R 16
+- 4
+RJ 16
+- 8
+RJ 4
+- 4
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 8
+- 4
+RJ 4
+- 12
+RJ 4
+- 4
+RJ 8
+- 4
+RJ 20
+- 4
+RJ 4
+- 4
+RJ 12
+- 4
+RJ 8
+- 4
+RJ 16
+R 8
+RJ 32
+- 4
+RJ 4
+- 8
+RJ 36
+- 4
+RJ 4
+- 8
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 4
+- 4
+RJ 20
+- 12
+RJ 4
+- 12
+RJ 8
+- 8
+RJ 4
+- 4
+RJ 8
+- 8
+RJ 12
+- 8
+RJ 8
+- 4
+RJ 12
+- 4
+RJ 16
+R 4
+RJ 28
+- 8
+RJ 16
+L 4
+- 40
+R 13
+- 40
+R 6
+RJ 18
+R 20
+- 40
+R 48
+RJ 6
+R 20
+- 40
+R 45
+RJ 6
+R 20
+- 40
+R 44
+RJ 6
+R 20
+- 40
+R 50
+- 110
+R 57
+- 30
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 28
+- 450
+R 60
+RJ 10
+R 30
+RJ 25
+R 150
+- 400
+R 60
+RJ 10
+R 30
+RJ 25
+R 150
+- 200
+S 1
+- 160
+R 200

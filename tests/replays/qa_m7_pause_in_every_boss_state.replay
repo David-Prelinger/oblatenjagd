@@ -1,0 +1,95 @@
+# QA M7 (pause): cafe_zauner_boss_win_normal in the title flow (START at 11,
+# play from 161) with seven 60-frame pauses (START, 58 frames, START; held
+# buttons kept) inserted in Wait, Intro, Telegraph, Dash, Breather, Stun and
+# the round-2 volley. The fight is frame-for-frame the same, shifted by the
+# 420 paused frames: LevelComplete at 2586 + 161 + 420 = 3167.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=3167..3167 deaths=0 no_event=Hurt boss_hits=3 score=24200
+---
+- 10
+S 1
+- 150
+RB 76
+RBJ 20
+RB 27
+RBJ 20
+RB 40
+RBJ 20
+RB 10
+RBJ 36
+RB 40
+RBJ 36
+RB 2
+RBJ 36
+RB 24
+RBJ 36
+RB 40
+RBJ 20
+RB 26
+RBJ 36
+RB 2
+RBJ 36
+RB 2
+RBJ 20
+RB 18
+RBJ 32
+RB 21
+- 40
+R 74
+RJ 1
+R 40
+RJ 20
+R 49
+RS 1
+R 58
+RS 1
+R 56
+L 44
+LS 1
+L 58
+LS 1
+L 66
+LJ 20
+L 34
+LS 1
+L 58
+LS 1
+L 26
+- 30
+R 30
+L 30
+LJ 4
+LJS 1
+LJ 58
+LJS 1
+LJ 16
+L 60
+- 54
+S 1
+- 58
+S 1
+- 100
+S 1
+- 58
+S 1
+- 240
+R 30
+L 30
+LJ 20
+L 10
+LS 1
+L 58
+LS 1
+L 50
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30

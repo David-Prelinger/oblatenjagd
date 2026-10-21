@@ -1,0 +1,138 @@
+# QA M7 (ending input): the relaxed run in the title flow (Stage 9 is the
+# last station, so the ending follows), START held from the touch on through
+# the whole ending. A held START is no new press: every phase runs its full
+# length (Map 240, Scene 360, Bill 600, Credits 6 x 180, Ende 600 = 2880
+# frames, 4017 -> 6897), then the marked title. Score 30450 = 23300 + the
+# time bonus 143 x 50.
+level  = cafe_zauner
+seed   = 1
+source = handwritten
+start  = title
+expect = complete frames=3604..3604 deaths=0
+expect = state=title cleared=true score=0 lives=3 oblaten=0
+---
+- 10
+S 1
+- 150
+- 90
+RB 76
+RBJ 20
+R 4
+L 10
+- 70
+R 16
+- 4
+RJ 16
+- 8
+RJ 4
+- 4
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 8
+- 4
+RJ 4
+- 12
+RJ 4
+- 4
+RJ 8
+- 4
+RJ 20
+- 4
+RJ 4
+- 4
+RJ 12
+- 4
+RJ 8
+- 4
+RJ 16
+R 8
+RJ 32
+- 4
+RJ 4
+- 8
+RJ 36
+- 4
+RJ 4
+- 8
+RJ 4
+R 4
+RJ 4
+- 8
+RJ 4
+- 4
+RJ 20
+- 12
+RJ 4
+- 12
+RJ 8
+- 8
+RJ 4
+- 4
+RJ 8
+- 8
+RJ 12
+- 8
+RJ 8
+- 4
+RJ 12
+- 4
+RJ 16
+R 4
+RJ 28
+- 8
+RJ 16
+L 4
+- 40
+R 13
+- 40
+R 6
+RJ 18
+R 20
+- 40
+R 48
+RJ 6
+R 20
+- 40
+R 45
+RJ 6
+R 20
+- 40
+R 44
+RJ 6
+R 20
+- 40
+R 50
+- 30
+- 80
+R 57
+- 30
+R 74
+RJ 1
+R 40
+RJ 20
+R 105
+L 110
+LJ 20
+L 60
+- 30
+R 30
+L 30
+LJ 20
+L 60
+- 394
+R 30
+L 30
+LJ 20
+L 60
+- 338
+R 30
+L 30
+LJ 20
+L 60
+- 20
+R 200
+RJ 20
+R 30
+S 6000
