@@ -1,0 +1,87 @@
+# Extra life, „Juchizer" (audio-design §6.2): a pulse 25 % yodel whoop C6 G5 C6 E6 G6,
+# 90 ms each with a 15 ms portamento into the next note (the yodel flips), then C7 for
+# 250 ms with vibrato 6 Hz ±30 cents, gliding down 2 semitones over its last 80 ms.
+# One layer per note so each can glide into the next. 700 ms.
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1047
+slide_to_hz = 784
+slide_delay_ms = 75
+slide_ms = 15
+attack_ms = 2
+hold_ms = 87
+decay_ms = 1
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 784
+slide_to_hz = 1047
+slide_delay_ms = 75
+slide_ms = 15
+delay_ms = 90
+attack_ms = 1
+hold_ms = 88
+decay_ms = 1
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1047
+slide_to_hz = 1319
+slide_delay_ms = 75
+slide_ms = 15
+delay_ms = 180
+attack_ms = 1
+hold_ms = 88
+decay_ms = 1
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1319
+slide_to_hz = 1568
+slide_delay_ms = 75
+slide_ms = 15
+delay_ms = 270
+attack_ms = 1
+hold_ms = 88
+decay_ms = 1
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 1568
+slide_to_hz = 2093
+slide_delay_ms = 75
+slide_ms = 15
+delay_ms = 360
+attack_ms = 1
+hold_ms = 88
+decay_ms = 1
+volume_pct = 50
+lowpass_hz = 7000
+
+[[layer]]
+wave = "pulse"
+duty_pct = 25
+freq_hz = 2093
+slide_to_hz = 1865
+slide_delay_ms = 170
+slide_ms = 80
+vibrato = { depth_cents = 30, rate_hz = 6 }
+delay_ms = 450
+attack_ms = 1
+hold_ms = 150
+decay_ms = 99
+volume_pct = 50
+lowpass_hz = 7000

@@ -1,0 +1,38 @@
+# Power-up Hackl, „Hau-ruck" (audio-design §6.2): two anvil strikes at 0 and 160 ms
+# (sines 1047 + 2888 + 5650 Hz, decay 150 ms), then a saw through a 2 kHz low-pass
+# rising G4 -> C5 (a fourth up) over 180 ms. 500 ms.
+[[layer]]
+wave = "sine"
+freq_hz = 1047
+attack_ms = 1
+decay_ms = 150
+volume_pct = 26
+repeat = { count = 2, every_ms = 160 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 2888
+attack_ms = 1
+decay_ms = 110
+volume_pct = 16
+repeat = { count = 2, every_ms = 160 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 5650
+attack_ms = 1
+decay_ms = 70
+volume_pct = 9
+repeat = { count = 2, every_ms = 160 }
+
+[[layer]]
+wave = "saw"
+freq_hz = 392
+slide_to_hz = 523
+slide_ms = 90
+delay_ms = 320
+attack_ms = 5
+hold_ms = 105
+decay_ms = 70
+volume_pct = 55
+lowpass_hz = 2000

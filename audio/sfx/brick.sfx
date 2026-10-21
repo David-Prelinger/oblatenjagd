@@ -1,0 +1,20 @@
+# Brick broken (audio-design §6.2): wide band-passed noise at 2 kHz, attack 1 / decay 200,
+# plus three 15 ms noise ticks at 60, 110 and 160 ms (debris). 220 ms.
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 2000, q_pct = 100 }
+lowpass_hz = 5000
+attack_ms = 1
+decay_ms = 219
+volume_pct = 45
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 3000, q_pct = 300 }
+delay_ms = 60
+attack_ms = 1
+decay_ms = 14
+volume_pct = 40
+repeat = { count = 3, every_ms = 50 }

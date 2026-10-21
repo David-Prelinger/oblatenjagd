@@ -1,0 +1,25 @@
+# Checkpoint, „Haltewunsch" (audio-design §6.2): the bus stop-request bell, two strikes
+# at 0 and 120 ms of sines E6 plus partials at 2.0x and 2.9x, decay 300 ms each. 450 ms.
+[[layer]]
+wave = "sine"
+freq_hz = 1319
+attack_ms = 1
+decay_ms = 329
+volume_pct = 22
+repeat = { count = 2, every_ms = 120 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 2637
+attack_ms = 1
+decay_ms = 240
+volume_pct = 12
+repeat = { count = 2, every_ms = 120 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 3825
+attack_ms = 1
+decay_ms = 160
+volume_pct = 8
+repeat = { count = 2, every_ms = 120 }

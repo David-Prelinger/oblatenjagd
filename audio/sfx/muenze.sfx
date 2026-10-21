@@ -1,0 +1,17 @@
+# Ending bill, the „Trinkgeld" line (audio-design §6.3): a coin on the plate, sines
+# 3.2 + 4.8 kHz, two strikes 60 ms apart. 150 ms.
+[[layer]]
+wave = "sine"
+freq_hz = 3200
+attack_ms = 1
+decay_ms = 89
+volume_pct = 14
+repeat = { count = 2, every_ms = 60 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 4800
+attack_ms = 1
+decay_ms = 60
+volume_pct = 8
+repeat = { count = 2, every_ms = 60 }

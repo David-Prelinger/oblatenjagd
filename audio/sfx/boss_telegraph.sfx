@@ -1,0 +1,28 @@
+# Oberkellner telegraph, „Vorsicht, heiß!" (audio-design §6.3): a cup rattle (8 ms noise
+# ticks at 15 Hz, band-passed at 3 kHz) plus a kettle whistle, sine 1800 -> 2400 Hz with
+# 20 % breath noise, getting louder. Rendered at the longest telegraph (667 ms); the cue
+# director cuts it when the dash starts (600 / 533 ms in later rounds).
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 3000, q_pct = 300 }
+attack_ms = 1
+decay_ms = 7
+volume_pct = 23
+repeat = { count = 10, every_ms = 66 }
+
+[[layer]]
+wave = "sine"
+freq_hz = 1800
+slide_to_hz = 2400
+attack_ms = 600
+decay_ms = 67
+volume_pct = 23
+
+[[layer]]
+wave = "noise"
+freq_hz = 20000
+bandpass = { hz = 1800, to_hz = 2400, q_pct = 400 }
+attack_ms = 600
+decay_ms = 67
+volume_pct = 7
