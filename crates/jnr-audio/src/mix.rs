@@ -17,8 +17,8 @@
 //!   the sounds have the twin (the app's rule: without it [`Cue::Underwater`]
 //!   is ignored and the stage piece stays audible).
 //!   [`Cue::Jingle`]: stop the jingle, play the new one once.
-//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCKED_MUSIC_VOLUME_PCT`] while ducked,
-//!   times the cue's own [`Music::gain_pct`] (`boss_intro` 25 %);
+//! - Music volume: [`MUSIC_VOLUME_PCT`], [`DUCKED_MUSIC_VOLUME_PCT`] for the
+//!   song and its twin while ducked (a jingle is never ducked, D-123), times the cue's own [`Music::gain_pct`] (`boss_intro` 25 %);
 //!   0 for the song while held, 0 for the jingle while held. Under water the
 //!   song and its twin swap volumes; a new song starts above water.
 //! - One-shots ring out past the run's end; loops stop at the end of the
@@ -205,7 +205,8 @@ impl Player {
         }
     }
 
-    /// Sets the music volumes from the hold, duck and underwater state.
+    /// Sets the music volumes from the hold, duck and underwater state (the
+    /// duck lowers only the song and its twin, D-123).
     fn music_gains(&mut self, at: usize) {
         let music = if self.duck {
             DUCKED_MUSIC_VOLUME_PCT
@@ -218,7 +219,12 @@ impl Player {
         } else {
             (song, 0)
         };
-        let jingle = if self.hold_jingle { 0 } else { music };
+        // A jingle is never ducked (D-123).
+        let jingle = if self.hold_jingle {
+            0
+        } else {
+            MUSIC_VOLUME_PCT
+        };
         for (i, g) in [(self.song, main), (self.twin, twin), (self.jingle, jingle)] {
             if let Some(i) = i {
                 let cue = match self.instances[i].sound {
@@ -522,7 +528,7 @@ mod tests {
     }
 
     #[test]
-    fn duck_and_hold_act_on_a_jingle() {
+    fn hold_acts_on_a_jingle_and_the_duck_does_not() {
         let fan = Sound::Music(Music::FanfareClear);
         let b = bank(&[(fan, vec![80; 8 * T])]);
         let tl = [
@@ -537,7 +543,8 @@ mod tests {
         let at = |f: usize| s[f * T];
         assert_eq!(
             [at(0), at(1), at(2), at(3), at(4), at(5), at(6)],
-            [80, 40, 0, 40, 80, 0, 0]
+            [80, 80, 0, 80, 80, 0, 0],
+            "never ducked (D-123)"
         );
     }
 
@@ -577,7 +584,7 @@ mod tests {
         let b = bank(&[(intro, vec![800; 4 * T])]);
         let tl = [(0, Cue::Jingle(Music::BossIntro)), (1, Cue::Duck(true))];
         let s = mix(&b, &tl, 2).render.pcm.samples;
-        assert_eq!((s[0], s[T]), (200, 100), "25 %, ducked 12.5 %");
+        assert_eq!((s[0], s[T]), (200, 200), "25 %, not ducked (D-123)");
     }
 
     #[test]

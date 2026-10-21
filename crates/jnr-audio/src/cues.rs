@@ -15,8 +15,9 @@
 //!   first sample, at the current hold and duck volume (above water);
 //!   [`Cue::StopSong`] stops it.
 //! - [`Cue::Jingle`] stops the current jingle and plays this one once
-//!   (songs and jingles are both "music": the music volume, the duck and the
-//!   mute act on both); [`Cue::StopJingle`] stops it.
+//!   (songs and jingles are both "music": the music volume and the mute act
+//!   on both, the duck only on the song, D-123); [`Cue::StopJingle`] stops
+//!   it.
 //! - [`Cue::HoldSong`]: the song's volume to 0 and back (pause, the
 //!   ZEIT-60 bells); the loop keeps running, so it resumes in place
 //!   (D-114). [`Cue::HoldJingle`] does the same to the playing jingle
@@ -24,8 +25,9 @@
 //!   is still running on resume).
 //! - [`Cue::StopJingle`] may come for a jingle that already ended
 //!   (stopping an idle sound is harmless).
-//! - [`Cue::Duck`]: music −6 dB while an SFX of priority ≥ 7 plays (not
-//!   while paused: everything is held then).
+//! - [`Cue::Duck`]: the song (and its twin) −6 dB while an SFX of priority
+//!   ≥ 7 plays (not while paused: everything is held then); a jingle is
+//!   never ducked (D-123).
 //! - [`Cue::Underwater`]: swap the song's volume with its underwater twin
 //!   ([`Music::underwater_twin`]), which the app started muted on the same
 //!   frame as the song (D-114).
@@ -606,11 +608,12 @@ impl Voices {
 /// Playback volumes in percent, shared by the app (E59) and the offline
 /// mix (E60), so both play the same thing: every sound is rendered at its
 /// design level (D-113's level table), so SFX and music play at 100 %; a
-/// duck is 50 % (−6 dB, §3); a hold is 0 (D-114).
+/// duck is 50 % (−6 dB, §3; songs only, D-123); a hold is 0 (D-114).
 pub const SFX_VOLUME_PCT: u32 = 100;
 /// Music (songs and jingles) at full level.
 pub const MUSIC_VOLUME_PCT: u32 = 100;
-/// Music while ducked ([`Cue::Duck`]).
+/// The song (and its twin) while ducked ([`Cue::Duck`]; never a jingle,
+/// D-123).
 pub const DUCKED_MUSIC_VOLUME_PCT: u32 = 50;
 
 /// SFX of this priority or more duck the music (§3, §6.1).
