@@ -317,7 +317,7 @@ Engine
 - [ ] E61 Docs (architecture, validation, agentic-setup), the `sound-designer` agent and the `sfx-authoring` skill
 
 Sound (sound-designer, game-designer review)
-- [ ] S1 The 25 must SFX (audio-design §6), stats in range
+- [x] S1 The 25 must SFX (audio-design §6), stats in range
 - [ ] S2 Must music in the order of audio-design's task list (title, death, clear, hurry, game over, map, Salzburg, boss set, café, finale, ending set, Stages 2–8, underwater), each quote transcribed from its PD edition with its header filled in
 - [ ] S3 Nice SFX and music, in the reverse cut order (audio-design §10), as time allows
 - [ ] Game-designer review: piano rolls against §5, quotes against their scores, cue logs of a Stage 1 tour and the Normal boss win, the level table
