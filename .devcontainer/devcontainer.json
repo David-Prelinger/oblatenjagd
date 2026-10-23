@@ -11,6 +11,8 @@
     },
     // Claude Code CLI im Container
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
+    // GitHub CLI: push and the Pages deploy
+    "ghcr.io/devcontainers/features/github-cli:1": {},
     // Virtueller Desktop (X11 + Fluxbox) – im Browser über noVNC erreichbar,
     // damit das Spielfenster auf dem Mac sichtbar ist.
     "ghcr.io/devcontainers/features/desktop-lite:1": {
